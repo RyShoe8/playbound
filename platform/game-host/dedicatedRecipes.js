@@ -54,6 +54,15 @@ export function createDedicatedRecipes(deps) {
 
   /** One folder per server: the customer's home, or a rooms folder for anything else. */
   function serverDir(dirName, ctx) {
+    if(ctx.identityProfile==="dont-starve-together-unix-v1" && dirName==="dont-starve-together-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="trackmania-unix-v1" && dirName==="trackmania-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="unturned-unix-v1" && dirName==="unturned-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="battlefield-1942-anthology-unix-v1" && dirName==="battlefield-1942-anthology-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="barotrauma-unix-v1" && dirName==="barotrauma-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="necesse-unix-v1" && dirName==="necesse-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="rimworld-together-unix-v1" && dirName==="rimworld-together-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="factorio-unix-v1" && dirName==="factorio-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
+    if(ctx.identityProfile==="terraria-unix-v1" && dirName==="terraria-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
     if (ctx.customerOwned) return customerHomeDir(dirName, ctx);
     const id = String(ctx.partyId || "room").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
     const dir = path.join(HOST_HOME, `${dirName}-rooms`, `pb-${id}`);
@@ -107,6 +116,7 @@ export function createDedicatedRecipes(deps) {
       binaries: gameBin("open-fortress", ["runtime/srcds_linux"]),
       resolveBinary: (candidates, ctx) => {
         const runtime = path.join(GAMES_ROOT, "open-fortress/runtime");
+        if(ctx?.identityProfile==="open-fortress-unix-v1")return firstExisting([path.join(runtime,"srcds_linux")]);
         const privateBinary = ctx && (ctx.communityServerId || ctx.partyId)
           ? path.join(openFortressHome(HOST_HOME, ctx), "runtime/srcds_linux") : null;
         return ["open_fortress/bin/server.so", "bin/steamclient.so", "open_fortress/maps/dm_2fort.bsp", "defaults/cfg/server.cfg"]
@@ -117,7 +127,7 @@ export function createDedicatedRecipes(deps) {
       cwd: (_port, ctx) => path.join(openFortressHome(HOST_HOME, ctx), "runtime"),
       startupReadyTimeoutMs: 90_000,
       prepareSpawn: async (_port, ctx) => prepareOpenFortressRuntime(path.join(GAMES_ROOT, "open-fortress"), HOST_HOME, ctx),
-      spawnEnv: (_port, ctx) => ({
+      spawnEnv: (_port, ctx) => ctx?.identityProfile==="open-fortress-unix-v1"?{}:({
         HOME: openFortressHome(HOST_HOME, ctx),
         LD_LIBRARY_PATH: path.join(openFortressHome(HOST_HOME, ctx), "runtime/bin"),
       }),
@@ -156,8 +166,9 @@ export function createDedicatedRecipes(deps) {
       portEnd: 14586,
       protocol: "udp",
       binaries: gameBin("battlefield-1942-anthology", ["bf1942_lnxded"]),
+      resolveBinary: (candidates,ctx)=>ctx?.identityProfile==="battlefield-1942-anthology-unix-v1"?firstExisting([path.join(GAMES_ROOT,"battlefield-1942-anthology","bf1942_lnxded.static")]):firstExisting(candidates),
       cwd: () => path.join(GAMES_ROOT, "battlefield-1942-anthology"),
-      spawnEnv: isolatedHomeEnv("battlefield-1942-anthology-servers"),
+      spawnEnv: (port,ctx)=>ctx?.identityProfile==="battlefield-1942-anthology-unix-v1"?{}:isolatedHomeEnv("battlefield-1942-anthology-servers")(port,ctx),
       startupReadyTimeoutMs: 60_000,
       prepareSpawn: async (port, ctx) => {
         const root = path.join(GAMES_ROOT, "battlefield-1942-anthology");
@@ -237,9 +248,11 @@ export function createDedicatedRecipes(deps) {
       protocol: "udp",
       rcon: "source",
       binaries: gameBin("counter-strike-source", ["srcds_run", "srcds_linux"]),
+      resolveBinary: (candidates,ctx)=>ctx?.identityProfile==="counter-strike-source-unix-v1"?firstExisting([path.join(GAMES_ROOT,"counter-strike-source","srcds_linux")]):firstExisting(candidates),
+      identityStartupReadyTimeoutMs: 300_000,
       cwd: () => path.join(GAMES_ROOT, "counter-strike-source"),
       startupReadyTimeoutMs: 60_000,
-      spawnEnv: isolatedHomeEnv("counter-strike-source-servers"),
+      spawnEnv: (port,ctx)=>ctx?.identityProfile==="counter-strike-source-unix-v1"?{}:isolatedHomeEnv("counter-strike-source-servers")(port,ctx),
       // Without steamclient.so in ~/.steam/sdk32 srcds runs LAN-only. Best effort: a missing
       // file is left for the operator to see in the server log rather than failing the start.
       prepareSpawn: async (_port, ctx) => {
@@ -280,8 +293,9 @@ export function createDedicatedRecipes(deps) {
       cwd: () => path.join(GAMES_ROOT, "terraria", "1458", "Linux"),
       stdin: keepStdinOpen,
       startupReadyTimeoutMs: 180_000,
+      identityStartupReadyTimeoutMs: 600_000,
       // Terraria keeps worlds under XDG_DATA_HOME/HOME; both point at the server's own folder.
-      spawnEnv: isolatedHomeEnv("terraria-servers"),
+      spawnEnv: (port,ctx)=>ctx.identityProfile==="terraria-unix-v1"?{}:isolatedHomeEnv("terraria-servers")(port,ctx),
       prepareSpawn: async (_port, ctx) => {
         fs.mkdirSync(path.join(serverDir("terraria-servers", ctx), "Worlds"), { recursive: true, mode: 0o700 });
       },
@@ -303,12 +317,13 @@ export function createDedicatedRecipes(deps) {
       portSpan: 3,
       protocol: "udp",
       binaries: gameBin("unturned", ["ServerHelper.sh"]),
+      resolveBinary: (candidates,ctx)=>ctx?.identityProfile==="unturned-unix-v1"?firstExisting([path.join(GAMES_ROOT,"unturned","Unturned_Headless.x86_64")]):firstExisting(candidates),
       cwd: () => path.join(GAMES_ROOT, "unturned"),
       stdin: keepStdinOpen,
       shutdownCommand: "Shutdown\n",
       shutdownGraceMs: 20_000,
       startupReadyTimeoutMs: 90_000,
-      spawnEnv: isolatedHomeEnv("unturned-servers"),
+      spawnEnv: (port,ctx)=>ctx?.identityProfile==="unturned-unix-v1"?{}:isolatedHomeEnv("unturned-servers")(port,ctx),
       prepareSpawn: async (_port, ctx) => {
         const data = serverDir("unturned-servers", ctx);
         const servers = path.join(GAMES_ROOT, "unturned", "Servers");
@@ -336,7 +351,7 @@ export function createDedicatedRecipes(deps) {
           { mode: 0o600 });
       },
       args: (_port, ctx) => [
-        `${ctx.testSpawn && !fs.existsSync(path.join(serverDir("unturned-servers", ctx), "gslt.txt")) ? "+LanServer" : "+InternetServer"}/pb-${serverId(ctx)}`,
+        `${ctx.identityProfile!=="unturned-unix-v1" && ctx.testSpawn && !fs.existsSync(path.join(serverDir("unturned-servers", ctx), "gslt.txt")) ? "+LanServer" : "+InternetServer"}/pb-${serverId(ctx)}`,
       ],
     },
 
@@ -348,7 +363,7 @@ export function createDedicatedRecipes(deps) {
       // The server keeps Configs/, Assets/, Backups/ and Logs/ under its working directory.
       cwd: (_port, ctx) => serverDir("rimworld-together-servers", ctx),
       stdin: keepStdinOpen,
-      spawnEnv: isolatedHomeEnv("rimworld-together-servers"),
+      spawnEnv: (port,ctx)=>ctx.identityProfile==="rimworld-together-unix-v1"?{}:isolatedHomeEnv("rimworld-together-servers")(port,ctx),
       prepareSpawn: async (port, ctx) => {
         mergeJsonConfig(path.join(serverDir("rimworld-together-servers", ctx), "Configs", "ServerConfig.json"), {
           Name: serverName(ctx, "PlayBound Dedicated"),
@@ -461,7 +476,8 @@ export function createDedicatedRecipes(deps) {
       cwd: () => path.join(GAMES_ROOT, "factorio"),
       stdin: keepStdinOpen,
       startupReadyTimeoutMs: 120_000,
-      spawnEnv: isolatedHomeEnv("factorio-servers"),
+      spawnEnv: (port,ctx)=>ctx.identityProfile==="factorio-unix-v1"?{}:isolatedHomeEnv("factorio-servers")(port,ctx),
+      identityStartupReadyTimeoutMs: 660_000,
       prepareSpawn: async (_port, ctx) => {
         const dir = serverDir("factorio-servers", ctx);
         const configIni = path.join(dir, "config.ini");
@@ -511,7 +527,7 @@ export function createDedicatedRecipes(deps) {
       shutdownCommand: "stop\n",
       shutdownGraceMs: 20_000,
       startupReadyTimeoutMs: 120_000,
-      spawnEnv: isolatedHomeEnv("necesse-servers"),
+      spawnEnv: (port,ctx)=>ctx.identityProfile==="necesse-unix-v1"?{}:isolatedHomeEnv("necesse-servers")(port,ctx),
       prepareSpawn: async (_port, ctx) => {
         fs.mkdirSync(serverDir("necesse-servers", ctx), { recursive: true, mode: 0o700 });
       },
@@ -533,7 +549,7 @@ export function createDedicatedRecipes(deps) {
       binaries: gameBin("dont-starve-together", ["bin64/dontstarve_dedicated_server_nullrenderer_x64"]),
       cwd: () => path.join(GAMES_ROOT, "dont-starve-together", "bin64"),
       startupReadyTimeoutMs: 180_000,
-      spawnEnv: isolatedHomeEnv("dont-starve-together-servers"),
+      spawnEnv: (port,ctx)=>ctx?.identityProfile==="dont-starve-together-unix-v1"?{}:isolatedHomeEnv("dont-starve-together-servers")(port,ctx),
       prepareSpawn: async (port, ctx) => {
         const root = path.join(serverDir("dont-starve-together-servers", ctx), "PlayBound", "Cluster_1");
         if (!fs.existsSync(path.join(root, "cluster_token.txt"))) {
@@ -563,14 +579,14 @@ export function createDedicatedRecipes(deps) {
       protocol: "udp",
       binaries: gameBin("barotrauma", ["DedicatedServer"]),
       resolveBinary: (candidates, ctx) => {
-        if (!ctx) return firstExisting(candidates);
+        if (!ctx || ctx.identityProfile==="barotrauma-unix-v1") return firstExisting(candidates);
         const runtime = path.join(serverDir("barotrauma-servers", ctx), "runtime", "DedicatedServer");
         if (fs.existsSync(runtime)) return runtime;
         return firstExisting(candidates);
       },
       cwd: (_port, ctx) => path.join(serverDir("barotrauma-servers", ctx), "runtime"),
       startupReadyTimeoutMs: 120_000,
-      spawnEnv: isolatedHomeEnv("barotrauma-servers"),
+      spawnEnv: (port,ctx)=>ctx?.identityProfile==="barotrauma-unix-v1"?{}:isolatedHomeEnv("barotrauma-servers")(port,ctx),
       prepareSpawn: async (port, ctx) => {
         const home = serverDir("barotrauma-servers", ctx);
         const runtime = path.join(home, "runtime");
@@ -605,7 +621,7 @@ export function createDedicatedRecipes(deps) {
       binaries: gameBin("trackmania", ["TrackmaniaServer"]),
       resolveBinary: (candidates, ctx) => {
         const shared = path.join(GAMES_ROOT, "trackmania/runtime/TrackmaniaServer");
-        if (!ctx) return fs.existsSync(path.join(GAMES_ROOT, "trackmania/runtime")) ? firstExisting([shared]) : firstExisting(candidates);
+        if (!ctx || ctx.identityProfile==="trackmania-unix-v1") return fs.existsSync(path.join(GAMES_ROOT, "trackmania/runtime")) ? firstExisting([shared]) : firstExisting(candidates);
         const directory = path.join(serverDir("trackmania-servers", ctx), "runtime");
         if (fs.existsSync(path.join(directory,"package"))) return firstExisting([path.join(directory,"package/TrackmaniaServer")]);
         const runtime = path.join(directory, "TrackmaniaServer");
@@ -614,7 +630,7 @@ export function createDedicatedRecipes(deps) {
       },
       cwd: (_port, ctx) => path.join(serverDir("trackmania-servers", ctx), "runtime"),
       startupReadyTimeoutMs: 120_000,
-      spawnEnv: isolatedHomeEnv("trackmania-servers"),
+      spawnEnv: (port,ctx)=>ctx?.identityProfile==="trackmania-unix-v1"?{}:isolatedHomeEnv("trackmania-servers")(port,ctx),
       prepareSpawn: async (port, ctx) => {
         const home = serverDir("trackmania-servers", ctx);
         const accountFile = path.join(home, "dedicated-account.json");

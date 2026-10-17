@@ -187,3 +187,62 @@ test("installed status follows whether each server binary is present", async () 
   const installed = listInstalled();
   for (const slug of NEW) assert.equal(installed[slug], Boolean(resolveRecipe(slug)?.binary), `${slug} installed status matches its binary`);
 });
+
+
+test("OpenRA-family customer homes never share another server's writable cache", () => {
+  for (const [slug, directory] of [["openra","openra-servers"],["openhv","openhv-servers"],["earth-2140-trilogy","earth-2140-servers"]]) {
+    const first=recipes[slug].spawnEnv(1234,ctxFor(slug,ID_A));
+    const second=recipes[slug].spawnEnv(1234,ctxFor(slug,ID_B));
+    assert.equal(first.HOME,path.join(HOME,directory,`pb-${ID_A}`));
+    assert.notEqual(first.HOME,second.HOME);
+    for (const key of ["XDG_DATA_HOME","XDG_CONFIG_HOME","XDG_CACHE_HOME","XDG_STATE_HOME"]) assert.equal(first[key],first.HOME);
+    assert.equal(recipes[slug].spawnEnv(1234,{managed:true,customerOwned:false}).HOME,HOME);
+  }
+});
+
+
+test("OpenHV applies its declared single-player and bot-lock settings", () => {
+  const args=recipes.openhv.args(1255,{name:"Fixture",settings:{"Server.EnableSingleplayer":true,"Server.LockBots":true}});
+  assert.ok(args.includes("Server.EnableSingleplayer=True"));
+  assert.ok(args.includes("Server.LockBots=True"));
+  const defaults=recipes.openhv.args(1255,{settings:{"Server.LockBots":"True"}});
+  assert.ok(defaults.includes("Server.LockBots=False"));
+});
+
+
+test("TripleA customer maps and Java user home are private per server", async () => {
+  for (const id of [ID_A,ID_B]) {
+    const ctx=ctxFor("triplea",id),home=path.join(HOME,"triplea-servers",`pb-${id}`);
+    await recipes.triplea.prepareSpawn(3303,ctx);
+    assert.equal(recipes.triplea.spawnEnv(3303,ctx).MAPS_FOLDER,path.join(home,"downloadedMaps"));
+    assert.equal(recipes.triplea.spawnEnv(3303,ctx).HOME,home);
+    assert.equal(recipes.triplea.cwd(3303,ctx),home);
+    assert.ok(recipes.triplea.args(3303,ctx).includes(`-Duser.home=${home}`));
+    assert.ok(fs.statSync(path.join(home,"downloadedMaps")).isDirectory());
+  }
+  assert.ok(!recipes.triplea.args(3303,{customerOwned:false}).some(arg=>arg.startsWith("-Duser.home=")));
+});
+
+test("Veloren customer configuration and world roots are private while community data stays put", async () => {
+  for (const id of [ID_A,ID_B]) {
+    const ctx=ctxFor("veloren",id),home=path.join(HOME,"veloren-servers",`pb-${id}`);
+    const environment=recipes.veloren.spawnEnv(14004,ctx);
+    assert.equal(environment.HOME,home);
+    assert.equal(recipes.veloren.cwd(14004,ctx),home);
+    assert.equal(environment.VELOREN_USERDATA,path.join(home,"userdata"));
+    const settings=path.join(environment.VELOREN_USERDATA,"server","server_config","settings.ron");
+    fs.mkdirSync(path.dirname(settings),{recursive:true});fs.writeFileSync(settings,"(max_players: 24,)");
+    await recipes.veloren.prepareSpawn(14004,ctx);
+    assert.match(fs.readFileSync(settings,"utf8"),/max_players: 6/);
+    assert.ok(fs.existsSync(path.join(environment.VELOREN_USERDATA,"server-cli","settings.ron")));
+  }
+  assert.ok(recipes.veloren.spawnEnv(14004,{customerOwned:false}).VELOREN_USERDATA.endsWith(path.join("veloren","userdata")));
+});
+
+
+test("OpenRA identity preparation never creates service-owned customer homes",()=>{
+  const ctx={...ctxFor("openra"),identityProfile:"openra-unix-v1"};
+  assert.deepEqual(recipes.openra.spawnEnv(1234,ctx),{});
+  assert.deepEqual(recipes.openhv.spawnEnv(1255,{...ctx,identityProfile:"openhv-unix-v1"}),{});
+  assert.deepEqual(recipes["earth-2140-trilogy"].spawnEnv(1275,{...ctx,identityProfile:"earth-2140-trilogy-unix-v1"}),{});
+});

@@ -1,3 +1,4 @@
+import { supportsCustomerIdentity } from "./customerIdentityProfiles.js";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -13,7 +14,14 @@ const TEXT_EXTENSIONS = new Set([".json", ".xml", ".txt", ".cfg", ".ini"]);
 const HISTORY = ".playbound-file-history";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");
-const forbidden = name => name.startsWith(".") || /^(?:mods|plugins|scripts|bin)$/i.test(name) || /(?:secret|credential|password|token|gslt|rcon|private.?key)/i.test(name);
+// Generated engine files may embed credentials despite having innocuous names.
+// Settings use the typed controls; the world-data browser must not expose them.
+const PRIVATE_ENGINE_FILES = new Set([
+  "commands.dat", "dedicated-account.json", "dedicated_cfg.txt", "cluster.ini",
+  "serversettings.xml", "server.cfg", "playbound.cfg", "playbound-managed.cfg",
+  "pb-managed.cfg", "tes3mp-server.cfg", "serverconfig.json", "private-cfg",
+]);
+const forbidden = name => name.startsWith(".") || PRIVATE_ENGINE_FILES.has(name.toLowerCase()) || /^(?:mods|plugins|scripts|bin)$/i.test(name) || /(?:secret|credential|password|token|gslt|rcon|private.?key)/i.test(name);
 
 function ensureSpace(root, extraBytes, enforceQuota = false) {
   const stats = fs.statfsSync(root);
@@ -258,7 +266,7 @@ export function manageDedicatedFiles(id, game, input, home = process.env.HOME ||
 
 /** Invoked only by the fixed UID worker; no HTTP request chooses this root. */
 export function manageIsolatedDedicatedFiles(id, game, input) {
-  if (!/^[a-f0-9]{24}$/.test(id || "") || !["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(game)) throw new Error("Invalid isolated world identity");
+  if (!/^[a-f0-9]{24}$/.test(id || "") || !supportsCustomerIdentity(game)) throw new Error("Invalid isolated world identity");
   const base = "/var/lib/playbound-customer-runtime";
   if (fs.realpathSync(base) !== base) throw new Error("Invalid isolated world root");
   const data = checkedPath(base, [id,"data"]);

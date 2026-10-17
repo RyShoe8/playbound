@@ -51,7 +51,23 @@ def syscall(command, attribute):
     return result
 
 
-def instructions(port, stk_discovery=False, flightgear_status=False, assaultcube_query=False):
+# Fixed future engine layouts. The runtime supervisor selects these from a
+# reviewed game profile; HTTP callers cannot supply extra ports or bytecode.
+AUXILIARY_PROFILES = {
+    'trackmania': (23520,23538,2,((1,socket.IPPROTO_TCP),)),
+    'veloren': (14004,14004,1,((1,socket.IPPROTO_TCP),)),
+    'barotrauma': (27220,27238,2,((1,socket.IPPROTO_UDP),)),
+    'core-keeper': (1300,1320,2,((1,socket.IPPROTO_UDP),)),
+    'unturned': (27075,27099,3,((1,socket.IPPROTO_UDP),(2,socket.IPPROTO_UDP))),
+    'dont-starve-together': (11020,11041,3,((1,socket.IPPROTO_UDP),(2,socket.IPPROTO_UDP))),
+    'counter-strike-source': (27060,27070,1,((1000,socket.IPPROTO_UDP),)),
+    'team-fortress-2': (27015,27025,1,((1000,socket.IPPROTO_UDP),)),
+    'open-fortress': (27150,27169,1,((1000,socket.IPPROTO_UDP),)),
+    'goldeneye-source': (27120,27139,1,((1000,socket.IPPROTO_UDP),)),
+}
+
+
+def instructions(port, stk_discovery=False, flightgear_status=False, assaultcube_query=False, auxiliary_profile=None):
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError('Invalid native port allocation')
     if type(stk_discovery) is not bool or stk_discovery and (not 2759 <= port <= 2777 or port % 2 != 1):
@@ -60,6 +76,21 @@ def instructions(port, stk_discovery=False, flightgear_status=False, assaultcube
         raise ValueError('Invalid FlightGear status allocation')
     if type(assaultcube_query) is not bool or assaultcube_query and (stk_discovery or flightgear_status or not 28763 <= port <= 28781 or port % 2 != 1):
         raise ValueError('Invalid AssaultCube query allocation')
+    if auxiliary_profile is not None:
+        if not isinstance(auxiliary_profile,str) or auxiliary_profile not in AUXILIARY_PROFILES or stk_discovery or flightgear_status or assaultcube_query:raise ValueError('Invalid auxiliary bind profile')
+        first,last,stride,ports=AUXILIARY_PROFILES[auxiliary_profile]
+        if not first<=port<=last or (port-first)%stride:raise ValueError('Auxiliary bind allocation differs from profile')
+        rows=[(0x61,0x12,24,0),(0x15,0x02,0,socket.htons(port)),(0x61,0x13,36,0)]
+        accepts=[1]
+        for delta,protocol in ports:
+            rows.append((0x55,0x03,1,protocol))
+            accepts.append(len(rows));rows.append((0x15,0x02,0,socket.htons(port+delta)))
+        rows.extend([(0xb7,0,0,0),(0x95,0,0,0)])
+        allow=len(rows);rows.extend([(0xb7,0,0,1),(0x95,0,0,0)])
+        for position in accepts:
+            code,register,_,value=rows[position]
+            rows[position]=(code,register,allow-position-1,value)
+        return b''.join(struct.pack('<BBhi',*row) for row in rows)
     if stk_discovery or flightgear_status or assaultcube_query:
         # Only STK's allocated UDP discovery port is additional. TCP discovery,
         # dynamic binds and every other explicit port remain denied.
@@ -98,8 +129,8 @@ def program_ids(scope):
         os.close(descriptor)
 
 
-def apply_current(port, stk_discovery=False, flightgear_status=False, assaultcube_query=False):
-    program_bytes = instructions(port,stk_discovery,flightgear_status,assaultcube_query)
+def apply_current(port, stk_discovery=False, flightgear_status=False, assaultcube_query=False, auxiliary_profile=None):
+    program_bytes = instructions(port,stk_discovery,flightgear_status,assaultcube_query,auxiliary_profile)
     bytecode = ctypes.create_string_buffer(program_bytes)
     license = ctypes.create_string_buffer(b'GPL\0')
     placement = Path('/proc/self/cgroup').read_text().strip()

@@ -1,0 +1,5249 @@
+{
+  "files": [
+    {
+      "path": "BarotraumaCore.dll",
+      "bytes": 86016,
+      "sha256": "72acd77784b83a0e09584262ab1eea9ee40395b95f3a2e3ec3974da0bc0151b3"
+    },
+    {
+      "path": "BarotraumaCore.pdb",
+      "bytes": 345600,
+      "sha256": "39657d3b5d7b61acf3517ec975c88b73ce885c43621c468748ea60954bad681e"
+    },
+    {
+      "path": "Concentus.NetStandard.dll",
+      "bytes": 331264,
+      "sha256": "f2ff7f34b8386558c0c1dff794f6b8fdafad9911a3c54f93b3c7b57644abc73a"
+    },
+    {
+      "path": "Concentus.NetStandard.pdb",
+      "bytes": 166148,
+      "sha256": "68bbeeb7a99e788caf21e9b3761bd10f157deb4a0ea5f1325b2c3e4df1650741"
+    },
+    {
+      "path": "Concentus_LICENSE",
+      "bytes": 1779,
+      "sha256": "bf891f9684fbc35a92b2c922aa4328acd5d1d7e97250ded4b165557e5b2064ff"
+    },
+    {
+      "path": "Content/Afflictions.xml",
+      "bytes": 136028,
+      "sha256": "dc6ba01b4c3d620ee89cf4b3c43977cf9683daadddcb25623013f96867f4d111"
+    },
+    {
+      "path": "Content/AfflictionsGeneticMaterial.xml",
+      "bytes": 25560,
+      "sha256": "4764e9041f2939ea38284a673c592eb65d6b8d04f674573ac7d18abbd525153a"
+    },
+    {
+      "path": "Content/AnimEditor.sub",
+      "bytes": 41225,
+      "sha256": "1f1afc6663a98fb74fb9814035c5227a53f2c93ea6e2621d73a8c2d35eb38055"
+    },
+    {
+      "path": "Content/BackgroundCreatures/BackgroundCreaturePrefabs.xml",
+      "bytes": 21714,
+      "sha256": "22c47863243fd3d0503b1e6c469b0dbee7acdb2e896b7036b6be51a47bd0216d"
+    },
+    {
+      "path": "Content/Characters/Ancient/Ancient.xml",
+      "bytes": 4135,
+      "sha256": "8bc0203c6a708719c19dba0cd911099b112ecfca1457ce1664ca84ab00275f6a"
+    },
+    {
+      "path": "Content/Characters/Ancient/Animations/AncientSwimFast.xml",
+      "bytes": 603,
+      "sha256": "8be672e5a0f2711aeb2e0cf890f590d6c1410769b659bdd5c8751985b2153066"
+    },
+    {
+      "path": "Content/Characters/Ancient/Animations/AncientSwimSlow.xml",
+      "bytes": 603,
+      "sha256": "01a6105e988d992e1d76a006eb448af247592a4c9d793766914dbfa2363dd6c1"
+    },
+    {
+      "path": "Content/Characters/Ancient/Ragdolls/AncientDefaultRagdoll.xml",
+      "bytes": 16596,
+      "sha256": "10d4f2ae9e052e48b89ffc95c136a98b17267673c09efa31f85e91591a0cc360"
+    },
+    {
+      "path": "Content/Characters/Balloon/Animations/BalloonRun.xml",
+      "bytes": 783,
+      "sha256": "e5e5dd1cbcce70ea42d8c743f55220aac3610f253047abfb31bfc090c3e00aff"
+    },
+    {
+      "path": "Content/Characters/Balloon/Animations/BalloonSwimFast.xml",
+      "bytes": 659,
+      "sha256": "b486c84d62ddcfe4be62c7fa2b2e1d58aba245f82f8348749bca3dab0f04911c"
+    },
+    {
+      "path": "Content/Characters/Balloon/Animations/BalloonSwimSlow.xml",
+      "bytes": 658,
+      "sha256": "539ae4fb0dd110b0d53b4792ee2d6aaf8ba7931935002b23fcc913143c68d351"
+    },
+    {
+      "path": "Content/Characters/Balloon/Animations/BalloonWalk.xml",
+      "bytes": 770,
+      "sha256": "6ae15b9d0fbd67090cfa8c49cfd52b1242663af11813dc1dc910aac06c2cb43b"
+    },
+    {
+      "path": "Content/Characters/Balloon/Balloon.xml",
+      "bytes": 4077,
+      "sha256": "b847917cc97d4bfa59121b239be18763b088803d480b1da58dd9ada1c069f4d2"
+    },
+    {
+      "path": "Content/Characters/Balloon/Ragdolls/BalloonDefaultRagdoll.xml",
+      "bytes": 22946,
+      "sha256": "2fae610e95a0eb28c03e9fd80f772594577e0fec50f71556d8407b130bb1ba22"
+    },
+    {
+      "path": "Content/Characters/Bonethresher/Animations/BonethresherSwimFast.xml",
+      "bytes": 526,
+      "sha256": "2b65caf1b003981348d040c4aa0078e72ec39443ce15e6d15e00b7408beaf564"
+    },
+    {
+      "path": "Content/Characters/Bonethresher/Animations/BonethresherSwimSlow.xml",
+      "bytes": 523,
+      "sha256": "b8933e4c99dc52e5c5fbc8c215ed2f761907c6ee3c9dd225c8a77940bf16a91a"
+    },
+    {
+      "path": "Content/Characters/Bonethresher/Bonethresher.xml",
+      "bytes": 6003,
+      "sha256": "c656b75d5d5957d364ab3048fb2614e030b84b996f23378c4f5171eb00c34335"
+    },
+    {
+      "path": "Content/Characters/Bonethresher/Ragdolls/BonethresherDefaultRagdoll.xml",
+      "bytes": 25754,
+      "sha256": "ca0bdf01e771e29c5ee8ac1aa82e3e9c0f471cac914ba64966f1550f83522e10"
+    },
+    {
+      "path": "Content/Characters/Carrier/Animations/CarrierSwimFast.xml",
+      "bytes": 365,
+      "sha256": "4ad68d56a00d0b20e22d0a7a6fb6b639e88ba771e74a3f582e46ed7940ec611a"
+    },
+    {
+      "path": "Content/Characters/Carrier/Animations/CarrierSwimSlow.xml",
+      "bytes": 365,
+      "sha256": "2c520260e8c9b05b8d28d9f2b9a6bdc89617d97ad1c91d69929c8602ba465034"
+    },
+    {
+      "path": "Content/Characters/Carrier/Carrier.xml",
+      "bytes": 1526,
+      "sha256": "51831eb7f9fd029ab2523a80deaba98fa664df7c96041caaaf7c1eb25e058db7"
+    },
+    {
+      "path": "Content/Characters/Carrier/Ragdolls/CarrierDefaultRagdoll.xml",
+      "bytes": 2346,
+      "sha256": "45af68620b64ee99acc02aee85da920c2bc7176563093d26c03b32b827976dd2"
+    },
+    {
+      "path": "Content/Characters/Charybdis/Animations/CharybdisSwimFast.xml",
+      "bytes": 487,
+      "sha256": "d3b10c2b0d07d9b3a2b6143904642d2d75df0db2facb8573404877a7160df37a"
+    },
+    {
+      "path": "Content/Characters/Charybdis/Animations/CharybdisSwimSlow.xml",
+      "bytes": 487,
+      "sha256": "93d159694a8ce55b40c9a6d6e70104ce0218f280e716d137a1d624016841872a"
+    },
+    {
+      "path": "Content/Characters/Charybdis/Charybdis.xml",
+      "bytes": 8955,
+      "sha256": "1984bf638ef092766a3161ac339e86e299035a17e03c9e7c7a8a282e55db235e"
+    },
+    {
+      "path": "Content/Characters/Charybdis/Ragdolls/CharybdisDefaultRagdoll.xml",
+      "bytes": 102844,
+      "sha256": "0bbacee9e0df346762130d9a86b0bfbc013dc7e74f9056a3ec091572456f6c57"
+    },
+    {
+      "path": "Content/Characters/Charybdisold/Animations/CharybdisoldSwimFast.xml",
+      "bytes": 455,
+      "sha256": "ba771a51db89f72f16d7697ae8f3582461b07af6b42238606cfe40640d45a881"
+    },
+    {
+      "path": "Content/Characters/Charybdisold/Animations/CharybdisoldSwimSlow.xml",
+      "bytes": 469,
+      "sha256": "7a874ae3bf30ceb854627dc408dbf800e85448d1a2883b8075317dc8067ccc09"
+    },
+    {
+      "path": "Content/Characters/Charybdisold/Charybdisold.xml",
+      "bytes": 3895,
+      "sha256": "1880979ea9f14b8eed6c38810f00ed4c7f1f3e5e5435888064b5451165c0e2c4"
+    },
+    {
+      "path": "Content/Characters/Charybdisold/Ragdolls/CharybdisoldDefaultRagdoll.xml",
+      "bytes": 45774,
+      "sha256": "bb725c0459cd302b678f62c99426f0c3340e0de64c019e4288d0ddb68e09fccd"
+    },
+    {
+      "path": "Content/Characters/Coelanth/Animations/CoelanthSwimFast.xml",
+      "bytes": 347,
+      "sha256": "b654488d4a85f6fc4ae8fb021a0821a8512512d7925ef6b83f437497e657f40a"
+    },
+    {
+      "path": "Content/Characters/Coelanth/Animations/CoelanthSwimSlow.xml",
+      "bytes": 347,
+      "sha256": "7eec06796c24f86c2895eb93fb35d570bd7a9ee409ae0c5d23741d5cc2840aef"
+    },
+    {
+      "path": "Content/Characters/Coelanth/Coelanth.xml",
+      "bytes": 1433,
+      "sha256": "26b79e6e18c9951e60d6c329a9b54ddb311a1c2f5d130a74cd7fac50c734ba26"
+    },
+    {
+      "path": "Content/Characters/Coelanth/Ragdolls/CoelanthDefaultRagdoll.xml",
+      "bytes": 2208,
+      "sha256": "d629174ecad2cb7ca9f3326f7921984d8fd92b8958d79fbe64646c977c2727ee"
+    },
+    {
+      "path": "Content/Characters/Crawler/Animations/CrawlerRun.xml",
+      "bytes": 704,
+      "sha256": "68eb8a1da2e3e2c37a35dad2c30d51d4bff07357af4976b51c5a05d9b49ac008"
+    },
+    {
+      "path": "Content/Characters/Crawler/Animations/CrawlerSwimFast.xml",
+      "bytes": 515,
+      "sha256": "a82310c6949366807e56a798cc261f1329d85ba479773102656ba7fa10df1a4e"
+    },
+    {
+      "path": "Content/Characters/Crawler/Animations/CrawlerSwimSlow.xml",
+      "bytes": 512,
+      "sha256": "b743f4a446671d5c24c4151d21f7264c9b00746401505709b4e7c15998add909"
+    },
+    {
+      "path": "Content/Characters/Crawler/Animations/CrawlerWalk.xml",
+      "bytes": 723,
+      "sha256": "a1ecbd6fac306b7f137270100093022e9772749c3adec1d00888d3ebc92d7af3"
+    },
+    {
+      "path": "Content/Characters/Crawler/Crawler.xml",
+      "bytes": 6913,
+      "sha256": "55b56fc9059566232b493d4067d038278686d8be534654a4f0f4d450736d33b4"
+    },
+    {
+      "path": "Content/Characters/Crawler/Ragdolls/CrawlerDefaultRagdoll.xml",
+      "bytes": 34051,
+      "sha256": "a05b4b90f3c167a4a582351f64fdff4e9b039438fe0cb8218f13156f9895753b"
+    },
+    {
+      "path": "Content/Characters/Crawlerbroodmother/Animations/CrawlerbroodmotherSwimFast.xml",
+      "bytes": 642,
+      "sha256": "069ebcb129728fac05a880c81a4c97c84e1701ff31eb3567fda56f7552f8eb35"
+    },
+    {
+      "path": "Content/Characters/Crawlerbroodmother/Animations/CrawlerbroodmotherSwimSlow.xml",
+      "bytes": 642,
+      "sha256": "50b68c583e25198880ef2fc58d3002e15b8a43f795a82cd050527676475037a5"
+    },
+    {
+      "path": "Content/Characters/Crawlerbroodmother/Crawlerbroodmother.xml",
+      "bytes": 12821,
+      "sha256": "eeafd7b9e9f951a43a66fa613a5fcef768cd8f03d61f1b5fd6d176c90e10f419"
+    },
+    {
+      "path": "Content/Characters/Crawlerbroodmother/Ragdolls/CrawlerbroodmotherDefaultRagdoll.xml",
+      "bytes": 34834,
+      "sha256": "9697cf57fef7d8d64b9a07296166d10113f996e089b1feb545e3069c69c25e89"
+    },
+    {
+      "path": "Content/Characters/Crawlerhusk/Animations/CrawlerhuskRun.xml",
+      "bytes": 702,
+      "sha256": "d4d1924e355b0d0777cccfca0c776155dd13a14bdf2ffc923e68f0db9d762f3b"
+    },
+    {
+      "path": "Content/Characters/Crawlerhusk/Animations/CrawlerhuskSwimFast.xml",
+      "bytes": 538,
+      "sha256": "641303bf888f61be62afb28543ca623d9846420641f81f1fb1385a92c1c9a6bd"
+    },
+    {
+      "path": "Content/Characters/Crawlerhusk/Animations/CrawlerhuskSwimSlow.xml",
+      "bytes": 539,
+      "sha256": "8fe3aba81776940a173806e69f19166d3de7ecf9a14e473e5eeeb80d614a7496"
+    },
+    {
+      "path": "Content/Characters/Crawlerhusk/Animations/CrawlerhuskWalk.xml",
+      "bytes": 711,
+      "sha256": "68e6384c8d54ff6b0ef1529983fcfd56f2ab15c32e968c89bda7918981170870"
+    },
+    {
+      "path": "Content/Characters/Crawlerhusk/Crawlerhusk.xml",
+      "bytes": 6762,
+      "sha256": "6597405ce92be7bd3d235e547d62cf75865c79e5479385ede744bb97b5cc210c"
+    },
+    {
+      "path": "Content/Characters/Crawlerhusk/Ragdolls/CrawlerhuskDefaultRagdoll.xml",
+      "bytes": 54204,
+      "sha256": "9f8a2b440738957fc90984debbd873fbac250856f534defa6f757d868c495d7e"
+    },
+    {
+      "path": "Content/Characters/Cyborgworm/Animations/CyborgwormSwimFast.xml",
+      "bytes": 550,
+      "sha256": "438e22941dcac73cdd1221548d5235516253bfc9f68770deece2df0d2767f338"
+    },
+    {
+      "path": "Content/Characters/Cyborgworm/Animations/CyborgwormSwimSlow.xml",
+      "bytes": 550,
+      "sha256": "923ffca782e96af54a8242c1368041c12ab535d78ea0711f36188dec58ddcf20"
+    },
+    {
+      "path": "Content/Characters/Cyborgworm/Cyborgworm.xml",
+      "bytes": 7838,
+      "sha256": "8e800fec09a064058fa6ebf6e39dd7adde2ada3c37064f396596d230207e81c9"
+    },
+    {
+      "path": "Content/Characters/Cyborgworm/Ragdolls/CyborgwormDefaultRagdoll.xml",
+      "bytes": 214476,
+      "sha256": "7e9ae2abe95088e9895ee885c38833c09a2dab820a184b293aa258fc5e2e8df1"
+    },
+    {
+      "path": "Content/Characters/Defensebot/Animations/DefensebotRun.xml",
+      "bytes": 647,
+      "sha256": "2ca8c640f2e05573b7c61c4878b3bfd0ce031a7b01b36ea6b716da8b901f738b"
+    },
+    {
+      "path": "Content/Characters/Defensebot/Animations/DefensebotSwimFast.xml",
+      "bytes": 542,
+      "sha256": "49b9918745cc322eef5f7a72c4ceb4e5d8d6aa3738b1baf12df356011c6dbef8"
+    },
+    {
+      "path": "Content/Characters/Defensebot/Animations/DefensebotSwimSlow.xml",
+      "bytes": 545,
+      "sha256": "c2b3cdb8982cc8bd1d6095a6a1caeb0c3c59adaf34a545fc4d11e7fcb24184c0"
+    },
+    {
+      "path": "Content/Characters/Defensebot/Animations/DefensebotWalk.xml",
+      "bytes": 648,
+      "sha256": "2be802ad13ecfedb9bbdf7489c0088107ba6f1c6e7595975ecafd3dc25c9d076"
+    },
+    {
+      "path": "Content/Characters/Defensebot/Defensebot.xml",
+      "bytes": 8518,
+      "sha256": "1822cdb688ffa35e72bbb9fdeb08c835b70f0a03ccc6b157ffe188c0ff789540"
+    },
+    {
+      "path": "Content/Characters/Defensebot/Ragdolls/DefensebotDefaultRagdoll.xml",
+      "bytes": 18724,
+      "sha256": "153ec183a3dce6dedcb648e4e8b8cc13d381e1b4b30636b88063b1d7163cc86f"
+    },
+    {
+      "path": "Content/Characters/Endworm/Animations/EndwormSwimFast.xml",
+      "bytes": 487,
+      "sha256": "5ed01739e62e0bb1bebfefd3eab561641c2e3684b9e3029818e0fa11a40d1350"
+    },
+    {
+      "path": "Content/Characters/Endworm/Animations/EndwormSwimSlow.xml",
+      "bytes": 487,
+      "sha256": "db4c4873f9d2b04c085a8152ed9c08719f8a7439c179e84ea37af832f3e06fb7"
+    },
+    {
+      "path": "Content/Characters/Endworm/Endworm.xml",
+      "bytes": 7664,
+      "sha256": "1c1e044dee34e06d0a6428daf7ce100ab4f4bab3a47085242eb5617aefb41877"
+    },
+    {
+      "path": "Content/Characters/Endworm/Ragdolls/EndwormDefaultRagdoll.xml",
+      "bytes": 251192,
+      "sha256": "0328735b3a6b0fcf3bc6dd61c27dd643e9558ebb736e78074c9dba26e8657f41"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian/Animations/FractalguardianSwimFast.xml",
+      "bytes": 561,
+      "sha256": "42fbf9ede48391d946ff4da5e7dc2310e00dc73a300e2cfccb1dd4c76136f850"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian/Animations/FractalguardianSwimSlow.xml",
+      "bytes": 559,
+      "sha256": "0f3d87cafd05820c0378baaf397e6997812a32585123e81dd1435ef19b6a0e4f"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian/Fractalguardian.xml",
+      "bytes": 9713,
+      "sha256": "c3c339dc905257c5ebc5ec451bf2c235c45a34daad0e3d43600f307f9b9aedd3"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian/Ragdolls/FractalguardianDefaultRagdoll.xml",
+      "bytes": 25790,
+      "sha256": "af0c616606caa4bbae23c9f279449211d5c1d910497929b83e74aae92e462394"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian2/Animations/Fractalguardian2SwimFast.xml",
+      "bytes": 562,
+      "sha256": "5cd8f7b759db66840e83d25d62b0e59f36704261607604151297e87b43a48eaf"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian2/Animations/Fractalguardian2SwimSlow.xml",
+      "bytes": 560,
+      "sha256": "592580cc4b2731ad724c6a6e0b66d8a11b22f7bae8247564a2f4aee67ed2d93e"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian2/Fractalguardian2.xml",
+      "bytes": 9727,
+      "sha256": "09a203ddcca256ea3fd214b739c13e61c1700d1b57b0b1fa95267cd98dfea81d"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian2/Ragdolls/Fractalguardian2DefaultRagdoll.xml",
+      "bytes": 25294,
+      "sha256": "3ea6a4d39649866f30c05ff750f1a460b921dd2db2553d897faf7655690e44f0"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian_emp/Animations/Fractalguardian_empSwimFast.xml",
+      "bytes": 595,
+      "sha256": "8bbbc9a213a316a5c875fed69983b3fa1086afe809d158c4781c3cdf187ab310"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian_emp/Animations/Fractalguardian_empSwimSlow.xml",
+      "bytes": 593,
+      "sha256": "618817324c5207498f0f0fc02b80a7e75b7ed170485526b9aed7901b61005dda"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian_emp/Fractalguardian_emp.xml",
+      "bytes": 11066,
+      "sha256": "2f02428e3411e1008cd4606bbd9c23979a10465ecd383baa9d63b0e7b08f227f"
+    },
+    {
+      "path": "Content/Characters/Fractalguardian_emp/Ragdolls/Fractalguardian_empDefaultRagdoll.xml",
+      "bytes": 32599,
+      "sha256": "4fda8fd8c0c4a103c32110eb2e96cd8632f5f9f2dddb9607e5506018df5ad27c"
+    },
+    {
+      "path": "Content/Characters/Guardianrepairbot/Animations/GuardianrepairbotSwimFast.xml",
+      "bytes": 556,
+      "sha256": "ec3303b6b4b0d99144c80060f7436262d95b7b2f977cef44fb426126b4a8b133"
+    },
+    {
+      "path": "Content/Characters/Guardianrepairbot/Animations/GuardianrepairbotSwimSlow.xml",
+      "bytes": 556,
+      "sha256": "99ac3b19b9b47abe4abc5607a681e588878b19964ce12b65e2356f472ccf24b0"
+    },
+    {
+      "path": "Content/Characters/Guardianrepairbot/Guardianrepairbot.xml",
+      "bytes": 6806,
+      "sha256": "1ebd562aaabd7998e58cfd7c7ea69e8ab55a3a2e4ff46a7afafdf0b23de3b347"
+    },
+    {
+      "path": "Content/Characters/Guardianrepairbot/Ragdolls/GuardianrepairbotDefaultRagdoll.xml",
+      "bytes": 4600,
+      "sha256": "5af3488aa2e67c1916aff428f0bf603819e60ceccd1ab8dc8041597b993421f5"
+    },
+    {
+      "path": "Content/Characters/Hammerhead/Animations/HammerheadSwimFast.xml",
+      "bytes": 439,
+      "sha256": "e168950feb06019c05796a72b3a8cf4018878fed16b981abad722683dd55d363"
+    },
+    {
+      "path": "Content/Characters/Hammerhead/Animations/HammerheadSwimSlow.xml",
+      "bytes": 426,
+      "sha256": "1f4a38df9da5cb4453fa2e5ee3e474ca7db05e29657de1537d04858f447bf4ec"
+    },
+    {
+      "path": "Content/Characters/Hammerhead/Hammerhead.xml",
+      "bytes": 5328,
+      "sha256": "719ea8a0aeb6bc39ff3efafdfa9db0b975a240dfef3ab5ebbb6a89e2458559d8"
+    },
+    {
+      "path": "Content/Characters/Hammerhead/Ragdolls/HammerheadDefaultRagdoll.xml",
+      "bytes": 35707,
+      "sha256": "c72eed739e78cbae68a3cdc5b6167dc37275a9723cd3c3080daf6ff02ea87b5e"
+    },
+    {
+      "path": "Content/Characters/Hammerheadgold/Animations/HammerheadgoldSwimFast.xml",
+      "bytes": 438,
+      "sha256": "8fdc712572db57d789b66609d2ec5e83403293655dedd373387ed894dcf35385"
+    },
+    {
+      "path": "Content/Characters/Hammerheadgold/Animations/HammerheadgoldSwimSlow.xml",
+      "bytes": 430,
+      "sha256": "aaa8570aeecb846d3e63e0979152e5a8eed4f49d34412472c060aff2c7c84021"
+    },
+    {
+      "path": "Content/Characters/Hammerheadgold/Hammerheadgold.xml",
+      "bytes": 5422,
+      "sha256": "d305fb62080b52405729c7fed5031461f723765a4e40fbdd76facd61966480e3"
+    },
+    {
+      "path": "Content/Characters/Hammerheadgold/Ragdolls/HammerheadgoldDefaultRagdoll.xml",
+      "bytes": 28699,
+      "sha256": "d063729ef09af4fcfe878a5960ee4cf6cedd9c3972a19e05655ad61425c8f536"
+    },
+    {
+      "path": "Content/Characters/Hammerheadmatriarch/Animations/HammerheadmatriarchSwimFast.xml",
+      "bytes": 442,
+      "sha256": "36a229213b87e47da2ab29332bdf65c9bcd457a29ff73a62a46f6f41272683c2"
+    },
+    {
+      "path": "Content/Characters/Hammerheadmatriarch/Animations/HammerheadmatriarchSwimSlow.xml",
+      "bytes": 448,
+      "sha256": "1458b7fb0a7ed633e2d13a41ee7be55c3927f6efe10956aeb08bd55fd9e92909"
+    },
+    {
+      "path": "Content/Characters/Hammerheadmatriarch/Hammerheadmatriarch.xml",
+      "bytes": 6375,
+      "sha256": "e335dd7203de18db4cff6f4fe821c4fb55bedea5a783228d40842ef43749d50e"
+    },
+    {
+      "path": "Content/Characters/Hammerheadmatriarch/Ragdolls/HammerheadmatriarchDefaultRagdoll.xml",
+      "bytes": 65097,
+      "sha256": "6a279f53fa020207b44ffe4b3e7268a6eb5d6fe157ccc555b49cf1579ada6230"
+    },
+    {
+      "path": "Content/Characters/Hammerheadspawn/Animations/HammerheadspawnSwimFast.xml",
+      "bytes": 439,
+      "sha256": "010aeebeba377a378b25bcb219bb7754dc1d40526d6633d1dcdc36dffd9d97de"
+    },
+    {
+      "path": "Content/Characters/Hammerheadspawn/Animations/HammerheadspawnSwimSlow.xml",
+      "bytes": 445,
+      "sha256": "82c69269df197b5fcc895d2c288161de9a77ce72db3507195b1a2a55d32cd173"
+    },
+    {
+      "path": "Content/Characters/Hammerheadspawn/Hammerheadspawn.xml",
+      "bytes": 2630,
+      "sha256": "368598a0929e9c9cd89377f0255614753e16426e70451d93909fd8589c88a86c"
+    },
+    {
+      "path": "Content/Characters/Hammerheadspawn/Ragdolls/HammerheadspawnDefaultRagdoll.xml",
+      "bytes": 4629,
+      "sha256": "f9bc7ec1c0d959759da0323c4264466826e2a040337a845bd60c3bf74a301af9"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/DrunkenRun.xml",
+      "bytes": 997,
+      "sha256": "e8ec64dbdd7379cc99f41ac21c8ff316d7bb9d960bc87b87568ad45fa7c4c72e"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/DrunkenWalk.xml",
+      "bytes": 971,
+      "sha256": "6d09dc713d7748ae9ca2c880d325deb86c836081f25a1386c153cc01e6f78de6"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanCrouch.xml",
+      "bytes": 1013,
+      "sha256": "939ed04052bbfffb88733796c6fd073c6408e9c4a8697348de6893de59bfdc47"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanRun.xml",
+      "bytes": 977,
+      "sha256": "775c7d3c208d3708132405bd806670636746deae7ad0babd416675d0bdc3575e"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanRunDivingSuit.xml",
+      "bytes": 997,
+      "sha256": "caae852b915c63c16ad95dd5c952932a644c47820a843321dc6ebe42235a1638"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanRunExosuit.xml",
+      "bytes": 983,
+      "sha256": "3da4e4eb967c6129065403b1a48003313191a40da6105df3515109def5aa5a45"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanSwimFast.xml",
+      "bytes": 537,
+      "sha256": "e38379ebef5f1ed81423c2707a2f07831347f48be30d366650196edfb49d0c01"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanSwimSlow.xml",
+      "bytes": 539,
+      "sha256": "d499a6b78588c2d644e54e936df2dbc7b2a8fc64cfcff5d54b4e352b67b1939c"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanWalk.xml",
+      "bytes": 971,
+      "sha256": "c616fe3a980aa19a2fcb144edd2929d1f317b55655c987d46728382296c1aae3"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanWalkDivingSuit.xml",
+      "bytes": 993,
+      "sha256": "396ae40b60b2d561352cf97378384dbd5942322d45a26d2b28a03e45bd3518a7"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/HumanWalkExosuit.xml",
+      "bytes": 960,
+      "sha256": "f501746020a38fcdc589dc0f55dd0a09311a2bb68d0a5518c180bfc83f2ecfb4"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/JollyWalk.xml",
+      "bytes": 825,
+      "sha256": "8341379222d5e5a94eb57ce3256fca8f67b2a4dccce42707d69c25c8eaa913ee"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/Spasm.xml",
+      "bytes": 821,
+      "sha256": "9f470071856f4df143865bdbaf8133099d5311a3f3fc6822fe013840bdbd0363"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/SpasmRun.xml",
+      "bytes": 819,
+      "sha256": "e501c8be055c35fc438f53328864c9b0467b2656a6e654f720ed08a33679605e"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/VigorousWalk.xml",
+      "bytes": 810,
+      "sha256": "de25d363ac46c47f73338486fe804fb1436c76b7a881e4c6b890b98233dd6cbf"
+    },
+    {
+      "path": "Content/Characters/Human/Animations/Vomit.xml",
+      "bytes": 845,
+      "sha256": "ac9fb45018efb1ef67cef491e77055e29e1f3c0754074f5c80974d0510fad1b6"
+    },
+    {
+      "path": "Content/Characters/Human/Human.xml",
+      "bytes": 21970,
+      "sha256": "c46d04beae3ffb8f04d8acb8af41d081d1fd26fc09bb4a5cf77cd02a29722406"
+    },
+    {
+      "path": "Content/Characters/Human/PersonalityTraits.xml",
+      "bytes": 834,
+      "sha256": "deb2e0e14784a1ceb63c2a506bd18f91f2fca12304887bbd52eb0abb368fb1a8"
+    },
+    {
+      "path": "Content/Characters/Human/Ragdolls/HumanDefaultRagdoll.xml",
+      "bytes": 30490,
+      "sha256": "046ccc74fba6aa5068cc03f6083d511a36db338fe6b508956f2f4016a165324b"
+    },
+    {
+      "path": "Content/Characters/Human/names.xml",
+      "bytes": 27700,
+      "sha256": "dff1774526f644f871c43015d5ccdc5b829080906775943569346b74c62bc4de"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Animations/HumanhuskCrouch.xml",
+      "bytes": 1303,
+      "sha256": "4d8f494cfe44a2a364251388d419822f1f7295af5b3c2d8ed3d3ae355c2e0dcc"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Animations/HumanhuskRun.xml",
+      "bytes": 1148,
+      "sha256": "b063448832ecc229545438b7e317b38df0d4924239be511b7087221fa4f82a5e"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Animations/HumanhuskSwimFast.xml",
+      "bytes": 515,
+      "sha256": "e31a05ca3a82eb9a8153876f26455b84272549822278365eb6639a43b1dc2a90"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Animations/HumanhuskSwimSlow.xml",
+      "bytes": 528,
+      "sha256": "f7ce308f59ba365b2024d497466d682752f5b11d8c7508e2abd8cfbff2b125e0"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Animations/HumanhuskWalk.xml",
+      "bytes": 1172,
+      "sha256": "1c6b8aeab676255355f8f6c3b33f9bd4aa435f86e3fe5da29a29d84c42a159b9"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Humanhusk.xml",
+      "bytes": 10045,
+      "sha256": "580bfa96bc7fd34c221420fa9188f9dd0d433fb5f9e4caa2985c7ab4d93c8566"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Huskappendage.xml",
+      "bytes": 8500,
+      "sha256": "9f2c8d2367830e4a3d7143b88779926289760c5ad669f67d4e68400ad41889d8"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Huskappendagesymbiosis.xml",
+      "bytes": 6748,
+      "sha256": "d1aeb4e3ffd66c97235d646f97972b3444b1338b8a27e9914385909337afe31e"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Mudraptorbeak.xml",
+      "bytes": 3110,
+      "sha256": "431d98e2d8a1d14e78b234b787ff9dff373944eca780ec3f6107d3373161d2c5"
+    },
+    {
+      "path": "Content/Characters/Humanhusk/Spinelingspine.xml",
+      "bytes": 9967,
+      "sha256": "09197bab75e09655b6be9a5c8b73214dfdc643200ac96a016ddbb35b7f40c880"
+    },
+    {
+      "path": "Content/Characters/Husk/Animations/HuskCrouch.xml",
+      "bytes": 1300,
+      "sha256": "160b750dbaf99c3fe76d20ce1483403c96337b65c9f335c13d0667fcf992513e"
+    },
+    {
+      "path": "Content/Characters/Husk/Animations/HuskRun.xml",
+      "bytes": 1339,
+      "sha256": "3ec816cbf978ffb9ab47d81c888072a96e6c328dd380e1a824cf4d40328ba58d"
+    },
+    {
+      "path": "Content/Characters/Husk/Animations/HuskSwimFast.xml",
+      "bytes": 535,
+      "sha256": "d9ed89524af12767c473f8cd01b61c13fead1daf5f867894386c9fbf7f89fd39"
+    },
+    {
+      "path": "Content/Characters/Husk/Animations/HuskSwimSlow.xml",
+      "bytes": 549,
+      "sha256": "30db3d38534ec4e965ccf096f22f9ff128dca2d1ae7da724797c1c60b7f2cef1"
+    },
+    {
+      "path": "Content/Characters/Husk/Animations/HuskWalk.xml",
+      "bytes": 1362,
+      "sha256": "eb7b3fad02228e0454f41ca049c64927ca81844d31f585c6cf0c6b9adaa4a917"
+    },
+    {
+      "path": "Content/Characters/Husk/Husk.xml",
+      "bytes": 8650,
+      "sha256": "2bfa5c06c67e3d1bb7f37c648d22c74a255271a20c867e5e3e7ce11b46f0e3e5"
+    },
+    {
+      "path": "Content/Characters/Husk/Ragdolls/HuskDefaultRagdoll.xml",
+      "bytes": 38770,
+      "sha256": "096f459accba0728ba078a79e3e4c311e94619bc426dd7261d81aac63bfd38a2"
+    },
+    {
+      "path": "Content/Characters/Husk_chimera/Animations/Husk_chimeraRun.xml",
+      "bytes": 844,
+      "sha256": "20ab08786135c149329cbe6f9f838f9887f1af692aeea8b98b04c87c3f8197a3"
+    },
+    {
+      "path": "Content/Characters/Husk_chimera/Animations/Husk_chimeraSwimFast.xml",
+      "bytes": 632,
+      "sha256": "3920a767be028fce6ec15536687aa77acffe0efdefb8c68a386a886aef48d0a1"
+    },
+    {
+      "path": "Content/Characters/Husk_chimera/Animations/Husk_chimeraSwimSlow.xml",
+      "bytes": 620,
+      "sha256": "2dec9f6ae4d9a431778062ac2f143ff5a8677b50b6fd28449ba26395c551d408"
+    },
+    {
+      "path": "Content/Characters/Husk_chimera/Animations/Husk_chimeraWalk.xml",
+      "bytes": 853,
+      "sha256": "89add7b272290b7d4827dc2a659d58267e2540971a470731a9d75ec2331f6821"
+    },
+    {
+      "path": "Content/Characters/Husk_chimera/Husk_chimera.xml",
+      "bytes": 13309,
+      "sha256": "db21e2823826fcf6db3f849002aecfd3afb1003d98038f00332744813a8ba970"
+    },
+    {
+      "path": "Content/Characters/Husk_chimera/Ragdolls/Husk_chimeraDefaultRagdoll.xml",
+      "bytes": 79134,
+      "sha256": "06bdd2626b103608516346f7d5cfdd210b8195d80409e21a5ed2cd1b0dce549a"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Animations/Husk_exosuitCrouch.xml",
+      "bytes": 1363,
+      "sha256": "97370f646229272ca18be5b1adca0806c08b87a458de422abd0689b59e70fbeb"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Animations/Husk_exosuitRun.xml",
+      "bytes": 1370,
+      "sha256": "fea19080dc4d445fd7c132bebdc52f9bb656496edfa814c9aa0e4f39dc81f3d0"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Animations/Husk_exosuitSwimFast.xml",
+      "bytes": 574,
+      "sha256": "0cbd02a5ddf26a6b1879e91db42eac925b48f4ad9f11ab8d0445ccbcb954ab91"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Animations/Husk_exosuitSwimSlow.xml",
+      "bytes": 579,
+      "sha256": "1de480aa78ee1281ef0dca03ec86f5e111b3e250777fe0fe5812e37b84e4a6dc"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Animations/Husk_exosuitWalk.xml",
+      "bytes": 1253,
+      "sha256": "786e440af6ecdd9bbda8c40633c9dee8967ada1a22c246d15b32687be63c5edb"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Husk_exosuit.xml",
+      "bytes": 13435,
+      "sha256": "ab5298840abd6de57cfb30749d54e08b10618010735d1e6140856ff4c122efc6"
+    },
+    {
+      "path": "Content/Characters/Husk_exosuit/Ragdolls/Husk_exosuitRagdoll.xml",
+      "bytes": 62666,
+      "sha256": "e923e72d1d62b0b585856ff3d90fd8c9160abd645d5e51c4c499477b8931ff9c"
+    },
+    {
+      "path": "Content/Characters/Husk_prowler/Animations/Husk_prowlerRun.xml",
+      "bytes": 1494,
+      "sha256": "1eddbf4b9dc6b78b63e74d0ecd8b5f9a3c050cc2720d930d066c126c40db1396"
+    },
+    {
+      "path": "Content/Characters/Husk_prowler/Animations/Husk_prowlerSwimFast.xml",
+      "bytes": 888,
+      "sha256": "d428c14bae5556935ae5ebb37149c97a06391f98f6ef2a5d2dba1247b5a7131e"
+    },
+    {
+      "path": "Content/Characters/Husk_prowler/Animations/Husk_prowlerSwimSlow.xml",
+      "bytes": 886,
+      "sha256": "7cb8c73417909caedffc3b22938fd43ac8767995f828a6d776c688956256a66f"
+    },
+    {
+      "path": "Content/Characters/Husk_prowler/Animations/Husk_prowlerWalk.xml",
+      "bytes": 1517,
+      "sha256": "bd6b2dce684fc5f33afd2dcc41528d9eed2ea20eca2af31fbca6cc980195aabb"
+    },
+    {
+      "path": "Content/Characters/Husk_prowler/Husk_prowler.xml",
+      "bytes": 14571,
+      "sha256": "4911a4d17de8140cf669c2671d4ed1d058171bed3cdd635500a88f3ce9a0d389"
+    },
+    {
+      "path": "Content/Characters/Husk_prowler/Ragdolls/Husk_prowlerRagdoll.xml",
+      "bytes": 50398,
+      "sha256": "6f8147562336ba1263c5a5293d9ec3ca94986cb93ac1656dff80a030870e1d4a"
+    },
+    {
+      "path": "Content/Characters/Huskcontainer/Animations/HuskcontainerRun.xml",
+      "bytes": 841,
+      "sha256": "1f56f0dc5f263a01b08eb5a923176666f09bf149e7f641e9c9ba2e831964feae"
+    },
+    {
+      "path": "Content/Characters/Huskcontainer/Animations/HuskcontainerSwimFast.xml",
+      "bytes": 601,
+      "sha256": "e72e1dfe0aa10a507c6c7d1d36e24253fb433e8a0b34ea9770c044e29040ad0e"
+    },
+    {
+      "path": "Content/Characters/Huskcontainer/Animations/HuskcontainerSwimSlow.xml",
+      "bytes": 608,
+      "sha256": "3f27566aa93e3962e7a79725dac5dc92f4e73eb9b616658396e1ac9a31557f29"
+    },
+    {
+      "path": "Content/Characters/Huskcontainer/Animations/HuskcontainerWalk.xml",
+      "bytes": 845,
+      "sha256": "5f2ea7f4006f539bf3e0b29ad77928917086dfeada0fe6381b866e16c1004879"
+    },
+    {
+      "path": "Content/Characters/Huskcontainer/Huskcontainer.xml",
+      "bytes": 7606,
+      "sha256": "f7e7fa0584ea78f377415bf896ac9797ae9fd46f6d972817c42a624732fff7ce"
+    },
+    {
+      "path": "Content/Characters/Huskcontainer/Ragdolls/HuskcontainerDefaultRagdoll.xml",
+      "bytes": 16083,
+      "sha256": "62373f59278e038febd4fcf8346a2b863d923da714e47469fafd620a784109ca"
+    },
+    {
+      "path": "Content/Characters/Jove/Animations/JoveSwimFast.xml",
+      "bytes": 579,
+      "sha256": "6039f72bb3befb2e590c57b9df3028c3d06b367847959913ffe13e97502be93d"
+    },
+    {
+      "path": "Content/Characters/Jove/Animations/JoveSwimSlow.xml",
+      "bytes": 583,
+      "sha256": "8ecc4d1ba422efe2df040feddb0143f073f88734350f618d6bc8eebdc881bf88"
+    },
+    {
+      "path": "Content/Characters/Jove/Jove.xml",
+      "bytes": 8925,
+      "sha256": "160c562be1ab7b3b8c1d2172b26dfa7d959663e29f541b2c9ef6e3e06c1d9c1c"
+    },
+    {
+      "path": "Content/Characters/Jove/Ragdolls/JoveDefaultRagdoll.xml",
+      "bytes": 58713,
+      "sha256": "edd5acf6ebf1652f00c371fe4d52df35f6054c3a024e2aa62bf8fdfe6b0f796d"
+    },
+    {
+      "path": "Content/Characters/Jove/Ragdolls/JoveDefaultRagdoll_nondeformed.xml",
+      "bytes": 55162,
+      "sha256": "0934a456ff91705e394711453613479a06c79d11a25d90c6f63ef5e85f988437"
+    },
+    {
+      "path": "Content/Characters/Latcher/Animations/LatcherSwimFast.xml",
+      "bytes": 564,
+      "sha256": "769e994fd970f8621874a185cdbb347090974772ad8a415ea7b25acb68a0df54"
+    },
+    {
+      "path": "Content/Characters/Latcher/Animations/LatcherSwimSlow.xml",
+      "bytes": 560,
+      "sha256": "a7e55983694de9ad45fbf8fd60d391796db0a3ea6fffd9fb0b3c56af3a99e48a"
+    },
+    {
+      "path": "Content/Characters/Latcher/Latcher.xml",
+      "bytes": 9767,
+      "sha256": "8179af84246a691bb5adb10e492ab0d271c89b715067f5646a549f8ffa5abe37"
+    },
+    {
+      "path": "Content/Characters/Latcher/Ragdolls/LatcherDefaultRagdoll.xml",
+      "bytes": 115396,
+      "sha256": "b2b32b467f5097339799df5e26d52cba102e58e202adcc069961af9648ffcf40"
+    },
+    {
+      "path": "Content/Characters/Legacycharybdis/Animations/LegacycharybdisSwimFast.xml",
+      "bytes": 374,
+      "sha256": "804980e2e062f0e35bebcc8b45ba66e1c98ac53f3441d364927a37cec6615aa5"
+    },
+    {
+      "path": "Content/Characters/Legacycharybdis/Animations/LegacycharybdisSwimSlow.xml",
+      "bytes": 374,
+      "sha256": "094b2217c1360d4287e045b7456566f62820b54d229966d4c715c6005d1a4592"
+    },
+    {
+      "path": "Content/Characters/Legacycharybdis/Legacycharybdis.xml",
+      "bytes": 1417,
+      "sha256": "2e56ed0cb7579057870afec304c2193ee66156ea79df962d8744cba4a7737b4f"
+    },
+    {
+      "path": "Content/Characters/Legacycharybdis/Ragdolls/LegacycharybdisDefaultRagdoll.xml",
+      "bytes": 2142,
+      "sha256": "0ed2c9b2688fe2e97efaa5265bec2ee6dcf4e413901a020ae6e86a95334e44ca"
+    },
+    {
+      "path": "Content/Characters/Legacycrawler/Animations/LegacycrawlerRun.xml",
+      "bytes": 513,
+      "sha256": "9ea5ce191852cfe1b11ca6f3e8d2481038101d758a33f8f9ef2112bf9acdc7dd"
+    },
+    {
+      "path": "Content/Characters/Legacycrawler/Animations/LegacycrawlerSwimFast.xml",
+      "bytes": 454,
+      "sha256": "81d31cbe59dbc7d534bb29cb3fe5e0eac54bf6fa9febd1cf6a7b960ca2c95d71"
+    },
+    {
+      "path": "Content/Characters/Legacycrawler/Animations/LegacycrawlerSwimSlow.xml",
+      "bytes": 454,
+      "sha256": "67f33faefaa158c3c2046cad122572f6a02ccb951de62165add89f1fdffa89c2"
+    },
+    {
+      "path": "Content/Characters/Legacycrawler/Animations/LegacycrawlerWalk.xml",
+      "bytes": 518,
+      "sha256": "77d2ac35e00babae2cff2c5e39a3e81e810c6b51e6043972b5491187555d7e6b"
+    },
+    {
+      "path": "Content/Characters/Legacycrawler/Legacycrawler.xml",
+      "bytes": 2587,
+      "sha256": "a3c27c98b3a2b673f64593169d598d608a96c4429d9a07e3aea936dea2989479"
+    },
+    {
+      "path": "Content/Characters/Legacycrawler/Ragdolls/LegacycrawlerDefaultRagdoll.xml",
+      "bytes": 7406,
+      "sha256": "74357953cf1e551fc5ab2ff50b1c1653d77878c835ccd47aa5eae68c5c87efdc"
+    },
+    {
+      "path": "Content/Characters/Legacyendworm/Animations/LegacyendwormSwimFast.xml",
+      "bytes": 354,
+      "sha256": "7c2a6fe34536747a4b16364ee0d62c879b7937fede50ca9df19ca539e7c8324e"
+    },
+    {
+      "path": "Content/Characters/Legacyendworm/Animations/LegacyendwormSwimSlow.xml",
+      "bytes": 380,
+      "sha256": "7de6188eb3ce2bd3d1aaccf71f0fc077a73761c7fbd94cbdda0b3e6f388095c2"
+    },
+    {
+      "path": "Content/Characters/Legacyendworm/Legacyendworm.xml",
+      "bytes": 1825,
+      "sha256": "48a362b689063d099f43c43e77c0bf5b5369b8711a55038a81a27b58eb6d96ec"
+    },
+    {
+      "path": "Content/Characters/Legacyendworm/Ragdolls/LegacyendwormDefaultRagdoll.xml",
+      "bytes": 3279,
+      "sha256": "44986f81bb2e52b735bbd947d53cbbccaae39effc645c10f027a1c235b98e98f"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian/Animations/LegacyfractalguardianSwimFast.xml",
+      "bytes": 364,
+      "sha256": "bde40303b676eeb7858db192cbe72523f46c9cebac3e954f06e160101af0cbe7"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian/Animations/LegacyfractalguardianSwimSlow.xml",
+      "bytes": 362,
+      "sha256": "9975b759bd42a1b1820b78fe9d5571679516fc16c61d2ef3c718dfa70d36b5c7"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian/Legacyfractalguardian.xml",
+      "bytes": 2430,
+      "sha256": "5ae91a57c6f080e4d624e3a3c684bcdf408fc1bd32897791fd4da7103dd6cbc9"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian/Ragdolls/LegacyfractalguardianDefaultRagdoll.xml",
+      "bytes": 2705,
+      "sha256": "c7cca10e46a8a59b2a39b8e28ddac0b230e39b2e03d49f4bdf16593cea3743e4"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian2/Animations/Legacyfractalguardian2SwimFast.xml",
+      "bytes": 363,
+      "sha256": "c326d25d282fe7df996ff13447eb12d674accacc7f6306e831817c3579c21486"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian2/Animations/Legacyfractalguardian2SwimSlow.xml",
+      "bytes": 361,
+      "sha256": "837525cb86a17fd78f7eda818c04dbd3e5127d379ddc4a81ee53efb104524d49"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian2/Legacyfractalguardian2.xml",
+      "bytes": 2557,
+      "sha256": "95df7dfcd430bb5d3403dc24af29d79a7a076112ab616d5128f7ea0fa293121b"
+    },
+    {
+      "path": "Content/Characters/Legacyfractalguardian2/Ragdolls/Legacyfractalguardian2DefaultRagdoll.xml",
+      "bytes": 2469,
+      "sha256": "a7fce571cd93e539f9d00c64f96fbce603eb9d9b2010f7dff80d1cb62a00f6ce"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Animations/LegacyhuskCrouch.xml",
+      "bytes": 893,
+      "sha256": "b043a69e318dfdc96cea93032cf22476f6f3f078d20786e53a3e8ef736edb22f"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Animations/LegacyhuskRun.xml",
+      "bytes": 731,
+      "sha256": "1bd1d43f9ea8a17e0f0e6f9fabdece5ed6e76bf36f2f35fd0f2e498f31675672"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Animations/LegacyhuskSwimFast.xml",
+      "bytes": 324,
+      "sha256": "e317f27e0e2a70cc435b23bbca09d6df9797853a1e7cb059bff1bf8d2bb69641"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Animations/LegacyhuskSwimSlow.xml",
+      "bytes": 344,
+      "sha256": "7773074148f12dc729fad73e2f50101a6378b4bf1b637b1a849270ca14aba96b"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Animations/LegacyhuskWalk.xml",
+      "bytes": 737,
+      "sha256": "001376f3b6dc72aeb380f2e62ed499e9281084cf7aa0107b893550ac49491058"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Legacyhusk.xml",
+      "bytes": 1618,
+      "sha256": "1750a37f2e5f629cc5ef82c0dff81bd593547d93a70a91c2064fc19cf6c2f541"
+    },
+    {
+      "path": "Content/Characters/Legacyhusk/Ragdolls/LegacyhuskDefaultRagdoll.xml",
+      "bytes": 9931,
+      "sha256": "1ae71d2c3b9d44819c60103e2032045878279036675d2828ea55c637cb117f85"
+    },
+    {
+      "path": "Content/Characters/Legacymantis/Animations/LegacymantisRun.xml",
+      "bytes": 497,
+      "sha256": "a78c22f4bf6dc77db77b8f1a66cbb4dcf51e154effaefc327b8c7134ce6f1a30"
+    },
+    {
+      "path": "Content/Characters/Legacymantis/Animations/LegacymantisSwimFast.xml",
+      "bytes": 428,
+      "sha256": "86e6063ca30c115d79212dba97e8f1e9ff953c4bd954da872888545f3e26b762"
+    },
+    {
+      "path": "Content/Characters/Legacymantis/Animations/LegacymantisSwimSlow.xml",
+      "bytes": 431,
+      "sha256": "bfb0e3a81417f9f06826cf612dd772f84f9c9438ee002969c88cccf5b8c152e6"
+    },
+    {
+      "path": "Content/Characters/Legacymantis/Animations/LegacymantisWalk.xml",
+      "bytes": 532,
+      "sha256": "db1ecd2ec3d67e462955045d8eb5456a90991fc85c58f24568817b15286060f5"
+    },
+    {
+      "path": "Content/Characters/Legacymantis/Legacymantis.xml",
+      "bytes": 1865,
+      "sha256": "9e373dccf9638c713d980e9f58cb2265ef39712adf8a8d556243827843c029de"
+    },
+    {
+      "path": "Content/Characters/Legacymantis/Ragdolls/LegacymantisDefaultRagdoll.xml",
+      "bytes": 12592,
+      "sha256": "2667188b21a9397cd1aa93202655470d4bff9d265fe02971f0f214b2640ee568"
+    },
+    {
+      "path": "Content/Characters/Legacymoloch/Animations/LegacymolochSwimFast.xml",
+      "bytes": 286,
+      "sha256": "7e53e7db748a0cd82e3f06d3a9b4c5aaa41d165ccdf093dc6dc618b5b3f273f6"
+    },
+    {
+      "path": "Content/Characters/Legacymoloch/Animations/LegacymolochSwimSlow.xml",
+      "bytes": 286,
+      "sha256": "22664e83be3327d10390f43b22052a2047de7375551f075cd4ff89b7f61c83cc"
+    },
+    {
+      "path": "Content/Characters/Legacymoloch/Legacymoloch.xml",
+      "bytes": 1239,
+      "sha256": "d3dcb7f828977757c5d31aa7fa233dc2b3eb27a699d36a3be5c3117b35cfad47"
+    },
+    {
+      "path": "Content/Characters/Legacymoloch/Ragdolls/LegacymolochDefaultRagdoll.xml",
+      "bytes": 3740,
+      "sha256": "9309da94dc6cabbe2c63def2988bffa1c0194570b583ce816e8cce9d00875d8e"
+    },
+    {
+      "path": "Content/Characters/Legacytigerthresher/Animations/LegacytigerthresherSwimFast.xml",
+      "bytes": 361,
+      "sha256": "b903b8dae3d9fe7a288c11004fb63d5aaef7933444cc3f13b16d9ee44b02e6bc"
+    },
+    {
+      "path": "Content/Characters/Legacytigerthresher/Animations/LegacytigerthresherSwimSlow.xml",
+      "bytes": 361,
+      "sha256": "e5633fefb42c12bd6b5133537b866407681d0fd48f40d2a78f91df189b0253a0"
+    },
+    {
+      "path": "Content/Characters/Legacytigerthresher/Legacytigerthresher.xml",
+      "bytes": 1580,
+      "sha256": "d4470777e91805dcb28b8b785e33a855880370e0e43392c24b0da27f9639fc37"
+    },
+    {
+      "path": "Content/Characters/Legacytigerthresher/Ragdolls/LegacytigerthresherDefaultRagdoll.xml",
+      "bytes": 6180,
+      "sha256": "2d52c262d4fa7522d8bc8457baf115816af14bb0f42fedf52f6d400c275b57b5"
+    },
+    {
+      "path": "Content/Characters/Legacywatcher/Animations/LegacywatcherSwimFast.xml",
+      "bytes": 312,
+      "sha256": "448e62ec533c9a8d7be8f98b52acb5e63a680df4515cbff7b24d867565d73b4f"
+    },
+    {
+      "path": "Content/Characters/Legacywatcher/Animations/LegacywatcherSwimSlow.xml",
+      "bytes": 312,
+      "sha256": "a5bcc9519e5a9321b63698196f04afe7db3d25d3240928c44baee044a50161d2"
+    },
+    {
+      "path": "Content/Characters/Legacywatcher/Legacywatcher.xml",
+      "bytes": 1961,
+      "sha256": "ca49a50f7253e797e493474b0b623a069ec2e172e2599b4a852437c24ff7cad1"
+    },
+    {
+      "path": "Content/Characters/Legacywatcher/Ragdolls/LegacywatcherDefaultRagdoll.xml",
+      "bytes": 1714,
+      "sha256": "acf1cfd93193940981e49072bd82fc30f3eb1d432d120e9c9f3dee7ebe62cf91"
+    },
+    {
+      "path": "Content/Characters/Leucocyte/Animations/LeucocyteSwimFast.xml",
+      "bytes": 420,
+      "sha256": "e0125aa7a36a6e0a09148c51b1a87e300bf463c27d418561e82bd648a99f647e"
+    },
+    {
+      "path": "Content/Characters/Leucocyte/Animations/LeucocyteSwimSlow.xml",
+      "bytes": 426,
+      "sha256": "499d43f71c26fd64e577689ea8ad9b5db9c086a701d227e07d876879f2290319"
+    },
+    {
+      "path": "Content/Characters/Leucocyte/Leucocyte.xml",
+      "bytes": 3881,
+      "sha256": "84c06c15a72e1519944638b2882f1328895953ddb2fead178dd449bd2727ceb7"
+    },
+    {
+      "path": "Content/Characters/Leucocyte/Ragdolls/LeucocyteDefaultRagdoll.xml",
+      "bytes": 7978,
+      "sha256": "eaf607e7dd436313def488c6a083016478d36e2d330eaf01205e7327a89a4db8"
+    },
+    {
+      "path": "Content/Characters/Mantis/Animations/MantisRun.xml",
+      "bytes": 767,
+      "sha256": "6e5473b84021545a085c7831a8dfb07f9018e0d0a7f4a6b8ffffd61628b16fcb"
+    },
+    {
+      "path": "Content/Characters/Mantis/Animations/MantisSwimFast.xml",
+      "bytes": 670,
+      "sha256": "bfbc7e489c6c0d284ed09a06d61062ce925368a3eeb5b2c9610a2a26c41fe2a3"
+    },
+    {
+      "path": "Content/Characters/Mantis/Animations/MantisSwimSlow.xml",
+      "bytes": 665,
+      "sha256": "f80dd0609325fcc1b70809f9457f3562ef738afe818fc81466ac712ac5f6b59f"
+    },
+    {
+      "path": "Content/Characters/Mantis/Animations/MantisWalk.xml",
+      "bytes": 762,
+      "sha256": "3da2d2bd5e0b5cc82b5be942b7782b96eb02641e9c00961f3b94c1c226c1297f"
+    },
+    {
+      "path": "Content/Characters/Mantis/Mantis.xml",
+      "bytes": 11364,
+      "sha256": "20264eb356a362e4aee8f31a00952f58b9250459128e42d6e7bd75785515af75"
+    },
+    {
+      "path": "Content/Characters/Mantis/Ragdolls/MantisDefaultRagdoll.xml",
+      "bytes": 48934,
+      "sha256": "5ee3d411771e6481024308c5bcf1f714cee42f6d83ed428a98420d2872dcfda3"
+    },
+    {
+      "path": "Content/Characters/Moloch/Animations/MolochSwimFast.xml",
+      "bytes": 487,
+      "sha256": "a250372b92d687eb22108cca89d66a0f09fc31d0df5ac01f83d60d2f52882575"
+    },
+    {
+      "path": "Content/Characters/Moloch/Animations/MolochSwimSlow.xml",
+      "bytes": 479,
+      "sha256": "0b6542e3c10836a7945889fc226e268d532a5071d470a38f391c7fb1e3b27def"
+    },
+    {
+      "path": "Content/Characters/Moloch/Moloch.xml",
+      "bytes": 6121,
+      "sha256": "59bdeb6551214bd56967013f7f3b002b31bfb4dcf4d417010a5bc2093b13c4de"
+    },
+    {
+      "path": "Content/Characters/Moloch/Ragdolls/MolochDefaultRagdoll.xml",
+      "bytes": 95503,
+      "sha256": "80d76f5c1c1bd5aa688c141ad29acac97e8eb26cbd66f0002bcd3f7b83e8b68c"
+    },
+    {
+      "path": "Content/Characters/Molochbaby/Animations/MolochbabySwimFast.xml",
+      "bytes": 480,
+      "sha256": "58941b331e8fb50c2d13ab9a41152ba8803abb6613ae85744d1521ffb359b87e"
+    },
+    {
+      "path": "Content/Characters/Molochbaby/Animations/MolochbabySwimSlow.xml",
+      "bytes": 482,
+      "sha256": "aafc9da8f43ae38aa8775b8474dbcfe0f28261c0de53326cb50ac17e464b3baf"
+    },
+    {
+      "path": "Content/Characters/Molochbaby/Molochbaby.xml",
+      "bytes": 7699,
+      "sha256": "927c7d11269070e58f590db4115f85965b2d7120278f9e65a2bd96930bc4dec9"
+    },
+    {
+      "path": "Content/Characters/Molochbaby/Ragdolls/MolochbabyDefaultRagdoll.xml",
+      "bytes": 4196,
+      "sha256": "be97d1f68e96656f0d71ed3ea93aef4e60ec7abc59bd823dda065340afddc820"
+    },
+    {
+      "path": "Content/Characters/Molochblack/Animations/MolochblackSwimFast.xml",
+      "bytes": 492,
+      "sha256": "b1d60a5e8c383f656ca19a403686820cf7e472410bdf1bebb8809976154786b7"
+    },
+    {
+      "path": "Content/Characters/Molochblack/Animations/MolochblackSwimSlow.xml",
+      "bytes": 484,
+      "sha256": "2158dbd7cbe52defd8ee16fb8a8aebd81c2d274a52a16265c100e8435c381b3b"
+    },
+    {
+      "path": "Content/Characters/Molochblack/Molochblack.xml",
+      "bytes": 6213,
+      "sha256": "c31c4f756f76df9e4d71a7c175d79cf61d8d1dadbafdc570cb8d05742b8b78e0"
+    },
+    {
+      "path": "Content/Characters/Molochblack/Ragdolls/MolochblackDefaultRagdoll.xml",
+      "bytes": 96156,
+      "sha256": "5740121fd4543c1adc7358b23f3455ab8e5a834c877fff8d224af28f3080a038"
+    },
+    {
+      "path": "Content/Characters/Mudraptor/Animations/MudraptorRun.xml",
+      "bytes": 730,
+      "sha256": "52861e7928dca0e264b4cb08d97849d0a7b8b39b654fc216f3e105bf69a3cb21"
+    },
+    {
+      "path": "Content/Characters/Mudraptor/Animations/MudraptorSwimFast.xml",
+      "bytes": 591,
+      "sha256": "37c7b5632b4a869b8a9d8cb384cf83218ce84872f4044cb31f3a38a7584ff2f3"
+    },
+    {
+      "path": "Content/Characters/Mudraptor/Animations/MudraptorSwimSlow.xml",
+      "bytes": 590,
+      "sha256": "93bafc835cff9e8921fdb289dd5eefb37021dcf7774ac0cbb195f57a4292318d"
+    },
+    {
+      "path": "Content/Characters/Mudraptor/Animations/MudraptorWalk.xml",
+      "bytes": 712,
+      "sha256": "e05e706713c081bedc80bc51a4593824077066b07e4ffa6ac352f100a8a947d4"
+    },
+    {
+      "path": "Content/Characters/Mudraptor/Mudraptor.xml",
+      "bytes": 6607,
+      "sha256": "7b6a2960a2f8dc20b2d9f0e4e392a675b47565f5a73e68f5d19b9c54c9f8b404"
+    },
+    {
+      "path": "Content/Characters/Mudraptor/Ragdolls/MudraptorDefaultRagdoll.xml",
+      "bytes": 58815,
+      "sha256": "f9c817c526f167dd2d87a001eb846fcd839272b81527eb057d74e0c953e26b2f"
+    },
+    {
+      "path": "Content/Characters/Mudraptor_unarmored/Animations/Mudraptor_unarmoredRun.xml",
+      "bytes": 750,
+      "sha256": "1aa1e7d0fe3fbd6cbdefc92a1043e2bf58424b1696ab76a291bc836896c24194"
+    },
+    {
+      "path": "Content/Characters/Mudraptor_unarmored/Animations/Mudraptor_unarmoredSwimFast.xml",
+      "bytes": 620,
+      "sha256": "37fae07fd6c228174568b62398e96ea84a9f4bc118e524f1001d521b060691f0"
+    },
+    {
+      "path": "Content/Characters/Mudraptor_unarmored/Animations/Mudraptor_unarmoredSwimSlow.xml",
+      "bytes": 619,
+      "sha256": "310ea752e49b4c8f3e85adb0d1085ac51915e6195aa0d832d254e170b204ee5b"
+    },
+    {
+      "path": "Content/Characters/Mudraptor_unarmored/Animations/Mudraptor_unarmoredWalk.xml",
+      "bytes": 732,
+      "sha256": "b9b0ec96f884c7d4aa2035379180500cda818a97233f5ef28a17a5bfea5c33ac"
+    },
+    {
+      "path": "Content/Characters/Mudraptor_unarmored/Mudraptor_unarmored.xml",
+      "bytes": 6330,
+      "sha256": "35ae3756b532aba14fb000c0956a2a6ac9177916cc4adbecf6471931e12f303a"
+    },
+    {
+      "path": "Content/Characters/Mudraptor_unarmored/Ragdolls/Mudraptor_unarmoredDefaultRagdoll.xml",
+      "bytes": 41014,
+      "sha256": "da69879599ce48bbaab44056548e1409832ca74c739248632a451ed653c70783"
+    },
+    {
+      "path": "Content/Characters/Orangeboy/Animations/OrangeboyRun.xml",
+      "bytes": 783,
+      "sha256": "631634efb3d77d1b32c550c31cf0acb9b3730f6f17df4dfb9a27a8523449e21d"
+    },
+    {
+      "path": "Content/Characters/Orangeboy/Animations/OrangeboySwimFast.xml",
+      "bytes": 645,
+      "sha256": "41e76700e3fd4e7fdb18bcdb1d7b6f874f1f5c74f3a1f115818ed4869220db8d"
+    },
+    {
+      "path": "Content/Characters/Orangeboy/Animations/OrangeboySwimSlow.xml",
+      "bytes": 543,
+      "sha256": "ff3f02e5c073c52ac66335e96eb9de1e50ee2f0f9f5836751d6546723a40bceb"
+    },
+    {
+      "path": "Content/Characters/Orangeboy/Animations/OrangeboyWalk.xml",
+      "bytes": 788,
+      "sha256": "0784c980a4398a0b908f296fee1d81542f9ac271603331e7c0dc3cbfdd97381c"
+    },
+    {
+      "path": "Content/Characters/Orangeboy/Orangeboy.xml",
+      "bytes": 4970,
+      "sha256": "8048dd96b4455abbbeba019e01ab487bd4a96766bb97a4ebf0796bf0839e9930"
+    },
+    {
+      "path": "Content/Characters/Orangeboy/Ragdolls/OrangeboyDefaultRagdoll.xml",
+      "bytes": 11949,
+      "sha256": "a82796fa1f6014158e203d283a9cef247852bdd5573956fc90b9ef591a40a955"
+    },
+    {
+      "path": "Content/Characters/Peanut/Animations/PeanutRun.xml",
+      "bytes": 805,
+      "sha256": "f73bc41c8811e9b8559d86a3316ae3ff525bd7ac5f2a861fbcc872f71cc26669"
+    },
+    {
+      "path": "Content/Characters/Peanut/Animations/PeanutSwimFast.xml",
+      "bytes": 556,
+      "sha256": "39253f4c39e11ca11d48d0378ec22f59a9df2317c78eb07a6a6fcff87a3d9a83"
+    },
+    {
+      "path": "Content/Characters/Peanut/Animations/PeanutSwimSlow.xml",
+      "bytes": 555,
+      "sha256": "8adc902479b51e0daabd80390ce43316fcc9d620ec593a26d482be2548a25980"
+    },
+    {
+      "path": "Content/Characters/Peanut/Animations/PeanutWalk.xml",
+      "bytes": 799,
+      "sha256": "c54631370b6100336f9d485b2294fa94961274f6fb1d27553071eb3a48d0f6ef"
+    },
+    {
+      "path": "Content/Characters/Peanut/Peanut.xml",
+      "bytes": 4574,
+      "sha256": "c9940d9751a24e28840714e25144cd616cec27c7a744c5ef61e3b7581e79a092"
+    },
+    {
+      "path": "Content/Characters/Peanut/Ragdolls/PeanutDefaultRagdoll.xml",
+      "bytes": 15031,
+      "sha256": "16f1af9a95b2be41cc2d0f992e321542a92a8289e722979b08126a2dc08a4522"
+    },
+    {
+      "path": "Content/Characters/PetEggs.xml",
+      "bytes": 13007,
+      "sha256": "31a86202c7a009e56ce29c5ba38fc3de49a1aa6c4a8899d146d30137b1657045"
+    },
+    {
+      "path": "Content/Characters/Portalguardian/Animations/PortalguardianSwimFast.xml",
+      "bytes": 585,
+      "sha256": "92a4541223d2f4544559b1958eff88b5f6f8f2460ad81cb0152a27d8c01286a1"
+    },
+    {
+      "path": "Content/Characters/Portalguardian/Animations/PortalguardianSwimSlow.xml",
+      "bytes": 583,
+      "sha256": "07e67b7b88b6c2f4d81975616bba5fd95f857ac070a2a69b001dec9403c4e8e0"
+    },
+    {
+      "path": "Content/Characters/Portalguardian/Portalguardian.xml",
+      "bytes": 12055,
+      "sha256": "02b37c5cd04e7bf6d625c6b32c7c781b05d0acc44419c90b0609653e538c5f66"
+    },
+    {
+      "path": "Content/Characters/Portalguardian/Ragdolls/PortalguardianDefaultRagdoll.xml",
+      "bytes": 33348,
+      "sha256": "4432215994f47ba02a615411f61a89124e5b85a56e1655fb87e38f49fb718e8c"
+    },
+    {
+      "path": "Content/Characters/Psilotoad/Animations/PsilotoadRun.xml",
+      "bytes": 749,
+      "sha256": "dafda8e2be61935c1dea4bcb7f57839fe145b8c00c686237a6386e8c38ef2806"
+    },
+    {
+      "path": "Content/Characters/Psilotoad/Animations/PsilotoadSwimFast.xml",
+      "bytes": 560,
+      "sha256": "7407e3b3faf1e22649905c74e9bfcf9086ce216faa0f2e24a2f12edce1bf6b92"
+    },
+    {
+      "path": "Content/Characters/Psilotoad/Animations/PsilotoadSwimSlow.xml",
+      "bytes": 562,
+      "sha256": "fbfb73c682bb27c11acb04bcc3ba6c252483f2f0d7729d726a3afb88c232f5bf"
+    },
+    {
+      "path": "Content/Characters/Psilotoad/Animations/PsilotoadWalk.xml",
+      "bytes": 748,
+      "sha256": "40fd650ebfdbcb5d752c87a082fad21798965965c2030091459864b9ffd7fa65"
+    },
+    {
+      "path": "Content/Characters/Psilotoad/Psilotoad.xml",
+      "bytes": 4870,
+      "sha256": "9fb758c5f4f500910e486b6c5c2c7e362142316abbebce6a735d0a0c70b40ff6"
+    },
+    {
+      "path": "Content/Characters/Psilotoad/Ragdolls/PsilotoadDefaultRagdoll.xml",
+      "bytes": 7778,
+      "sha256": "5a112319814756d8c4113277c3450d824c227548ae9cf5b6eddba377ca224ac1"
+    },
+    {
+      "path": "Content/Characters/Spineling/Animations/SpinelingSwimFast.xml",
+      "bytes": 524,
+      "sha256": "a6f01d93e8ecb8f1ef70c3b0248ce86bd56e1dbc48a20ce16a3738474d4f03c4"
+    },
+    {
+      "path": "Content/Characters/Spineling/Animations/SpinelingSwimSlow.xml",
+      "bytes": 515,
+      "sha256": "828229ae2ad1ae01a59d151d07ff164de1c9f9e91469de3595a20bf997fe875d"
+    },
+    {
+      "path": "Content/Characters/Spineling/Ragdolls/SpinelingDefaultRagdoll.xml",
+      "bytes": 47408,
+      "sha256": "820cfae6aa9af278e4cb93093c2e88a0b9928e557dcc47bfe6964a065d028264"
+    },
+    {
+      "path": "Content/Characters/Spineling/Spineling.xml",
+      "bytes": 8089,
+      "sha256": "cb69df6bff4bbb9aaee5a49721f5f2ffc163a315fd0ec20dcf491af384bac546"
+    },
+    {
+      "path": "Content/Characters/Spineling_giant/Animations/Spineling_giantSwimFast.xml",
+      "bytes": 598,
+      "sha256": "4a98692dc22795c6ccd60798fbeb49c89932260401e77b5433384cc882ac7322"
+    },
+    {
+      "path": "Content/Characters/Spineling_giant/Animations/Spineling_giantSwimSlow.xml",
+      "bytes": 591,
+      "sha256": "45d58ce053d1835f9b7b45f56389a2521156a48f08648f9d0e90c28fba73105a"
+    },
+    {
+      "path": "Content/Characters/Spineling_giant/Ragdolls/Spineling_giantDefaultRagdoll.xml",
+      "bytes": 49726,
+      "sha256": "4a6bc4327b0d36242bb121b742b439912ace3b48ba5c288bb8a142359bcd0d63"
+    },
+    {
+      "path": "Content/Characters/Spineling_giant/Spineling_giant.xml",
+      "bytes": 10560,
+      "sha256": "2d0dc569f99baf1d5ef73e40eee17a7a638f2b134cdf795d0b74949bd08b6965"
+    },
+    {
+      "path": "Content/Characters/Spineling_morbusine/Spineling_morbusine.xml",
+      "bytes": 13293,
+      "sha256": "ff47b72785c8d748aa03235a1418aafdeb870b76137a2d0eba30d5ff5dc81f47"
+    },
+    {
+      "path": "Content/Characters/Spineling_morbusine/Spineling_morbusine_ragdoll.xml",
+      "bytes": 57495,
+      "sha256": "fbd80fa93586fce5e7ad65c037f71871cd914838d8f346a6a51733b9dec535ba"
+    },
+    {
+      "path": "Content/Characters/Swarmfeeder/Animations/SwarmfeederRun.xml",
+      "bytes": 717,
+      "sha256": "9707c15d57ab590ae360eb2c9700f8d4c2cae2077da04fd0506c4ee7e2e41e11"
+    },
+    {
+      "path": "Content/Characters/Swarmfeeder/Animations/SwarmfeederSwimFast.xml",
+      "bytes": 572,
+      "sha256": "126c79dc3e3e5d5553550071a6e2c649230ad2ee21acfa0805de5813dd887ba3"
+    },
+    {
+      "path": "Content/Characters/Swarmfeeder/Animations/SwarmfeederSwimSlow.xml",
+      "bytes": 574,
+      "sha256": "9fa4b5ac84ca3fe523ce5f071ff8b80cea15f728c551398f8ff8b16cfe5d9aa2"
+    },
+    {
+      "path": "Content/Characters/Swarmfeeder/Animations/SwarmfeederWalk.xml",
+      "bytes": 701,
+      "sha256": "d8648a0fd2b44d46fd3c881d05b8623390f70ab2eae521a97ab856a1b5d1abab"
+    },
+    {
+      "path": "Content/Characters/Swarmfeeder/Ragdolls/SwarmfeederDefaultRagdoll.xml",
+      "bytes": 11084,
+      "sha256": "f7dc2d5a65eb14c1fea3e3b4ef9530dca284eb0266cbfd27b6ae37b9e4fd1587"
+    },
+    {
+      "path": "Content/Characters/Swarmfeeder/Swarmfeeder.xml",
+      "bytes": 8397,
+      "sha256": "7bb44fcef20246219a8c025f22325e2bc83834c190e2bd7a283599b44b934f20"
+    },
+    {
+      "path": "Content/Characters/Terminalcell/Animations/TerminalcellSwimFast.xml",
+      "bytes": 446,
+      "sha256": "d417015be199b4e56d83b25493654bd7da017d81180df0b0d7dba1d75fdbe3b5"
+    },
+    {
+      "path": "Content/Characters/Terminalcell/Animations/TerminalcellSwimSlow.xml",
+      "bytes": 452,
+      "sha256": "479be6f48439b46ffde449de160d6b50d0a90ff2f87febe3ebb922d1a8a4928e"
+    },
+    {
+      "path": "Content/Characters/Terminalcell/Ragdolls/TerminalcellDefaultRagdoll.xml",
+      "bytes": 6758,
+      "sha256": "3772d3165f4a296bae6fbd685f08f6061b18d3beb21d27c30a3ed816dd80f9ad"
+    },
+    {
+      "path": "Content/Characters/Terminalcell/Terminalcell.xml",
+      "bytes": 4318,
+      "sha256": "8b86ed091e797ebdbfbf8a4f2bde928ceee2cd23dedf1f1e73c306ed268561bb"
+    },
+    {
+      "path": "Content/Characters/Tigerthresher/Animations/TigerthresherSwimFast.xml",
+      "bytes": 502,
+      "sha256": "9eedcf8e382433caabf5f6cc10766d032a5f5ecbf3425a330d3dd4538a8c7cbe"
+    },
+    {
+      "path": "Content/Characters/Tigerthresher/Animations/TigerthresherSwimSlow.xml",
+      "bytes": 501,
+      "sha256": "ec16f5d627f2678ef75a587386a4eaa28f7d2592cd3c688c82e7a6512fd1e996"
+    },
+    {
+      "path": "Content/Characters/Tigerthresher/Ragdolls/TigerthresherDefaultRagdoll.xml",
+      "bytes": 25307,
+      "sha256": "982ba67c2ac36dcee3f8b27316045a294866026f2f5f375452bd4045b3cd0ae7"
+    },
+    {
+      "path": "Content/Characters/Tigerthresher/Tigerthresher.xml",
+      "bytes": 6646,
+      "sha256": "69c1390d9632b76faae77e9dc478581de9d95a714134761573b32cf72ed6f639"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawler_hatchling/Animations/Crawler_hatchlingRun.xml",
+      "bytes": 713,
+      "sha256": "88992a889009fdaf11e02a26e1acf260119a5b435b5b177cf1ef577b14444b9d"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawler_hatchling/Animations/Crawler_hatchlingSwimFast.xml",
+      "bytes": 549,
+      "sha256": "b4458a664840e4bfd6d3a65141902a96b05c2ab6fc0f92c13c24871e235aecc6"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawler_hatchling/Animations/Crawler_hatchlingSwimSlow.xml",
+      "bytes": 554,
+      "sha256": "074d9614ec86b4213980642eed8ab64deb4975747150e03480d5b38fe66bb67e"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawler_hatchling/Animations/Crawler_hatchlingWalk.xml",
+      "bytes": 732,
+      "sha256": "dfe4a3b79e4400391c2a708b75eb6c3e31d43a9abb24f10f9c5158a4ebde3630"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawler_hatchling/Crawler_hatchling.xml",
+      "bytes": 1183,
+      "sha256": "d6390388c00a31a6a742529c24fd5f1c0a4da5eb25de543478db49c0b7caa857"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawler_large.xml",
+      "bytes": 463,
+      "sha256": "a4d8ba3fa4cd19a696d6cea672d1b6b79294f6d4ad0e78436569fe7ff7e309f2"
+    },
+    {
+      "path": "Content/Characters/Variants/Crawlerbroodmother_m.xml",
+      "bytes": 175,
+      "sha256": "70a7fbbf177122f49bcd59129c61e57cbab99ae2a807e3f1af4227147714b437"
+    },
+    {
+      "path": "Content/Characters/Variants/Doomworm.xml",
+      "bytes": 349,
+      "sha256": "b2ecb5a4fe5a26e1357e16261d7bbb5313f3d2059c99cd45967d028970625cb9"
+    },
+    {
+      "path": "Content/Characters/Variants/Fractalguardian3.xml",
+      "bytes": 2136,
+      "sha256": "aef9fddadb2f181733f8223edcc32443ef7e4403daf2758a711dba3f5fb22de8"
+    },
+    {
+      "path": "Content/Characters/Variants/Hammerhead_m.xml",
+      "bytes": 173,
+      "sha256": "6fc96bd29ecb8ac0e3cfc5010d8f04c262b88fb22aa4691b946e897c7f8f0510"
+    },
+    {
+      "path": "Content/Characters/Variants/Hammerhead_mNamed.xml",
+      "bytes": 319,
+      "sha256": "a4e54b0b38f021c6f81e050cfc42bacd5e8ed47a11f8ef41afdac6bc68cf58ea"
+    },
+    {
+      "path": "Content/Characters/Variants/Hammerheadgold_m.xml",
+      "bytes": 185,
+      "sha256": "661a431e1265d88c3efa370c656f73321132800b8c1babf59e5679f16b50264f"
+    },
+    {
+      "path": "Content/Characters/Variants/Moloch_m.xml",
+      "bytes": 342,
+      "sha256": "522da056f0abbf3f7f720f658ce4acfeeaa21ed5b078e720055034b23521a001"
+    },
+    {
+      "path": "Content/Characters/Variants/Molochblack_m.xml",
+      "bytes": 357,
+      "sha256": "cce7e564890a0fa6033dcb7524cc820d0ef4e5cc951969ff5e6e27aa4310c8a1"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_hatchling/Animations/Mudraptor_hatchlingRun.xml",
+      "bytes": 749,
+      "sha256": "035a0f60281e2efbae74e9945f97c6ef42779ce92f8bfbd6b101328cf2a5d305"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_hatchling/Animations/Mudraptor_hatchlingSwimFast.xml",
+      "bytes": 627,
+      "sha256": "a9e4c3b11ace976637be92ee4a77ac17ee0dd35bc15bd9ef440bcc803d7b362f"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_hatchling/Animations/Mudraptor_hatchlingSwimSlow.xml",
+      "bytes": 619,
+      "sha256": "65edd0272fe50457804a814a2c9d7aa6f95407318f6495a389fe4eddc5b0eb3a"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_hatchling/Animations/Mudraptor_hatchlingWalk.xml",
+      "bytes": 737,
+      "sha256": "2d3799e374b522742761eaa3c240a3089b7c43058b70ca083bad0bd11e910e77"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_hatchling/Mudraptor_hatchling.xml",
+      "bytes": 842,
+      "sha256": "6f5c9f823093c5382e45fa0b665d383acab1a43473e0cad6c5ca3fd2c321fdba"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_passive.xml",
+      "bytes": 361,
+      "sha256": "23089551fa78baaa2a6d7a53ee1a395770cb7699adb7503062327b9c6416e08c"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_pet/Animations/Mudraptor_petRun.xml",
+      "bytes": 772,
+      "sha256": "f9241789f57244fa61acc03822418e27c35c325e0f768990b38beaae3abf3980"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_pet/Animations/Mudraptor_petSwimFast.xml",
+      "bytes": 653,
+      "sha256": "b48c7181b391993622b5eaac12aaf97ddf4a9887545ab801e666212204f63483"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_pet/Animations/Mudraptor_petSwimSlow.xml",
+      "bytes": 663,
+      "sha256": "73668feefa8850f96655b7ae17798eb950e32e3351ab60baf0ce2d47835e83f5"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_pet/Animations/Mudraptor_petWalk.xml",
+      "bytes": 774,
+      "sha256": "341bc4939e8080535a7a1009c664656baf6c5a34f71742641c7e36848f1488fc"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_pet/Mudraptor_pet.xml",
+      "bytes": 4409,
+      "sha256": "a33653b675d083e4ec60c457e02a9bcf2ed9ed4b7137638642dd2ff08cf3a7c6"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_veteran/Animations/Mudraptor_veteranRun.xml",
+      "bytes": 768,
+      "sha256": "3ea46e7e751d2b69565ed07883558d5dc0ffe5fb8cea0dc70d4eec2d5bbeddf6"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_veteran/Animations/Mudraptor_veteranSwimFast.xml",
+      "bytes": 591,
+      "sha256": "37c7b5632b4a869b8a9d8cb384cf83218ce84872f4044cb31f3a38a7584ff2f3"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_veteran/Animations/Mudraptor_veteranSwimSlow.xml",
+      "bytes": 590,
+      "sha256": "93bafc835cff9e8921fdb289dd5eefb37021dcf7774ac0cbb195f57a4292318d"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_veteran/Animations/Mudraptor_veteranWalk.xml",
+      "bytes": 760,
+      "sha256": "97e7ad37c327d5517bc588bcc306ed7b0c66410d1fe6a274d0004ce38eb00a24"
+    },
+    {
+      "path": "Content/Characters/Variants/Mudraptor_veteran/Mudraptor_veteran.xml",
+      "bytes": 682,
+      "sha256": "b9773a39b81223158efab8f730203da7a3d7ca6449d2ff45b36a2e1c155f03ec"
+    },
+    {
+      "path": "Content/Characters/Variants/Tigerthresher_hatchling/Animations/Tigerthresher_hatchlingSwimFast.xml",
+      "bytes": 515,
+      "sha256": "7f9f2f91605ed92ce510b053b4f9c755f0fffbcf3ab67ecd1e33a68579358260"
+    },
+    {
+      "path": "Content/Characters/Variants/Tigerthresher_hatchling/Animations/Tigerthresher_hatchlingSwimSlow.xml",
+      "bytes": 514,
+      "sha256": "9c5fdf35322dd155742e5d93733fd927853a20c3bf1e30e7357c685b24643ddd"
+    },
+    {
+      "path": "Content/Characters/Variants/Tigerthresher_hatchling/Tigerthresher_hatchling.xml",
+      "bytes": 555,
+      "sha256": "6076ec0a817d273909fe95f745f1b1c8498260899f918e0aff6abe60457959af"
+    },
+    {
+      "path": "Content/Characters/Watcher/Animations/WatcherSwimFast.xml",
+      "bytes": 506,
+      "sha256": "ce7f3c115712f9bd4b17d1678ea38aac403ac9473a7af296635353581fb68a0a"
+    },
+    {
+      "path": "Content/Characters/Watcher/Animations/WatcherSwimSlow.xml",
+      "bytes": 510,
+      "sha256": "e78575527cc9b623f3a01788dda8f37d09b4787b8575c8929de9928e41ca95d3"
+    },
+    {
+      "path": "Content/Characters/Watcher/Ragdolls/WatcherDefaultRagdoll.xml",
+      "bytes": 57485,
+      "sha256": "d0b13d8395dc7ff2ad4b7c77b594b447a97704b2b6386e14b415b50523fe893a"
+    },
+    {
+      "path": "Content/Characters/Watcher/Watcher.xml",
+      "bytes": 11113,
+      "sha256": "b14f3c18490869e65db1a2ad9aa040bc57647f6ab1affe1404d7385ff644f5e8"
+    },
+    {
+      "path": "Content/CodeWords.txt",
+      "bytes": 615,
+      "sha256": "3e2dd21a2c1913a9bce8ea6de68e46930669bc839eec94300cec1c96d3ccccbb"
+    },
+    {
+      "path": "Content/ContainerTags.xml",
+      "bytes": 8241,
+      "sha256": "ff8e0c627f765cc3359208aaf7581121d2b620c134ff02745a97a244fcd4c48b"
+    },
+    {
+      "path": "Content/ContentPackages/Vanilla.xml",
+      "bytes": 38735,
+      "sha256": "0d33abd1179fa42aa3d9f38385489e22d048f3827a81799992de0ab9f1863695"
+    },
+    {
+      "path": "Content/EventManagerSettings.xml",
+      "bytes": 2263,
+      "sha256": "7a58aee0cf703e91752552a7c9d689a99e644fdd682a8662cfe6ff0de3a5afd6"
+    },
+    {
+      "path": "Content/Events/ChainingEvents.xml",
+      "bytes": 64792,
+      "sha256": "23ed0d2ccd1550e953feec47556bc9544da51e41afc9bd974e39e5f46f3ad5f4"
+    },
+    {
+      "path": "Content/Events/EventSets.xml",
+      "bytes": 41240,
+      "sha256": "a486c1a74baca25e1dc37fa6922236337e286e93084f6236d459a4e0f1bcc2da"
+    },
+    {
+      "path": "Content/Events/FactionEvents.xml",
+      "bytes": 184989,
+      "sha256": "4d63fca4aa2c1b7306bcf45c325b27f186c51e04b74e6633d6b7904063815275"
+    },
+    {
+      "path": "Content/Events/MainStoryEvents.xml",
+      "bytes": 44590,
+      "sha256": "2f7c73204decbb0400209ea805dd89f5ee1b8a077931761030ef8cc9df1b74d6"
+    },
+    {
+      "path": "Content/Events/MissionEvents.xml",
+      "bytes": 19177,
+      "sha256": "8308840d783ad2f145d3d2c5b8fcd3c98c64b0533b0331710390520742c866a7"
+    },
+    {
+      "path": "Content/Events/OutpostEvents.xml",
+      "bytes": 157149,
+      "sha256": "0351dce2239b466675bbb6dbd06fa0877220585564c2f36a09c74b69e914c3ec"
+    },
+    {
+      "path": "Content/Events/OutpostEventsLegacy.xml",
+      "bytes": 1515,
+      "sha256": "6b0b3e69d2f3a2cbebe2230df6b622209f0af3d9fd210c25c5d8038c437a0106"
+    },
+    {
+      "path": "Content/Events/PvPEvents.xml",
+      "bytes": 23630,
+      "sha256": "6c64b485d323a4e09765f89aa8a3ec335d7458136414dc8068e21178d5e621f0"
+    },
+    {
+      "path": "Content/Events/TraitorEvents.xml",
+      "bytes": 176383,
+      "sha256": "0ca20d41c9aa66c3c546f5a364b19dc160f528776de0cab69b7ad391c595b395"
+    },
+    {
+      "path": "Content/Fonts/NotoSans/LICENSE_OFL.txt",
+      "bytes": 4393,
+      "sha256": "88f117575237307bdd86a17ef15e21790fc9a662fe4dfb103ca1ca077f0d9982"
+    },
+    {
+      "path": "Content/Fonts/OFL.txt",
+      "bytes": 4488,
+      "sha256": "9a4173d477bbf3652832c8902c8b5714188a2e923aa63039abdc2de65255ceb1"
+    },
+    {
+      "path": "Content/Fonts/Roboto/LICENSE.txt",
+      "bytes": 11560,
+      "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+    },
+    {
+      "path": "Content/Fonts/WorkSans/OFL.txt",
+      "bytes": 4459,
+      "sha256": "8a3fcca4b4b386798d51d2fded8b01f1282c154bc150e3032de136f8453719d3"
+    },
+    {
+      "path": "Content/Items/Alien/alienitems.xml",
+      "bytes": 239503,
+      "sha256": "2aefacfa32252bd5613e125b34efa91e13b4c8a6953cfd11b6a804173e669ee7"
+    },
+    {
+      "path": "Content/Items/Assemblies/AdvancedDuctBlock.xml",
+      "bytes": 14714,
+      "sha256": "02c0444fea225cf4d5a4ed5c9d7056510801e6943aa560f843bb4de7d711412c"
+    },
+    {
+      "path": "Content/Items/Assemblies/AirlockPump.xml",
+      "bytes": 11505,
+      "sha256": "4203c97300092fd3046332c12c11f631a02e39a1775a23fe60cba0cbd2eb2b0f"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienAssemblyDevice.xml",
+      "bytes": 1288,
+      "sha256": "db19575200901b5a97494235027f64aa2031ad92272bd9ea2943905886939214"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienCellBottom.xml",
+      "bytes": 4071,
+      "sha256": "f99684c275fb4c212b7f9b72f117c4f6554239cfb7a41b989c7cbbc96fd3e75d"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienCellTop.xml",
+      "bytes": 4086,
+      "sha256": "75e7dcb3f7729a4cec93adf899eb537a589ff8fbce22fe059970280bf0dd5341"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienChestLarge.xml",
+      "bytes": 1597,
+      "sha256": "6fb1c844cda555ccb24c7088fee0f8eda8056ce0706b3ca87b42df18f481bf73"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienChestSmall.xml",
+      "bytes": 1596,
+      "sha256": "7b5d0f96186dccbaa1ea9e93b960ae4eac7d0e63e2a872a21b6b860db8ef1d06"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienCoilAssembly.xml",
+      "bytes": 16496,
+      "sha256": "a94dc43504033b697d994cecf4fda4662e8dffc5d15dcbe08c57b5ef551b20c5"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienDoorAssembly1.xml",
+      "bytes": 3771,
+      "sha256": "17f0ad5fd6918b89d63d4d4d4fb296ed30c8d820cc0b6ea909cb47d6c267c3e2"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienDoorAssembly2.xml",
+      "bytes": 39212,
+      "sha256": "d69e73ac73a8db2051d2ff8bb52d26ba264d86e2614cddde1daa2063d05cf039"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienDoorAssembly5.xml",
+      "bytes": 18332,
+      "sha256": "0804078efd057d0e14282467d657eebad9c9962ff33d7108dd54fa75d2a045cc"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienDoorw2Terminals.xml",
+      "bytes": 12739,
+      "sha256": "9a8470d9158a90afc5a40c8fb92291405d044fd37b1796d8617e329529ab1a85"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienDoorwTerminal.xml",
+      "bytes": 11046,
+      "sha256": "5ad89deb2418897f587b1e634c07aca9e9073ef4e67f071d0466283202f8d761"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienFractalSpawnpoint.xml",
+      "bytes": 190,
+      "sha256": "875b783cee1eceb454016d65be8db1e14a6de6ab7b001e77160959d9d9636380"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienGeneratorCharged.xml",
+      "bytes": 2213,
+      "sha256": "5ca62e2c73c354ee0135c412eb57662bd8345a5ddc0205c2fe710036f7033880"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienHatchAssembly.xml",
+      "bytes": 4605,
+      "sha256": "5fbc9faa4e25dba285595693d2ec2a3e4680bbc3808d5201231b23ec856089c0"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienHatchAssembly2.xml",
+      "bytes": 16583,
+      "sha256": "00c284cfe6a65f3dd34e8c024d9abc1e3d2c3c334a96443f15d4e6c6e5b1099f"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienHatchw2Terminals.xml",
+      "bytes": 12763,
+      "sha256": "f253be830ae37326c69993516285667662dbfb0be249a1c3f756057e93693ae0"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienHatchwTerminal.xml",
+      "bytes": 11059,
+      "sha256": "5610a7b3ce6df639bcb09c97e0d67171c9fd79f833ad26bd8642ec5b97d18f78"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienPumpAssembly.xml",
+      "bytes": 4387,
+      "sha256": "5ec26f9fd36eed5561542204c60e0cef9c57c76c2bbfa14580fb4d71ccb2086c"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienPumpAssembly1.xml",
+      "bytes": 18986,
+      "sha256": "eff4b1b9b33ae5a5de768683426452bdff3d6c06c7faceeb89da6f61f78d9502"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienPumpAssembly2.xml",
+      "bytes": 18125,
+      "sha256": "4e7de57c7f4640db4a6122cc44c3bd9aad6eaf99af282495c852a434301f1ff1"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/AlienTurretAssembly.xml",
+      "bytes": 14413,
+      "sha256": "4b732a1bf8be8a8a2c5d406d00128455fe5922048bae66a30df9db44edbee07e"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/CurrentGeneratorAssembly.xml",
+      "bytes": 10930,
+      "sha256": "c4a4ea4a8a3a72f05cfbac2ca1cbb5618f8025450c8ab63de37f4e25cb1dcfa0"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/GasCloudVent.xml",
+      "bytes": 1025,
+      "sha256": "03e09ecb7b9a661ebd03d983e757e54c869b1a7ca3fdc8140872534553d35a15"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/GravitySphereAssembly.xml",
+      "bytes": 10897,
+      "sha256": "f6ab98e4943ab5fd611a517b6d536fcc5c9a00ff1319ad875a5b94d6979624de"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/GravitySphereAssembly2Terminals.xml",
+      "bytes": 12633,
+      "sha256": "8d5dec5f45f286c37a8931e0051845db12063771655eebc90df643e6c8ff04c6"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/GuardianPodAssembly.xml",
+      "bytes": 10923,
+      "sha256": "ffc1c0a6ce1d974e805e65d3a677648a35a5890107f5340902923036c33e987d"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/RuinAutoDoor.xml",
+      "bytes": 11431,
+      "sha256": "0e605e5dcdfdcdc518d7d8d7d146843d4d040d4237a6073157574a77d23db778"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/RuinAutoHatch.xml",
+      "bytes": 11410,
+      "sha256": "0661b2e09932dc8188e6334429a53cad283a5cbbbc71a3c4cc03793f31e71fe1"
+    },
+    {
+      "path": "Content/Items/Assemblies/Alien/ToxinsGeneratorAssembly.xml",
+      "bytes": 20957,
+      "sha256": "960f0b0dc0cb22142ed3faf011261cd343f86d3d6a87c6a175e7bda49920b35e"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutoClosingDoor.xml",
+      "bytes": 8407,
+      "sha256": "32255ad759de84bfbd8228e35e75cde673e3bc7045965c3f88056576e6f1fcc3"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutoClosingHatch.xml",
+      "bytes": 10715,
+      "sha256": "762aa48c3c80d1558bf6832a0a83397187d945e61d4606f439cc6b03e71e14f2"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutoClosingWindowedDoor.xml",
+      "bytes": 8432,
+      "sha256": "c6170bb86a685e3b0f549df0b9210a2bebac23664eeb5dbca52f0e7c0947dd4c"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutoOpeningDoor.xml",
+      "bytes": 6793,
+      "sha256": "65cef4492556683dca8f6921e46232e7e62df3217fc909d9406a148fb006ffab"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutoOpeningHatch.xml",
+      "bytes": 7174,
+      "sha256": "c396ac89ba70c3582827bf1f71dacf85f009aa78fd2c5cd976561138d9c00eed"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutoOpeningWindowedDoor.xml",
+      "bytes": 6822,
+      "sha256": "ab3b7260bdea121928cf6699d6090d9f06aefcde3ca92a5f11270efaf3561044"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutomaticDuctBlock.xml",
+      "bytes": 7607,
+      "sha256": "d83bff0958036ad6053e996279d7bf63f6e529ebbd0332415ff70fdf83073615"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutomaticHorizontalAirlock.xml",
+      "bytes": 30182,
+      "sha256": "878f87478913791017aea18c48135ef366e4319460510c4d0229b214db113db8"
+    },
+    {
+      "path": "Content/Items/Assemblies/AutomaticVerticalAirlock.xml",
+      "bytes": 31286,
+      "sha256": "1ea2c3d52b704f5a1bdaf5967e6505669e39f43373accd0890e8f733382d66a1"
+    },
+    {
+      "path": "Content/Items/Assemblies/BackupPowerSetup.xml",
+      "bytes": 15071,
+      "sha256": "cee8fe9424d25721d9b7515e24e28d3d9b7a481983c678b1f8e90715092d75eb"
+    },
+    {
+      "path": "Content/Items/Assemblies/BilgePump.xml",
+      "bytes": 5486,
+      "sha256": "d5d5462e2c89c7356b0fe846c215b164c0a7e708229effd785d07a053d941092"
+    },
+    {
+      "path": "Content/Items/Assemblies/DivingSuitLocker.xml",
+      "bytes": 3452,
+      "sha256": "0262497b616459f0965e9e5f3f28d792e96f6278158e66360c56bb5666f59f81"
+    },
+    {
+      "path": "Content/Items/Assemblies/DivingSuitLockerFilled.xml",
+      "bytes": 10438,
+      "sha256": "5e3bef2c84fb3a1f9ad903de81d06ef3a25f00890ed155426698c2313e15287b"
+    },
+    {
+      "path": "Content/Items/Assemblies/DivingSuitLockersWired.xml",
+      "bytes": 15023,
+      "sha256": "8ddc3623d6aa0970340d9f2856264c4bc908636fc3ba2b37cb654700eff2802c"
+    },
+    {
+      "path": "Content/Items/Assemblies/DockingHatchDelayed.xml",
+      "bytes": 53153,
+      "sha256": "ccd9e389fa94f8408819df0e6a0a1fc7336a8c127606247975b79bf5c587ba4a"
+    },
+    {
+      "path": "Content/Items/Assemblies/DockingHatchSimple.xml",
+      "bytes": 8334,
+      "sha256": "6e8a08fa1ed3ed2e46f68150c8edaaeb79afcdc26cee75ac7cca19a1fbe3d652"
+    },
+    {
+      "path": "Content/Items/Assemblies/OutpostPump.xml",
+      "bytes": 9635,
+      "sha256": "6658007db9686eff0adc431ef3b83fff4a042282fa3d48bdb81dd4d5f529965c"
+    },
+    {
+      "path": "Content/Items/Assemblies/WallPipeWeakpoint.xml",
+      "bytes": 4030,
+      "sha256": "d1a16624a222d8f9c4d6aabea4adc1953336564c3e8b688ab180c6f61e3d60d9"
+    },
+    {
+      "path": "Content/Items/Assemblies/WeakPipeHorizontal.xml",
+      "bytes": 7025,
+      "sha256": "d1247d407065d743dbad08e757936b8f3c151b9366e7f3aaf7ead2a501c02bdc"
+    },
+    {
+      "path": "Content/Items/Assemblies/WeakPipeVertical.xml",
+      "bytes": 7078,
+      "sha256": "0d580c58589244c7f698eb50e99c7ed2eb9430f6d03787822596e8d765624aed"
+    },
+    {
+      "path": "Content/Items/Assemblies/WiredSurveillanceSystem.xml",
+      "bytes": 18085,
+      "sha256": "d305270737316b60f4409a18be31fb0622206fe23a9ccbcf59405b73a9262a0b"
+    },
+    {
+      "path": "Content/Items/Button/button.xml",
+      "bytes": 11470,
+      "sha256": "e89c177f9feec12d697c5375ffce91b109f83b838d42e4a7d9c5ab4a369c9454"
+    },
+    {
+      "path": "Content/Items/Command/command.xml",
+      "bytes": 36480,
+      "sha256": "1768bf7aaa928458cbd05956091119468e4e70989afd7c468213516b4bd1eaee"
+    },
+    {
+      "path": "Content/Items/Containers/containers.xml",
+      "bytes": 40687,
+      "sha256": "269f6c95b3e157f8db3af45b6303648f2fc75c6c03e995bdb9a771614c0afcf3"
+    },
+    {
+      "path": "Content/Items/CreatureLoot/creatureloot.xml",
+      "bytes": 50591,
+      "sha256": "260d3ac616ad419036d96c71b76aed662830046060f9d4900bee0a2a0483de8f"
+    },
+    {
+      "path": "Content/Items/Diving/divinggear.xml",
+      "bytes": 62757,
+      "sha256": "eb889ace7b6252c994ee70de653e70842e9434e4a237c7d576326ceb9d4183ef"
+    },
+    {
+      "path": "Content/Items/Door/doors.xml",
+      "bytes": 34893,
+      "sha256": "848ac6504b15b09f6095c754b276a4513768797e51829f9c10e686f1561ddf85"
+    },
+    {
+      "path": "Content/Items/Electricity/lights.xml",
+      "bytes": 44510,
+      "sha256": "2133ba13bd7c8d772dc017d762eeed94c5b5f811c6ec81268b95fc47375ba459"
+    },
+    {
+      "path": "Content/Items/Electricity/poweritems.xml",
+      "bytes": 41656,
+      "sha256": "bc5b675f33bfc4f0572faa1f7e254ed36e5bffbedc619fdee28f74e14f5d8acd"
+    },
+    {
+      "path": "Content/Items/Electricity/signalitems.xml",
+      "bytes": 136316,
+      "sha256": "5015eb9447e670f6f9d0af902c3a85f983e6f757389a4221c786aac7d58a843d"
+    },
+    {
+      "path": "Content/Items/Engine/engine.xml",
+      "bytes": 17693,
+      "sha256": "30e658358748c745a3f591dd9721014a751e1ea75c0df416af191093bb0b5aa3"
+    },
+    {
+      "path": "Content/Items/Fabricators/fabricators.xml",
+      "bytes": 19837,
+      "sha256": "8f9ebb483a4b1e2aaa0fdc6b07de48bcdbf7cbd46bc91f2f8f1b90cd9a8a5e95"
+    },
+    {
+      "path": "Content/Items/Gardening/ballastflora.xml",
+      "bytes": 4454,
+      "sha256": "ac5056f3f42b470a60b125469a81a7bc8894de23f41e79b5d60901515222ff84"
+    },
+    {
+      "path": "Content/Items/Gardening/gardeningtools.xml",
+      "bytes": 7984,
+      "sha256": "9f49974f198b506716a55f989d76dd00cda08c12defe23695e8f6e276600e752"
+    },
+    {
+      "path": "Content/Items/Gardening/growableplants.xml",
+      "bytes": 20320,
+      "sha256": "7781a42f3bfbca4247d93d148ac41599b7ce0c7d35b3729d2ae4b14de680d771"
+    },
+    {
+      "path": "Content/Items/Gardening/plantproducts.xml",
+      "bytes": 15026,
+      "sha256": "3a5805671509680a108e749e8e822645aa359d5f0b590ed747462019b34ab367"
+    },
+    {
+      "path": "Content/Items/Genetic/genetic.xml",
+      "bytes": 30169,
+      "sha256": "3836612051fcff0b35d7310ac79626c52e7587e26dbc1d128e71ce80cc0d1df3"
+    },
+    {
+      "path": "Content/Items/Jobgear/Assistant/assistant_gear.xml",
+      "bytes": 4442,
+      "sha256": "b733f84e0a32990d5278fd23989b9da2ece8a6e0586fa5619a55a323f1959cb4"
+    },
+    {
+      "path": "Content/Items/Jobgear/Assistant/assistant_talent_items.xml",
+      "bytes": 15149,
+      "sha256": "d18171b1e80ae4d39efce5100d7e3af9545dadc6d192da890e29d0f57cc1569c"
+    },
+    {
+      "path": "Content/Items/Jobgear/Captain/captain_gear.xml",
+      "bytes": 32820,
+      "sha256": "2cb30f23912ec54b834757f90488b65bc8b329313860e48a91552cbb0c97ee54"
+    },
+    {
+      "path": "Content/Items/Jobgear/Captain/captain_talent_items.xml",
+      "bytes": 17395,
+      "sha256": "8d1b60f4f28ffd01ae282c4f605914635785ae9093fae831f68d1f3970c036bf"
+    },
+    {
+      "path": "Content/Items/Jobgear/Clown/clown.xml",
+      "bytes": 44603,
+      "sha256": "b06fa49688b4c658ac442fd7cb2ac63dd5d3ef921dbcc934384b111148b345d5"
+    },
+    {
+      "path": "Content/Items/Jobgear/Commoner/commoner_gear.xml",
+      "bytes": 72542,
+      "sha256": "b298752949aff64bb33b1bed855123870465da0a424d59d04f56630febafcf83"
+    },
+    {
+      "path": "Content/Items/Jobgear/Cultist/cultist_gear.xml",
+      "bytes": 14071,
+      "sha256": "ea5ac29681ef6d391b5f4207fd4261f4525c1e643f39cb30dadecaf888ad1068"
+    },
+    {
+      "path": "Content/Items/Jobgear/Engineer/engineer_gear.xml",
+      "bytes": 17105,
+      "sha256": "902fe704a2038058c0803114cd90845a2a788d1bfb6918e87f37a2f4f184ef48"
+    },
+    {
+      "path": "Content/Items/Jobgear/Engineer/engineer_talent_items.xml",
+      "bytes": 57649,
+      "sha256": "8920126730ad80f0cafe06172b41409351f67416b037bf8447392884f695d58d"
+    },
+    {
+      "path": "Content/Items/Jobgear/Mechanic/mechanic_gear.xml",
+      "bytes": 18963,
+      "sha256": "af0c0a9765953b947896ea355fb58dde2bad44e93722250ebc26de854c93246f"
+    },
+    {
+      "path": "Content/Items/Jobgear/Mechanic/mechanic_talent_items.xml",
+      "bytes": 57835,
+      "sha256": "719459f09a3877b4b6e5d2adb6c9b21e22cc573324cac3b8864837e2076f6aba"
+    },
+    {
+      "path": "Content/Items/Jobgear/Medic/medic_gear.xml",
+      "bytes": 18567,
+      "sha256": "0f89cd1da1e28d1804fd1b5b1c7f31ce94182217fffdbb6161979a3446c91460"
+    },
+    {
+      "path": "Content/Items/Jobgear/Medic/medic_talent_items.xml",
+      "bytes": 34567,
+      "sha256": "2cb260c0de9e12e8025880d41c64be03e3d3c7f71af9db73764584ce6e862040"
+    },
+    {
+      "path": "Content/Items/Jobgear/Security/securityofficer_gear.xml",
+      "bytes": 40604,
+      "sha256": "9dc57ecad4d5b6aafba3490b08410df594089d4bf77c513fe1befc959c69222a"
+    },
+    {
+      "path": "Content/Items/Jobgear/Security/securityofficer_talent_items.xml",
+      "bytes": 40670,
+      "sha256": "793b78f4d0f1f097307d22c8522f5783e845af2fe8c0c1a9a9b9784a476bc3b5"
+    },
+    {
+      "path": "Content/Items/Jobgear/Watchman/watchman_gear.xml",
+      "bytes": 3453,
+      "sha256": "ae83e08d7a8f697c37260d5b7a1f79fee53bc2534861aa8fd4d3326f0b39636a"
+    },
+    {
+      "path": "Content/Items/Jobgear/misc.xml",
+      "bytes": 4241,
+      "sha256": "ecad9124a7122d99601e4306b469dfcedb434dc4c340cf97803619c3e261c15f"
+    },
+    {
+      "path": "Content/Items/Labels/labels.xml",
+      "bytes": 3098,
+      "sha256": "872596079bf9faaf10e6f9c540e8cbad58bff0a21732b7137ef32d9ee6f89b2a"
+    },
+    {
+      "path": "Content/Items/Ladder/ladder.xml",
+      "bytes": 610,
+      "sha256": "9f5842ec61f7ec10d06a7cfbf9b469a11727608caf34ce455bc0046e9f963220"
+    },
+    {
+      "path": "Content/Items/Legacy/legacycommand.xml",
+      "bytes": 10043,
+      "sha256": "3016be5dce63d864bfee01b6a0352790f1f38e9833f3d03a87552a85c1776c37"
+    },
+    {
+      "path": "Content/Items/Legacy/legacycontainers.xml",
+      "bytes": 1815,
+      "sha256": "2af815dde0c44234f48fccdf18af0f8029134216d53ddf21ced5c30f19ce4f07"
+    },
+    {
+      "path": "Content/Items/Legacy/legacyengine.xml",
+      "bytes": 3494,
+      "sha256": "67abf995984d13e2a788cfcfec49a495d5e1b3685dd224f7831ede3e790c3ca1"
+    },
+    {
+      "path": "Content/Items/Legacy/legacyfabricators.xml",
+      "bytes": 8132,
+      "sha256": "de92dfd49d6424ab31c6cc62435fd58bb834d37ffddead3f0335296094aa091e"
+    },
+    {
+      "path": "Content/Items/Legacy/legacyoxygengenerator.xml",
+      "bytes": 2758,
+      "sha256": "06aa034d2997f237480df6c5f6df0cd7a5ab942c7d8584f99e5386bf16706e13"
+    },
+    {
+      "path": "Content/Items/Legacy/legacypoweritems.xml",
+      "bytes": 2449,
+      "sha256": "9c08de0e7040acba32fc32a33b99121126d2a531d3860ece3d5b18de1e305b8a"
+    },
+    {
+      "path": "Content/Items/Legacy/legacypump.xml",
+      "bytes": 6996,
+      "sha256": "43928f46b032ff49d38d04a0dfcde805a37c18b2ad65fe887a1650ebbea7f690"
+    },
+    {
+      "path": "Content/Items/Legacy/legacyrailgun.xml",
+      "bytes": 16987,
+      "sha256": "deb314ecacccf1e2a4f87acedaa3ab3ef3090841f89e7d749bd9e55ca160c9ad"
+    },
+    {
+      "path": "Content/Items/Legacy/legacysearchlight.xml",
+      "bytes": 1794,
+      "sha256": "8a31520e627897a8734ba37c60aea54b46adb878af8619b2d73c7504afcbeed3"
+    },
+    {
+      "path": "Content/Items/Materials/materials.xml",
+      "bytes": 62855,
+      "sha256": "2a241f0710ceb883396e1b9827fe2a6e9f1f7d519c781b8d88fdb7337defc00e"
+    },
+    {
+      "path": "Content/Items/Materials/medmaterials.xml",
+      "bytes": 21479,
+      "sha256": "05a86dd1698a88350e25c89757768c6895370f519568b3f061129b8b49304a52"
+    },
+    {
+      "path": "Content/Items/Materials/minerals.xml",
+      "bytes": 113708,
+      "sha256": "ed68f04b4bcc006bbd46b2f93a0ebaa0596e6d8aa27559eb372865c69391f7de"
+    },
+    {
+      "path": "Content/Items/Medical/buffs.xml",
+      "bytes": 35311,
+      "sha256": "f07e3db252687cdc962b7ad860159becdb2461a63057095e5e9165246a717e53"
+    },
+    {
+      "path": "Content/Items/Medical/medical.xml",
+      "bytes": 108814,
+      "sha256": "2f347af155ab89d3ceb4bc0b82d7c7b804b8c86c3cc3ff81a958213c542c8aec"
+    },
+    {
+      "path": "Content/Items/Medical/poisons.xml",
+      "bytes": 37463,
+      "sha256": "06b818688c095dc453b80a419b884263aa653149f72ea744e20a7a4498983f3b"
+    },
+    {
+      "path": "Content/Items/Misc/blueprints.xml",
+      "bytes": 21721,
+      "sha256": "f593a42a761ccb74f2db674ee6527ca35427be642733a7e85c2bcc8fa07368a2"
+    },
+    {
+      "path": "Content/Items/Misc/misc.xml",
+      "bytes": 13195,
+      "sha256": "a943b0e361bbdd9f6a9d3557bc55673ce5b259503eff419ed34c1110c7725d99"
+    },
+    {
+      "path": "Content/Items/Misc/pvp_items.xml",
+      "bytes": 52130,
+      "sha256": "ace4553a10c3cfb8f26aea165cffcde7547174c187560b92f847f2ddd2c70440"
+    },
+    {
+      "path": "Content/Items/Misc/traitor_items.xml",
+      "bytes": 32470,
+      "sha256": "9074f6574694d7281a413236845a1cd01089e2070e7469992b01356fbe23d669"
+    },
+    {
+      "path": "Content/Items/OxygenGenerator/oxygengenerator.xml",
+      "bytes": 17100,
+      "sha256": "c2efda1da33b795d7e615a508a17cc3291632e21088e4698de0a4159303737a1"
+    },
+    {
+      "path": "Content/Items/Pets/PetEggs.xml",
+      "bytes": 10369,
+      "sha256": "43c4bbefb2c48c9d1b7ac296f4efb930bfc82be833503a6f1cd67edc7ca775f9"
+    },
+    {
+      "path": "Content/Items/Pets/PetItems.xml",
+      "bytes": 7574,
+      "sha256": "713f977fc0745475f4ac825c27aee27296b3047f1503aa919839fbe87f269dee"
+    },
+    {
+      "path": "Content/Items/Pump/pump.xml",
+      "bytes": 17201,
+      "sha256": "22b07dcf5bbea82d4e00f507109abc1cf4b4b92e9d910a84977aedb95d04a2bc"
+    },
+    {
+      "path": "Content/Items/Reactor/reactor.xml",
+      "bytes": 13054,
+      "sha256": "37eded912e5681da477401b1160a5ce998de29329ebb5de059cfa53c0861296c"
+    },
+    {
+      "path": "Content/Items/SearchLight/searchlight.xml",
+      "bytes": 2060,
+      "sha256": "1b020361ec691d2ed2077834d0223319fad44fef19cd2a99983fa620f54d199c"
+    },
+    {
+      "path": "Content/Items/Shipwrecks/StructurePrefabsWrecked.xml",
+      "bytes": 157656,
+      "sha256": "cf8057a6f2aa9c1a3b416708a2a8eea4d306106eba00a9e4f383cf0e33462224"
+    },
+    {
+      "path": "Content/Items/Shipwrecks/wreckeditems.xml",
+      "bytes": 65682,
+      "sha256": "b6ccc064aaaee3d39c02912f67c0100957cf7f8badc084d99584d4108c2a4eaa"
+    },
+    {
+      "path": "Content/Items/StartItems.xml",
+      "bytes": 4222,
+      "sha256": "6b8ec4cb6fbfcdb6c38c9b466cb8ddcda64385499c0dd5dc1bcdb73f35e90483"
+    },
+    {
+      "path": "Content/Items/Tools/tools.xml",
+      "bytes": 116482,
+      "sha256": "9957f19db717e1a65a48e5389cd1d52993b7ef9d2c91601448223822f88f0fb4"
+    },
+    {
+      "path": "Content/Items/Weapons/chaingun.xml",
+      "bytes": 28623,
+      "sha256": "c20af6e2b5e0417654b4e7056b6452bbb33e88930ceff268337c35dc15281656"
+    },
+    {
+      "path": "Content/Items/Weapons/coilgun.xml",
+      "bytes": 44207,
+      "sha256": "dd088d5e348f9831391705c6616434fc0c18be40956e0935a5185d0405068237"
+    },
+    {
+      "path": "Content/Items/Weapons/depthcharge.xml",
+      "bytes": 30889,
+      "sha256": "5b7aba9e301c6754fc8f17f871a4c1d611f55a2889ad01b25c4755a31442544d"
+    },
+    {
+      "path": "Content/Items/Weapons/dischargecoil.xml",
+      "bytes": 1726,
+      "sha256": "d0d13e6127edafcb488106cea6d2163f852cf1231ec1fcb7791fc1995ffee45a"
+    },
+    {
+      "path": "Content/Items/Weapons/explosives.xml",
+      "bytes": 30548,
+      "sha256": "828ac85ead15d05fbad84e414ca35047b0eb43d1db35b8e6f95365d854aaa8ff"
+    },
+    {
+      "path": "Content/Items/Weapons/flakcannon.xml",
+      "bytes": 54171,
+      "sha256": "6e6e213438b09526404aaa32695343a9e942ee24f59971eba420a3ad3a940d2c"
+    },
+    {
+      "path": "Content/Items/Weapons/pulselaser.xml",
+      "bytes": 23271,
+      "sha256": "8564b7a7e0596fe4bda970443ff040c2c3dfd3cb8e167aa4ca62966c05f22b74"
+    },
+    {
+      "path": "Content/Items/Weapons/railgun.xml",
+      "bytes": 51556,
+      "sha256": "0400b15bd8e87f667d0aa791ea4008df019b79a4e4ca39f8f10e2d5a1c0d8c35"
+    },
+    {
+      "path": "Content/Items/Weapons/turrethardpoint.xml",
+      "bytes": 6299,
+      "sha256": "6e97b3342a77eeda81004731ce240e8d77ff136cc919d05157ee6fe1b81e7ff1"
+    },
+    {
+      "path": "Content/Items/Weapons/weapons.xml",
+      "bytes": 146754,
+      "sha256": "5fc2a18e229ea04a1e3301dbd468cc1beaf9fa595d2cabee288e08f12c343b01"
+    },
+    {
+      "path": "Content/Items/idcard.xml",
+      "bytes": 1457,
+      "sha256": "9ed8342d7fc942a9d003ca7964bb7f51c961f6628455d5b5534220d753c0d6ee"
+    },
+    {
+      "path": "Content/Jobs.xml",
+      "bytes": 27949,
+      "sha256": "bb513fe7de83fc3b4b7895b71a385285de3ccb403d537337d90cc5aca0ec4291"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Ajokki.sub",
+      "bytes": 26239,
+      "sha256": "efd2f3c494ab150ecbbf94737e8f32369ae55ca26f89545f243fc526bbfd88d1"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_AlienResearch.sub",
+      "bytes": 24706,
+      "sha256": "f709b0b96217927de9c21e01b631482971666a99e1ae0e50be8460ea5beda4f5"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Asumus.sub",
+      "bytes": 26534,
+      "sha256": "2f06eee3bca676bbcf54636a9c176819d8f90bbda88f004715195041f27a3e0d"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Hissihiss.sub",
+      "bytes": 36442,
+      "sha256": "bdec191713ed475b77da3ad2ab0d9d56b8560a97a396763e6c69530647d517c1"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_HissihissShuttle.sub",
+      "bytes": 14334,
+      "sha256": "79540443f763ef4818f95d387d5828adcc300938fabf30ae0e334acbac2cd7b1"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Jagala.sub",
+      "bytes": 28054,
+      "sha256": "9bf0e37d3674a52831845fddbb3966b64fe2a98bf0bd6be8f0f7ede857fa2c12"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_KeilaJoa.sub",
+      "bytes": 17138,
+      "sha256": "97373c475f40e7c91d43fdda466b84551e0d56a7f4e9c420db99e130da4c1869"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_KopraKoht.sub",
+      "bytes": 21163,
+      "sha256": "29fd579ad44549315631f9a1c6c4841325fbd50919e7074f2b07d44fc5093958"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Morko.sub",
+      "bytes": 16547,
+      "sha256": "ead9f4936008c672eaba8656f65e239b89667a5c10c41fdaffb9b0a497539fce"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Taskumatti.sub",
+      "bytes": 21296,
+      "sha256": "ff86ec004d6833bbd26514bf8a63716edcbb76d3f51211085542d4ee4e94a4f4"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_Telakka.sub",
+      "bytes": 43563,
+      "sha256": "22e069f56ddbb5227499bd6e73f84e9d42bf855c7ea6d90841aadb7fc6e6d60d"
+    },
+    {
+      "path": "Content/Map/BeaconStations/BeaconStation_TelakkaShuttle.sub",
+      "bytes": 270494,
+      "sha256": "2c3528e0039c9dc261f4e719f43688694bd0cb0506ad3c2c39ef3b6d2ec3972c"
+    },
+    {
+      "path": "Content/Map/Biomes/AphoticPlateau/AphoticPlateau.xml",
+      "bytes": 19602,
+      "sha256": "1531ffd81fca01c486117ff3feaff86b7944e5ca964a77da859a9b0392080e57"
+    },
+    {
+      "path": "Content/Map/Biomes/AphoticPlateau/AphoticPlateauObjects.xml",
+      "bytes": 14689,
+      "sha256": "0dd3589c807d8c600f5051205788b687a24efb81859cf235ee8f289102a9a464"
+    },
+    {
+      "path": "Content/Map/Biomes/BioluminescentCave/BioluminescentCaveObject.xml",
+      "bytes": 5143,
+      "sha256": "ea182166b3923eecf28c558585e0cf548a1a72abc147d75d466c2ec6afdb98ce"
+    },
+    {
+      "path": "Content/Map/Biomes/Biomes.xml",
+      "bytes": 4777,
+      "sha256": "5848d67a90a2744fb29d1ca00580d652eb5c2322f707cd526d7f14167b391b19"
+    },
+    {
+      "path": "Content/Map/Biomes/CaveGenerationParameters.xml",
+      "bytes": 5359,
+      "sha256": "95567598c7a0026c876e785f3fecd92310a33e09e9bc995d1015b15aaf554b38"
+    },
+    {
+      "path": "Content/Map/Biomes/ColdCaverns/ColdCaverns.xml",
+      "bytes": 20548,
+      "sha256": "4f1288ddabeeb9e01b34c1bd26a641549352529a0dd64fc30128e152c0ae6110"
+    },
+    {
+      "path": "Content/Map/Biomes/ColdCaverns/ColdCavernsObjects.xml",
+      "bytes": 8569,
+      "sha256": "0a175ef649c714645e769d2a72ae1308800d452f5f2d3a445e90e7708af78b59"
+    },
+    {
+      "path": "Content/Map/Biomes/Common/CommonLevelObjects.xml",
+      "bytes": 42824,
+      "sha256": "96727dcdbfaf6737192e521807d366e4dd5cfbae42333fabc751620e990e39b2"
+    },
+    {
+      "path": "Content/Map/Biomes/CrystalCave/CrystalCaveObjects.xml",
+      "bytes": 9922,
+      "sha256": "0fa9119ce3a47f32e89f94e958cc85b40da5f104178931a3437a5b11dcd7a943"
+    },
+    {
+      "path": "Content/Map/Biomes/EndBiome/EndBiome.xml",
+      "bytes": 6431,
+      "sha256": "802c9a85b5a71d89232363f8fa4df357aa97e765236ec55f559d18f9f93d2a28"
+    },
+    {
+      "path": "Content/Map/Biomes/EndBiome/EndBiomeObjects.xml",
+      "bytes": 2211,
+      "sha256": "baafbef51fc681e8d3bcebe9741cf426777db5fd6adbabc232f213f8c124e5e1"
+    },
+    {
+      "path": "Content/Map/Biomes/EuropanRidge/EuropanRidge.xml",
+      "bytes": 16738,
+      "sha256": "ef39d0fcf819b69a770031b9121a583d5e88069afcd637d1b15c21351f0229b5"
+    },
+    {
+      "path": "Content/Map/Biomes/EuropanRidge/EuropanRidgeObjects.xml",
+      "bytes": 8451,
+      "sha256": "748d89be5acee18f9980b2d09b477a01a83b567237c702cef4cd553e7d82f9a9"
+    },
+    {
+      "path": "Content/Map/Biomes/ForestCave/ForestCaveObjects.xml",
+      "bytes": 10708,
+      "sha256": "fb1d3222455e226a03613523636ec0d3f1525e17e777684268fcd44c740b8336"
+    },
+    {
+      "path": "Content/Map/Biomes/HydrothermalWastes/HydrothermalWastes.xml",
+      "bytes": 15948,
+      "sha256": "af7e58df202de5178a1c5d9747a63a90bd7df87cc3a41763e17de79ff331e807"
+    },
+    {
+      "path": "Content/Map/Biomes/HydrothermalWastes/HydrothermalWastesObjects.xml",
+      "bytes": 7060,
+      "sha256": "be3eb0f3def90c89dde04e77cad2708a449022641d7cd5eec245ba8be177e9a4"
+    },
+    {
+      "path": "Content/Map/Biomes/IceCave/IceCaveObjects.xml",
+      "bytes": 6096,
+      "sha256": "3ce6d2f5b0209c46464e6a647f76ebc5fe533694705cb2881e9a3df80100cdee"
+    },
+    {
+      "path": "Content/Map/Biomes/MushroomCave/MushroomCaveObjects.xml",
+      "bytes": 17762,
+      "sha256": "9e9fe538f929ab0739a0c9e8c8a1ec4076c1189a7deddb40ea6a126faebe3ffe"
+    },
+    {
+      "path": "Content/Map/Biomes/NestObjects/NestObjects.xml",
+      "bytes": 1183,
+      "sha256": "1c0a854cf7c988e258ba288607bdb7a5e0630ce7b348f5d437eac674319e31cf"
+    },
+    {
+      "path": "Content/Map/Biomes/RockCave/RockCaveObjects.xml",
+      "bytes": 5077,
+      "sha256": "4ea5eedb391350a220e74b84a9ee438e88fcad462cc8c24ed3b5e04dd8fd1ea2"
+    },
+    {
+      "path": "Content/Map/Biomes/TheGreatSea/TheGreatSea.xml",
+      "bytes": 18045,
+      "sha256": "f42f813f9593086baa61be3080aa8a1fd1e59a6e2fad981624d8a7c67f074b6b"
+    },
+    {
+      "path": "Content/Map/Biomes/TheGreatSea/TheGreatSeaObjects.xml",
+      "bytes": 9576,
+      "sha256": "9c9ff55ca34a8ec1652d25ea19edc772117037fceeb3b08831ee225d60d1a926"
+    },
+    {
+      "path": "Content/Map/EnemySubmarines/DugongPirate.sub",
+      "bytes": 47620,
+      "sha256": "1ed2fdac2121662ddf97695a03f2f70010df9278545ae5c518d9039d5874d7dc"
+    },
+    {
+      "path": "Content/Map/EnemySubmarines/HumpbackPirate.sub",
+      "bytes": 51581,
+      "sha256": "56b425410e60629bdd2fb88c8c55445df6c98e9714bd90cbb6c0a417439156aa"
+    },
+    {
+      "path": "Content/Map/EnemySubmarines/Typhon2Pirate.sub",
+      "bytes": 78887,
+      "sha256": "7605bcdd6b0fa9f1772e52860dd6439a896c985a3b9fb0eae0adeb5fea698b43"
+    },
+    {
+      "path": "Content/Map/MapGenerationParameters.xml",
+      "bytes": 5614,
+      "sha256": "a90791f66f6dfe5d8cfe0a8851b8b2571c966d3c7aebc20bcf1986d5fdcba09d"
+    },
+    {
+      "path": "Content/Map/Outposts/AbandonedOutpost/AbandonedOutpostDecals.xml",
+      "bytes": 23620,
+      "sha256": "c4949884efa2e55156bafa1baa63611ef4de293c9c650f3a4c76d698ba2ff08b"
+    },
+    {
+      "path": "Content/Map/Outposts/AdminModule_01L.sub",
+      "bytes": 8748,
+      "sha256": "54014f78b57d419fbd06cfd59f9e1af2e5c82c5484a15687603a7117ad8e0829"
+    },
+    {
+      "path": "Content/Map/Outposts/AdminModule_01R.sub",
+      "bytes": 9129,
+      "sha256": "9632493d4eef31fc7c376b273a29a9557a9a02c0ee57832c8edfb7319a676074"
+    },
+    {
+      "path": "Content/Map/Outposts/AdminModule_01_Colony.sub",
+      "bytes": 18950,
+      "sha256": "4d5ff6a0bbcbff969e9475daecad442f9955d98a5a4cd20dc26d08d7060db71e"
+    },
+    {
+      "path": "Content/Map/Outposts/AdminModule_02L.sub",
+      "bytes": 8967,
+      "sha256": "113cac706d10560ba98f6ac977b211816c19447688c9b9bd5f6ee450e6a3bb7b"
+    },
+    {
+      "path": "Content/Map/Outposts/AdminModule_02R.sub",
+      "bytes": 7420,
+      "sha256": "67d3efaf234d5ac146684bcd6c895a2afa9cfea2e241f833e267f24af4fbca8b"
+    },
+    {
+      "path": "Content/Map/Outposts/AdminModule_02_Colony.sub",
+      "bytes": 15269,
+      "sha256": "320a7c3a633fd3f2557c11fb403c223751bb91721e4a15d5547e836419ca7a26"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_A1.sub",
+      "bytes": 17795,
+      "sha256": "04b3ead759db86548b60494635b82dcb174d9f431fc8e5637a52e953e4bedfc9"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_A2.sub",
+      "bytes": 16466,
+      "sha256": "ce68189c950f82164e6dfa5b770d35ccabc85a081bcbcbf80aab0d9f57680437"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_A3.sub",
+      "bytes": 10480,
+      "sha256": "9428913cb07c64be334f1781caad2bac4f58b2b971941ff4c7e0d7724366cf35"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_G1.sub",
+      "bytes": 7336,
+      "sha256": "41c6d1402dfcda83c1adee9601c00d4883c87ffb88783158402dd2c470f97f05"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_G2.sub",
+      "bytes": 6188,
+      "sha256": "9e3a455d85d86a80c83153052e7398546c40c3c834677ed7dceae672fdb687b9"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_G3.sub",
+      "bytes": 10373,
+      "sha256": "6044b0b2f440822da0679bbac6cedddccfd12ecbff98c2d4b3c6aba8c6c73a46"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_G4.sub",
+      "bytes": 9691,
+      "sha256": "20b3fb4d70c934f4db008b520ed48a5e2a7fbe83645ac8933ee487b10828125f"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_G5.sub",
+      "bytes": 9967,
+      "sha256": "9f45b369784c961226ed97e95ca10070fe9931b88aea4aeca804cdc55f77ae62"
+    },
+    {
+      "path": "Content/Map/Outposts/Admin_G6.sub",
+      "bytes": 10305,
+      "sha256": "ccb497e2be4740e815e6f807f8da8d4301dfeda819ffb5a51d37816beb56616f"
+    },
+    {
+      "path": "Content/Map/Outposts/ArmoryModule_01_Colony.sub",
+      "bytes": 10408,
+      "sha256": "d866d87ae8f6ae9b83ebad57f5d9b4f2e37baf872cca659325888c2e382717c8"
+    },
+    {
+      "path": "Content/Map/Outposts/BathhouseModule_01.sub",
+      "bytes": 25257,
+      "sha256": "421ab2108a3e15081ac2d0fb2b92fc74a84443e27d363deab52faf5df92858bf"
+    },
+    {
+      "path": "Content/Map/Outposts/ClownDistrict_Colony_01.sub",
+      "bytes": 15557,
+      "sha256": "f26720b8cc70f2003d10005f1c6d8ce4d192255e967276cf66345f25560af55c"
+    },
+    {
+      "path": "Content/Map/Outposts/ClownDistrict_Module_01.sub",
+      "bytes": 11688,
+      "sha256": "482443cea52a9c5fd25218933906a7687a693ea44a5813a98d4689a609e4f2df"
+    },
+    {
+      "path": "Content/Map/Outposts/ClownDistrict_Module_02.sub",
+      "bytes": 17023,
+      "sha256": "b58c2c26c2561824363f959f0763a8f341cb37a04a9e504c6ad60b2a53fb9ea2"
+    },
+    {
+      "path": "Content/Map/Outposts/Clown_G1.sub",
+      "bytes": 7932,
+      "sha256": "942b7384f3bae32d355e8abcb1ca70f915b47f46c6657b8b85ad11e2a7967ed6"
+    },
+    {
+      "path": "Content/Map/Outposts/Clown_G2.sub",
+      "bytes": 7524,
+      "sha256": "c1be99241f4735e697f9bfb4e698700ea5bddd819f2549d07e49816e9f0fb7cd"
+    },
+    {
+      "path": "Content/Map/Outposts/Clown_G3.sub",
+      "bytes": 7660,
+      "sha256": "732cea44b340636c11dd09f9fad1f579f49aa7bc3bc1f257523ca1ff947f9a29"
+    },
+    {
+      "path": "Content/Map/Outposts/Clown_G4.sub",
+      "bytes": 8473,
+      "sha256": "dded71c15c3dbb0bc36f96f26bc50f4e59c7f5ec3c15310ca17360dd55b24503"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_01.sub",
+      "bytes": 10494,
+      "sha256": "41ca93a63eff8cd1c15485349e59a774c197377add0bf00c8d86e7ece506ec23"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_02.sub",
+      "bytes": 13956,
+      "sha256": "13e00fcab3209054b50c8d8e41af02e27dece00a5d21b69a065ec1fcdefd2fb1"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_03.sub",
+      "bytes": 16459,
+      "sha256": "7265c477ff5d2c6e15283d5582a64b5658c409dd01d311ed81a75057ca7cf392"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_G1.sub",
+      "bytes": 11037,
+      "sha256": "e5c25aaca3cecb6fe8a9fca12c423f95d5ad8ea1930393c80fb09e3b3caa3c59"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_G2.sub",
+      "bytes": 13682,
+      "sha256": "ffe5dd158842a677fe166aed9f08e500d7ea58db660dcf7b5240c820b73d5169"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_G3.sub",
+      "bytes": 13108,
+      "sha256": "c4e491b82ad833a7a555950be7a5bc2182818eb12e634da0ed33a4cc3048e351"
+    },
+    {
+      "path": "Content/Map/Outposts/CrewModule_G4.sub",
+      "bytes": 13050,
+      "sha256": "f618b35d6a34f53be26ad0c3a3f2a1d9586f5f1e0764bd4e5c186a7f00a06fe7"
+    },
+    {
+      "path": "Content/Map/Outposts/Crew_A1.sub",
+      "bytes": 16045,
+      "sha256": "e59e31b82a679b55dbaed45d74e5d99a93fe6f56b574770a1eed776548c8b589"
+    },
+    {
+      "path": "Content/Map/Outposts/Crew_A2.sub",
+      "bytes": 11335,
+      "sha256": "f58e5c1ff73a801969284ff1fe467d1f52f44013260b80be33482231b60220d1"
+    },
+    {
+      "path": "Content/Map/Outposts/Crew_A3.sub",
+      "bytes": 11553,
+      "sha256": "8c54312746d3fff18850569cfaadb97da187a570a5635831e43a9dd1d3bab568"
+    },
+    {
+      "path": "Content/Map/Outposts/DockingModule_01.sub",
+      "bytes": 17548,
+      "sha256": "8ddeca8c35ea834d7f47b62f295366ea4f7473983b7c3acfbe0ba7b2d8eb8e5f"
+    },
+    {
+      "path": "Content/Map/Outposts/DockingModule_01_Colony.sub",
+      "bytes": 28836,
+      "sha256": "86fb612230d469dd82be4d0aba8911eda014fe828185e68f54577ea1bba7655d"
+    },
+    {
+      "path": "Content/Map/Outposts/DockingModule_02.sub",
+      "bytes": 21186,
+      "sha256": "2e6814da0af630bccc86578ab16758c0b9edcf8bc3cae06adc7d574fe353a287"
+    },
+    {
+      "path": "Content/Map/Outposts/DockingModule_02_Colony.sub",
+      "bytes": 27780,
+      "sha256": "6ec645849fe8e8f11cec1f5f0cfb0b218e0340ff3795ad27057e07b4b3eb0125"
+    },
+    {
+      "path": "Content/Map/Outposts/DockingModule_03.sub",
+      "bytes": 15905,
+      "sha256": "9b87a8929a997cdc31d03e28e0dd01fe2d22ec4aa7b6d68e567e0a60b9d27038"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_A1.sub",
+      "bytes": 21074,
+      "sha256": "6c2ff092a73c68b3010f5fbae2e9e29b8c7ce4aa2b0479631f223d2af6d259b0"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_A2.sub",
+      "bytes": 16968,
+      "sha256": "f9e2075f3799b7292444eb5322773394e130cb92ef77871cee2060ae8740e47d"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_A3.sub",
+      "bytes": 17417,
+      "sha256": "1ae5bf1d909f3c424b188e423d6031e50cf35285e39a63670a9eb8f854f769da"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_A4.sub",
+      "bytes": 20564,
+      "sha256": "0590a02219c3ceabb904e4c3090849132b55dc4ace63e6350b8e0eea29e41676"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_C1.sub",
+      "bytes": 28977,
+      "sha256": "80674940712620be873cfdda4855ee662402eea5781c70d7513d7fdc012cdabd"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_G1.sub",
+      "bytes": 14057,
+      "sha256": "e29857a70236848e4564ca2b97cbe7e39fa1425e81b498f35a5556c9063f1578"
+    },
+    {
+      "path": "Content/Map/Outposts/Docking_G2.sub",
+      "bytes": 14369,
+      "sha256": "e082b88bfe1823cde8e38a7da079e888ee02ad31358695c4b8b320e10b6c1e7e"
+    },
+    {
+      "path": "Content/Map/Outposts/EndOutpost_Entrance.sub",
+      "bytes": 26484,
+      "sha256": "14f2bcd4669bec47337bd7d131e82df6ddf17ec266456a62ba7bc357da4f919c"
+    },
+    {
+      "path": "Content/Map/Outposts/EndOutpost_Final.sub",
+      "bytes": 36623,
+      "sha256": "f7d5d5d5cfdd8e6e41513b8d9e76840be7dc469f0f31556b952517477b5ca4fc"
+    },
+    {
+      "path": "Content/Map/Outposts/EndOutpost_Mid.sub",
+      "bytes": 80996,
+      "sha256": "6eb560cd3260bde8928564d435f887ce722ea43038db30023aa2bedf903c8d09"
+    },
+    {
+      "path": "Content/Map/Outposts/EngineeringModule_01.sub",
+      "bytes": 16663,
+      "sha256": "183c5360ae17751f62008698da055071de0fbb31dcc584ee7abfff074f57e981"
+    },
+    {
+      "path": "Content/Map/Outposts/EngineeringModule_01_Colony.sub",
+      "bytes": 19817,
+      "sha256": "d5a2d9e1e311f4f783571af9e8ae48ca022d4d7d6998872625d2326ae3941b6d"
+    },
+    {
+      "path": "Content/Map/Outposts/EngineeringModule_02.sub",
+      "bytes": 13151,
+      "sha256": "eeef62658b7acd3712cb06135377a8713e1576dbf78bf94811c65063d0ea566c"
+    },
+    {
+      "path": "Content/Map/Outposts/EngineeringModule_02_Colony.sub",
+      "bytes": 21896,
+      "sha256": "352c55aeafbf686457cf7549ba11cb6ebcc25591d293a6bbc63b36d99a3199af"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_A1.sub",
+      "bytes": 20337,
+      "sha256": "1abdca503b9d15d31bd838a0527525aedf17c8ed6ce309b80eb73251c6c334c2"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_A2.sub",
+      "bytes": 20279,
+      "sha256": "f15d75b8dad6feb4ef2f2ce2f46ef32b6548769949ce360cee90af4de20522c3"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_A3.sub",
+      "bytes": 17045,
+      "sha256": "baeaa0c6aca784df30e30c2cd4fffae5aa5ad8b2c3088ae37d7cbdd72a9c864f"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_A4.sub",
+      "bytes": 21633,
+      "sha256": "842f955fdc829c9e21186cb42b7835d61b6e0858e9ae562947255578c3e7a543"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_G1.sub",
+      "bytes": 15732,
+      "sha256": "82617f36fdc1446406c8eb47f722115d2348ff7766e854c6cabde9b8c97e34da"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_G2.sub",
+      "bytes": 11812,
+      "sha256": "689694bf28be21818fd3c6485ed8f4cfdbeb9e5198eeb7f4db7de3d369ed2c7c"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_G3.sub",
+      "bytes": 17689,
+      "sha256": "9ec9ad123f3ac8f6cfda3f98ad378509934ce5dd2855e90ab1f2df3e71a32336"
+    },
+    {
+      "path": "Content/Map/Outposts/Engineering_G4.sub",
+      "bytes": 13478,
+      "sha256": "a1e0c1967681ad11ffdc7a60e5a5f42959957a8566c89fe0741297262e52983b"
+    },
+    {
+      "path": "Content/Map/Outposts/Hall4wayModule_01.sub",
+      "bytes": 5741,
+      "sha256": "8949e6cb950cf080e2f40855a477736fbe8802d3dbd158b1e2a6941b0da03b1a"
+    },
+    {
+      "path": "Content/Map/Outposts/Hall4wayModule_01_Abandoned.sub",
+      "bytes": 5475,
+      "sha256": "ff92d138a78b4fd8da08503b0968d2eeed1964318d8e6fb09e799f7b8bcde148"
+    },
+    {
+      "path": "Content/Map/Outposts/Hall4wayModule_02.sub",
+      "bytes": 5909,
+      "sha256": "5d4e2a4d9c4035707fe29784a27259909e6f08e21c50395da4fed9eb64d6ca15"
+    },
+    {
+      "path": "Content/Map/Outposts/HallModuleHorizontal_Abandoned.sub",
+      "bytes": 1419,
+      "sha256": "e8fe475197320969e9b7df4197abbd1009732147bc6cc4294d5977d13bd8613f"
+    },
+    {
+      "path": "Content/Map/Outposts/HallModuleVertical_Abandoned.sub",
+      "bytes": 1420,
+      "sha256": "8f73bb364a250adebb98273eb4b595eed17ec404b33a3f19b4c73e68424fc417"
+    },
+    {
+      "path": "Content/Map/Outposts/HuskDistrict_Colony_01.sub",
+      "bytes": 17256,
+      "sha256": "c71cbd05386699332be8cac851461ac787932d3464f52349dd018aa03d98c9ad"
+    },
+    {
+      "path": "Content/Map/Outposts/HuskDistrict_Module_01.sub",
+      "bytes": 10980,
+      "sha256": "dc48379216b63c737b0be31131a118cd07b192af04ea7bc543903fec88e66111"
+    },
+    {
+      "path": "Content/Map/Outposts/HuskDistrict_Module_02.sub",
+      "bytes": 13587,
+      "sha256": "f137cc30d1b4399390b54abedc528f526f062b563233decac2abb5a6b14e5462"
+    },
+    {
+      "path": "Content/Map/Outposts/Husk_G1.sub",
+      "bytes": 10910,
+      "sha256": "7189d4bd029d2594f020b6e64349aec83d48ae5cc2e907833108ee5e56936d06"
+    },
+    {
+      "path": "Content/Map/Outposts/Husk_G2.sub",
+      "bytes": 8438,
+      "sha256": "f104f0cd962031a58af930d766889ad1e53d59a6433361747393fe3a4aa4a3ff"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_01.sub",
+      "bytes": 9572,
+      "sha256": "860fc9109667b08f10ca7ba628c76d99123b7afbf80af35357bd8def20d1896d"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_01_Colony.sub",
+      "bytes": 17657,
+      "sha256": "7df4784c622d6f74c4e0f9f7c261c3479873e5279609ed36dab5361e9ec94955"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_02.sub",
+      "bytes": 11322,
+      "sha256": "f1363d014ff8af9cd95958b4e8bd17b6d34759bc696d523f0543bf4daff642d3"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_02_Colony.sub",
+      "bytes": 18802,
+      "sha256": "dc245581b6c8eed5b7ad05e7d10034a817a2bfa1fbfdb3b5ca63cbc7cec9cdd0"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_03.sub",
+      "bytes": 11215,
+      "sha256": "08f8a40c659b69b15d307e126684599864e2f5fe6ea1f6421cd90cb959e696f9"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_G1.sub",
+      "bytes": 12600,
+      "sha256": "dd6ffddde322722d5489fb09e38da12d8edf0dcf5e3d99ab19ae0271cd93c25c"
+    },
+    {
+      "path": "Content/Map/Outposts/MedicalModule_G2.sub",
+      "bytes": 9813,
+      "sha256": "4b218d16601223090307e303fe631bdec1b19509d109b766ff0caa451d62aeba"
+    },
+    {
+      "path": "Content/Map/Outposts/MilCrewModule_01.sub",
+      "bytes": 16438,
+      "sha256": "0ab07022cc52133b3ad0db02fc3fa154c7aaa81d5ae316091d8103c4016e31d2"
+    },
+    {
+      "path": "Content/Map/Outposts/MineModule_01.sub",
+      "bytes": 9785,
+      "sha256": "b4540d2dd8471392719b81ee7b4a2284c728e6eee061a326d4e64d0a0a9e504c"
+    },
+    {
+      "path": "Content/Map/Outposts/MineModule_02.sub",
+      "bytes": 8007,
+      "sha256": "8c7917e1bef029684737fe8b7c15e525cf3e1f361eca4bb08cee8d0dbe19da27"
+    },
+    {
+      "path": "Content/Map/Outposts/MineModule_03.sub",
+      "bytes": 8053,
+      "sha256": "0be6069a4f931bc0d95297be5c5e8c93c36d6592125fba02e9c82e8b1275d335"
+    },
+    {
+      "path": "Content/Map/Outposts/MineModule_04.sub",
+      "bytes": 9446,
+      "sha256": "4549b3ed33b25cf46862362285243c1435f15b65a7e6117bf31974b780ee893f"
+    },
+    {
+      "path": "Content/Map/Outposts/NightclubModule_01.sub",
+      "bytes": 18837,
+      "sha256": "4c5688f479db9c8185dc7817f7d2873db607d6719b782497264211b7ad3b91c9"
+    },
+    {
+      "path": "Content/Map/Outposts/Outpost.sub",
+      "bytes": 10104,
+      "sha256": "01a75974f080c195265e1e22b48a7117edc3985f12f29775f71509adb3078923"
+    },
+    {
+      "path": "Content/Map/Outposts/Outpost2.sub",
+      "bytes": 10886,
+      "sha256": "c08f8c16839f87817e2eddb0d5adff394e11a826adcab6f5723f474f144c7330"
+    },
+    {
+      "path": "Content/Map/Outposts/Outpost3.sub",
+      "bytes": 11344,
+      "sha256": "41ef9fcbe64a79a0c82b7ff3e0f4e72fee0c0a4545ba40ed28195f7d95b77fd8"
+    },
+    {
+      "path": "Content/Map/Outposts/OutpostGenerationParameters.xml",
+      "bytes": 18720,
+      "sha256": "622f338510b4d94fdbe2e1880e32b840c0188fbd94defb65fb0cb8b16d80c732"
+    },
+    {
+      "path": "Content/Map/Outposts/OutpostItems.xml",
+      "bytes": 124387,
+      "sha256": "c67f88ce30f93e0f8a29eb0d72b28e42d8b6ca5fe2dde24de4c31903f12e5af0"
+    },
+    {
+      "path": "Content/Map/Outposts/OutpostStructurePrefabs.xml",
+      "bytes": 129650,
+      "sha256": "be6dd5577bbaaa0fbb5ce9ac85170bb8b64ef3dbd4a2a001505ab220f55b4ee9"
+    },
+    {
+      "path": "Content/Map/Outposts/PvP_AlienRuins.sub",
+      "bytes": 148267,
+      "sha256": "5b3792180fb7b13ea1a849b81b3a2886a985739110165efdbb772242e75fb2f1"
+    },
+    {
+      "path": "Content/Map/Outposts/PvP_KattenbergOutpost.sub",
+      "bytes": 48302,
+      "sha256": "4064231dab037f46e6ffc5b74853712b6616d000f4bd4ab07282605619ec88be"
+    },
+    {
+      "path": "Content/Map/Outposts/PvP_RaateColony.sub",
+      "bytes": 164478,
+      "sha256": "743ad39caf9e6eec108136276316563da3866f7b3babb4d532251cd878468aef"
+    },
+    {
+      "path": "Content/Map/Outposts/ResearchModule_01.sub",
+      "bytes": 15213,
+      "sha256": "4b3f9ef4c24e2f629249805e84d56ee88c0b2de834cc6051e52d0317fa24e017"
+    },
+    {
+      "path": "Content/Map/Outposts/ResearchModule_01_Colony.sub",
+      "bytes": 16708,
+      "sha256": "13b629d99ba11ecefaa4f0abdc5700a732dfa2afda3322412108a702d3edfb98"
+    },
+    {
+      "path": "Content/Map/Outposts/ResearchModule_02.sub",
+      "bytes": 17611,
+      "sha256": "8baca0041a6fedaccf314f50f3cd70e6bf32be3b8c291240aca634bf06d14576"
+    },
+    {
+      "path": "Content/Map/Outposts/ResearchModule_02_Colony.sub",
+      "bytes": 16120,
+      "sha256": "06353accd980f7e75f73cd22ab8bc94c72737855511fb1798b847753c7b949c1"
+    },
+    {
+      "path": "Content/Map/Outposts/Research_A1.sub",
+      "bytes": 17249,
+      "sha256": "844a91616cc5975c7da32124cb4418e66244e7fce8a23f670913ed6586266889"
+    },
+    {
+      "path": "Content/Map/Outposts/Research_A2.sub",
+      "bytes": 15558,
+      "sha256": "1e827860ad6454705d36f6e96f9121a7653aabadf5ddabed12c69b7187a75226"
+    },
+    {
+      "path": "Content/Map/Outposts/Research_A3.sub",
+      "bytes": 15637,
+      "sha256": "7c0aaf2528358fcd8f75d8c398718c9c2db9f1e119ca23d535e6c3f2f3610162"
+    },
+    {
+      "path": "Content/Map/Outposts/Research_A4.sub",
+      "bytes": 18005,
+      "sha256": "e339c42b0f8651d1ecf2b8d2de211239f4e77dc33aa9dfaada126c8e9e7601e5"
+    },
+    {
+      "path": "Content/Map/Outposts/Research_R1.sub",
+      "bytes": 13623,
+      "sha256": "1669c3d941fbadb00748c76ac9107602d40677a717b85c283028c658ea12e1a7"
+    },
+    {
+      "path": "Content/Map/Outposts/Research_R2.sub",
+      "bytes": 12079,
+      "sha256": "0089b49705aaa332d8082878a4abef5619058ed1ea955b449100d2ee3e9dc5fc"
+    },
+    {
+      "path": "Content/Map/Outposts/ResidentialModule_01_Colony.sub",
+      "bytes": 26680,
+      "sha256": "a9c2752d5fcefbe0fb1672cd0fd9d4cda03d016d29c1b9dbc2e72f7684791047"
+    },
+    {
+      "path": "Content/Map/Outposts/SecurityModule_01.sub",
+      "bytes": 9159,
+      "sha256": "af4ce322c6402ea5a5d3f0c7b832aa6581c451f655b995c8fc0cbeb505807d38"
+    },
+    {
+      "path": "Content/Map/Outposts/SecurityModule_01_Colony.sub",
+      "bytes": 17925,
+      "sha256": "39e269558f2532a62ac71ff8d95aa11d2b840c9c866939d5cf76e8b9d5a766e3"
+    },
+    {
+      "path": "Content/Map/Outposts/SecurityModule_02.sub",
+      "bytes": 12242,
+      "sha256": "ad37d87ca377e7196227357b59c54c12f1af6027b49211fa640655f1cf642d61"
+    },
+    {
+      "path": "Content/Map/Outposts/Security_A1.sub",
+      "bytes": 13122,
+      "sha256": "8b9eaa9713439ad1a64fb6283c80a08edf68e2276cd69c1055f96f000c197c69"
+    },
+    {
+      "path": "Content/Map/Outposts/Security_A2.sub",
+      "bytes": 11763,
+      "sha256": "65f55fd5bf486fc6a46cefc17affc6cfd6a1ab5962c5c6925f4adf4d4e6ae065"
+    },
+    {
+      "path": "Content/Map/Outposts/Security_A3.sub",
+      "bytes": 11427,
+      "sha256": "41f25accdd560bd3f716c8359b64271a76db7df74745f1ac24903fc0ae8590f2"
+    },
+    {
+      "path": "Content/Map/Outposts/Security_A4.sub",
+      "bytes": 13269,
+      "sha256": "36e18be400495b3f21f29663ad87e02a2ac10824732e08b5e0b192e76e0f56d9"
+    },
+    {
+      "path": "Content/Map/Outposts/Security_MIL1.sub",
+      "bytes": 12839,
+      "sha256": "fe492300326456ff81fb397209fe4673bc57fb1cc4df3331f485866377174a99"
+    },
+    {
+      "path": "Content/Map/Outposts/Security_MIL2.sub",
+      "bytes": 10935,
+      "sha256": "2718a9bb8434dd4303c912ef03dd3264da4327fb2387aa71a1ce1e744338a5e5"
+    },
+    {
+      "path": "Content/Map/Outposts/StorageModule_01.sub",
+      "bytes": 4680,
+      "sha256": "8e6e5a6ffd3302ab8c5d5e1456b94435d4b34d71a7048e3b3090b8b5c79ac0c6"
+    },
+    {
+      "path": "Content/Map/Outposts/StorageModule_02.sub",
+      "bytes": 4858,
+      "sha256": "934cfaa8d159d0af10df7c7ff699c30b304581a1c2d334f88483a750f446e4c7"
+    },
+    {
+      "path": "Content/Map/Outposts/StorageModule_03.sub",
+      "bytes": 3414,
+      "sha256": "d69cf74bcec121457292c475a85fea4d4958735817d9f58c3f62f22a6bec6faa"
+    },
+    {
+      "path": "Content/Map/Outposts/test_HallwayModuleHorizontal.sub",
+      "bytes": 1036,
+      "sha256": "f00459634dcd4d3f3db8fb24a0c67af147d1912605d5136d4fa1dfc9e130c80a"
+    },
+    {
+      "path": "Content/Map/Outposts/test_HallwayModuleVertical.sub",
+      "bytes": 970,
+      "sha256": "770d54dbcb90e32e1f9da088ab858fa01333fd6da9fdd0ee2f24d05da4b65a67"
+    },
+    {
+      "path": "Content/Map/Pirates/PirateItems.xml",
+      "bytes": 37382,
+      "sha256": "31f36d1bdc6045bbd156aa3ef65f9d9622fd0b8bb1fade3eb5ad5c60d0205d3f"
+    },
+    {
+      "path": "Content/Map/Pirates/PirateStructures.xml",
+      "bytes": 4902,
+      "sha256": "a677b41397c2b331aae43e30f380d3798ff99589fbbae015e473bda849a41af3"
+    },
+    {
+      "path": "Content/Map/RuinConfig.xml",
+      "bytes": 9648,
+      "sha256": "ab423879ed570490aefa1a2b604404c8d87cb6cb257fbf87f9c216c3784cec3f"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Chambers1.sub",
+      "bytes": 10756,
+      "sha256": "bbf0124955cf223e1188ca7fdbccb390966450d8a006602a6af3c2d8e02cf045"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Chambers2.sub",
+      "bytes": 15140,
+      "sha256": "749f455d7ed0499619ae2438c748e6d1889916fa46a7a06407f659c525e9db37"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Chambers4Way.sub",
+      "bytes": 18494,
+      "sha256": "999b8075016c700eeeaeb26a5c1ebc0959b6925d7fc7b665c26658be4d4c1fab"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Chasm.sub",
+      "bytes": 21668,
+      "sha256": "f3ce497e032eef1752b730a8ee2ad2c2a2829c333970f68a30ee56fdf5fc0597"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Chasm2.sub",
+      "bytes": 20943,
+      "sha256": "f12c8809f32a2c17e00f2a47286c83cec6a37190b5097dd1c76634d5a3308923"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Chasm3.sub",
+      "bytes": 21109,
+      "sha256": "b3a1d0b4b13ba46fd7019d481d0f464dbbbb3bb5aca1e74c34823dc9b996f625"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_CurrentQuarters.sub",
+      "bytes": 21249,
+      "sha256": "a712e2c55997aac34099fce5c00cb9d6acbe17a1408798ba0304c6870d6a544d"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_DeadEndL.sub",
+      "bytes": 2786,
+      "sha256": "1f8a681e04b5fb8c9cdb518e060ac9ce90ad0e878f0a08c240d425304f36e416"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_DeadEndR.sub",
+      "bytes": 2773,
+      "sha256": "41581de43acbeecc6283c8d5f2c373788a321bf31d0037feb956dfe98837ad38"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Entrance1.sub",
+      "bytes": 9114,
+      "sha256": "77b3e295db29226c301790cf1b222875e074da0809656cd906c30b8a8cbca52d"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Entrance2.sub",
+      "bytes": 7482,
+      "sha256": "f0de6c54c48ce6395b57f210f99b0d8e8fff55b894b4ad25fa8628fca2e72ee7"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Entrance3.sub",
+      "bytes": 10570,
+      "sha256": "4a43a83a48c2ddab5cca5df4e209d642d21ea7cd4a5bb2c0c73cf932649ba2be"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_GeneticStorage1L.sub",
+      "bytes": 16000,
+      "sha256": "dacc220a33bb8b79625e076a556394a8c8fd5aa6f93e256fec8859f47a3427d9"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_GeneticStorage1R.sub",
+      "bytes": 14467,
+      "sha256": "2f59b6a311f3d7028dffa5e9661d0b43a3ba58f3a09f874ecbbb9749a870f965"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_HallwayBlocked.sub",
+      "bytes": 1312,
+      "sha256": "ca1b75158caaf9d7d60a6ba4382442a2edf914661b347359597a5ddc93aca51b"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_HallwayHorizontal.sub",
+      "bytes": 1099,
+      "sha256": "6b6c77d4c05c7e3a78d3dfab4c7dc7dad4d00a08843d26a0b3a2651fb3bcdd60"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_HallwaySphere.sub",
+      "bytes": 9030,
+      "sha256": "dbfb2a234545fd955398c5d26137c688c51c8b2939903d5a78a9b3f84eb3775f"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_HallwayVertical.sub",
+      "bytes": 1095,
+      "sha256": "66cdc454720dbfb2e6663a4b3b388499bd69e2ee3a719abe81f3b6d2e37ffc30"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_HazardMaze1.sub",
+      "bytes": 42096,
+      "sha256": "d6453f7b6a7d18ef39418ed1d847f9cc9407666940c3954446fb0cb147e19aeb"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_HuskMaze1.sub",
+      "bytes": 57538,
+      "sha256": "bf545bb2ff303f912c87e580227fe8ec2109125187d739f0fe44cde06129b3dd"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_MaintenancePassages.sub",
+      "bytes": 22116,
+      "sha256": "fd0d0afe8960d4954e5dd321a0ecfaadb101d995de5d2ee6ba7cb1b2dbacb40b"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_MaintenancePassages2.sub",
+      "bytes": 16810,
+      "sha256": "d72fd5ceebc8eb4e0754d672bd954d870b1b20456596927fea7942ca1b4bf54c"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_MaintenanceTunnels1.sub",
+      "bytes": 8512,
+      "sha256": "a575ab351f947504ecccd6e75e831c4c518b78c84088dc0974562f7f73c1edca"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_MaintenanceTunnels2L.sub",
+      "bytes": 4227,
+      "sha256": "c66d16c62c3c6934ad1e1096c29c84b9891314b6e258a15d61754e90e48b735f"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_MaintenanceTunnels2R.sub",
+      "bytes": 4305,
+      "sha256": "9053b73a29dda6be57b2c92cc403ad401e2e82eb60a7d2486f92fcfbf702423b"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Offices1.sub",
+      "bytes": 33276,
+      "sha256": "382cd92fe1a3c6e96588ce4776c35fc181642d42ec785a137fcd54f4b74729ac"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_ResearchFacility.sub",
+      "bytes": 18128,
+      "sha256": "c2cb70fdb24ccb8ddaa6c8f560f1ab39ce5a5e6ef06d32d074b44b3aeb94511a"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_SecurityModule.sub",
+      "bytes": 8410,
+      "sha256": "5c51ea677b26af348a5af80d4461281b8016df9089fc5f867c33f59cb919ea9d"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Shrine.sub",
+      "bytes": 40151,
+      "sha256": "9f4a0ddd5716d937a521e018b34cba2e279068e1dcf01c5c41c67bcf65a6f63d"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Storage1L.sub",
+      "bytes": 18107,
+      "sha256": "3bdaf6cd5d7717bdb7443a37b32b344e0ffbd06b7787057cff8e4f1fc874aa00"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Storage1R.sub",
+      "bytes": 19157,
+      "sha256": "d5aa4c5ca54b8d3467a88acc1acdf3c6e5fc2e8c32864253d4669853cd0ca494"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_ToxinsMaze1.sub",
+      "bytes": 25716,
+      "sha256": "6342122800be3a40e14959af72475ca47634ee24e490d7057701ec7e127fc8ab"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_VaultModule1.sub",
+      "bytes": 27692,
+      "sha256": "a73be6e23e9110cab52e78aba37bb482f53bb20568f87fd41a97994c2906b887"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_VaultModule2.sub",
+      "bytes": 22986,
+      "sha256": "b28fd593aac8e1e5337773451f53ba949d41e86ed0ca2f8f3f4c1b5332f3d58c"
+    },
+    {
+      "path": "Content/Map/RuinModules/Alien_Workshop.sub",
+      "bytes": 25328,
+      "sha256": "308171673a622e865c9b041fab3fcce31314cb5e76d661d47a427fe45bfe4f18"
+    },
+    {
+      "path": "Content/Map/StructurePrefabs.xml",
+      "bytes": 237947,
+      "sha256": "51830e181832fdb7ec3ce3a082feb2ec9a00587fea981c9c721996959336bc1c"
+    },
+    {
+      "path": "Content/Map/Thalamus/ThalamusAI.xml",
+      "bytes": 1118,
+      "sha256": "ab3f5f8d7d07fb02b5f030aed1ab29b7cd1c9e966bed8891c5654f3731628473"
+    },
+    {
+      "path": "Content/Map/Thalamus/thalamusitems.xml",
+      "bytes": 28333,
+      "sha256": "84ea31c902ad27bd51a653f1a97bc0d1e2a06cfebfee550c1e68fece16123c90"
+    },
+    {
+      "path": "Content/Map/Thalamus/thalamusstructures.xml",
+      "bytes": 3241,
+      "sha256": "36aac41609cd4dcaf9974a51972793f7924ddd1d3f0b8cab224d83698e58224b"
+    },
+    {
+      "path": "Content/Map/Wrecks/Barsuk_Wrecked.sub",
+      "bytes": 29161,
+      "sha256": "74120ce52596c6e05f2b942c3cce8910c58bcf4c86b8d2259415880463c562a4"
+    },
+    {
+      "path": "Content/Map/Wrecks/Berilia_Wrecked.sub",
+      "bytes": 35374,
+      "sha256": "6bd2dde741472ace718c03d9bd99c89e041cf80bb6770dc511bb5795e30d812a"
+    },
+    {
+      "path": "Content/Map/Wrecks/Camel_Wrecked.sub",
+      "bytes": 36973,
+      "sha256": "e12b7f045afae0e51de82941ab0c3ef5fcf487ae0399d07feed8790cb33e4282"
+    },
+    {
+      "path": "Content/Map/Wrecks/Dugong_Wrecked.sub",
+      "bytes": 25681,
+      "sha256": "9473f01543972fd623f605a636582a998d0c387ee93454fc9b97e135c495d530"
+    },
+    {
+      "path": "Content/Map/Wrecks/Hemulen_Wrecked.sub",
+      "bytes": 17270,
+      "sha256": "025f83bef742969873abc0e3b67c0a1936b8e3271765bdb826cb4ac4b6bfb77f"
+    },
+    {
+      "path": "Content/Map/Wrecks/Humpback_Wrecked.sub",
+      "bytes": 38379,
+      "sha256": "f158a6ea35b123248cf1ac027d401c2e1eadccc8eb10899e45e49ea1161fe8cd"
+    },
+    {
+      "path": "Content/Map/Wrecks/Kastrull_Wrecked.sub",
+      "bytes": 39671,
+      "sha256": "2edfd75a9290e442ecf057ca207d81a2ba2559709340ab9ee3f03b88b78b2494"
+    },
+    {
+      "path": "Content/Map/Wrecks/R-29_Wrecked.sub",
+      "bytes": 63935,
+      "sha256": "f14ec4e3e9996f02d0513690bbd9ca64d258950282b2ce2bcb11c8ed1eba923f"
+    },
+    {
+      "path": "Content/Map/Wrecks/Remora_Wrecked.sub",
+      "bytes": 53950,
+      "sha256": "1a64c3927fcc6327d6d155fadb33938f38f3915967e145e14f87c6ae707f4d7f"
+    },
+    {
+      "path": "Content/Map/Wrecks/Typhon2_Wrecked.sub",
+      "bytes": 55693,
+      "sha256": "f05ccc4e13347e9c54b6b8cd0950ccd418e82268caa1a75b8010265c935e4949"
+    },
+    {
+      "path": "Content/Map/Wrecks/Venture_Wrecked.sub",
+      "bytes": 17762,
+      "sha256": "bdcc93e7387ecbd5d06cc7a67823aa573c653ea1ec046216effa59b16d8b7e97"
+    },
+    {
+      "path": "Content/Map/Wrecks/Wreck1.sub",
+      "bytes": 29025,
+      "sha256": "e8e2b47c2299ce5cc388e63681f02938d572ea6a8c42e3426075dfe2beeb9d48"
+    },
+    {
+      "path": "Content/Map/alienNames.txt",
+      "bytes": 572,
+      "sha256": "80ba5849aed58d37e75c290ccbfea493f4cbda4b7f36c1a60f23af2adf1ab709"
+    },
+    {
+      "path": "Content/Map/cityNames.txt",
+      "bytes": 597,
+      "sha256": "e7d4f67dfa55f796608eaf53f3262bb45de70c9e9225a54482a21953b9364500"
+    },
+    {
+      "path": "Content/Map/factions.xml",
+      "bytes": 4867,
+      "sha256": "13827c614ec0d54d0c6f0e6dcc83b1cde0a0aaf51c2c35a27d5257ba0799c5ad"
+    },
+    {
+      "path": "Content/Map/locationNames.txt",
+      "bytes": 1244,
+      "sha256": "b8ffb4e5e76eab73987497f6968146060caf60196579f1bf2fedf37caaadf579"
+    },
+    {
+      "path": "Content/Map/locationTypes.xml",
+      "bytes": 24149,
+      "sha256": "bbd296d7a4ef3b8d0eff9331d043c1f8452e229c088f6eb6d4e6aa0eae1c1911"
+    },
+    {
+      "path": "Content/Missions.xml",
+      "bytes": 160701,
+      "sha256": "b48676a2495232f14dd6819fe8a818bf7cf668492a4e0a104cd340902673b4d4"
+    },
+    {
+      "path": "Content/MissionsPvP.xml",
+      "bytes": 2139,
+      "sha256": "fe1e9072bdb1e93ae0e8085fdb5a58d5126e2ebf22b5b6ed0247144f1c1d6442"
+    },
+    {
+      "path": "Content/NPCConversations/BrazilianPortuguese/NpcConversations_BrazilianPortuguese.xml",
+      "bytes": 69762,
+      "sha256": "662bbbdd014953aca64c681d696c566aebf4b3bf5a431bc7a21faba46c19299f"
+    },
+    {
+      "path": "Content/NPCConversations/CastilianSpanish/NpcConversations_CastilianSpanish.xml",
+      "bytes": 70512,
+      "sha256": "34b6fd8bceb9c2b519dcc6076b5a84f6006b51aa2b518ff6c588a0eaf2aca9e5"
+    },
+    {
+      "path": "Content/NPCConversations/English/NpcConversations_English.xml",
+      "bytes": 68297,
+      "sha256": "7feed9ea6f2f49511be90039b654f218a5d751255901083d4087d89ba39f6d89"
+    },
+    {
+      "path": "Content/NPCConversations/French/NpcConversations_French.xml",
+      "bytes": 76109,
+      "sha256": "f010e041c35c44c6d5f48a51496b1a398a0051d87caf00b0ef58ec1f17b838d3"
+    },
+    {
+      "path": "Content/NPCConversations/German/NpcConversations_German.xml",
+      "bytes": 72472,
+      "sha256": "d5f19b7d86820a914fba5543a82bb2a1e122619eb627d0bacc72912134e4141f"
+    },
+    {
+      "path": "Content/NPCConversations/Japanese/NpcConversations_Japanese.xml",
+      "bytes": 73909,
+      "sha256": "7636a3d476d65da35ed860d83e477d0f06f2fee5eb0dd2bc04f58ecaeccd3a31"
+    },
+    {
+      "path": "Content/NPCConversations/Korean/NpcConversations_Korean.xml",
+      "bytes": 75655,
+      "sha256": "464f1bbbe033e5e6067893a9e0c5029b199e54f992dfc6d87e0da7b1a5d11bb8"
+    },
+    {
+      "path": "Content/NPCConversations/LatinamericanSpanish/NpcConversations_LatinamericanSpanish.xml",
+      "bytes": 70307,
+      "sha256": "a90f5eab603de79a3682dd141e0509b54a21c0ab69dcdd8a874bee5ccd252c4c"
+    },
+    {
+      "path": "Content/NPCConversations/NpcConversations_Finnish.xml",
+      "bytes": 2269,
+      "sha256": "b5cc239221e366384e24088a641ec8a05b0de91f9fd2fca1ed71ff3df427a05d"
+    },
+    {
+      "path": "Content/NPCConversations/Polish/NpcConversations_Polish.xml",
+      "bytes": 69059,
+      "sha256": "fe5ce8719606fff790df6c2b1460f1743cafb20d29d67eae5034e2652d3e65fe"
+    },
+    {
+      "path": "Content/NPCConversations/Russian/NpcConversations_Russian.xml",
+      "bytes": 89700,
+      "sha256": "61e8f275c6d0f4f5fdc650aee0d9e6f6408ee3eddb94290f3fde1926d0e32b63"
+    },
+    {
+      "path": "Content/NPCConversations/SimplifiedChinese/NpcConversations_SimplifiedChinese.xml",
+      "bytes": 66312,
+      "sha256": "2ac8effd3ca514db530255436c4743d16f0541b2b841560433a4ebd519669ac3"
+    },
+    {
+      "path": "Content/NPCConversations/TraditionalChinese/NpcConversations_TraditionalChinese.xml",
+      "bytes": 66312,
+      "sha256": "3d1c53bf0020856b4c734e86a028f357d2419e75fa5314340cc61143db4be09d"
+    },
+    {
+      "path": "Content/NPCConversations/Turkish/NpcConversations_Turkish.xml",
+      "bytes": 68832,
+      "sha256": "e9c2dc986345fa223a3e43847c2b7650bd77eb4ff91b3a2e4ca32aac0acf09e7"
+    },
+    {
+      "path": "Content/NPCPrefabs/CombatMissionNpcs.xml",
+      "bytes": 23610,
+      "sha256": "10ac294962d07b03af44484d71069bf50d7f201bfa627eca6a446e575c85cc3c"
+    },
+    {
+      "path": "Content/NPCPrefabs/Corpses.xml",
+      "bytes": 13691,
+      "sha256": "b7a4134c01bf306a542f2a1bd8ca33addecbef5b48f5eb0ec8a3627de346022d"
+    },
+    {
+      "path": "Content/NPCPrefabs/EscortMissionNpcs.xml",
+      "bytes": 8562,
+      "sha256": "2e874c70d9e2c971eb47c9a0d68116ebc659e24ebe5da36d04452468bd4c4a8a"
+    },
+    {
+      "path": "Content/NPCPrefabs/OutpostNpcs.xml",
+      "bytes": 70462,
+      "sha256": "e789fa3b409a70c061e1b7398bfdd8f5d97fc6d31c056b88713c9b1c082740fa"
+    },
+    {
+      "path": "Content/NPCPrefabs/SpecialNpcs.xml",
+      "bytes": 46125,
+      "sha256": "1a1de34c5515674539e3ec63ad7812ca3443baef36d96d60d1a5599f8a26fef1"
+    },
+    {
+      "path": "Content/Orders.xml",
+      "bytes": 14569,
+      "sha256": "79c3a604651b7231d4d1efc3fbf88a70fd77f31b5f8a5c18b08e8dd1e96f45ec"
+    },
+    {
+      "path": "Content/Particles/DecalPrefabs.xml",
+      "bytes": 5351,
+      "sha256": "08163e81ea62ae5d84135213b12b648e1c62841eb02c68b0629140386eb47c38"
+    },
+    {
+      "path": "Content/Particles/ParticlePrefabs.xml",
+      "bytes": 171926,
+      "sha256": "c87b62f9aa6c02c5575cb74f7c7145a3109a459dbd8c6e9679c2b7f2d4bfe33c"
+    },
+    {
+      "path": "Content/SkillSettings.xml",
+      "bytes": 3333,
+      "sha256": "423ef573a93446cc598ef394157bc6666eca16aad9a881eb0a2d59fad1450ced"
+    },
+    {
+      "path": "Content/Slideshows.xml",
+      "bytes": 1314,
+      "sha256": "90b08f098e1de277f86171589669e3f104000554b85fbdc517a1e61cbc4844fa"
+    },
+    {
+      "path": "Content/Sounds/sounds.xml",
+      "bytes": 26276,
+      "sha256": "e355a25c800a31b359f3501a5178ccecd84fe34cabc7204ce8436bb7eccc2074"
+    },
+    {
+      "path": "Content/Submarines/Azimuth.sub",
+      "bytes": 236137,
+      "sha256": "930456b1d9cfaef2c3362a0afd0afdae06c3b0953934fcd54a402e5ce72ceb37"
+    },
+    {
+      "path": "Content/Submarines/Barsuk.sub",
+      "bytes": 256562,
+      "sha256": "e133eaa903cd59ca7ea511adf03a23dde7d03f932b3ba1de81dba6c14cab6498"
+    },
+    {
+      "path": "Content/Submarines/Berilia.sub",
+      "bytes": 358357,
+      "sha256": "26429509411001c4ccce63cc544fddc8e79d825b1308b7b7269aa9691746ec69"
+    },
+    {
+      "path": "Content/Submarines/Camel.sub",
+      "bytes": 341383,
+      "sha256": "edda2fa85006f15cfacfca2df9eabe4ba6d7806c3e3483045cd10d45eadb6af6"
+    },
+    {
+      "path": "Content/Submarines/Dugong.sub",
+      "bytes": 228362,
+      "sha256": "c11dc80cba5afef9343a3d1a96c57f3eda90027c8d49facb272b06f45d1e22c0"
+    },
+    {
+      "path": "Content/Submarines/Hemulen.sub",
+      "bytes": 243918,
+      "sha256": "c46df3e177301d0d0f4714a7821f08b61b3d661d5de1bfc67b0d9fd8ca913360"
+    },
+    {
+      "path": "Content/Submarines/Herja.sub",
+      "bytes": 252563,
+      "sha256": "c07da9fa560487cca0cfbe72854eeb7890a4a7b98140c960466009eaf1ee3289"
+    },
+    {
+      "path": "Content/Submarines/Humpback.sub",
+      "bytes": 222213,
+      "sha256": "10624562b773fbf973753e095d3d76ec643f32bdaeac1e6d41264accbf119e05"
+    },
+    {
+      "path": "Content/Submarines/Kastrull.sub",
+      "bytes": 290898,
+      "sha256": "26af6d0c01172edcffd2385f4eabd5149db971359b961b442d1bfe065741983e"
+    },
+    {
+      "path": "Content/Submarines/KastrullDrone.sub",
+      "bytes": 232965,
+      "sha256": "18067515e47ca7541f4ab34342dca46c76ea4066d3a8a8e0e60cf0bce9e1220e"
+    },
+    {
+      "path": "Content/Submarines/Orca.sub",
+      "bytes": 248322,
+      "sha256": "75ca5846fd3fea6c0290b018070eb7fe0cb2916352e303ea39fe9269bd7a6640"
+    },
+    {
+      "path": "Content/Submarines/Orca2.sub",
+      "bytes": 261894,
+      "sha256": "8da7cefd31fe38205197c1bddace852649dcc7f920175d8e85d4cd9949a37a6b"
+    },
+    {
+      "path": "Content/Submarines/PowerTestSub.sub",
+      "bytes": 8754,
+      "sha256": "7657d10e35ef35f9d22c0b8656e8b55bfc77cbb73fcfdbc2290fbd26aedf137d"
+    },
+    {
+      "path": "Content/Submarines/R-29.sub",
+      "bytes": 241932,
+      "sha256": "afe757fdc215982ea7f513993f63ba12a94fc96cda65b24229209a1099b6d9ea"
+    },
+    {
+      "path": "Content/Submarines/Remora.sub",
+      "bytes": 304243,
+      "sha256": "8f4c3391b4d6bd7b0be731e11a7cdd0a9e3c43b866e38f771ac17916a89ad446"
+    },
+    {
+      "path": "Content/Submarines/RemoraDrone.sub",
+      "bytes": 269483,
+      "sha256": "d869810c14ce1e4873c7c87bbb2403336723d83f4edf86f3b9a8e3884bb1db48"
+    },
+    {
+      "path": "Content/Submarines/Selkie.sub",
+      "bytes": 241291,
+      "sha256": "4bf82ceae5d168e4e8ab775b5f085d0433f62141d520d6ace69d1db7b35d7ecc"
+    },
+    {
+      "path": "Content/Submarines/Typhon.sub",
+      "bytes": 291180,
+      "sha256": "f4eb5812014b9731820651acafe4523fce1833082a2c64b6c05ccc84dcc1cf53"
+    },
+    {
+      "path": "Content/Submarines/Typhon2.sub",
+      "bytes": 305231,
+      "sha256": "955945e9ce0a25093f4746c42b111b2aaed296ca219dc32650d30c2e1e6d3d64"
+    },
+    {
+      "path": "Content/Submarines/Venture.sub",
+      "bytes": 307638,
+      "sha256": "980284073ca89557930c1f3fe17820c0b0e5d837b25b620e59fc612ffe9298bd"
+    },
+    {
+      "path": "Content/Submarines/Wallaby.sub",
+      "bytes": 308079,
+      "sha256": "d959f3b479ee36b3821335d7270ec9553f4c73496da6e7ee9d214cad8b56a176"
+    },
+    {
+      "path": "Content/Submarines/Winterhalter.sub",
+      "bytes": 279260,
+      "sha256": "6e2cecd72348bb842e00fa566d005851130ba52452a2d3ab7b24bc91debbce41"
+    },
+    {
+      "path": "Content/Talents/Assistant/AfflictionsAssistant.xml",
+      "bytes": 13398,
+      "sha256": "b58a0a0710e244e9a51090c2752326275c02a39e278021a4bbd17d7ce7f084fb"
+    },
+    {
+      "path": "Content/Talents/Assistant/TalentsAssistant.xml",
+      "bytes": 36271,
+      "sha256": "3a27dafb27602d562cadf79b85d8839e568ed8ce28d1a67cb316568d021fe38b"
+    },
+    {
+      "path": "Content/Talents/Captain/AfflictionsCaptain.xml",
+      "bytes": 11917,
+      "sha256": "d955af17cd9b1f8b18ad117e9fe8b0c62544d78985325883b3d698953aa4f9f7"
+    },
+    {
+      "path": "Content/Talents/Captain/TalentsCaptain.xml",
+      "bytes": 32611,
+      "sha256": "2e1d16f8727b0e861c57542856c3fed1713642ee06ed0b1602f09ead1ef6a1f9"
+    },
+    {
+      "path": "Content/Talents/Doctor/AfflictionsDoctor.xml",
+      "bytes": 7832,
+      "sha256": "cf1e35702f4232ec2d024e6a04b06d11aa743c29f2473a84a2b9b001b32ce70d"
+    },
+    {
+      "path": "Content/Talents/Doctor/TalentsDoctor.xml",
+      "bytes": 24302,
+      "sha256": "8293c811ac70d7b0e4573f8f83b28b3d76cf184f92392f9e0684dc30bf114407"
+    },
+    {
+      "path": "Content/Talents/Engineer/AfflictionsEngineer.xml",
+      "bytes": 3192,
+      "sha256": "0d223a2b184241620069f2f3cd6e86352c4323e3df4cc27eb4dd6a07944c1ab3"
+    },
+    {
+      "path": "Content/Talents/Engineer/TalentsEngineer.xml",
+      "bytes": 25113,
+      "sha256": "dd0f58c41fb3cf9f6a1cb3591aa7a6b3f60c0e82ad572577b4c9b51f4a5cb868"
+    },
+    {
+      "path": "Content/Talents/Mechanic/AfflictionsMechanic.xml",
+      "bytes": 3444,
+      "sha256": "87dd3a7818397da7edffb50bee9199bb25c31962d28eccf75bf11324d074eba3"
+    },
+    {
+      "path": "Content/Talents/Mechanic/TalentsMechanic.xml",
+      "bytes": 29567,
+      "sha256": "6b740222a7ad479b49e62676fea55dc91bcdf21ec5bdd0edbccda489cf12cd80"
+    },
+    {
+      "path": "Content/Talents/Security/AfflictionsSecurity.xml",
+      "bytes": 4733,
+      "sha256": "e456958a0ba5fd5fee71f01487855c93341c4d73b0b9d298b926d8ae96a2b31e"
+    },
+    {
+      "path": "Content/Talents/Security/TalentsSecurity.xml",
+      "bytes": 27219,
+      "sha256": "61dc99995af9c197a6b36c7dd668705d001ac7105a1641b92a7492605a13aada"
+    },
+    {
+      "path": "Content/Talents/TalentTrees.xml",
+      "bytes": 16873,
+      "sha256": "8177e5240a40699fa09db03456f466fdb390e734b568df8091e7325572dd0e92"
+    },
+    {
+      "path": "Content/Texts/BrazilianPortuguese/BrazilianPortugueseVanilla.xml",
+      "bytes": 1130179,
+      "sha256": "8011d7ea1b9e684c42b536f0a95ebbc6b747cc23c12697659fd49db37cf3b2d2"
+    },
+    {
+      "path": "Content/Texts/BrazilianPortuguese/BrazilianPortugueseVanillaEditorTexts.xml",
+      "bytes": 144065,
+      "sha256": "19fe7f3afbaa54edd08dc0fff43b8841d061f7b37a5724121984cc540a2bd582"
+    },
+    {
+      "path": "Content/Texts/BrazilianPortuguese/BrazilianPortugueseVanillaEndgame.xml",
+      "bytes": 29516,
+      "sha256": "73ff7e8e7e568c1db4378e5d5b6ddcbf8f103796aa5f5706fdd9a4f2417d22ab"
+    },
+    {
+      "path": "Content/Texts/BrazilianPortuguese/BrazilianPortugueseVanillaFactions.xml",
+      "bytes": 124299,
+      "sha256": "57046b8201f7244af2f135be4209e17ed9d46459b51b2bcedcb8666f469956d5"
+    },
+    {
+      "path": "Content/Texts/CastilianSpanish/CastilianSpanishVanilla.xml",
+      "bytes": 1132736,
+      "sha256": "bed72da961fe19d1786986b627e0ebb39798aefae5124a2e196eb6a1ad6f151a"
+    },
+    {
+      "path": "Content/Texts/CastilianSpanish/CastilianSpanishVanillaEditorTexts.xml",
+      "bytes": 143273,
+      "sha256": "0efab2f377b27f7dbcfdc0a948e8b0318dce55669e3c2cb55786614e1be5b87a"
+    },
+    {
+      "path": "Content/Texts/CastilianSpanish/CastilianSpanishVanillaEndgame.xml",
+      "bytes": 28903,
+      "sha256": "e69f29b0be1ed0d819240b1e95c8fd28dfca04a2872480a30949375bce447c4a"
+    },
+    {
+      "path": "Content/Texts/CastilianSpanish/CastilianSpanishVanillaFactions.xml",
+      "bytes": 119296,
+      "sha256": "6e80935ebf2981e198ca3572c5da5f29eed8404190bab885643c66f5a32b2f0e"
+    },
+    {
+      "path": "Content/Texts/Credits.xml",
+      "bytes": 41254,
+      "sha256": "779fd6297d571550e458a171a287323287d999ee26175309a76e906cd7a8cc5a"
+    },
+    {
+      "path": "Content/Texts/English/EnglishVanilla.xml",
+      "bytes": 1078022,
+      "sha256": "0b4446db3185536816fdf0f356305652cc7481cdec71a7678b860a21fb358a59"
+    },
+    {
+      "path": "Content/Texts/English/EnglishVanillaEditorTexts.xml",
+      "bytes": 138561,
+      "sha256": "8901cc296ab9509548f3af4ea5b57b666ffbe7f4f60a7f08aa3fc1d93c3ff4e6"
+    },
+    {
+      "path": "Content/Texts/English/EnglishVanillaEndgame.xml",
+      "bytes": 28819,
+      "sha256": "2f4459b5bf648884e1699c4ea2e4bf4905efc9124f6ec9e18f4b31594c98f439"
+    },
+    {
+      "path": "Content/Texts/English/EnglishVanillaFactions.xml",
+      "bytes": 122497,
+      "sha256": "1e664fd2d4a46606b3a7377ee18d8823160b95e2fb14e007ce5147f609be75d4"
+    },
+    {
+      "path": "Content/Texts/English/EnglishVanillaNew.xml",
+      "bytes": 1363,
+      "sha256": "1db396e5e12657bac5e5e74eed394e4c0960224cf1ae0697187e82a095ba9a3d"
+    },
+    {
+      "path": "Content/Texts/FinnishVanilla.xml",
+      "bytes": 58710,
+      "sha256": "abeb3e861545941474f583c0d6c9efc6f930a2948a63f9f943df5450225c5abf"
+    },
+    {
+      "path": "Content/Texts/French/FrenchVanilla.xml",
+      "bytes": 1171105,
+      "sha256": "72de8e8d6adeb29fb4ee1aaf7beee74f3ede77dbe25e2fdead69099585955dd8"
+    },
+    {
+      "path": "Content/Texts/French/FrenchVanillaEditorTexts.xml",
+      "bytes": 145885,
+      "sha256": "dc5396c63317559e677e4aae677b8f1bdda876b7350c6fedad6e7c88d4638ca6"
+    },
+    {
+      "path": "Content/Texts/French/FrenchVanillaEndgame.xml",
+      "bytes": 31460,
+      "sha256": "51b71fc94bc4877b6912e31a6b4c7cb6aa03ee2dea954d15cfcac8272332d7ef"
+    },
+    {
+      "path": "Content/Texts/French/FrenchVanillaFactions.xml",
+      "bytes": 129071,
+      "sha256": "309bdf0ef725ba8d8165258717ac1de1c3bfb21d0280086ae53319de31262fa8"
+    },
+    {
+      "path": "Content/Texts/German/GermanVanilla.xml",
+      "bytes": 1160827,
+      "sha256": "9e6c7a61196568e89ed859667724b0f7d374a3733b411926a11d64bfd53fce23"
+    },
+    {
+      "path": "Content/Texts/German/GermanVanillaEditorTexts.xml",
+      "bytes": 143101,
+      "sha256": "28ea04c00f1d6c6f4a31a196455ef68960a0395ece5f60651c57703e22729114"
+    },
+    {
+      "path": "Content/Texts/German/GermanVanillaEndgame.xml",
+      "bytes": 31485,
+      "sha256": "113734757000de479d399d06b6517a1a94cb3a6cc5e6631845698faa88182528"
+    },
+    {
+      "path": "Content/Texts/German/GermanVanillaFactions.xml",
+      "bytes": 129019,
+      "sha256": "c1ee367ae8766c027cc64a4dc4e8da14cdef5868460700a4ba20ddee047ef5b1"
+    },
+    {
+      "path": "Content/Texts/Japanese/JapaneseVanilla.xml",
+      "bytes": 1190873,
+      "sha256": "ed591771422485f3d561c9eb4c23f6fb3bcb1d23e4bd30fa7f7fb8446125c915"
+    },
+    {
+      "path": "Content/Texts/Japanese/JapaneseVanillaEditorTexts.xml",
+      "bytes": 150735,
+      "sha256": "92b4b278c0a000f795531c1f1eb45925ceb0dabe8b0aac436c60e709a2971793"
+    },
+    {
+      "path": "Content/Texts/Japanese/JapaneseVanillaEndgame.xml",
+      "bytes": 31869,
+      "sha256": "1b8429e405a2514b529a6a73be6b01cb558a0e7f09cef390fba5200e3b017743"
+    },
+    {
+      "path": "Content/Texts/Japanese/JapaneseVanillaFactions.xml",
+      "bytes": 141793,
+      "sha256": "83f6a56ef81df5fccad760722eba950a3d90426699ecba11f293d0016860476f"
+    },
+    {
+      "path": "Content/Texts/Korean/KoreanVanilla.xml",
+      "bytes": 1167193,
+      "sha256": "d2f5d7f03c2ae04646ca1413c00bfee9b5a2d647b49181dcc7de87d12f95dad6"
+    },
+    {
+      "path": "Content/Texts/Korean/KoreanVanillaEditorTexts.xml",
+      "bytes": 142614,
+      "sha256": "9c9c07c619bfc9f305a2d45bbcc80ee1eef0658fa00b49b4a478c23b08e22fe8"
+    },
+    {
+      "path": "Content/Texts/Korean/KoreanVanillaEndgame.xml",
+      "bytes": 34501,
+      "sha256": "0afc5e6ef0f51a1c5f22fa90f9756768070a29546e964c828190029007608977"
+    },
+    {
+      "path": "Content/Texts/Korean/KoreanVanillaFactions.xml",
+      "bytes": 141379,
+      "sha256": "37a03cacdaa2e73965c9813e84f81fd684d4805d0b170dcb6dc437f984571140"
+    },
+    {
+      "path": "Content/Texts/LatinamericanSpanish/LatinamericanSpanishVanilla.xml",
+      "bytes": 1128145,
+      "sha256": "34003791b617db20d20478d48859eac8d29a2a819911c600063751b89a065fe3"
+    },
+    {
+      "path": "Content/Texts/LatinamericanSpanish/LatinamericanSpanishVanillaEditorTexts.xml",
+      "bytes": 143060,
+      "sha256": "70c5d6cecbbd99d82fae14486445c1bb21721726869d7cd4539678cb6864e401"
+    },
+    {
+      "path": "Content/Texts/LatinamericanSpanish/LatinamericanSpanishVanillaEndgame.xml",
+      "bytes": 28680,
+      "sha256": "e592763db580033670a82e6f95e302750223e6375a5167571d3bd7876e4ebb7b"
+    },
+    {
+      "path": "Content/Texts/LatinamericanSpanish/LatinamericanSpanishVanillaFactions.xml",
+      "bytes": 118366,
+      "sha256": "32ad05b3239388db7eed7ae602fab8c535fc8acb481f908f35010231407a58bd"
+    },
+    {
+      "path": "Content/Texts/Polish/PolishVanilla.xml",
+      "bytes": 1126206,
+      "sha256": "25c10b5c271cf008d2f199bab89d87ac5f8320c114f782fcfbee2a826713bcaf"
+    },
+    {
+      "path": "Content/Texts/Polish/PolishVanillaEditorTexts.xml",
+      "bytes": 140554,
+      "sha256": "c8be6289756cfe9830a095661465c2371fbdbb20aafb2c07ae5b89aafcecaa41"
+    },
+    {
+      "path": "Content/Texts/Polish/PolishVanillaEndgame.xml",
+      "bytes": 30010,
+      "sha256": "78f6cec988c7ae376b36b1544e27a2a0a7cd1ef0e09a1333252e42e3fee8da69"
+    },
+    {
+      "path": "Content/Texts/Polish/PolishVanillaFactions.xml",
+      "bytes": 124234,
+      "sha256": "4e680fe54f26c949cdadd5e1586942733a01903b74cb73ef31c5443541ae9adc"
+    },
+    {
+      "path": "Content/Texts/Russian/RussianVanilla.xml",
+      "bytes": 1487442,
+      "sha256": "56482c6f137fa989f2591b4ae48c4e705833fe1600b10770734f4a63db2a00ee"
+    },
+    {
+      "path": "Content/Texts/Russian/RussianVanillaEditorTexts.xml",
+      "bytes": 178854,
+      "sha256": "f109c8fa94bbdbea754d363107104b4a45a9e743e6c8e7b40ecea342442c5d28"
+    },
+    {
+      "path": "Content/Texts/Russian/RussianVanillaEndgame.xml",
+      "bytes": 42108,
+      "sha256": "f6c8cca71c41f11c8c37d1890b3475e6eb9b6323f47b1102e6da97687fd931ac"
+    },
+    {
+      "path": "Content/Texts/Russian/RussianVanillaFactions.xml",
+      "bytes": 165959,
+      "sha256": "909e04594822266897538d0444c4727cd204030e9e1df87f5166d00d357da16d"
+    },
+    {
+      "path": "Content/Texts/SimplifiedChinese/SimplifiedChineseVanilla.xml",
+      "bytes": 1003699,
+      "sha256": "ff565d41c60800b6a06ebe690599706f25ce9eb25bb3ac68dbfc290e28ecdc0a"
+    },
+    {
+      "path": "Content/Texts/SimplifiedChinese/SimplifiedChineseVanillaEditorTexts.xml",
+      "bytes": 131300,
+      "sha256": "295d8e45b3cde881f2768cbc05c7afc9f9b73ec894fea57729a397810a5fe2ca"
+    },
+    {
+      "path": "Content/Texts/SimplifiedChinese/SimplifiedChineseVanillaEndgame.xml",
+      "bytes": 25729,
+      "sha256": "f938135d6a93483d5acded1e859d3862aef828e51661672f1325d1401da9bc4a"
+    },
+    {
+      "path": "Content/Texts/SimplifiedChinese/SimplifiedChineseVanillaFactions.xml",
+      "bytes": 110720,
+      "sha256": "09aa6173618c968ed954a1cdd77572cef15ac66f2464c026bca51834feff0331"
+    },
+    {
+      "path": "Content/Texts/TraditionalChinese/TraditionalChineseVanilla.xml",
+      "bytes": 1003410,
+      "sha256": "b3775f5884e6433a0bb5ac4a66bc20b11197c56fee4b9af7fd2b5e33c5dc1dd3"
+    },
+    {
+      "path": "Content/Texts/TraditionalChinese/TraditionalChineseVanillaEditorTexts.xml",
+      "bytes": 131293,
+      "sha256": "978668f3da28bc1e9698f71556b090792d32e1fe059755e8849ef53641a4a9a2"
+    },
+    {
+      "path": "Content/Texts/TraditionalChinese/TraditionalChineseVanillaEndgame.xml",
+      "bytes": 25730,
+      "sha256": "5eede62b2d0c0dfa844eeee26bd6abe30b12a712fbc1399e4585b8de67f7a0f8"
+    },
+    {
+      "path": "Content/Texts/TraditionalChinese/TraditionalChineseVanillaFactions.xml",
+      "bytes": 110697,
+      "sha256": "1b856cb44164cd7a2ca15d3c22dc646cf8b0726844c8b131863153e51812f33d"
+    },
+    {
+      "path": "Content/Texts/Turkish/TurkishVanilla.xml",
+      "bytes": 1100191,
+      "sha256": "684be993b40285579ffb601f71793a0b75820c3b3437e9d937dc2bbdfeb70c6f"
+    },
+    {
+      "path": "Content/Texts/Turkish/TurkishVanillaEditorTexts.xml",
+      "bytes": 146858,
+      "sha256": "d9b0e48e82e773dd3de8eaf365153a93b34841e1fb92636be3fc9683c0d10a0d"
+    },
+    {
+      "path": "Content/Texts/Turkish/TurkishVanillaEndgame.xml",
+      "bytes": 30232,
+      "sha256": "f69905bcb9dcf9c58bac0954753c9b287576d2983b7cd8e1572181aa4a86cf79"
+    },
+    {
+      "path": "Content/Texts/Turkish/TurkishVanillaFactions.xml",
+      "bytes": 124718,
+      "sha256": "6792a5d0e697e3742706bbd4b41f1aeb2489a33872df60dd434f843f24992ede"
+    },
+    {
+      "path": "Content/TraitorMissions.xml",
+      "bytes": 9705,
+      "sha256": "f4e0b72d98d3fe8788d2c059cfa9898f604c182a8744995052cd2b098d803192"
+    },
+    {
+      "path": "Content/Tutorials/BasicsTutorial.sub",
+      "bytes": 21387,
+      "sha256": "674ef1ada30961d23b2f62e73700823d72c46983271c2eba4ae768e7f1dc3bc7"
+    },
+    {
+      "path": "Content/Tutorials/CampaignStartOutpost.sub",
+      "bytes": 22866,
+      "sha256": "fb93dd7b629445bc71225909ddec7d0e2ce1ac3b84f7d350abd5cd2677086ef2"
+    },
+    {
+      "path": "Content/Tutorials/CampaignTutorialEvents.xml",
+      "bytes": 23731,
+      "sha256": "3b4f01a9e0b973a545c5f70f16658b628bbe79aa3fa3cbbc6e18d957e73721d9"
+    },
+    {
+      "path": "Content/Tutorials/Dugong_Tutorial.sub",
+      "bytes": 193996,
+      "sha256": "fe7684d92aaeade4091ba36c02cfc60c25704c0c9dbaa65edb78b012e47a989c"
+    },
+    {
+      "path": "Content/Tutorials/TutorialEvents.xml",
+      "bytes": 222479,
+      "sha256": "2dd246a50694e5d92555956ff5e71e12e7266ae31178431b5c47b4845f68edda"
+    },
+    {
+      "path": "Content/Tutorials/TutorialOutpost.sub",
+      "bytes": 42778,
+      "sha256": "e33c2015e9e708a9a66c28f4f1d8f411681babef59c83c8bb319105a3c2c64c2"
+    },
+    {
+      "path": "Content/Tutorials/Tutorials.xml",
+      "bytes": 1535,
+      "sha256": "0d2ad2815b8a2227bc3f18d6dd76860e657544c63bb111afbe98adbf46b160fa"
+    },
+    {
+      "path": "Content/UI/MenuContent.xml",
+      "bytes": 22025,
+      "sha256": "16ba4d86a8cee447b74f4b8610b02c51d0b6e0010ca0851b2048ae60ce464f19"
+    },
+    {
+      "path": "Content/UI/Server/PlayStyles.xml",
+      "bytes": 3349,
+      "sha256": "f673a9131455d66c79ed1ae19adb698ad385c8123fa667cb58f6787c44480a62"
+    },
+    {
+      "path": "Content/UI/Social/Social.xml",
+      "bytes": 2777,
+      "sha256": "ee822d23d2f397e4e01c75a3234d99be82c1c15a5fbadca5b388ba49e3fb1cb6"
+    },
+    {
+      "path": "Content/UI/style.xml",
+      "bytes": 186607,
+      "sha256": "b20e7750794169d75d60a693f3bfb1275d5391e5309b9659b68014ce75f8a31c"
+    },
+    {
+      "path": "Content/Upgrades/UpgradeModules.xml",
+      "bytes": 15137,
+      "sha256": "db5a636efd89b05bdae7e13bb8d32ef2deef2101262a64b196eee79395c4ddb2"
+    },
+    {
+      "path": "Content/disembarkperks.xml",
+      "bytes": 13243,
+      "sha256": "4afb7edf7363d92d6260b2a2989ad5dafeba1decb378335920fca1da49d11bbf"
+    },
+    {
+      "path": "Content/randomevents_campaign.xml",
+      "bytes": 234880,
+      "sha256": "3ce2f8592090a73f997edf407705129c0e10255a1d262884f3b727e562bcb062"
+    },
+    {
+      "path": "Content/randomevents_lineardifficulty.xml",
+      "bytes": 267032,
+      "sha256": "ea44f6980153a82fe2aa8bc453266a219f34cc59be84de7f5cfffc8a9f0133df"
+    },
+    {
+      "path": "DedicatedServer",
+      "bytes": 72520,
+      "sha256": "b98dc71a75c24c7c83111e3c7f44531cd87cb5672298dfd5a0f0bbdd7597a778"
+    },
+    {
+      "path": "DedicatedServer.deps.json",
+      "bytes": 31820,
+      "sha256": "24b6f5aa759e1e809ddc0eb26188846cd388ddd2825c43a217d073d58fcf0c70"
+    },
+    {
+      "path": "DedicatedServer.dll",
+      "bytes": 5051904,
+      "sha256": "bf2b2b81bd640e180464393ce0511a893f6a4171154efcd475711acd71344290"
+    },
+    {
+      "path": "DedicatedServer.exe",
+      "bytes": 75,
+      "sha256": "a5697fc904e17647ad37a0894f187836ebd786744443b1b8ce9255ec6f13a750"
+    },
+    {
+      "path": "DedicatedServer.pdb",
+      "bytes": 1571812,
+      "sha256": "ecd7db1c6db40061c5812414c4e41b11aead39b3d7c04001258c74b388133b1e"
+    },
+    {
+      "path": "DedicatedServer.runtimeconfig.json",
+      "bytes": 478,
+      "sha256": "b55ba962f2641eb3e151848167e006e6cd99db53a86db5d144a22c17b083d131"
+    },
+    {
+      "path": "EosInterface.Implementation.Linux.deps.json",
+      "bytes": 2560,
+      "sha256": "d309f7b85035178565f236ae26850db271d12f5772a14f485afb853c2a0d2666"
+    },
+    {
+      "path": "EosInterface.Implementation.Linux.dll",
+      "bytes": 1272832,
+      "sha256": "e002661001886fef7d333088f2bd356381760357c5f99c445d21c7d2fa376a8f"
+    },
+    {
+      "path": "EosInterface.Implementation.Linux.pdb",
+      "bytes": 1338996,
+      "sha256": "2128ad01d74db066f77b3044d99494456e18799a9d5adf4a969d21afb0cc7cf2"
+    },
+    {
+      "path": "EosInterface.dll",
+      "bytes": 66560,
+      "sha256": "45c7f65f53df3829d57cc36b4450eda51d40c50b5f88b0020d9adb090fdc7759"
+    },
+    {
+      "path": "EosInterface.pdb",
+      "bytes": 21060,
+      "sha256": "c7bd9c4a7153653fb5967b6c62dd055bbd595052526922f4cb764a645b31293f"
+    },
+    {
+      "path": "Facepunch.Steamworks.Posix64.dll",
+      "bytes": 606208,
+      "sha256": "3bb2ceb744767b3ccf86bf2f309dde6524d73862b9650b36102ef0585e5e47a1"
+    },
+    {
+      "path": "Facepunch.Steamworks.Posix64.pdb",
+      "bytes": 178260,
+      "sha256": "df9aaa0c5f3657403f05ab8463c03cc99db567cece1e564b7232a0f85e9c4a01"
+    },
+    {
+      "path": "Facepunch.Steamworks.Posix64.xml",
+      "bytes": 216686,
+      "sha256": "9dd84952eab5b69c80c8a7b974a95d791144db553de48822580557a0e08ee54f"
+    },
+    {
+      "path": "Farseer.NetStandard.dll",
+      "bytes": 338944,
+      "sha256": "20851ba49badf3f9037d887654c3f45018885268d76a0fb7d1099cb059610b44"
+    },
+    {
+      "path": "Farseer.NetStandard.pdb",
+      "bytes": 181712,
+      "sha256": "16a72383793fc809d160340e0cf3fffd813466f8c317b756509ec965ab541e04"
+    },
+    {
+      "path": "Hyper.ComponentModel.NetStandard.dll",
+      "bytes": 12288,
+      "sha256": "0d1a6167a463e368baaee2ac112eb03dd0f4bce6cb03c9ce7da4438f999cd7dd"
+    },
+    {
+      "path": "Hyper.ComponentModel.NetStandard.pdb",
+      "bytes": 11648,
+      "sha256": "55b2c6b8f0dad1a751aa23138bb94216a7eb7ecac155187cbf82b0c312d2601f"
+    },
+    {
+      "path": "Icon.ico",
+      "bytes": 150157,
+      "sha256": "79eb6867110c7016d298b3082f1e5e5bd7952e4c69cbd60e171cde4945f8b6c8"
+    },
+    {
+      "path": "Lidgren.NetStandard.dll",
+      "bytes": 120832,
+      "sha256": "41785c26c7770b4091be344529e69d3fe057d7eeb79069177a75bde75362a7f5"
+    },
+    {
+      "path": "Lidgren.NetStandard.pdb",
+      "bytes": 68080,
+      "sha256": "0d9b5cd24c47dba2f2177b7afd069120aa09d5e54af79cda470874d4b3a92d9f"
+    },
+    {
+      "path": "Microsoft.CSharp.dll",
+      "bytes": 817312,
+      "sha256": "b28f3ab684318c52f0e3fb978281eebe565b42e6176a2ba9821316a7412a9cce"
+    },
+    {
+      "path": "Microsoft.VisualBasic.Core.dll",
+      "bytes": 1218736,
+      "sha256": "8762b0caad52ecb849dd9cbf9c13607b2b1ed633278a207f5860fc877603d116"
+    },
+    {
+      "path": "Microsoft.VisualBasic.dll",
+      "bytes": 17680,
+      "sha256": "9ae411cffa961c4defc0f206d199bb294f3e02053a179d1c286c864a778ad94a"
+    },
+    {
+      "path": "Microsoft.Win32.Primitives.dll",
+      "bytes": 15632,
+      "sha256": "12f0760b1714784409edca533006e1b9defe932828ce625e079bd791c6b24bce"
+    },
+    {
+      "path": "Microsoft.Win32.Registry.dll",
+      "bytes": 32928,
+      "sha256": "8c4bc7b1178fff8cb5f0ba5b3e4a1445298363b397aadc4e9c2ee11e3bc71839"
+    },
+    {
+      "path": "OpenALSoft_LICENSE",
+      "bytes": 23767,
+      "sha256": "1c0a7449390f5a8ec7c4268c738bf3b72ed17ea6e68489afa6a952d846878775"
+    },
+    {
+      "path": "RestSharp.dll",
+      "bytes": 190976,
+      "sha256": "8344d7415ff4baa1d10933c9556db29b9c133000a94c61f5480a540326d86f9f"
+    },
+    {
+      "path": "System.AppContext.dll",
+      "bytes": 15624,
+      "sha256": "632667a683f0d7388484e0d84871c56f936bcd2c495592ecf6dad1b8cd70ad3e"
+    },
+    {
+      "path": "System.Buffers.dll",
+      "bytes": 15648,
+      "sha256": "d4d4453382966be6e40b0865e2d876af25daacfa7e422f466c166fa0d20ea7c5"
+    },
+    {
+      "path": "System.Collections.Concurrent.dll",
+      "bytes": 270496,
+      "sha256": "b5d52c73920372738cf8736093525f8abf49170466d377310255663cb3213654"
+    },
+    {
+      "path": "System.Collections.Immutable.dll",
+      "bytes": 843528,
+      "sha256": "c38e208d267cc454404e677121614785aa88ab7d6af6a6df9a8838f862f7eada"
+    },
+    {
+      "path": "System.Collections.NonGeneric.dll",
+      "bytes": 93872,
+      "sha256": "51ff9e2e2062b3a8ec43e01aaa88854336e6302bd0f7f6a5349d6f721ac3819a"
+    },
+    {
+      "path": "System.Collections.Specialized.dll",
+      "bytes": 93856,
+      "sha256": "fbd1e4e0c7615295e45a47d3a66dd78cde21fdebed5e7749fe866005d6431af3"
+    },
+    {
+      "path": "System.Collections.dll",
+      "bytes": 253088,
+      "sha256": "8565fbb8d520d57f0bc61d0fa39b2c849fabce4b1aaa69781626bfb0dbeccbb7"
+    },
+    {
+      "path": "System.ComponentModel.Annotations.dll",
+      "bytes": 192176,
+      "sha256": "7f32912f177ffc43642684dbdcb58ce4592cd09d1eeee1abb5d60611cf899ba2"
+    },
+    {
+      "path": "System.ComponentModel.DataAnnotations.dll",
+      "bytes": 17056,
+      "sha256": "520994677d146a9e8040cf047f5a5ca5793c94a18d50655bde2ea0d75237fb1c"
+    },
+    {
+      "path": "System.ComponentModel.EventBasedAsync.dll",
+      "bytes": 36512,
+      "sha256": "f830465197fec0eee6127525e30335533ab55a6697aea8db3eae64cdc19839d5"
+    },
+    {
+      "path": "System.ComponentModel.Primitives.dll",
+      "bytes": 71328,
+      "sha256": "399f8dcf5bf495050b638f70ae9844be96dc21800982f4df765f88fb748d25b7"
+    },
+    {
+      "path": "System.ComponentModel.TypeConverter.dll",
+      "bytes": 746144,
+      "sha256": "9b5d81a96d94e22f406f53dc410ddcbf33d9dd970297e8548097142294297e97"
+    },
+    {
+      "path": "System.ComponentModel.dll",
+      "bytes": 17568,
+      "sha256": "b5bc14a5ecda6b6b47d357c90ea60f374b4dcde95f14f80516d3b3fe166d121b"
+    },
+    {
+      "path": "System.Configuration.dll",
+      "bytes": 19720,
+      "sha256": "f690e95e24a5440ae664264ae3ca012236b569d2bcd520778b9d0808bf8daa20"
+    },
+    {
+      "path": "System.Console.dll",
+      "bytes": 200352,
+      "sha256": "03da6628ee6c8959e238e60eaeab20b5e6e276fe66f82d39793305d0e884901e"
+    },
+    {
+      "path": "System.Core.dll",
+      "bytes": 23824,
+      "sha256": "2b3fc5153c675dd3c45112d36638df9b139d29c8bb6ad47a34645b51a2823e5f"
+    },
+    {
+      "path": "System.Data.Common.dll",
+      "bytes": 2899104,
+      "sha256": "7510d7c5eeac1c9b4d6b8dcaaa1ae0b07eb96d8476527ecf6967adc75ca7354b"
+    },
+    {
+      "path": "System.Data.DataSetExtensions.dll",
+      "bytes": 16144,
+      "sha256": "85af17976b07a66c0efb7b1de82f0d5a32825ccf41ac62afb77cf596419a84d8"
+    },
+    {
+      "path": "System.Data.dll",
+      "bytes": 25352,
+      "sha256": "de053b8a5dcd6dc6d2ad82d0c74f277e5c034949fc574b8e6c611b1e7e6901f0"
+    },
+    {
+      "path": "System.Diagnostics.Contracts.dll",
+      "bytes": 16664,
+      "sha256": "365c81fe5b2acc6ca1719b5039e0bf2506cb06a1d5e58150f32379913d84cf74"
+    },
+    {
+      "path": "System.Diagnostics.Debug.dll",
+      "bytes": 16160,
+      "sha256": "5a9567ff0b400add32642aa2453c201d20ced56595673b7edd6e46a181287166"
+    },
+    {
+      "path": "System.Diagnostics.DiagnosticSource.dll",
+      "bytes": 409760,
+      "sha256": "5fad05b4c48c0e3a9e4f7c65c1a80b2cdaf43119a87349bec09d089cbfd6e53b"
+    },
+    {
+      "path": "System.Diagnostics.FileVersionInfo.dll",
+      "bytes": 43680,
+      "sha256": "1b3a326f2556d60c4308f34e0b90ed266b8e4215df7b478659a8ac61d4074259"
+    },
+    {
+      "path": "System.Diagnostics.Process.dll",
+      "bytes": 274080,
+      "sha256": "6227208a5c6c648c512af98c2dd6275d4fa93b013634c71e7ca1de190473905f"
+    },
+    {
+      "path": "System.Diagnostics.StackTrace.dll",
+      "bytes": 30896,
+      "sha256": "ecea31a66d0b090ec7d9f38a8cd5f049eb62a8f34c90ff9bd87db783d4d76cef"
+    },
+    {
+      "path": "System.Diagnostics.TextWriterTraceListener.dll",
+      "bytes": 60168,
+      "sha256": "2ba7d8e161e990a1288ad9e79adfeff941896fa16d47005c53311090613c5320"
+    },
+    {
+      "path": "System.Diagnostics.Tools.dll",
+      "bytes": 15624,
+      "sha256": "8f1e1f76f083c6a9e26a05056ed48904d1b57e5955ec64f5d1e3f94cb3f9bf79"
+    },
+    {
+      "path": "System.Diagnostics.TraceSource.dll",
+      "bytes": 134816,
+      "sha256": "00f2afca3d7189f432320c646b0a706e33eef2b362376a3322417987137451ad"
+    },
+    {
+      "path": "System.Diagnostics.Tracing.dll",
+      "bytes": 16648,
+      "sha256": "a037b4722a16aa65b93953dda7403186024e3b73abe693e22e79174fad61546f"
+    },
+    {
+      "path": "System.Drawing.Primitives.dll",
+      "bytes": 125088,
+      "sha256": "f93e060ae53e22077c6a4e459884863a6323b9bdd3c1e615b22aed47efce0868"
+    },
+    {
+      "path": "System.Drawing.dll",
+      "bytes": 20752,
+      "sha256": "23e3b9494116a9bc926bb133bad8f0814e08147358c144989d56ab3aa628c5d5"
+    },
+    {
+      "path": "System.Dynamic.Runtime.dll",
+      "bytes": 16648,
+      "sha256": "0eff640cf4a363c6b4df7539b77aa3d65f87cef501c8360d0d551465f2a5f058"
+    },
+    {
+      "path": "System.Formats.Asn1.dll",
+      "bytes": 226480,
+      "sha256": "fe6e94d095a19ae8fae8d30d055d6e197e1710ec6078656282cc9a8fd45edfd3"
+    },
+    {
+      "path": "System.Formats.Tar.dll",
+      "bytes": 277664,
+      "sha256": "2076b2cf29981b4c8d97fe2a05456d734e4cde7850bc6134c9af9d5671d9d9a5"
+    },
+    {
+      "path": "System.Globalization.Calendars.dll",
+      "bytes": 16152,
+      "sha256": "67e96ad389469ef541fe7676519cb49f3bdbaf889ad8c5ef404037dfd6886edb"
+    },
+    {
+      "path": "System.Globalization.Extensions.dll",
+      "bytes": 15632,
+      "sha256": "a0bd82b0e3283c88245a51fddc4d9a683b564ab45ed0dc7b87b0c83279373355"
+    },
+    {
+      "path": "System.Globalization.dll",
+      "bytes": 16160,
+      "sha256": "303c1466444b796c4120c3dba22d80a0be0b380bc276cc7704ff4638ee1d3b84"
+    },
+    {
+      "path": "System.IO.Compression.Brotli.dll",
+      "bytes": 73376,
+      "sha256": "d45e4cadd4cc22264fe18c9b664d49c48b1cd19fde42c9d32758c68c5e5c8ef3"
+    },
+    {
+      "path": "System.IO.Compression.FileSystem.dll",
+      "bytes": 15632,
+      "sha256": "dde541dfd76c251c3db9b67b4d7c3a9f87b1d9dab454bf635427410ed3ec29f1"
+    },
+    {
+      "path": "System.IO.Compression.ZipFile.dll",
+      "bytes": 55456,
+      "sha256": "c72d6fab879af740918224e00e86886e8bd2e35ab43444bafa6d07c43c9fb4fb"
+    },
+    {
+      "path": "System.IO.Compression.dll",
+      "bytes": 260256,
+      "sha256": "5707dc66d4324519b2aaa89eeb69198d8546726936ba69ef948199916c38d876"
+    },
+    {
+      "path": "System.IO.FileSystem.AccessControl.dll",
+      "bytes": 31904,
+      "sha256": "aa1f445bd58a023eb2af2738a5334722365d15ac0024842718d4a4fe5c4da45a"
+    },
+    {
+      "path": "System.IO.FileSystem.DriveInfo.dll",
+      "bytes": 78496,
+      "sha256": "ce9d13852a60ff66703e0cf6f4fffec9b988ec537681490e8f870e271a2f4ce9"
+    },
+    {
+      "path": "System.IO.FileSystem.Primitives.dll",
+      "bytes": 15632,
+      "sha256": "24e9eedbb4f45edd3fa980efd79bc87874fd6a339662694b45f5b9906d68e5d9"
+    },
+    {
+      "path": "System.IO.FileSystem.Watcher.dll",
+      "bytes": 102048,
+      "sha256": "ec1ddd8e4b9953fd204f3f4595597406688ff5bd6190b7b40d8d7a592849708a"
+    },
+    {
+      "path": "System.IO.FileSystem.dll",
+      "bytes": 16160,
+      "sha256": "1f8c469e6db3563c5d338ceee844501504fb6005dddb286f5328677bc80f052d"
+    },
+    {
+      "path": "System.IO.IsolatedStorage.dll",
+      "bytes": 77072,
+      "sha256": "6e71a04c2f7912a39158b199349b15aa16c2bd044de4e5566049ceee97d13f4f"
+    },
+    {
+      "path": "System.IO.MemoryMappedFiles.dll",
+      "bytes": 80544,
+      "sha256": "bc3f02fec36fa8fe34a8e9a98bc4724f6eedf04b8ac9d0aa201097e5fa1af6c8"
+    },
+    {
+      "path": "System.IO.Pipes.AccessControl.dll",
+      "bytes": 23712,
+      "sha256": "428fab6224a44ab28d62071fe2fd2ab6263a9e2237c2bd465e8be12efb0e83ff"
+    },
+    {
+      "path": "System.IO.Pipes.dll",
+      "bytes": 126112,
+      "sha256": "a91069a813b80e7286b5bf39f41c8c200924ae6e7e0a30fe9e3d96cee6912dbd"
+    },
+    {
+      "path": "System.IO.UnmanagedMemoryStream.dll",
+      "bytes": 15640,
+      "sha256": "ba927552bf4fad9f6f7c5527537a753cdb187784fce3697aff1cc3d7418c14f3"
+    },
+    {
+      "path": "System.IO.dll",
+      "bytes": 16136,
+      "sha256": "438068a3b845c6ed7b452d7ccb26b6225836dd20bc99b98528ca0e751afa8e01"
+    },
+    {
+      "path": "System.Linq.Expressions.dll",
+      "bytes": 3766960,
+      "sha256": "052df98127f0aec6499bf4e13ee42574207389c444b4119c00651e0cb75dfd4c"
+    },
+    {
+      "path": "System.Linq.Parallel.dll",
+      "bytes": 798384,
+      "sha256": "98f4a79ca47b5e008cf5449f203a4cdd1d0c71182a809c5a713bfea05f041322"
+    },
+    {
+      "path": "System.Linq.Queryable.dll",
+      "bytes": 168096,
+      "sha256": "0be9c5198cd77004d953b48c62abe251add8b7ec6b3b96b9c39912904c44cdc8"
+    },
+    {
+      "path": "System.Linq.dll",
+      "bytes": 545440,
+      "sha256": "da6fc06c52df367a29c66653c52662411a11427226c89f71500d980369a3c792"
+    },
+    {
+      "path": "System.Memory.dll",
+      "bytes": 147632,
+      "sha256": "534882a4ad901fdc0d2b603b786c9af7ee1ee0f979b23cd06d6f29ae71618ea9"
+    },
+    {
+      "path": "System.Net.Http.Json.dll",
+      "bytes": 119984,
+      "sha256": "0d917fa63524bf8ab444103062352af4b77c6938645dd7b2ffcf1b269a5c726c"
+    },
+    {
+      "path": "System.Net.Http.dll",
+      "bytes": 1710256,
+      "sha256": "8008857b5a3513b6a567dd0d70f451d2050361b169a1f1ffafca6405ba594fa2"
+    },
+    {
+      "path": "System.Net.HttpListener.dll",
+      "bytes": 296608,
+      "sha256": "107ca1e71acda71f03390d3627508a585b636642b3d47aaadf45324a0c1ef9c6"
+    },
+    {
+      "path": "System.Net.Mail.dll",
+      "bytes": 423584,
+      "sha256": "785eb63ffa0ce3658d0a939477d11fdf65d1fdd79e4b90deb37fdeaa25551a81"
+    },
+    {
+      "path": "System.Net.NameResolution.dll",
+      "bytes": 84640,
+      "sha256": "bdb93ae36ac63387aa429bea9586c6457bf5dbae72a45a086eeff3c770981194"
+    },
+    {
+      "path": "System.Net.NetworkInformation.dll",
+      "bytes": 170144,
+      "sha256": "772075564a62534382471cd4d7fbfe4bf5c2324a4431ffa31913cb7d50e267e2"
+    },
+    {
+      "path": "System.Net.Ping.dll",
+      "bytes": 101040,
+      "sha256": "dfc5996f7af0a46394a152f38967596d2040d2a9d57df8fbd8b6200fecad957c"
+    },
+    {
+      "path": "System.Net.Primitives.dll",
+      "bytes": 229536,
+      "sha256": "91a6a0e50ba41c9f27f5e3c03893e2a652dc06518d09273d46903c95654b2e7b"
+    },
+    {
+      "path": "System.Net.Quic.dll",
+      "bytes": 280240,
+      "sha256": "e3b60b306f59ce88f6fdcf994e4c8e9b03441584fb340d1feecd119994e7ea8f"
+    },
+    {
+      "path": "System.Net.Requests.dll",
+      "bytes": 340640,
+      "sha256": "1088f0992b22753f408c626640091a1cb8f50df13548edf73e474d17d34c7303"
+    },
+    {
+      "path": "System.Net.Security.dll",
+      "bytes": 800416,
+      "sha256": "ad77dec8824141472e04fbcbc65ad05b3beeb4cbb7d49f435bb069d77e2323c8"
+    },
+    {
+      "path": "System.Net.ServicePoint.dll",
+      "bytes": 35488,
+      "sha256": "88e57c8bf240212f38d484e1960fa3301bb65f3c4799b6c13e6205c0441a40ef"
+    },
+    {
+      "path": "System.Net.Sockets.dll",
+      "bytes": 588960,
+      "sha256": "84531be989990d42a6c358fb780b49430de9c6d4bffc2b91c8b50ef11cfcb102"
+    },
+    {
+      "path": "System.Net.WebClient.dll",
+      "bytes": 163488,
+      "sha256": "d2dd318e84006adae192115c962eeeb013d78de87a304e4fe814719d880cb115"
+    },
+    {
+      "path": "System.Net.WebHeaderCollection.dll",
+      "bytes": 57520,
+      "sha256": "98b890bc115a0f26df4e99d7443fa38f34f61590359bb9f6157e842ecdc2a84c"
+    },
+    {
+      "path": "System.Net.WebProxy.dll",
+      "bytes": 33440,
+      "sha256": "cbb1a43b66f0e0abaa43c6b6911f608498e9f3784255af91a500c97037779e27"
+    },
+    {
+      "path": "System.Net.WebSockets.Client.dll",
+      "bytes": 90272,
+      "sha256": "f5133dd48e9d8707d54a59e687d8604dfdf5d5608716245fa4062720392e7c1e"
+    },
+    {
+      "path": "System.Net.WebSockets.dll",
+      "bytes": 180384,
+      "sha256": "47a6b43bcbd0f0373fba2efdd2b42c74ad0d61d27939947737dfb5e25366cb7a"
+    },
+    {
+      "path": "System.Net.dll",
+      "bytes": 17672,
+      "sha256": "0e38c911c4fa2b851f3c558f340869254f519c7ab19add6d6a977992c2a91b96"
+    },
+    {
+      "path": "System.Numerics.Vectors.dll",
+      "bytes": 16136,
+      "sha256": "cb81c4fcc75856a550b26308bdd88b068806a8dcc002e415b5e917593a79420d"
+    },
+    {
+      "path": "System.Numerics.dll",
+      "bytes": 15640,
+      "sha256": "85d1fa9b2714afb6772129c6242f38acf8a53407c348159cbe4023e98256fd76"
+    },
+    {
+      "path": "System.ObjectModel.dll",
+      "bytes": 68768,
+      "sha256": "396460357ee3c59d6ff02c9d042131db0bd703c8bc1e44697f32d2b18fc672b0"
+    },
+    {
+      "path": "System.Private.CoreLib.dll",
+      "bytes": 12872352,
+      "sha256": "e8feb9bad6d8c5edc020326839da1f33c10ea010e9743efde049d2e12b935fc7"
+    },
+    {
+      "path": "System.Private.DataContractSerialization.dll",
+      "bytes": 2098336,
+      "sha256": "54c4ffcc353982059c99db076d37533d91342c31e0eab3f09ce52a10ba36c349"
+    },
+    {
+      "path": "System.Private.Uri.dll",
+      "bytes": 249008,
+      "sha256": "a78fee128658c3cfaec1140db46abec3c9ad5de765fb608a0bf02ec0507a8bc9"
+    },
+    {
+      "path": "System.Private.Xml.Linq.dll",
+      "bytes": 400032,
+      "sha256": "634aa17abd0e2df82cb697a19a8626c8d972f2fa3acf62ecfd147e119b1eead2"
+    },
+    {
+      "path": "System.Private.Xml.dll",
+      "bytes": 8128688,
+      "sha256": "e1a153231e7bd7d4e94cf4bb62dc83aca9ad808d3de60485b0d264ccb24f3004"
+    },
+    {
+      "path": "System.Reflection.DispatchProxy.dll",
+      "bytes": 65712,
+      "sha256": "fb0ec34b0c48db62b2d523a321b4e8e09423ad4a080c7fef11ee9aa8a917e763"
+    },
+    {
+      "path": "System.Reflection.Emit.ILGeneration.dll",
+      "bytes": 16144,
+      "sha256": "977da44a29a956f320ba78498cbdd136b0baa8f9b036c3b56a443c610906f023"
+    },
+    {
+      "path": "System.Reflection.Emit.Lightweight.dll",
+      "bytes": 16144,
+      "sha256": "a2b2613f33c40173731dcf08bfe17711cc983550499609d4155c91e96bbd0119"
+    },
+    {
+      "path": "System.Reflection.Emit.dll",
+      "bytes": 118944,
+      "sha256": "92ef37662ff3b6b31676b369e9ef29858a445694a6dc71d4b39cbff941af193b"
+    },
+    {
+      "path": "System.Reflection.Extensions.dll",
+      "bytes": 15632,
+      "sha256": "66a1e7053ea1f5609d32259c248c455c186d693dc73d10a0bbf5aa958b9e7e30"
+    },
+    {
+      "path": "System.Reflection.Metadata.dll",
+      "bytes": 1115424,
+      "sha256": "ded50ece86ded0236c7e1d31802d5ccccd479b60249e7a4955c54877f782603f"
+    },
+    {
+      "path": "System.Reflection.Primitives.dll",
+      "bytes": 16136,
+      "sha256": "5924e4bc34ea34d5343d38e289d9adb281e8d4f951ae0d9dc52415c1eff48992"
+    },
+    {
+      "path": "System.Reflection.TypeExtensions.dll",
+      "bytes": 31904,
+      "sha256": "7544520b36fbe5b859b9080fb93e4e3a443c6df2ded0206b1d0ed6730c0f10e8"
+    },
+    {
+      "path": "System.Reflection.dll",
+      "bytes": 16672,
+      "sha256": "427e1d13cce18b94cb3196ff12d5510d4fbbe8a15dac33e7689979f2c45a3c27"
+    },
+    {
+      "path": "System.Resources.Reader.dll",
+      "bytes": 15624,
+      "sha256": "ed84f12448c37bd7e8db2f6c03d7330f73c2c0cfc30fa7726b009fa8baf057ca"
+    },
+    {
+      "path": "System.Resources.ResourceManager.dll",
+      "bytes": 16160,
+      "sha256": "aab256a57e29fa8db6b8b770446a92f987e31ee994c4537e71e820f3c357029f"
+    },
+    {
+      "path": "System.Resources.Writer.dll",
+      "bytes": 43184,
+      "sha256": "24e870f50f7cd9d9c6da2892cae08685ea9f9c6f48946839b01ca68a13ddc2e1"
+    },
+    {
+      "path": "System.Runtime.CompilerServices.Unsafe.dll",
+      "bytes": 15632,
+      "sha256": "9434145f07c63b74cab5b08bf447adf5ec39fe3d16748b319912972126bea141"
+    },
+    {
+      "path": "System.Runtime.CompilerServices.VisualC.dll",
+      "bytes": 19632,
+      "sha256": "3524e0045a086488c4a1598a0aa2ff27aeb4170506f5bb5fbb9d6cf64b1a603b"
+    },
+    {
+      "path": "System.Runtime.Extensions.dll",
+      "bytes": 18184,
+      "sha256": "acf304f83b94b72d70e7df0630c5b80a2121d9f342f984e183412bc0e10378ad"
+    },
+    {
+      "path": "System.Runtime.Handles.dll",
+      "bytes": 15648,
+      "sha256": "ca05f4816f64d766aa4b9ad6c6179864709a71929bc61eea3054782d89796114"
+    },
+    {
+      "path": "System.Runtime.InteropServices.JavaScript.dll",
+      "bytes": 39088,
+      "sha256": "1d790292e65bf9269f470b436e2f63b91e3d2578ce258f8ca41ddcb4d364da36"
+    },
+    {
+      "path": "System.Runtime.InteropServices.RuntimeInformation.dll",
+      "bytes": 15624,
+      "sha256": "391ae35ea891f29b45fbef04e5e37850324f1f0223447239a58eb9dab39eec45"
+    },
+    {
+      "path": "System.Runtime.InteropServices.dll",
+      "bytes": 86288,
+      "sha256": "fdd0d7ccdec15e7469d3742b63f4d0d589ca6dcdbdcb8bb08306e863c276a878"
+    },
+    {
+      "path": "System.Runtime.Intrinsics.dll",
+      "bytes": 17160,
+      "sha256": "baa80d3b3481af1e6f9b4aa06a09aad389387db9f212dbad7ff2dd44cdd33cef"
+    },
+    {
+      "path": "System.Runtime.Loader.dll",
+      "bytes": 16136,
+      "sha256": "6e8f67e571bdbb2074459220de5f19689271b52760cd87d42fb1752f54a26d0f"
+    },
+    {
+      "path": "System.Runtime.Numerics.dll",
+      "bytes": 307992,
+      "sha256": "6ea1fbbb52109b634aead70e853815bc848c5b7e2cbc1d2541ad672ba4e450ad"
+    },
+    {
+      "path": "System.Runtime.Serialization.Formatters.dll",
+      "bytes": 305416,
+      "sha256": "74b950ed99312d9a94f3d5892a03e57225b4afb608ded93bb1f83deaa861d784"
+    },
+    {
+      "path": "System.Runtime.Serialization.Json.dll",
+      "bytes": 16136,
+      "sha256": "5ad13366830b4566f924c231cb40e8682d857a6e3b585f33ecdca6f06124e460"
+    },
+    {
+      "path": "System.Runtime.Serialization.Primitives.dll",
+      "bytes": 28832,
+      "sha256": "21f63bd71ba5cd69b9956c575b6b8752f86a9a8e6f15e8200471967d7157af09"
+    },
+    {
+      "path": "System.Runtime.Serialization.Xml.dll",
+      "bytes": 17160,
+      "sha256": "dc892bba9eb4b3a6cac387cfc2256d54962f1f17add19d08c2c7e3ce71caa10a"
+    },
+    {
+      "path": "System.Runtime.Serialization.dll",
+      "bytes": 17168,
+      "sha256": "6cb8134b6f3ecdad34c80b118cd6da7fe944f8a65aae8b9dd330ad9666892a4a"
+    },
+    {
+      "path": "System.Runtime.dll",
+      "bytes": 43808,
+      "sha256": "33debb1f08d6961e654b317bc593ac6e4c9594fdbb4360e630792931831574b6"
+    },
+    {
+      "path": "System.Security.AccessControl.dll",
+      "bytes": 58632,
+      "sha256": "3358501eb0314cea3283773bdd0e77860196b4ca00913541a0dec75197ef69c0"
+    },
+    {
+      "path": "System.Security.Claims.dll",
+      "bytes": 90376,
+      "sha256": "32d4e0e3ae4ac45484a8f476eeda80eb63a89918f7981dea1675f01fb6807543"
+    },
+    {
+      "path": "System.Security.Cryptography.Algorithms.dll",
+      "bytes": 17672,
+      "sha256": "b7d56df67c417ac57ce3ee9563d18cc7d1ae74676768d05081505dd57086b18a"
+    },
+    {
+      "path": "System.Security.Cryptography.Cng.dll",
+      "bytes": 16648,
+      "sha256": "c7c1aafa3e996340fdab6d7c508f09fa1dd3ec79bf6ccd7002bc1ababbcadbdc"
+    },
+    {
+      "path": "System.Security.Cryptography.Csp.dll",
+      "bytes": 16144,
+      "sha256": "a7c6c531b1ebfc571ec927db18683507657e11e078153a1b1b8ef5764cef132d"
+    },
+    {
+      "path": "System.Security.Cryptography.Encoding.dll",
+      "bytes": 16136,
+      "sha256": "5ffbf4f026070f4cb45b01094d449389e5db380a8c5e351509c1540c3239f626"
+    },
+    {
+      "path": "System.Security.Cryptography.OpenSsl.dll",
+      "bytes": 15632,
+      "sha256": "4ebec60ca32a241a6aa1d54cea740caff4ebb6f2a0d64ed212d209a8160afc9a"
+    },
+    {
+      "path": "System.Security.Cryptography.Primitives.dll",
+      "bytes": 16160,
+      "sha256": "759f7287c3fd4f3ed6e2fc0cb99825273d7d540ec074610edd05d61bb53e7f62"
+    },
+    {
+      "path": "System.Security.Cryptography.X509Certificates.dll",
+      "bytes": 17168,
+      "sha256": "35e92522d5bbb77b0346c4d804ccb5e14b6661219a5dc676526b44d2e0b0e3bb"
+    },
+    {
+      "path": "System.Security.Cryptography.dll",
+      "bytes": 2179744,
+      "sha256": "a2f4c0e3c951d23ffe5148fd35accdfb3483a9b558e042979e3cdb8c2263a66f"
+    },
+    {
+      "path": "System.Security.Principal.Windows.dll",
+      "bytes": 37536,
+      "sha256": "c8584d9ff83fe752d29e3c5b6747fedea42ec918ca6217eb043ede8a973cbbdf"
+    },
+    {
+      "path": "System.Security.Principal.dll",
+      "bytes": 15632,
+      "sha256": "87717f1ce18e68eaf9e64c9a167de8e73dab4128bcd0f79862029a2fc6e1053d"
+    },
+    {
+      "path": "System.Security.SecureString.dll",
+      "bytes": 15624,
+      "sha256": "606ce3dc159ff87ff43e84e6d102d5992354ce99a48342a88edd7840a5fcf26f"
+    },
+    {
+      "path": "System.Security.dll",
+      "bytes": 18712,
+      "sha256": "1a5346e5cc545385a0989dc783250c8cc0aa4d8c5c10c92d233038b1b6cd443d"
+    },
+    {
+      "path": "System.ServiceModel.Web.dll",
+      "bytes": 17056,
+      "sha256": "10cad59267594344a8353b66d73327de60c2b4184ef502cca74222152a4b345a"
+    },
+    {
+      "path": "System.ServiceProcess.dll",
+      "bytes": 16160,
+      "sha256": "63ea1886b55012c142df33aa36ae1d2dadad853192c685ea8de7c789417280e8"
+    },
+    {
+      "path": "System.Text.Encoding.CodePages.dll",
+      "bytes": 852656,
+      "sha256": "4211bc7efa97b84fa5a689960da78f78c37346c6ab1d7896666b5935eb8ea53c"
+    },
+    {
+      "path": "System.Text.Encoding.Extensions.dll",
+      "bytes": 16152,
+      "sha256": "186a6bc453a16ecd19952fc7a5d881cac67a9280dff09466acd3413f52d35473"
+    },
+    {
+      "path": "System.Text.Encoding.dll",
+      "bytes": 16144,
+      "sha256": "541d393c7beccd1ce2a916053eef4206c0df53ecd7f49bef0848b30d60094f21"
+    },
+    {
+      "path": "System.Text.Encodings.Web.dll",
+      "bytes": 120608,
+      "sha256": "7239d89e01d387fae0dda876b3cfd4990426d726982457d892e7f7049151c426"
+    },
+    {
+      "path": "System.Text.Json.dll",
+      "bytes": 1472672,
+      "sha256": "08f175fa42ba5bda83b1cfddc524aa19c286eeaf693e14119deb08f91dc6f86b"
+    },
+    {
+      "path": "System.Text.RegularExpressions.dll",
+      "bytes": 1027744,
+      "sha256": "0877cf60bc45b3aea7848a69aee1bd6acc7f9f4b203f0be464846a33a89d26a7"
+    },
+    {
+      "path": "System.Threading.Channels.dll",
+      "bytes": 122120,
+      "sha256": "d94e41dbb0d3c97555d7893064982effaa1d44000ef6215b13bc133e235cc561"
+    },
+    {
+      "path": "System.Threading.Overlapped.dll",
+      "bytes": 16144,
+      "sha256": "e32d487efeec9fc7dd830ad44cab1f72bc8c9da71f1b394777ed9d281456a457"
+    },
+    {
+      "path": "System.Threading.Tasks.Dataflow.dll",
+      "bytes": 487712,
+      "sha256": "2a4c087a32e61d0de83eadf1bbe1f56d2e58a9737658c6420597ff7c0bb62293"
+    },
+    {
+      "path": "System.Threading.Tasks.Extensions.dll",
+      "bytes": 16160,
+      "sha256": "eee7ef9679baacf97d431739984fde6384107c19f9123c1bb7c340500b5e67b4"
+    },
+    {
+      "path": "System.Threading.Tasks.Parallel.dll",
+      "bytes": 125216,
+      "sha256": "fe361de7176aed91ec037ffdcd5862a4381b6ed6022fdd6056542880b83ffde1"
+    },
+    {
+      "path": "System.Threading.Tasks.dll",
+      "bytes": 16672,
+      "sha256": "78d80bb09529f7307b768ca63a88fd3b12a675ffeb45d87b079302674086cdee"
+    },
+    {
+      "path": "System.Threading.Thread.dll",
+      "bytes": 16136,
+      "sha256": "a419780b4fe075da47a213ac8714bdd11ee210207c6b7ab40e7c869f50ee4230"
+    },
+    {
+      "path": "System.Threading.ThreadPool.dll",
+      "bytes": 16144,
+      "sha256": "3e2449a2a86030168bba39e62d7f3ac6c812598b558f50cd807b2ec5d94b0a24"
+    },
+    {
+      "path": "System.Threading.Timer.dll",
+      "bytes": 15624,
+      "sha256": "17d68249d4fb2d8644dad3dde8f6e8f4c8c1f664e99bac019946ed9cd07dd46a"
+    },
+    {
+      "path": "System.Threading.dll",
+      "bytes": 73888,
+      "sha256": "3f4ea1b6f18dccb76b450171dc9af7870a6f92ce6f396a1c16ec817f739cf432"
+    },
+    {
+      "path": "System.Transactions.Local.dll",
+      "bytes": 365320,
+      "sha256": "eedcdc20d63849257e835b7705a0bce85612dc8cd2858356128f07f645020078"
+    },
+    {
+      "path": "System.Transactions.dll",
+      "bytes": 16664,
+      "sha256": "1434587c88625a6ed013c849dbeda8c8347f5ba24606a60e1230090433f1c1d0"
+    },
+    {
+      "path": "System.ValueTuple.dll",
+      "bytes": 15624,
+      "sha256": "a940927bdf61b7ea56209f4abac5bb6efd8f814e85ebd2f1f342f911fb4f6fd6"
+    },
+    {
+      "path": "System.Web.HttpUtility.dll",
+      "bytes": 49936,
+      "sha256": "5827784e4bd89b58fb35b11b682f92a614e401b220d65db265981c063bb3801a"
+    },
+    {
+      "path": "System.Web.dll",
+      "bytes": 15632,
+      "sha256": "d30ca634ac0615fb2033ff6a6aab7d79e7e09076c03caff6e8a764b010327010"
+    },
+    {
+      "path": "System.Windows.dll",
+      "bytes": 16144,
+      "sha256": "a8611a88089779f1a0d5ee59857f093b7c80e2fba072132f06e50468f8a72848"
+    },
+    {
+      "path": "System.Xml.Linq.dll",
+      "bytes": 16160,
+      "sha256": "ae3777895029706b50ad154482df02ea6c14b2f6bc061e54366c97a750a9ee4d"
+    },
+    {
+      "path": "System.Xml.ReaderWriter.dll",
+      "bytes": 22304,
+      "sha256": "3adb7994e0ee63db5873893093a1d0d303928601ea1f4f6e1d4e2be1971cd23e"
+    },
+    {
+      "path": "System.Xml.Serialization.dll",
+      "bytes": 16664,
+      "sha256": "9c1642657cfc3adb456881277b161747e339ecf6c2c830478495c3d37f260b12"
+    },
+    {
+      "path": "System.Xml.XDocument.dll",
+      "bytes": 16160,
+      "sha256": "c35c0b57833a56ae4c2525f1840e439c90944de63ddcf52d26a7e3f9d1bbbf3d"
+    },
+    {
+      "path": "System.Xml.XPath.XDocument.dll",
+      "bytes": 17672,
+      "sha256": "5c0563528003294fd19b20a6c6f08fa89ed20709b63e1e735330248a4f934bb2"
+    },
+    {
+      "path": "System.Xml.XPath.dll",
+      "bytes": 16136,
+      "sha256": "425d300f95b25a47cd4af2ed32367d9b7618f1f11b79ae9d4267aa96c55c4488"
+    },
+    {
+      "path": "System.Xml.XmlDocument.dll",
+      "bytes": 16160,
+      "sha256": "3812d94eecdc812546140444628057ec4968fd114fdea214552acecf5f9e292c"
+    },
+    {
+      "path": "System.Xml.XmlSerializer.dll",
+      "bytes": 18200,
+      "sha256": "83b543582b4ce00b80475c7cbf0802a93860a9c38e933edf723c52f9010676f6"
+    },
+    {
+      "path": "System.Xml.dll",
+      "bytes": 23832,
+      "sha256": "f4a31221c0f8afbeeae4cfca6ec98d08b83acd7f72e0ca2089aa400be25b0286"
+    },
+    {
+      "path": "System.dll",
+      "bytes": 50448,
+      "sha256": "145cb018b691ccc8ad466ebc5fd5ae9bf7c0f9b4455c9c09936e87a44616030c"
+    },
+    {
+      "path": "WindowsBase.dll",
+      "bytes": 16656,
+      "sha256": "c291845d71ab412c458f1ac441293f0c781cee3560b53665e77bc6331ab16ce9"
+    },
+    {
+      "path": "XNATypes.dll",
+      "bytes": 126464,
+      "sha256": "c7c31dea9e6fd73bb3af47fc0670af37808722a335749a8d7d597fe819d19b8a"
+    },
+    {
+      "path": "XNATypes.pdb",
+      "bytes": 59512,
+      "sha256": "b5cac83fe456ed66757c9003f703c498623aa626b4a5c2d09e7791c221568f2a"
+    },
+    {
+      "path": "changelog.txt",
+      "bytes": 1017700,
+      "sha256": "d19757fe162416895e1c39dadd79b3b2a97fa7b29fe75a69c679c280a2117895"
+    },
+    {
+      "path": "daedalic_privacypolicy.txt",
+      "bytes": 6208,
+      "sha256": "6f2ab8a17f6857808e628ecec5ccadec573d47c6ea57b42f4db5aa8bfc51b5f7"
+    },
+    {
+      "path": "hintmanager.xml",
+      "bytes": 2270,
+      "sha256": "54dffbfd5a9bf27ba1795aaea4471281f17cac1e7e46f46645a0c82ce50040c4"
+    },
+    {
+      "path": "libEOSSDK-Linux-Shipping.so",
+      "bytes": 28106776,
+      "sha256": "886ea0b39e4b5970faec42e89da7b2ce6948f0a2859b153d238d20fd0dd9b0bf"
+    },
+    {
+      "path": "libSystem.Globalization.Native.so",
+      "bytes": 60576,
+      "sha256": "8472a2a484c4b061615b05b585e242c1566795971dc9c9fbc5d7e5fd4f23bd56"
+    },
+    {
+      "path": "libSystem.IO.Compression.Native.so",
+      "bytes": 867416,
+      "sha256": "1aa354480059e1549341880233ddca9455fe568739f62510973f72d22b20d30f"
+    },
+    {
+      "path": "libSystem.Native.so",
+      "bytes": 90656,
+      "sha256": "629ed605ac8d3f203827dc4bd8cee843400175dbc4cdfa430f5e8d75a1526725"
+    },
+    {
+      "path": "libSystem.Net.Security.Native.so",
+      "bytes": 13544,
+      "sha256": "36f2be113ac03252fd7ba3f39da44fd1102d255919f77e5935e215bac8147ea7"
+    },
+    {
+      "path": "libSystem.Security.Cryptography.Native.OpenSsl.so",
+      "bytes": 155104,
+      "sha256": "ef12e264fbce0d850dce520003e28f2248aadda27c0ca59c6b25d40aa9e95fe8"
+    },
+    {
+      "path": "libclrgc.so",
+      "bytes": 823592,
+      "sha256": "6165d7b0b2b2197b495aacb63088412d892ac7f0cae43b1bd969dc0613b5615e"
+    },
+    {
+      "path": "libclrjit.so",
+      "bytes": 3647984,
+      "sha256": "af2fbef0e4625e71363639755d67b03ff61ce8f703e0628ae444780f39e77a63"
+    },
+    {
+      "path": "libcoreclr.so",
+      "bytes": 6915816,
+      "sha256": "67503ac583084358062a1a4ead20e24191c63a2f9c9c22bbf73cc2898047668e"
+    },
+    {
+      "path": "libcoreclrtraceptprovider.so",
+      "bytes": 760632,
+      "sha256": "4c6b61a8ca6b946e1c7cb1cc7e7b0014a6478f3d898579f97c2ae6827260db9d"
+    },
+    {
+      "path": "libhostfxr.so",
+      "bytes": 289168,
+      "sha256": "25cd677a690d948212683441392fc74ed5a33531b6c4b51c96c9e498ce8c3928"
+    },
+    {
+      "path": "libhostpolicy.so",
+      "bytes": 310352,
+      "sha256": "e7010955acd2b619178df3cfcc5a919106cdb697b6d6f42407a6d738055859b7"
+    },
+    {
+      "path": "liblinux_steam_env.so",
+      "bytes": 15896,
+      "sha256": "c1328b070b5107afcfd34ddacb4971682394a2c4cea758cdef2ab4a08766c18f"
+    },
+    {
+      "path": "libmscordaccore.so",
+      "bytes": 2438048,
+      "sha256": "d8026843a41cc8c0c19f68df227fa4c2781eaa2230acae62fcd1d2745490ea84"
+    },
+    {
+      "path": "libmscordbi.so",
+      "bytes": 1635240,
+      "sha256": "b3b2ab8e2f2b64cf13172a9ac234676abb2e0cad01e26186864ba400b86f1429"
+    },
+    {
+      "path": "libsteam_api64.dylib",
+      "bytes": 414656,
+      "sha256": "b2260d2b2ff6ac8d2d10770047967ceb18022fc5c27f94e3246bd7d2a1da82c0"
+    },
+    {
+      "path": "libsteam_api64.so",
+      "bytes": 386864,
+      "sha256": "b343f8be18ad3b2ddb26f64f157f0cb6a8f84777f129160c7fb2cf83d6aba787"
+    },
+    {
+      "path": "libsteamwebrtc.so",
+      "bytes": 7633256,
+      "sha256": "e9472c9011e18f1f0d28d41b6000aa40473a9013a03db7b405dad15208f6ca1f"
+    },
+    {
+      "path": "linux64/libsteamwebrtc.so",
+      "bytes": 7817336,
+      "sha256": "f5a85fa63b9838709fa4abd0b1287e811da810bec3e4bb4ac898beda9aed984e"
+    },
+    {
+      "path": "linux64/steamclient.so",
+      "bytes": 46728928,
+      "sha256": "1a99f39637a505ce2dbfec697dafa118c2d1b8df7dea1412557e2d5ad0a2c7d4"
+    },
+    {
+      "path": "mscorlib.dll",
+      "bytes": 59664,
+      "sha256": "78564a8d7745201b5f88cfea3c09004ed7c0adfcc6952a3e7149d78e926ecd5f"
+    },
+    {
+      "path": "netstandard.dll",
+      "bytes": 101144,
+      "sha256": "8901880d089bfa68efed182d2edce8b7b403ca0c487668356678eababfd816f6"
+    },
+    {
+      "path": "steamclient.so",
+      "bytes": 49104528,
+      "sha256": "7cceb10c5c24beed4684803c808bb88ec9c3c29df39347bad3ca6edf666ecf8e"
+    }
+  ]
+}

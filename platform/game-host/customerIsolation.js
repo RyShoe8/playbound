@@ -10,7 +10,8 @@ import { customerResourceLimits } from "./customerResourceLimits.js";
 import { identityMigrationMetadata } from "./customerMigration.js";
 import { NATIVE_PACKAGE_PROFILES, verifyNativePackageInstallation } from "./nativePackageUpdates.js";
 
-export const CUSTOMER_IDENTITY_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "openarena", "battle-for-wesnoth", "supertuxkart", "0-ad", "ysoccer", "flightgear", "mindustry", "hurry-curry", "assaultcube", "xonotic", "wolfenstein-enemy-territory", "medal-of-honor-allied-assault", "freedoom","freeciv","warzone-2100","hypersomnia"]);
+export { CUSTOMER_IDENTITY_GAMES } from "./customerIdentityProfiles.js";
+import { CUSTOMER_IDENTITY_GAMES, supportsCustomerIdentity } from "./customerIdentityProfiles.js";
 export const TEEWORLDS_ISOLATION = "teeworlds-bwrap-v1";
 export const CUSTOMER_ISOLATION_GAMES = Object.freeze(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
 
@@ -33,7 +34,7 @@ function unlinkedAncestors(filename) {
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
-  if (customerOwned && ["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug) && identityProfile) {
+  if (customerOwned && (supportsCustomerIdentity(gameSlug) && !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) && identityProfile) {
     if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
     return;
   }
@@ -73,14 +74,14 @@ function privateDirectory(directory) {
       (process.getuid && (stat.uid !== process.getuid() || (stat.mode & 0o077)))) throw new Error("Isolation data directory must be private and service-owned");
 }
 
-export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
-  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !(["openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug) && identityProfile))) return null;
+export function customerIsolationLaunch({ gameSlug, customerOwned, communityServerId, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName, rconPassword }) {
+  if (!customerOwned || (!CUSTOMER_ISOLATION_GAMES.includes(gameSlug) && !((supportsCustomerIdentity(gameSlug) && !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) && identityProfile))) return null;
   if (identityProfile !== undefined && (!CUSTOMER_IDENTITY_GAMES.includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1`)) throw new Error("Unsupported customer identity profile");
   const limits = customerResourceLimits(gameSlug, resourceLimits);
   validateCustomerPreparation({ gameSlug, customerOwned, communityServerId, home, identityProfile });
   if (!/^[a-f0-9]{24}$/i.test(communityServerId || "") || !path.isAbsolute(home)) throw new Error("Invalid isolation identity");
   if (!Array.isArray(args) || args.some(value => typeof value !== "string" || value.includes("\0"))) throw new Error("Invalid isolation arguments");
-  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile, settings, startupPort, serverName });
+  if (gameSlug !== "teeworlds") return nativeIsolationLaunch({ gameSlug, communityServerId, binary, args, home, resourceLimits: limits, identityProfile, settings, startupPort, serverName, rconPassword });
   // Alternate/custom executables need their own reviewed dependency profile.
   const systemBinary = "/usr/games/teeworlds-server";
   let engineMount;
@@ -207,7 +208,162 @@ export function zeroAdIdentityConfiguration(args) {
   return {port:20595,config:JSON.stringify({map,maxPlayers:Number(slots)})};
 }
 
-function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName }) {
+export function sourceIdentityConfiguration(game, args, port) {
+  if (!["team-fortress-2","counter-strike-2","counter-strike-source"].includes(game)||!Array.isArray(args)||args.length>64) throw new Error("Unknown native Source contract");
+  const tf=game==="team-fortress-2",css=game==="counter-strike-source",values=Object.create(null),flags=new Set();
+  const flagNames=new Set(["-dedicated","-norestart","-usercon",...(css?["-strictportbind","-nohltv"]:[])]);
+  const valueNames=new Set(["-game","+ip","+map",...(css?["+mp_timelimit","+clientport"]:[]),tf?"+maxplayers":"-maxplayers","-port","+hostname","+rcon_password",tf?"+tf_bot_join_after_player":"+bot_join_after_player",tf?"+tf_bot_quota_mode":"+bot_quota_mode",tf?"+tf_bot_quota":"+bot_quota"]);
+  for(let index=0;index<args.length;index++) {
+    const key=args[index];
+    if(flagNames.has(key)) { if(flags.has(key))throw new Error("Repeated Source flag"); flags.add(key); continue; }
+    if(!valueNames.has(key)||Object.hasOwn(values,key)||typeof args[index+1]!=="string")throw new Error("Unexpected Source argument");
+    values[key]=args[++index];
+  }
+  const rawName=values["+hostname"],name=(tf||css)&&rawName?.startsWith('"')&&rawName?.endsWith('"')?rawName.slice(1,-1):rawName;
+  const rawSlots=values[tf?"+maxplayers":"-maxplayers"],rawBots=values[tf?"+tf_bot_quota":"+bot_quota"]??"0";
+  const maxPlayers=Number(rawSlots),botFill=Number(rawBots),rconPassword=values["+rcon_password"]??"";
+  if((!css&&!flags.has("-dedicated"))||(tf&&!flags.has("-norestart"))||(tf&&values["-game"]!=="tf")||(css&&values["-game"]!=="cstrike")||(!tf&&!css&&values["-game"]!==undefined)||values["+ip"]!==undefined&&values["+ip"]!=="0.0.0.0"||values["-port"]!==String(port)||!Number.isInteger(port)||port<(tf?27015:css?27060:27030)||port>(tf?27025:css?27070:27040)||!/^\d+$/.test(rawSlots??"")||!/^\d+$/.test(rawBots)||maxPlayers<2||maxPlayers>(tf?32:64)||botFill<0||botFill>=maxPlayers||!Number.isInteger(botFill)||typeof name!=="string"||!name.length||name.length>100||rconPassword.length>128||[name,rconPassword].some(value=>/[\x00-\x1f\x7f"\\;]/.test(value))||!/^[A-Za-z0-9_-]{1,64}$/.test(values["+map"]??""))throw new Error("Invalid native Source settings");
+  const quota=tf?"+tf_bot_quota":"+bot_quota",mode=tf?"+tf_bot_quota_mode":"+bot_quota_mode",join=tf?"+tf_bot_join_after_player":"+bot_join_after_player";
+  if(Object.hasOwn(values,quota)&&(values[mode]!=="fill"||values[join]!=="0")||!Object.hasOwn(values,quota)&&(Object.hasOwn(values,mode)||Object.hasOwn(values,join)))throw new Error("Unexpected Source bot mode");
+  if(css&&(values["+clientport"]!==String(port+1000)||!/^\d+$/.test(values["+mp_timelimit"]??"")||Number(values["+mp_timelimit"])>600))throw new Error("Invalid Source time limit");
+  return {name,maxPlayers,map:values["+map"],botFill,rconPassword,...(css?{timeLimit:Number(values["+mp_timelimit"])}:{})};
+}
+
+export function openFortressIdentityConfiguration(args,startupPort,serverName,rconPassword) {
+  if(!Array.isArray(args)||args.length>64||!Number.isInteger(startupPort)||startupPort<27150||startupPort>27169)throw new Error("Invalid Open Fortress allocation");
+    const flags=new Set(),values=Object.create(null),flagNames=new Set(["-norestart","-strictportbind","-nohltv"]),valueNames=new Set(["-game","-ip","-port","+clientport","+exec","+map","+maxplayers","+mp_timelimit","+tf_bot_join_after_player","+tf_bot_quota_mode","+tf_bot_quota"]);
+    for(let i=0;i<args.length;i++){
+      const key=args[i];
+      if(flagNames.has(key)){if(flags.has(key))throw new Error("Repeated Open Fortress flag");flags.add(key);continue;}
+      if(!valueNames.has(key)||Object.hasOwn(values,key)||typeof args[i+1]!=="string")throw new Error("Unexpected Open Fortress argument");
+      values[key]=args[++i];
+    }
+    const maxPlayers=Number(values["+maxplayers"]),botFill=Number(values["+tf_bot_quota"]??0),timeLimit=Number(values["+mp_timelimit"]);
+    if(flags.size!==3||values["-game"]!=="open_fortress"||values["-ip"]!=="0.0.0.0"||values["-port"]!==String(startupPort)||values["+clientport"]!==String(startupPort+1000)||values["+exec"]!=="playbound-managed.cfg"||!/^[A-Za-z0-9_-]{1,64}$/.test(values["+map"]??"")||!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>32||!Number.isInteger(botFill)||botFill<0||botFill>=maxPlayers||!Number.isInteger(timeLimit)||timeLimit<0||timeLimit>600||typeof serverName!=="string"||!serverName.length||serverName.length>100||/[\x00-\x1f\x7f"\\;]/.test(serverName)||rconPassword!==undefined&&(typeof rconPassword!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(rconPassword)))throw new Error("Invalid Open Fortress settings");
+    if(Object.hasOwn(values,"+tf_bot_quota")&&(values["+tf_bot_quota_mode"]!=="fill"||values["+tf_bot_join_after_player"]!=="0")||!Object.hasOwn(values,"+tf_bot_quota")&&(Object.hasOwn(values,"+tf_bot_quota_mode")||Object.hasOwn(values,"+tf_bot_join_after_player")))throw new Error("Invalid Open Fortress bot mode");
+    return {name:serverName,maxPlayers,map:values["+map"],botFill,timeLimit,rconPassword:rconPassword??""};
+}
+
+function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName, rconPassword }) {
+  if(gameSlug==="battlefield-1942-anthology") {
+    const configuration={name:serverName,maxPlayers:Math.min(64,settings?.maxPlayers??12),map:settings?.map??"berlin",gameMode:settings?.gameMode??"GPM_CQ",botSkill:settings?.botSkill??75};
+    if(binary!=="/opt/playbound-host/games/battlefield-1942-anthology/bf1942_lnxded.static"||identityProfile!=="battlefield-1942-anthology-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==["+overlayPath",path.join(home,"battlefield-1942-anthology-servers",`pb-${id}`)].join("\0")||!Number.isInteger(startupPort)||startupPort<14567||startupPort>14586||typeof serverName!=="string"||!serverName.length||serverName.length>80||/[\x00-\x1f\x7f"\\;]/.test(serverName)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||typeof configuration.map!=="string"||!/^[A-Za-z0-9_]{1,64}$/.test(configuration.map)||!["GPM_CQ","GPM_COOP"].includes(configuration.gameMode)||!Number.isInteger(configuration.botSkill)||configuration.botSkill<1||configuration.botSkill>100)throw new Error("Unexpected Battlefield identity contract");
+    return {profile:"battlefield-1942-anthology-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="open-fortress") {
+    if(binary!=="/opt/playbound-host/games/open-fortress/runtime/srcds_linux"||identityProfile!=="open-fortress-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||!Number.isInteger(startupPort)||startupPort<27150||startupPort>27169)throw new Error("Unexpected Open Fortress identity contract");
+    const configuration=openFortressIdentityConfiguration(args,startupPort,serverName,rconPassword);
+    return {profile:"open-fortress-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(["team-fortress-2","counter-strike-2","counter-strike-source"].includes(gameSlug)) {
+    const expected=gameSlug==="team-fortress-2"?"/opt/playbound-host/games/team-fortress-2/srcds_linux64":gameSlug==="counter-strike-source"?"/opt/playbound-host/games/counter-strike-source/srcds_linux":"/opt/playbound-host/games/counter-strike-2/game/bin/linuxsteamrt64/cs2";
+    if(binary!==expected||identityProfile!==`${gameSlug}-unix-v1`||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile)throw new Error("Unexpected native Source identity contract");
+    const configuration=sourceIdentityConfiguration(gameSlug,args,startupPort);
+    return {profile:`${gameSlug}-bwrap-v1`,resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="dont-starve-together") {
+    const slots=settings?.maxPlayers??12,configuration={name:serverName,maxPlayers:slots};
+    const expected=["-persistent_storage_root",path.join(home,"dont-starve-together-servers",`pb-${id}`),"-conf_dir","PlayBound","-cluster","Cluster_1","-shard","Master","-port",String(startupPort),"-players",String(slots),"-steam_master_server_port",String(startupPort+1),"-steam_authentication_port",String(startupPort+2)];
+    if(binary!=="/opt/playbound-host/games/dont-starve-together/bin64/dontstarve_dedicated_server_nullrenderer_x64"||identityProfile!=="dont-starve-together-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==expected.join("\0")||!Number.isInteger(startupPort)||startupPort<11020||startupPort>11041||(startupPort-11020)%3||typeof serverName!=="string"||!serverName.length||serverName.length>80||/[\x00-\x1f\x7f]/.test(serverName)||!Number.isInteger(slots)||slots<2||slots>64)throw new Error("Unexpected DST identity contract");
+    return {profile:"dont-starve-together-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="trackmania") {
+    const configuration={name:serverName,maxPlayers:settings?.maxPlayers??12};
+    if(binary!=="/opt/playbound-host/games/trackmania/runtime/TrackmaniaServer"||identityProfile!=="trackmania-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==["/dedicated_cfg=dedicated_cfg.txt","/game_settings=MatchSettings/example.txt","/nodaemon"].join("\0")||!Number.isInteger(startupPort)||startupPort<23520||startupPort>23538||(startupPort-23520)%2||typeof serverName!=="string"||!serverName.length||serverName.length>100||/[\x00-\x1f\x7f]/.test(serverName)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64)throw new Error("Unexpected Trackmania identity contract");
+    return {profile:"trackmania-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="unturned") {
+    const configuration={name:serverName,maxPlayers:settings?.maxPlayers??12,map:settings?.map??"PEI",perspective:settings?.perspective??"Both",pve:settings?.pve===true,cheats:settings?.cheats===true};
+    if(binary!=="/opt/playbound-host/games/unturned/Unturned_Headless.x86_64"||identityProfile!=="unturned-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==`+InternetServer/pb-${id}`||!Number.isInteger(startupPort)||startupPort<27075||startupPort>27099||(startupPort-27075)%3||typeof serverName!=="string"||!serverName.length||serverName.length>100||/[\x00-\x1f\x7f]/.test(serverName)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64||!["PEI","Washington","Yukon","Russia","Germany"].includes(configuration.map)||!["Both","First","Third","Vehicle"].includes(configuration.perspective))throw new Error("Unexpected Unturned identity contract");
+    return {profile:"unturned-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="bombsquad") {
+    const configuration={name:serverName,maxPlayers:Number(args[2])};
+    if(binary!=="/opt/playbound-host/games/bombsquad/runtime/dist/bombsquad_headless"||identityProfile!=="bombsquad-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.length!==4||args[0]!==String(startupPort)||args[1]!==serverName||args[3]!==id||!Number.isInteger(startupPort)||startupPort<43210||startupPort>43230||typeof serverName!=="string"||!serverName.length||serverName.length>100||/[\x00-\x1f\x7f]/.test(serverName)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>8)throw new Error("Unexpected BombSquad identity contract");
+    return {profile:"bombsquad-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="morrowind") {
+    const configuration={name:settings?.hostname??serverName,maxPlayers:settings?.maximumPlayers??settings?.maxPlayers??8,password:settings?.password??"",gameMode:settings?.gameMode??"Default"};
+    if(binary!=="/opt/playbound-host/games/morrowind/tes3mp-server.x86_64"||identityProfile!=="morrowind-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==["--resources","/opt/playbound-host/games/morrowind/resources"].join("\0")||!Number.isInteger(startupPort)||startupPort<25565||startupPort>25585||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64||typeof configuration.gameMode!=="string"||!/^[A-Za-z0-9 _-]{1,64}$/.test(configuration.gameMode)||[[configuration.name,100],[configuration.password,128]].some(([value,limit])=>typeof value!=="string"||value.length>limit||/[\x00-\x1f\x7f]/.test(value))||!configuration.name)throw new Error("Unexpected TES3MP identity contract");
+    return {profile:"morrowind-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="barotrauma") {
+    const configuration={name:serverName,maxPlayers:Math.min(16,settings?.maxPlayers??12)};
+    if(binary!=="/opt/playbound-host/games/barotrauma/DedicatedServer"||identityProfile!=="barotrauma-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.length||!Number.isInteger(startupPort)||startupPort<27220||startupPort>27238||(startupPort-27220)%2||typeof configuration.name!=="string"||!configuration.name.length||configuration.name.length>80||/[\x00-\x1f\x7f]/.test(configuration.name)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2)throw new Error("Unexpected Barotrauma identity contract");
+    return {profile:"barotrauma-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="veloren") {
+    if(binary!=="/opt/playbound-host/games/veloren/runtime/veloren-server-cli"||identityProfile!=="veloren-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.length||startupPort!==14004)throw new Error("Unexpected Veloren identity contract");
+    const configuration={name:serverName||"PlayBound Dedicated",maxPlayers:settings?.maxPlayers??16};
+    return {profile:"veloren-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="necesse") {
+    const slots=Number(args[8]);
+    const expected=["-jar","/opt/playbound-host/games/necesse/Server.jar","-nogui","-world","PlayBound","-port",String(startupPort),"-slots",String(slots),"-datadir",path.join(home,"necesse-servers",`pb-${id}`),"-pausewhenempty","0"];
+    if(binary!=="/opt/playbound-host/games/necesse/jre/bin/java"||identityProfile!=="necesse-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==expected.join("\0")||!Number.isInteger(startupPort)||startupPort<14160||startupPort>14180||!Number.isInteger(slots)||slots<2||slots>64)throw new Error("Unexpected Necesse identity contract");
+    return {profile:"necesse-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify({maxPlayers:slots})},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="triplea") {
+    const expected=["-server",`-Duser.home=${path.join(home,"triplea-servers",`pb-${id}`)}`,"-Xmx512M","-Djava.awt.headless=true","-jar","/opt/playbound-host/games/triplea/bin/game-headless.jar","-Ptriplea.server=true","-Ptriplea.server.password="];
+    if(binary!=="/opt/playbound-host/jre/temurin-25/bin/java"||identityProfile!=="triplea-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==expected.join("\0")||!Number.isInteger(startupPort)||startupPort<3303||startupPort>3323)throw new Error("Unexpected TripleA identity contract");
+    return {profile:"triplea-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:"{}"},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="space-station-14") {
+    if(binary!=="/opt/playbound-host/games/space-station-14/runtime/Robust.Server"||identityProfile!=="space-station-14-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||!Number.isInteger(startupPort)||startupPort<1212||startupPort>1222)throw new Error("Unexpected SS14 identity contract");
+    const configuration={name:serverName||"PlayBound Community Server",softMaxPlayers:settings?.["game.soft_max_players"]??64,lobbyEnabled:settings?.["game.lobbyenabled"]??true};
+    return {profile:"ss14-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="rimworld-together") {
+    if(binary!=="/opt/playbound-host/games/rimworld-together/RTServer"||identityProfile!=="rimworld-together-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.length||!Number.isInteger(startupPort)||startupPort<25590||startupPort>25610)throw new Error("Unexpected RimWorld identity contract");
+    const configuration={name:serverName||"PlayBound Dedicated",maxPlayers:settings?.maxPlayers??16,settings:settings||{}};
+    return {profile:"rimworld-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(["openra","openhv","earth-2140-trilogy"].includes(gameSlug)) {
+    const families={openra:["OpenRA.Server",["ra","cnc","d2k"]],openhv:["OpenHV.Server",["hv"]],"combined-arms":["OpenRA.Server",["ca"]],"earth-2140-trilogy":["OpenE2140",["e2140"]],"romanovs-vengeance":["OpenRA.Server",["rv"]],"tiberian-dawn-hd":["OpenRA.Server",["cnc"]],"crystallized-nexus":["OpenRA.Server",["cn"]]};
+    const family=Object.keys(families).find(key=>binary===`/opt/playbound-host/games/${key}/${families[key][0]}`);
+    if(!family||(gameSlug!=="openra"&&family!==gameSlug)||identityProfile!==`${gameSlug}-unix-v1`||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile)throw new Error("Unexpected OpenRA identity contract");
+    const input=args[0]==="--server"?args.slice(1):args;
+    const values={};
+    for(const argument of input){const equal=argument.indexOf("=");const key=argument.slice(0,equal);if(equal<1||!["Game.Mod","Server.Name","Server.ListenPort","Server.AdvertiseOnline","Server.EnableSingleplayer","Server.LockBots","Server.OrderLatency"].includes(key)||Object.hasOwn(values,key))throw new Error("Undeclared OpenRA startup argument");values[key]=argument.slice(equal+1);}
+    const range={openra:[1234,1250],openhv:[1255,1270],"earth-2140-trilogy":[1275,1290]}[gameSlug];
+    if(Object.keys(values).length!==7||!families[family][1].includes(values["Game.Mod"])||values["Server.ListenPort"]!==String(startupPort)||!Number.isInteger(startupPort)||startupPort<range[0]||startupPort>range[1]||!["True","False"].includes(values["Server.AdvertiseOnline"])||values["Server.OrderLatency"]!=="5"||!["True","False"].includes(values["Server.EnableSingleplayer"])||!["True","False"].includes(values["Server.LockBots"])||!values["Server.Name"]?.length||values["Server.Name"].length>100||/[\x00-\x1f\x7f]/.test(values["Server.Name"]))throw new Error("Invalid OpenRA typed setting");
+    const configuration={family,mod:values["Game.Mod"],name:values["Server.Name"],enableSingleplayer:values["Server.EnableSingleplayer"]==="True",lockBots:values["Server.LockBots"]==="True"};
+    return {profile:"openra-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="unvanquished") {
+    if(binary!=="/opt/playbound-host/games/unvanquished/daemonded"||identityProfile!=="unvanquished-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args[0]!=="-homepath"||args[1]!==path.join(home,"unvanquished",`pb-${id}`))throw new Error("Unexpected Unvanquished identity contract");
+    let offset=2;const paths=new Set();
+    while(args[offset]==="-pakpath") {
+      const item=args[offset+1];
+      if(![path.join(home,".local/share/unvanquished/pkg"),"/opt/playbound-host/games/unvanquished/pkg"].includes(item)||paths.has(item))throw new Error("Unexpected Unvanquished package path");
+      paths.add(item);offset+=2;
+    }
+    const values={};
+    while(args[offset]==="-set") {
+      const key=args[offset+1];
+      if(!["net_port","sv_hostname","sv_maxclients","g_bot_defaultFill"].includes(key)||Object.hasOwn(values,key))throw new Error("Unexpected Unvanquished setting");
+      values[key]=args[offset+2];offset+=3;
+    }
+    if(offset!==args.length-2||args[offset]!=="+map"||values.net_port!==String(startupPort)||!Number.isInteger(startupPort)||startupPort<27965||startupPort>27975)throw new Error("Unexpected Unvanquished startup arguments");
+    const configuration={name:values.sv_hostname,maxPlayers:Number(values.sv_maxclients),botFill:Number(values.g_bot_defaultFill??0),map:args[offset+1]};
+    if(typeof configuration.name!=="string"||!configuration.name.length||configuration.name.length>100||/[\x00-\x1f\x7f]/.test(configuration.name)||!/^\d+$/.test(values.sv_maxclients||"")||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64||!/^\d+$/.test(values.g_bot_defaultFill??"0")||configuration.botFill<0||configuration.botFill>32||! /^[A-Za-z0-9_-]{1,64}$/.test(configuration.map))throw new Error("Invalid Unvanquished typed setting");
+    return {profile:"unvanquished-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="factorio") {
+    const directory=path.join(home,"factorio-servers",`pb-${id}`);
+    const expected=["--config",path.join(directory,"config.ini"),"--start-server",path.join(directory,"saves","save.zip"),"--server-settings",path.join(directory,"server-settings.json"),"--port",String(startupPort),"--bind","0.0.0.0"];
+    if(binary!=="/opt/playbound-host/games/factorio/bin/x64/factorio" || identityProfile!=="factorio-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.join("\0")!==expected.join("\0"))throw new Error("Unexpected Factorio identity contract");
+    const configuration={name:serverName||"PlayBound Dedicated",maxPlayers:settings?.maxPlayers??16,port:startupPort};
+    if(typeof configuration.name!=="string"||!configuration.name.length||configuration.name.length>64||/[\x00-\x1f\x7f]/.test(configuration.name)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64||!Number.isInteger(startupPort)||startupPort<34197||startupPort>34217)throw new Error("Invalid Factorio typed setting");
+    return {profile:"factorio-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="terraria") {
+    const expectedWorld=path.join(home,"terraria-servers",`pb-${id}`,"Worlds","world.wld");
+    if(binary!=="/opt/playbound-host/games/terraria/1458/Linux/TerrariaServer.bin.x86_64" || identityProfile!=="terraria-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.length!==11 || args[0]!=="-port" || args[1]!==String(startupPort) || args[2]!=="-maxplayers" || args[4]!=="-world" || args[5]!==expectedWorld || args[6]!=="-autocreate" || args[7]!=="2" || args[8]!=="-worldname" || args[10]!=="-noupnp")throw new Error("Unexpected Terraria identity contract");
+    const configuration={name:args[9],maxPlayers:Number(args[3])};
+    if(!Number.isInteger(startupPort)||startupPort<7870||startupPort>7890||!configuration.name.length||configuration.name.length>48||/[\x00-\x1f\x7f]/.test(configuration.name)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||configuration.maxPlayers>64)throw new Error("Invalid Terraria typed setting");
+    return {profile:"terraria-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
   if(gameSlug==="hypersomnia") {
     const expected=["--appimage-extract-and-run","--no-update-on-launch","--dedicated-server","--server-port",String(startupPort),"--appdata-dir",path.join(home,"hypersomnia",`pb-${id}`)];
     if(binary!=="/opt/playbound-host/games/hypersomnia/Hypersomnia-Headless.AppImage" || identityProfile!=="hypersomnia-unix-v1" || identityMigrationMetadata(id,home)?.identityProfile!==identityProfile || args.join("\0")!==expected.join("\0"))throw new Error("Unexpected Hypersomnia identity contract");

@@ -1,0 +1,264 @@
+{
+  "files": [
+    {
+      "path": "bf1942_lnxded.static",
+      "bytes": 15218900,
+      "sha256": "6b90d1cc7bf6036b882d57b245e413e19663fa1c4eecc0639a1115000ff02b7c"
+    },
+    {
+      "path": "mods/bf1942/archives/ai.rfa",
+      "bytes": 5853,
+      "sha256": "9b24f05c934ed6a4ad266412e55ab1516e5607a4312fd0ec33bd5456bd369820"
+    },
+    {
+      "path": "mods/bf1942/archives/aimeshes.rfa",
+      "bytes": 181367,
+      "sha256": "e80083ae865714a675e59302c72542c70113353bfc96023a088bf8e146f33b31"
+    },
+    {
+      "path": "mods/bf1942/archives/animations.rfa",
+      "bytes": 4616449,
+      "sha256": "39d684883ebb3a9abd6fa56d99e00c9e0fb3a7c30ec16bd5c0c4dfc5a90169b1"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/game.rfa",
+      "bytes": 106635,
+      "sha256": "dd611167ecc4f94c73b1dee5ab1ea8d7f2f5db0390e09f3987af02305709f666"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/aberdeen.rfa",
+      "bytes": 133827,
+      "sha256": "2c5de57f4921d2069d7e60387db8a00288698378060d726526848c873cc2564e"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/aberdeen_003.rfa",
+      "bytes": 134250,
+      "sha256": "31ffc8ead38bb9d8f9c63e8c205c1ca982c99e57a0dbae8777611b2cc711d414"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/battle_of_britain.rfa",
+      "bytes": 2566479,
+      "sha256": "7874beb0997b14b271c266c1c86b43d7459197419470606cb1cf9953c2099009"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/battle_of_the_bulge.rfa",
+      "bytes": 516908,
+      "sha256": "08aa07bd8d0da90cc7f18b4d09affd61158dc6d413ea7b826c3c3b80bf2d4c0f"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/battle_of_the_bulge_003.rfa",
+      "bytes": 11092,
+      "sha256": "e4386e5c5e2c24598f16e03eae8a4955659c753713320237198716fc6567e8fb"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/battleaxe.rfa",
+      "bytes": 843331,
+      "sha256": "40fde00f52f71c072306260a057611f5fa5307a4bc8af5fe7f189e2a06dd74d5"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/battleaxe_003.rfa",
+      "bytes": 34465,
+      "sha256": "b6b6dcc963d18ff6a0f16c6995c7cff7df097226fd97e3e949993a1199699891"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/berlin.rfa",
+      "bytes": 73847,
+      "sha256": "dd7db1d44ab7117174b7da8401d8c7de94dc8607fe11e12d12a602f7f47c3e0b"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/berlin_003.rfa",
+      "bytes": 11457,
+      "sha256": "fb65f16868e811d4408b4d184013af6e0ac09206c96ce6cbb0ace45ee4e6f7a7"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/bocage.rfa",
+      "bytes": 762311,
+      "sha256": "67554fb5938f0c7190a185fb69b8b77ad48c8f048629854e393c9dfbaff4cf45"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/bocage_003.rfa",
+      "bytes": 18033,
+      "sha256": "91e69e79816981c21447e236b4bb3d810dc9b3b66e6682c11df0c30b5995258f"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/coral_sea.rfa",
+      "bytes": 131809,
+      "sha256": "7a447c937da30dc0f16384328c29df35743adbe58cac2dcd3becb59727fc06e7"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/coral_sea_003.rfa",
+      "bytes": 8491,
+      "sha256": "7ce5ba19b7e8771a99f1acc915df4c270c0719a881a354f6d9c9cbb7319cd4aa"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/el_alamein.rfa",
+      "bytes": 694373,
+      "sha256": "d8e43674dd960cc5aa69ccd3ec53b76423ce52ae2da5419c3271ba1b1bf7e485"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/el_alamein_003.rfa",
+      "bytes": 23228,
+      "sha256": "e5283ecaa923d0256af537c84e8023b3147104d0855bf8c4969ef94fa026f514"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/gazala.rfa",
+      "bytes": 914941,
+      "sha256": "68fe117eb4d8086aa41d91413d18b963b4ca153feab6d4c4e419f82549096308"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/gazala_003.rfa",
+      "bytes": 29068,
+      "sha256": "edfaac4bea2fca2ab119e5b28dacd8fa5f2b9781eb15410cc687e3435c4f3f10"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/guadalcanal.rfa",
+      "bytes": 479848,
+      "sha256": "3526d7134c4dc858ee760eb97ee45bb531359c2efc1015c02c4a7988244e5a5a"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/guadalcanal_003.rfa",
+      "bytes": 29957,
+      "sha256": "047d1e4dac7220543d8bed81f53e121ad3b67e69eb96de31b1e039179064813d"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/invasion_of_the_philippines.rfa",
+      "bytes": 256296,
+      "sha256": "d83c4594ebb3286c5f95a47c73b459bba4ecddb06a77e6c4d43e9e048f36658e"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/iwo_jima.rfa",
+      "bytes": 266093,
+      "sha256": "b7d6291f0c07b5aed6ac246bbf2bddce98efb2f4441a246e580ec9cfc151de6b"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/iwo_jima_003.rfa",
+      "bytes": 14947,
+      "sha256": "f297767ecd63ff74e8b294c853e735b57e23f02380a8840b5e205fed790055fb"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/kharkov.rfa",
+      "bytes": 242453,
+      "sha256": "b09abca1facfe13df8a6be706a923d98fd3509ca08c8362a897c71bed5324958"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/kharkov_003.rfa",
+      "bytes": 16485,
+      "sha256": "a0d3c93eeeb095e8fa731f2046f7ffe0dcc7cfcbaf8690376959275a4d0d6383"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/kursk.rfa",
+      "bytes": 284781,
+      "sha256": "e692040a6174bca2aa704031af67ceed0f3ede596a6db5390a528ae74777970c"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/kursk_003.rfa",
+      "bytes": 15067,
+      "sha256": "8346f24de1486929d621bebcc99d72238fb64c3e868e37edc555c8562dd9bcff"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/liberation_of_caen.rfa",
+      "bytes": 1986451,
+      "sha256": "8006078c58f837b5e252f5c73fbe321557ce97c58f3a6629d726eebf3ea3a68e"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/market_garden.rfa",
+      "bytes": 674942,
+      "sha256": "57bdd9422326653e5b628ef18615978586027298d1e82b3de8b65ff1068f82cb"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/market_garden_003.rfa",
+      "bytes": 11151,
+      "sha256": "981fc6dc35b913858fcf2490b690095bce1ace4516fca8bbd830ccadc48a0ed8"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/midway.rfa",
+      "bytes": 153230,
+      "sha256": "ab366b46e171ced149263ed118b0543881ba2f694c6b6aa96e6d2f187ecfef3b"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/midway_003.rfa",
+      "bytes": 14366,
+      "sha256": "08977056c0471b7ed42017c59e8228ccb3df43dc7edcf57022e885f154a8ae7d"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/omaha_beach.rfa",
+      "bytes": 265264,
+      "sha256": "0d1d4ebbdd1bca630ef4f48edfd1688b2f8c362afa0d0606b0e46c56c2374586"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/omaha_beach_003.rfa",
+      "bytes": 24672,
+      "sha256": "6632f716cf1e769e7a0b26f2ecfc9d28d65bec2f6d717fe16d5c97e7fed39696"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/stalingrad.rfa",
+      "bytes": 104923,
+      "sha256": "4da87f8f7e8b44d1a260b54feb90f301d43e3f4a2de6c92f15f88e79d0dc2117"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/stalingrad_003.rfa",
+      "bytes": 13495,
+      "sha256": "fdfb376fc79eeac2eef044b17132ec1fbf7961239fe7fca9cee926a427572fcc"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/tobruk.rfa",
+      "bytes": 683144,
+      "sha256": "92f727ea42d2ccf285369a5d55de2591ea75ed74920dc57f964771c48644a883"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/tobruk_003.rfa",
+      "bytes": 37513,
+      "sha256": "0e36cb87a976dd4615993f7042883d51c462f23aaf233f9d9a80273a9604313a"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/wake.rfa",
+      "bytes": 229544,
+      "sha256": "6dd50e95b9be72e41b280ec6cbde0f1663119380a2fd46917b843eb1b5ea4c56"
+    },
+    {
+      "path": "mods/bf1942/archives/bf1942/levels/wake_003.rfa",
+      "bytes": 17854,
+      "sha256": "f5937af04329034312b7804dc2da5382cb4707e35b90eb272c454037b9a3cdd7"
+    },
+    {
+      "path": "mods/bf1942/archives/objects.rfa",
+      "bytes": 1284700,
+      "sha256": "eb8e9422d0270649b5f160de2a60c50bc61f6f64bf6ead32cf6bdbe9dc20d27c"
+    },
+    {
+      "path": "mods/bf1942/archives/shaders.rfa",
+      "bytes": 9181,
+      "sha256": "87e437f5c4efacaa4a9be65488ee3512561884f654c731c01e7c746a37dba9dd"
+    },
+    {
+      "path": "mods/bf1942/archives/standardmesh.rfa",
+      "bytes": 40426408,
+      "sha256": "0f31eaab91907e77ae6a3ecbba3aad6515e800ce54a786a87325a973b2445dcd"
+    },
+    {
+      "path": "mods/bf1942/archives/standardmesh_001.rfa",
+      "bytes": 12781576,
+      "sha256": "1f46208f8eb0340ec83cddebe77e1f14cf01ad2101c8ee2823c9b46ae9be39ad"
+    },
+    {
+      "path": "mods/bf1942/archives/treemesh.rfa",
+      "bytes": 5801114,
+      "sha256": "c5913f619c9288415b03b5e9e715574393a0a617b6ed2d0c51ba411821521daf"
+    },
+    {
+      "path": "mods/bf1942/contentcrc32.con",
+      "bytes": 3539,
+      "sha256": "d18c89b2a6c1521b8234c0319b64d1952702f310d1f7331c7cb40c75b59ad883"
+    },
+    {
+      "path": "mods/bf1942/init.con",
+      "bytes": 445,
+      "sha256": "5301918fb951f409c5642f8416119ec37b821c6bb0c27fc33742a0785aee8466"
+    },
+    {
+      "path": "mods/bf1942/lexiconall.dat",
+      "bytes": 1981590,
+      "sha256": "78f580ed09e496fd69053bcaf2d9ec50b80dc94d3ac19f27f6dffb4dcd9d2842"
+    }
+  ]
+}

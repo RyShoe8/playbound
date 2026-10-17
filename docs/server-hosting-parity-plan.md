@@ -1927,3 +1927,558 @@ writes for this attempt. Immutable dependency preparation is retained for the
 next fix. Baseline plus publication/normalization Linux tests: 136 passed.
 BombSquad remains one of the 31 pending installation families; executable
 Plugin/Workshop support remains unfinished.
+
+
+### Terraria reserved-UID world lifecycle acceptance (2026-10-16)
+
+`terraria-unix-v1` uses the reviewed 1.4.5.8 native loader, matching assembly and
+libraries in a fixed root-owned immutable directory (31 files, 58,528,521 bytes).
+The directory descriptor is retained and every file hash/owner/mode is verified
+before namespace binding. This profile has no fallback to the shared install;
+the native loader runs from the mandatory immutable mount. Only the loader is
+executable. Agent/root independently validate fixed world path, name, slots,
+medium-world creation and gameplay port. Legacy data remains in the existing
+terraria-servers/pb-fullID namespace; private preparation skips sealed old paths.
+
+First-world generation exceeded the old three-minute readiness allowance under
+a 0.75-core fence. Isolated Terraria now has a bounded ten-minute VPS startup deadline;
+ordinary party rooms retain their three-minute deadline. This changes no
+serverless download/provision path. The staging fixture's declared
+allocation was increased to two cores for the retry (no manual cgroup mutation).
+Existing-world reload completed normally without regenerating the world.
+
+The fixture passed idempotent create, private world generation, connection-based
+occupancy (zero/four slots; bots unknown), same gate/game PID after staging-agent
+restart, process metrics, and scoped stop. Terraria's stop first sends SIGINT
+through a pidfd after validating the bound process identity, UID and cgroup; it
+waits at most eight seconds before the existing scoped-kill fallback. The world
+file was rewritten during stop and successfully loaded by a fresh isolated runtime.
+The stop helper has a twelve-second client deadline; other operations retain four.
+PID-reuse/foreign-UID safeguards have a regression test. This is not a general
+signal or console endpoint.
+
+Running snapshots were refused. Stopped snapshot creation/atomic restore passed,
+kept the pre-restore copy and retained the world UID. Final data rollback preserved
+old/new markers; all fixture processes/data were removed. The twenty-second
+isolation identity remains opt-in/offline; no customer was automatically enrolled,
+and no catalog/database writes or executable mod support were enabled. Connection
+counts are not claimed as native game-level human/bot protocol verification.
+
+
+Terraria release validation before the deployment pause: 391 agent tests passed
+with one platform skip, 140 Linux helper tests passed, and seven platform query
+tests passed. The completed deployment preserved all eleven live managed process
+identities. Subsequent work remains local; no further deployments or per-game
+commits are authorized for the remaining combined batch.
+
+### Combined-batch identity contract guard (2026-10-16)
+
+The agent's resource admission, migration response validation, runtime handoff,
+recovery/stop and admin readiness now share one explicit accepted-profile registry.
+Installation aliases resolve through installationKey, including 0ad/openmohaa.
+Privileged Python helpers retain independent fixed allowlists; the agent registry
+cannot grant root support. A cross-boundary regression checks every accepted
+profile's port range and private migration namespace against the root runtime,
+plus root allocation support and installer inclusion. Unknown or merely installed
+games remain rejected. This prevents partial per-game registrations from silently
+diverging; it does not mark the thirty pending families accepted.
+
+
+### Factorio immutable bundle preparation (local batch, 2026-10-16)
+
+Read-only inspection pinned the installed 244,051,696-byte native server and
+3,579 data files (47,093,503 bytes). No saves, customer mods, credentials or
+private server configuration were inspected or copied. The operator-only
+publisher now supports a fixed Factorio bundle with a 4,096-file/1-MiB inventory
+limit; other families retain their earlier limits. Only bin/x64/factorio is
+executable. Manifest metadata is always read-only, fixing its previous dependence
+on the final asset's executable mode. Source/hash/link/ownership checks and
+atomic publication remain in force. The local Linux fixture covers publication,
+reader validation, changed engine bytes and excluded saves/mods paths.
+
+This prepares dependencies only: Factorio is NOT enrolled or accepted. Its
+remaining runtime work must create the first world inside the same UID/cgroup/
+network fence, then load it with private settings, support bounded cancellation,
+and verify recovery/stop/backup. No bundle was published on the VPS and no
+service, database, scheduler or running process was changed by this batch.
+
+
+Factorio lifecycle preparation now includes a deliberately disconnected
+in-namespace candidate. It validates name/slots/allocated port, uses fixed
+immutable engine/private save paths, skips creation for an existing valid world,
+and refuses unidentified partial output. Creation has a ten-minute bound and
+owner-liveness checks before spawn, during creation and before publication.
+Failure/cancellation kills and reaps the creation process. Exclusive publication
+cannot replace a concurrently created save. Six lifecycle regressions plus the
+twelve asset regressions pass locally under Linux. Root namespace integration,
+actual game acceptance and runtime registration are still outstanding; this
+candidate cannot be invoked as a host provisioning command or enable hosting.
+
+
+### Factorio root integration candidate (local batch)
+
+The candidate now connects to the fixed root launch contract, offline migration,
+resource placement, protected file/snapshot routing and immutable engine mount.
+World generation runs as the reserved UID inside the same namespace/cgroup and
+network fence as the eventual server, followed by exec of the paired immutable
+engine. Legacy preparation is skipped only for this explicit identity; ordinary
+Factorio rooms retain their original behavior. Startup has a scoped eleven-minute
+bound, and graceful stop retains the existing PID/UID/cgroup checks. Typed settings
+reject paths/commands and mismatched allocated ports. The helper is installed by
+the existing root tooling installer; no new sudo primitive was added.
+
+Admin readiness explicitly reports this candidate blocked, not accepted. No
+customer enrollment or production deployment occurred. Actual engine startup,
+recovery, player query and stopped restore acceptance remain outstanding.
+The installer also fixes an existing malformed quoted asset list that combined
+multiple filenames into a single nonexistent path. Local full agent suite:
+345 passed / 49 platform skips before the final registry routing cleanup.
+Local Linux customer helper suite: 170 passed / two skips (172 total).
+
+
+### OpenRA-family shared-state and controls audit (local batch)
+
+Direct OpenHV and OpenE2140 customer recipes now set per-server HOME and all
+XDG cache/config/data/state roots, matching the existing OpenRA recipe that
+handles official, Combined Arms, Romanov's Vengeance, Tiberian Dawn HD and
+Crystallized Nexus editions. Different server IDs cannot share these writable
+homes; non-customer behavior is unchanged. OpenHV now applies its already-declared
+EnableSingleplayer and LockBots settings rather than silently ignoring them.
+These changes do not constitute root UID/network isolation acceptance. The seven
+OpenRA-family installation boundaries remain pending; no customer profiles or
+executable content were enabled and no deployment occurred.
+
+
+### Continuing shared-state audit and Unvanquished dependencies (local batch)
+
+TripleA customer maps and Java user.home now use each server's private home,
+while non-customer paths retain their prior locations. Veloren customer userdata
+and its CLI/server configuration paths now use the same per-server root; shared
+community world paths stay unchanged. Tests cover two distinct IDs and actual
+configuration writes. These are data-separation fixes, not UID isolation claims.
+Veloren retains its existing single-port limitation.
+
+Unvanquished dependency preparation pins 37 files / 531,428,926 bytes, including
+daemonded, nacl_loader, nacl_helper_bootstrap, the matching IRT and DPK packages.
+The fixed operator-only publication path admits only these engine/helper names
+and package extensions; only the three native helpers receive executable mode.
+Configuration, plugin binaries, traversal and unrelated directories are rejected.
+The family has its own 128-file bound; earlier family limits remain unchanged.
+Thirteen asset regressions pass locally on Linux. No live publication or profile
+enrollment occurred. NaCl behavior inside the UID/network/syscall fence must
+still be implemented and checked before declaring Unvanquished accepted.
+
+
+Unvanquished now also has a local blocked root identity candidate. Both agent and
+root validate the exact engine, private home, port, name, slots, bot fill and map;
+root launch ignores shared writable package locations and binds only the pinned
+immutable package/helper tree. Offline migration and protected snapshot/file
+routing use its existing full-ID namespace. Legacy preparation is skipped only
+for the explicit identity. Native NaCl startup/query/recovery acceptance remains
+outstanding, and readiness is blocked accordingly. No seccomp/network changes,
+production installs, service restarts or customer enrollment were performed.
+The focused Linux runtime/asset/backup checks passed: 79 passes and one skip.
+
+
+### Seven OpenRA-family immutable dependency candidates (local batch)
+
+Read-only VPS inventory pinned official OpenRA's 2,591 files (141,286,620 bytes)
+and the separate single-image installations for OpenHV, Combined Arms,
+OpenE2140, Romanov's Vengeance, Tiberian Dawn HD and Crystallized Nexus.
+The fixed operator-only publisher has a distinct immutable destination and
+engine name for each family; standalone families admit exactly one pinned image.
+Official OpenRA has a bounded 4,096-file / 1-MiB inventory policy. Only the named
+server engine is executable. Operator publication refuses existing destinations,
+changed pins, unsafe links/paths, low disk space and mismatched family identities.
+No caller can select an arbitrary source, destination or download URL.
+
+These are dependency candidates only. The official self-contained .NET engine
+and the six AppImage extraction paths still need root launch integration and
+actual runtime acceptance. No publication, deployment, migration or enrollment
+has taken place. Existing isolation readiness remains pending for these families.
+
+
+### Seven OpenRA-family root launch candidates (local batch)
+
+The three canonical recipe identities now have typed root launch contracts for
+all seven installation families. Official OpenRA permits only ra/cnc/d2k;
+standalone images require their own fixed binary and mod pairing. Root selects
+the matching pinned immutable directory rather than using a shared or caller-
+selected installation. Native .NET diagnostics are disabled; AppImage extraction
+has a bounded 1-GiB private tmpfs, still subject to the declared memory cgroup.
+Private support files use Engine.SupportDir=/server (the upstream dedicated
+launcher flag: https://github.com/OpenRA/OpenRA/blob/bleed/launch-dedicated.sh).
+Actual extraction/startup, process recovery, query and protected restore are not
+yet accepted. All seven readiness rows explicitly remain blocked. No network,
+syscall or customer isolation protection was relaxed to make a game start.
+
+Offline migration, resource admission and protected file/snapshot routing share
+the canonical per-server data namespaces. The existing root installer carries
+the fixed contract helper, without any new sudo primitive. No live publication,
+deployment, database write or enrollment occurred. Remaining unimplemented
+families: 21; accepted families remain 22, with nine local runtime candidates
+(Factorio, Unvanquished and these seven) awaiting acceptance.
+
+
+### RimWorld Together and SS14 root candidates (local batch)
+
+RimWorld's installed single-file engine matches a reviewed build. Its candidate
+now retains the declared server, backup, chat, mod-matching, storyteller and full
+difficulty settings through a typed root contract. Difficulty schema equality is
+regression-tested. The namespace bootstrap merges private configuration without
+overwriting unrelated difficulty values, rejects symlinks/hardlinks and keeps a
+private console FIFO. .NET extraction is bounded within private tmpfs. Player
+telemetry and console operations under the reserved UID still need acceptance;
+the profile remains blocked.
+
+Engine-specific launch selection now prioritizes isolation over special console
+or network launchers for every engine. Tests exercise the actual launch-policy
+function, including missing identity rejection and ordinary party transports.
+No new sudo command or generic privileged file/console API was introduced.
+
+SS14's public runtime inventory pins 3,786 files / 148,553,176 bytes, excluding
+private data and server_config.toml. Only three known upstream empty placeholder
+files are admitted as zero-length assets; only Robust.Server is executable.
+The root candidate uses private data/config/log paths, allocated TCP status and
+UDP game ports, fixed .NET runtime settings and disabled hub advertisement.
+Its native soft-player-limit setting is not claimed as a hard admission ceiling.
+Status/query, restart and restore acceptance remain required; readiness is blocked.
+
+Immutable directory verification now indexes child names once, retaining exact
+unlisted-descendant rejection while avoiding repeated inventory scans for larger
+bundles. Local Linux customer-helper tests: 187 passed, two skips (189 total).
+TripleA/Veloren customer working directories are also private; Veloren's existing
+query now resolves the same per-server settings path instead of the shared one.
+No deployment, database write, publication or customer enrollment occurred.
+Remaining unimplemented families: 19; accepted families remain 22, with eleven
+local installation-family candidates awaiting acceptance.
+
+
+### TripleA and Necesse paired-Java candidates (local batch)
+
+TripleA pins its reviewed server JAR together with 57 files from the required
+Java 25 runtime (58 files / 235,057,181 bytes total). The immutable publisher's
+fixed paths exclude downloaded maps, saves and other Java versions. Runtime
+launch uses only that paired Java/JAR, with private Java home and downloadedMaps,
+allocated BOT_PORT, bounded heap/metaspace/code/class space, disabled attach and
+shared performance memory, and the existing public lobby endpoint. Offline
+migration, resource scope and protected snapshot/file routing are wired. Actual
+maps/startup/query, adoption and restore acceptance remain pending; readiness is
+blocked, rather than treating the runtime pin as acceptance.
+
+Necesse separately pins 119 files / 244,839,284 bytes from its installed server,
+bundled Java, libraries, locale and Steam native dependencies. The root candidate
+accepts only a bounded slot count and allocated game port, runs the paired JAR
+with a private world/data directory and bounded JVM configuration, and retains
+its existing stopped-world backup namespace. Shared preparation is skipped only
+for the explicit identity. No arbitrary JVM flag, binary, mod path or customer
+save enters the immutable bundle. Native startup/Steam query, shutdown, recovery
+and restore acceptance remain pending, and readiness is blocked accordingly.
+
+No production publication, service deployment, database writes or customer
+enrollment occurred. The root bind/syscall/network policies were not relaxed.
+Remaining unimplemented installation families: 17; accepted families remain 22,
+with thirteen local candidates awaiting acceptance.
+
+
+### Fixed auxiliary-port prerequisites for nine remaining families (local batch)
+
+The root BPF bind builder now has named, fixed future layouts for Veloren,
+Barotrauma, Core Keeper, Unturned, Don't Starve Together, Counter-Strike Source,
+Team Fortress 2, Open Fortress and GoldenEye Source. Each layout validates its
+own allocation range/stride and permits only the declared offset/protocol pairs;
+no HTTP request can provide a port list or BPF program. Existing STK, FlightGear,
+AssaultCube and single-port policies retain their current behavior. Neither the
+new layouts nor new runtime families have been activated on the VPS.
+
+Regression coverage interprets every generated branch for both protocols at
+first/last allocations, including port zero, neighbors, wrong protocols, invalid
+strides, mixed legacy flags and unknown profile types. Seven bind-policy tests
+pass locally. These are networking prerequisites, not game startup acceptance;
+all seventeen remaining unimplemented families retain their pending status.
+
+
+### Veloren native world candidate (local batch)
+
+Read-only inventory pins the complete paired native/assets runtime: 10,655 files,
+519,129,508 bytes. The installed runtime also passed the existing paired-package
+verifier for weekly-linux-x86_64-2026-10-14T20_51.zip. Its family-specific immutable
+inventory limit is 16,384 files / 4-MiB metadata; earlier limits remain unchanged.
+Only veloren-server-cli is executable. Empty upstream translation placeholders
+are admitted only below assets/voxygen/i18n and only with .ftl extension. Private
+userdata, saves and configuration cannot enter the public engine bundle.
+
+The root candidate uses private userdata, pinned assets, fixed gameplay TCP 14004
+and localhost metrics TCP 14005. It disables the native extra query listener and
+web chat secrets. Upstream current Settings use gameserver_protocols/query_address;
+CLI settings use web_address, rather than the older documentation's metrics field:
+https://raw.githubusercontent.com/veloren/veloren/master/server/src/settings/mod.rs
+https://raw.githubusercontent.com/veloren/veloren/master/server-cli/src/settings.rs
+Native settings have serde defaults; startup acceptance against the pinned build
+is still required before enrolling a customer.
+
+The bounded RON patcher modifies only declared top-level fields, retaining existing
+seed, world, nested gameplay fields and comments. It rejects duplicate/malformed
+fields and unreviewed raw strings without overwriting the original. Tests cover
+nested values, escaped delimiters, comments, repeated updates and linked configs.
+SIGTERM follows pidfd/UID/cgroup identity checks and the bounded scoped-kill fallback;
+Terraria/Factorio retain their existing SIGINT behavior. Migration, resource limits
+and protected snapshot/file paths are wired; no new sudo primitive was added.
+
+The candidate remains explicitly blocked pending actual cold-world creation,
+metrics/player checks, saved-world reload, agent adoption, graceful save and restore.
+No service deployment, live publication, database writes or customer enrollment
+occurred. Latest local suites: 359 agent tests passed / 49 platform skips;
+201 Linux helper tests passed / two skips. Remaining unimplemented families: 16;
+accepted families remain 22, with fourteen local candidates awaiting acceptance.
+
+
+### Barotrauma preparation — not runtime acceptance
+
+Prepared a fixed private XML configuration contract and a read-only public package
+inventory: 1,049 files / 267,411,090 bytes. Inventory was collected read-only from
+/opt/playbound-host/games/barotrauma, with per-file hashes and change detection.
+The publisher excludes private configuration, permissions, worlds, LocalMods and
+the unused createdump executable. Only DedicatedServer receives executable mode.
+The existing 2-GiB publication ceiling remains unchanged.
+
+The settings helper preserves campaign attributes and child elements, validates
+the even gameplay port and adjacent query port, caps players at 16, disables UPnP
+and public advertising, and atomically writes private owner-only XML. Linked,
+malformed, entity-bearing, oversized and publicly readable configurations fail
+without overwriting the original. Local helper suite: 206 passed / two skipped.
+
+This preparation does not enable isolation. Namespace Content/native Steam
+mounts, private Data overlays, root dispatch, migration/backup/control wiring and
+runtime acceptance remain unfinished. Counts remain 16 unimplemented families,
+14 local candidates and 22 accepted families. No deployment, enrollment, service
+restart, DB write or commit occurred.
+
+
+### Combined remaining-family implementation batch (deployments paused)
+
+Seven more families now have local UID/namespace candidates: Barotrauma, Don't
+Starve Together, Morrowind/TES3MP, native 64-bit TF2, CS2, Trackmania and Unturned.
+This supersedes the preceding Barotrauma-preparation-only status. Accepted
+families remain 22; local candidates awaiting runtime acceptance are now 21;
+nine families still lack an implemented customer identity boundary.
+
+Each candidate has an explicit agent identity contract, independently fixed root
+allowlists, resource/migration policy, retained immutable package pins and scoped
+snapshot/file support. Ordinary party paths remain separate. No automatic
+customer enrollment or executable plugin/Workshop capability is enabled.
+
+Barotrauma uses private XML/Data and retained Content/Steam bindings. DST uses a
+private cluster/token and allocated three-port fence; existing gameplay options
+survive settings changes. Morrowind copies only reviewed scripts/default content,
+never shared character/world saves, and installs the reviewed admin hook. Its
+private player/world/admin files survive repeated preparation. UID-aware live
+admin/player transport still needs runtime acceptance.
+
+TF2 selects srcds_linux64 explicitly; CS2 selects the native linuxsteamrt64 binary.
+Both use private configuration/log overlays, fixed typed map/player/bot settings,
+and keep RCON credentials out of engine argv. Public package inventories exclude
+cfg/logs/addons/custom/downloads/workshop; customer config is never pinned as
+public content. Full shipped default-config requirements and engine path behavior
+must be validated before enrollment. Cold launch verifies every retained hash;
+scoped 15-minute readiness budgets account for these large depots.
+
+Public Source inventories: TF2 approximately 14.96 GB; CS2 approximately 73.39 GB.
+Publication has per-family 20/80-GiB ceilings and keeps the greater of 8 GiB or
+25% of package size free after a copy. Other games retain their existing ceilings.
+These copies were NOT made. Joint Source publication requires more storage than
+should be consumed blindly on the current VPS; staging/storage strategy remains
+an operational prerequisite. No integrity bypass or writable shared mount exists.
+
+Trackmania pins the matching native executable and Packs (five files,
+369,363,688 bytes). Its account and generated RPC credentials remain private;
+existing playlists/maps are retained, UPnP/P2P and remote XMLRPC are disabled.
+Existing server-specific match settings are required rather than downloading
+maps implicitly. XMLRPC/native query/recovery and engine data paths remain gates.
+
+Unturned pins 10,328 public package files, 1,896,662,197 bytes. Its private server
+data is bound only inside the namespace at both possible engine/cwd Servers
+locations; no symlink is written to the shared installation. GSLT is read only
+from owner-only private data and never passed in argv or returned in output.
+Native Unity data-path, player query, shutdown/save and restore checks remain gates.
+
+The remaining nine are GoldenEye: Source, Deus Ex, Open Fortress, Counter-Strike:
+Source, Core Keeper, ANEURISM IV, Battlefield 1942, RVGL and BombSquad. Installed
+Open Fortress/CSS/BF1942 are 32-bit; GoldenEye/Deus Ex use Wine, Core Keeper/RVGL
+use Xvfb, ANEURISM has a separate network supervisor, and BombSquad's previous
+isolated startup failed transport initialization. These need dedicated boundaries;
+the x86_64/AF_UNIX syscall restrictions have not been relaxed to hide failures.
+
+No deployments, live file publication, service restarts, database writes,
+customer enrollment or commits were performed in this batch.
+
+
+### BombSquad candidate and batch boundary checks
+
+BombSquad now also has a local fixed identity candidate, bringing the batch to
+eight of the original sixteen implemented locally: 22 accepted families,
+22 local candidates awaiting runtime acceptance and eight still unimplemented.
+Its root handoff retains separate reviewed game and Python-library descriptors,
+seals the matching Python 3.14 executable, disables bytecode/public listing and
+uses a fixed controller invocation with no caller exec/Python options. The prior
+transport initialization failure remains an explicit blocker; this implementation
+is not evidence that it has been fixed or that a runtime is healthy.
+
+The eight unimplemented boundary reasons are now explicit in hosting readiness:
+GoldenEye, Deus Ex, Open Fortress, Counter-Strike: Source, Core Keeper, ANEURISM,
+Battlefield 1942 and RVGL. None is accidentally granted an identity profile or
+executable content capability. The prepared TF2 bind policy was corrected from
+27030..27049 to the actual recipe's 27015..27025 allocation.
+
+World file management now refuses generated engine credential files whose names
+do not contain token/password: Commands.dat, dedicated-account.json,
+dedicated_cfg.txt, cluster.ini, serversettings.xml, server.cfg, playbound.cfg,
+managed Source configs and ServerConfig.json. These are neither listed nor
+read/download/write targets. Typed server controls remain the settings path.
+Trackmania UserData and Unturned private save roots are now covered by the normal
+world-backup capability declarations; isolated snapshots continue through the
+stopped, UID-scoped helper and never return raw snapshot contents.
+
+The snapshot-runner test previously swallowed its own mock assertion for a newly
+implemented profile and could pass without proving rejection. It now exercises
+every implemented identity with a successful typed mock and uses a truly unknown
+profile for rejection. A new test installs the real seccomp BPF in a child process
+and verifies kernel enforcement without requiring bubblewrap: privileged calls,
+host Unix sockets and reconnectable datagram/seqpacket pairs are denied while
+connected stream IPC remains usable. No syscall restriction was loosened.
+
+
+### Counter-Strike: Source local i386 candidate
+
+The compatibility boundary now has an explicit internal i386 mode. Existing
+native profiles keep their original x86_64-only filter. The i386 mode denies
+socketcall and ipc multiplexers outright, retains direct-socket AF_UNIX checks,
+and denies privileged syscalls under both ABIs. A hand-built static i386 ELF was
+executed under the real kernel filter: direct AF_INET UDP works; AF_UNIX,
+socketcall, ipc, mount, ptrace and unshare are denied. No compiler, external
+binary or compatibility-library download was needed for that fixture.
+
+CSS alone selects this mode from the fixed root game profile; no HTTP request or
+settings field controls it. Its native srcds_linux, public depots and Steam files
+are pinned (1,108 files / 2,395,259,947 bytes), with private cfg/log overlays and a
+4-GiB family publication ceiling. Script wrappers are excluded from isolated
+binary selection. Typed settings retain map, slots, time limit, name and RCON;
+clientport must equal the allocated gameplay port plus 1000. Root argv derives
+that port again rather than accepting a caller-selected auxiliary listener.
+
+This is still blocked pending real engine/libc networking, shipped configuration,
+query/RCON, recovery and restore acceptance. An engine that needs the denied
+socketcall ABI must fail rather than fall back or relax the policy. No runtime
+was deployed or enrolled. Current counts: 22 accepted families, 23 local
+candidates awaiting runtime acceptance, seven unimplemented boundaries.
+
+
+### Open Fortress and Battlefield 1942 local candidates
+
+Open Fortress has a fixed i386 SDK/mod candidate with a separate retained TF2
+asset descriptor. The modern TF2 engine is never used to launch this mod. Its
+27,062 pinned files total 8,089,280,428 bytes; only srcds_linux is executable.
+The unused empty test.txt is excluded. The single empty map translation file is
+allowed by exact path; legacy texture '~'/'{' names are allowed only under the
+materials subtree. The family retains an 8-GiB publication bound and a separate
+32,768-file / 8-MiB metadata bound. TF2 assets remain in the existing root-pinned
+TF2 bundle; no second TF2 copy is introduced.
+
+The namespace builds a private runtime tree with read-only SDK/content bindings,
+reviewed _srv library aliases and the server_srv.so-to-server.so mapping. CFG,
+map graphs, download/cache/log directories and gameinfo remain private. Shipped
+reviewed defaults are copied once; repeated preparation preserves customer
+changes. Generated map/player/time/bot/name/RCON settings are typed. RCON stays
+out of argv. Gameinfo uses /tf2 rather than host installation paths; alternate
+host references fail closed. UID-scoped operation and separate retained package
+FDs are mandatory; there is no shared writable directory or symlink fallback.
+
+Battlefield 1942 uses only the reviewed static i386 binary and pinned public game
+content: 52 files / 95,148,143 bytes. Shared settings/admin files are excluded from
+the bundle. It generates a private overlay for server/map configuration, preserves
+other existing rules, fences the gameplay port, disables GameSpy/ASE/PunkBuster,
+and validates cooperative mode and bot skill. Only the allocated port is allowed;
+no extra legacy discovery/admin listener was added. Its legacy multiplexer policy
+matches CSS/Open Fortress and still requires actual engine networking acceptance.
+
+Both remain blocked until real startup, query/control, recovery and snapshot
+acceptance. No service deployment, live publication, enrollment, DB write or
+commit occurred. Local checks: 368 agent tests passed / 49 skips; 241 Linux helper
+tests passed / two skips. Counts: 22 accepted, 25 local candidates awaiting runtime
+acceptance, five unimplemented: GoldenEye, Deus Ex, Core Keeper, ANEURISM and RVGL.
+
+
+### Private display/Unix IPC boundary preparation — not activated
+
+Read-only VPS checks confirmed AppArmor enabled, parser/aa-exec installed and
+kernel af_unix/change_profile/v8 feature support. No policy was loaded. The
+render-only customer-display-policy.py produces a unique profile/display for each
+reserved UID (40000..40255). Its candidate peer rule permits stream communication
+only with the same runtime label; abstract display binding is restricted to the
+allocated X1000..X1255 address. It grants no profile transition or broad Unix
+network rule. Existing filesystem namespaces, resource limits, bind/egress rules
+and seccomp restrictions remain mandatory, independent boundaries.
+
+The design follows upstream AppArmor Unix-peer semantics:
+https://apparmor.dev/man/apparmor.d/
+Both endpoint UID policies compiled against the VPS parser with --skip-kernel-load,
+--skip-cache and --Werror. This was stdin-only validation: no policy/cache file,
+service or kernel configuration was changed. Compilation proves syntax only,
+not cross-customer IPC isolation. Actual same-label/cross-label/host-peer socket
+acceptance and a reviewed installation/handoff are still required.
+
+customer-display.py is an unused candidate display helper. It refuses startup
+unless current UID/label matches an enforced private IPC identity. It has a fixed
+Xvfb executable/geometry, no TCP listener or -ac, a private 0600 Xauthority cookie,
+authenticated X11 readiness with a bounded fragmented-header read, a ten-second
+startup limit and bounded terminate/kill/reap cleanup. A held private session lock
+prevents overlapping displays; a crashed session's regular private authority can
+be replaced without following symlinks. Cleanup is idempotent and releases the
+lock. Cookie contents are never passed in argv or returned in diagnostics.
+
+Eight local contract/lifecycle tests cover UID/label guards, per-UID uniqueness,
+wrong/complain/missing kernel policy, authority format/permissions/link rejection,
+overlap/stale authority recovery, fixed subprocess options, authenticated readiness
+and cleanup. Display process/socket lifecycle tests use mocks; no real confined
+Xvfb acceptance is claimed. Neither helper is installed or called by game runtime
+code, and no syscall filter was relaxed. The five unimplemented family count is
+unchanged pending this additional boundary's actual acceptance and game wiring.
+
+
+### Core Keeper and RVGL filesystem/display candidates — not activated
+
+Core Keeper now has a pinned public inventory (1,140 files, 591,875,009 bytes),
+a fixed operator-only publisher and retained-directory verification policy.
+The candidate bootstrap preserves existing world ID, seed, world name and custom
+rules, updating only the requested player cap. Configuration reads are bounded,
+owner-only, regular, single-link and no-follow; invalid saved JSON is not replaced.
+It requires the enforced private-display label before preparing files or spawning
+an engine. Display failure/cancellation stops and reaps the game with bounded
+cleanup. No display syscall policy has been relaxed or connected to a runtime.
+
+RVGL has a separately pinned public inventory and operator-only publisher.
+Private profiles, cache, replays, times and editor state are excluded. Its candidate
+layout preserves the existing private profile, rejects linked/group-readable
+private directories, binds reviewed public content read-only and permits only the
+fixed lobby command with allocated UDP port 2310..2330. The upstream absolute
+libunistring symlink is not followed: publication copies only the fixed pinned
+lib/lib64/libunistring.so.2 target into a regular pinned lib/libunistring.so.2
+alias. The entire library directory can therefore remain read-only. There is no
+customer-controlled alias or source-path mapping. No player-cap, private-display
+supervision or lobby-control parity is claimed for this RVGL layout preparation.
+
+Tests cover Core Keeper world preservation and display lifecycle; RVGL private
+state, port validation and public bindings; and publisher/verifier round trips,
+private-file rejection and exact alias flattening. Both full public inventories
+pass pre-publication validation without copying to the VPS. Linux helpers:
+261 passed, two skipped (263 total). The agent suite initially hit a Windows
+EPERM on an existing managed-jobs atomic rename; the affected six-test registry
+suite passed immediately on focused rerun. No code was changed to conceal that
+filesystem failure.
+
+These helpers/publishers are not installed, registered or enrolled. There were
+no deployments, service restarts, policy loads, database writes or commits.
+Counts remain 22 accepted, 25 local candidates awaiting runtime acceptance and
+five unimplemented runtime boundaries. Core Keeper/RVGL still need the actual
+confined display/Unix-peer acceptance and root launch integration; GoldenEye,
+Deus Ex and ANEURISM also retain their documented pending boundaries.

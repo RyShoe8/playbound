@@ -37,6 +37,213 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('/engine.jar',command)
         self.assertEqual(command[-4:],['-jar','/engine.jar','54575','54575'])
 
+    def test_openfortress_requires_separate_dependency_descriptor_and_sdk_mounts(self):
+        import json
+        source_spec=importlib.util.spec_from_file_location('of_source',Path(__file__).with_name('customer-source.py'))
+        source=importlib.util.module_from_spec(source_spec);source_spec.loader.exec_module(source)
+        module.select_game('open-fortress')
+        value={'name':'Private fortress','maxPlayers':16,'map':'dm_2fort','botFill':4,'rconPassword':'fixture','timeLimit':20}
+        with patch.object(module,'trusted_module',return_value=source):
+            payload=json.loads(module.config_bytes(json.dumps(value),27150))
+        self.assertEqual(payload,{'configuration':value,'port':27150,'game':'open-fortress'})
+        mounts=Mock();mounts.mounts.return_value=['--ro-bind','/proc/self/fd/9/hl2','/server/runtime/hl2']
+        with patch.object(module,'trusted_module',return_value=mounts):
+            command=module.command(Path('/fixture/data'),7,27150,2048,None,value,asset_directory=9,dependency_directory=10)
+        mounts.mounts.assert_called_once_with(9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/openfortress-bootstrap.py'])
+        self.assertIn('/proc/self/fd/10',command)
+        self.assertIn('/tf2',command)
+        self.assertIn('/server/runtime/hl2',command)
+        self.assertNotIn('/runtime/open_fortress/cfg',command)
+        self.assertNotIn('/opt/playbound-host',' '.join(command))
+
+    def test_bombsquad_keeps_interpreter_and_assets_in_separate_retained_mounts(self):
+        import json
+        local=importlib.util.spec_from_file_location('bomb_contract',Path(__file__).with_name('customer-bombsquad.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        module.select_game('bombsquad')
+        value={'name':'Private squad','maxPlayers':6}
+        with patch.object(module,'trusted_module',return_value=contract):
+            self.assertEqual(json.loads(module.config_bytes(json.dumps(value),43210)),{'configuration':value,'port':43210})
+        command=module.command(Path('/fixture/data'),7,43210,2048,8,value,asset_directory=9,python_directory=10)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/bombsquad-bootstrap.py'])
+        self.assertIn('/python/bin/python3.14',command)
+        self.assertIn('/proc/self/fd/10/lib',command)
+        self.assertNotIn('--exec',command)
+        self.assertNotIn('/opt/playbound-host',' '.join(command))
+
+    def test_new_private_bootstraps_keep_host_paths_out_of_commands(self):
+        import json
+        for game,helper,port,value in (
+            ('counter-strike-source','source',27060,{'name':'Fixture','maxPlayers':8,'map':'de_dust2','botFill':0,'rconPassword':'fixture','timeLimit':25}),
+            ('morrowind','morrowind',25565,{'name':'Fixture','maxPlayers':8,'password':'','gameMode':'Default'}),
+            ('trackmania','trackmania',23520,{'name':'Fixture','maxPlayers':8}),
+            ('unturned','unturned',27075,{'name':'Fixture','maxPlayers':8,'map':'PEI','perspective':'Both','pve':False,'cheats':False}),
+            ('team-fortress-2','source',27015,{'name':'Fixture','maxPlayers':8,'map':'ctf_2fort','botFill':2,'rconPassword':'fixture'}),
+            ('counter-strike-2','source',27030,{'name':'Fixture','maxPlayers':8,'map':'de_dust2','botFill':2,'rconPassword':'fixture'}),
+        ):
+            with self.subTest(game=game):
+                local=importlib.util.spec_from_file_location('contract_'+helper,Path(__file__).with_name('customer-'+helper+'.py'))
+                contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+                module.select_game(game)
+                with patch.object(module,'trusted_module',return_value=contract):
+                    payload=json.loads(module.config_bytes(json.dumps(value),port))
+                self.assertEqual(payload['configuration'],value)
+                command=module.command(Path('/fixture/data'),7,port,2048,None,value,asset_directory=9)
+                self.assertEqual(command[-3:],['/usr/bin/python3','-I','/'+helper+'-bootstrap.py'])
+                self.assertNotIn('/opt/playbound-host', ' '.join(command))
+                self.assertNotIn('rcon_password', ' '.join(command))
+                if game=='unturned':
+                    self.assertIn('/runtime/Servers/PlayBound',command)
+                    self.assertIn('/game-data/Servers/PlayBound',command)
+                if game=='trackmania':self.assertIn('/server/runtime/Packs',command)
+                if helper=='source':self.assertIn('/fixture/data/private-cfg',command)
+
+    def test_dst_keeps_private_cluster_and_fixed_port_triple(self):
+        import json
+        local=importlib.util.spec_from_file_location('dst_contract',Path(__file__).with_name('customer-dst.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        module.select_game('dont-starve-together')
+        value={'name':'Fixture','maxPlayers':8}
+        with patch.object(module,'trusted_module',return_value=contract):
+            self.assertEqual(json.loads(module.config_bytes(json.dumps(value),11020)),{'configuration':value,'port':11020})
+        command=module.command(Path('/fixture/data'),7,11020,2048,None,value,asset_directory=9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/dst-bootstrap.py'])
+        self.assertIn('/proc/self/fd/9',command)
+        for port in (11021,11022):
+            with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'dont-starve-together',str(port),'750','1024'])
+
+    def test_barotrauma_mounts_only_retained_assets_and_private_state(self):
+        import json
+        local=importlib.util.spec_from_file_location('barotrauma_contract',Path(__file__).with_name('customer-barotrauma.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        module.select_game('barotrauma')
+        value={'name':'Fixture','maxPlayers':8}
+        with patch.object(module,'trusted_module',return_value=contract):
+            self.assertEqual(json.loads(module.config_bytes(json.dumps(value),27220)),{'configuration':value,'port':27220})
+        command=module.command(Path('/fixture/data'),7,27220,2048,None,value,asset_directory=9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/barotrauma-bootstrap.py'])
+        self.assertIn('/proc/self/fd/9/Content',command)
+        self.assertIn('/server/runtime/Content',command)
+        self.assertIn('/server/.steam/sdk64/steamclient.so',command)
+        self.assertEqual(command[command.index('--chdir')+1],'/server/runtime')
+        self.assertNotIn('/opt/playbound-host/games/barotrauma',command)
+        with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'barotrauma','27221','750','1024'])
+
+    def test_veloren_namespace_keeps_assets_and_userdata_separate(self):
+        import json
+        local=importlib.util.spec_from_file_location('veloren_contract',Path(__file__).with_name('customer-veloren.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        module.select_game('veloren')
+        value={'name':'Fixture','maxPlayers':8}
+        with patch.object(module,'trusted_module',return_value=contract):
+            self.assertEqual(json.loads(module.config_bytes(json.dumps(value),14004)),value)
+        command=module.command(Path('/fixture/data'),7,14004,2048,None,value,asset_directory=9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/veloren-bootstrap.py'])
+        self.assertIn('/server/userdata',command)
+        self.assertIn('/game-data/assets',command)
+        self.assertNotIn('/opt/playbound-host/games/veloren/userdata',command)
+
+    def test_necesse_uses_its_paired_java_and_private_world_path(self):
+        module.select_game('necesse')
+        self.assertEqual(module.config_bytes('{"maxPlayers":8}',14160),b'{"maxPlayers":8}')
+        for text in ('{"maxPlayers":true}','{"maxPlayers":65}','{"maxPlayers":8,"jvm":"-agentlib:payload"}'):
+            with self.assertRaises(ValueError):module.config_bytes(text,14160)
+        command=module.command(Path('/fixture/data'),7,14160,1024,None,{'maxPlayers':8},asset_directory=9)
+        self.assertIn('/game-data/jre/bin/java',command)
+        self.assertIn('/game-data/Server.jar',command)
+        self.assertEqual(command[-4:],['-datadir','/server','-pausewhenempty','0'])
+        self.assertIn('-Duser.home=/server',command)
+        self.assertNotIn('/usr/bin/java',command)
+
+    def test_triplea_requires_paired_java25_and_fixed_private_maps(self):
+        module.select_game('triplea')
+        self.assertEqual(module.config_bytes('{}',3303),b'{}')
+        with self.assertRaises(ValueError):module.config_bytes('{"jvm":"-agentlib:payload"}',3303)
+        command=module.command(Path('/fixture/data'),7,3303,1024,None,{},asset_directory=9)
+        self.assertIn('/game-data/jre/temurin-25/bin/java',command)
+        self.assertIn('/game-data/games/triplea/bin/game-headless.jar',command)
+        self.assertIn('/server/downloadedMaps',command)
+        self.assertIn('-Duser.home=/server',command)
+        self.assertIn('-XX:+DisableAttachMechanism',command)
+        self.assertNotIn('/usr/bin/java',command)
+        self.assertNotIn('/opt/playbound-host/jre/temurin-25/bin/java',command)
+
+    def test_ss14_seals_settings_and_loads_only_paired_namespace_engine(self):
+        import json
+        local=importlib.util.spec_from_file_location('ss14_contract',Path(__file__).with_name('customer-ss14.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        module.select_game('space-station-14')
+        value={'name':'Fixture','softMaxPlayers':16,'lobbyEnabled':True}
+        with patch.object(module,'trusted_module',return_value=contract):
+            self.assertEqual(json.loads(module.config_bytes(json.dumps(value),1212)),{'configuration':value,'port':1212})
+        command=module.command(Path('/fixture/data'),7,1212,2048,None,value,asset_directory=9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/ss14-bootstrap.py'])
+        self.assertIn('DOTNET_ROOT',command)
+        self.assertIn('/usr/lib/dotnet',command)
+        self.assertIn('/game-data',command)
+
+    def test_rimworld_seals_port_and_settings_for_namespace_bootstrap(self):
+        import json
+        local=importlib.util.spec_from_file_location('rimworld_contract',Path(__file__).with_name('customer-rimworld.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        module.select_game('rimworld-together')
+        value={'name':'Fixture','maxPlayers':16,'settings':{'automaticBackups':True}}
+        with patch.object(module,'trusted_module',return_value=contract):
+            result=json.loads(module.config_bytes(json.dumps(value),25590))
+        self.assertEqual(result,{'configuration':value,'port':25590})
+        command=module.command(Path('/fixture/data'),7,25590,1024,None,value,asset_directory=9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/rimworld-bootstrap.py'])
+        self.assertIn('DOTNET_BUNDLE_EXTRACT_BASE_DIR',command)
+        self.assertIn('/game-data',command)
+        self.assertNotIn('/opt/playbound-host/games/rimworld-together',command)
+
+    def test_openra_candidates_use_fixed_root_family_and_private_support_path(self):
+        import json
+        local=importlib.util.spec_from_file_location('openra_contract',Path(__file__).with_name('customer-openra.py'))
+        contract=importlib.util.module_from_spec(local);local.loader.exec_module(contract)
+        for family,(binary,mods,image) in contract.FAMILIES.items():
+            module.select_game('openra')
+            value={'family':family,'mod':mods[0],'name':'Fixture','enableSingleplayer':True,'lockBots':False}
+            with patch.object(module,'trusted_module',return_value=contract):
+                self.assertEqual(json.loads(module.config_bytes(json.dumps(value),1234)),value)
+                command=module.command(Path('/fixture/data'),7,1234,2048,None,value,asset_directory=9)
+            self.assertIn('/game-data/'+binary,command)
+            self.assertIn('Engine.SupportDir=/server',command)
+            self.assertIn('DOTNET_EnableDiagnostics',command)
+            self.assertIn('1073741824' if image else '67108864',command)
+            self.assertNotIn('/opt/playbound-host/games/'+family,command)
+
+    def test_unvanquished_has_fixed_helpers_packages_and_private_home(self):
+        import json
+        module.select_game('unvanquished')
+        values={'name':'Fixture','maxPlayers':16,'botFill':4,'map':'plat23'}
+        self.assertEqual(json.loads(module.config_bytes(json.dumps(values),27965)),values)
+        for changes in ({'map':'../escape'},{'maxPlayers':True},{'botFill':33},{'name':'bad\nname'},{'exec':'shell'}):
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(values,**changes)),27965)
+        command=module.command(Path('/fixture/data'),7,27965,1024,None,values,asset_directory=9)
+        self.assertEqual(command[-2:],['+map','plat23'])
+        self.assertIn('/game-data/daemonded',command)
+        self.assertIn('/game-data/pkg',command)
+        self.assertIn('/server',command)
+        self.assertNotIn('/opt/playbound-host/games/unvanquished',command)
+
+    def test_factorio_creation_is_inside_fixed_namespace_with_immutable_assets(self):
+        import json
+        local=importlib.util.spec_from_file_location('factorio_bootstrap',Path(__file__).with_name('customer-factorio-bootstrap.py'))
+        bootstrap=importlib.util.module_from_spec(local);local.loader.exec_module(bootstrap)
+        module.select_game('factorio')
+        value={'name':'PlayBound','maxPlayers':16,'port':34197}
+        with patch.object(module,'trusted_module',return_value=bootstrap):
+            self.assertEqual(json.loads(module.config_bytes(json.dumps(value),34197)),value)
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(value),34198)
+            with self.assertRaises(ValueError):module.config_bytes(json.dumps(dict(value,command='shell')),34197)
+        command=module.command(Path('/fixture/data'),7,34197,2048,None,value,asset_directory=9)
+        self.assertEqual(command[-3:],['/usr/bin/python3','-I','/bootstrap.py'])
+        self.assertIn('/usr/local/libexec/playbound-customer-factorio-bootstrap',command)
+        self.assertIn('/game-data',command)
+        self.assertNotIn('/opt/playbound-host/games/factorio',command)
+
     def test_zero_ad_fixed_port_and_map_contract(self):
         import json
         module.select_game('0-ad')
@@ -442,5 +649,36 @@ class HypersomniaTypedTests(unittest.TestCase):
             for bad in ({'name':'bad\nname','maxPlayers':4},{'name':'fixture','maxPlayers':True},dict(value,command='unsafe')):
                 with self.assertRaises(ValueError):module.config_bytes(json.dumps(bad),8432)
         finally:module.select_game('teeworlds')
+
+class TerrariaTypedTests(unittest.TestCase):
+    def test_world_name_and_slots_do_not_accept_paths_or_extra_controls(self):
+        module.select_game('terraria')
+        try:
+            self.assertEqual(module.config_bytes('{"name":"Fixture","maxPlayers":4}',7890),b'{"name":"Fixture","maxPlayers":4}')
+            for bad in ('{"name":"bad\\nname","maxPlayers":4}','{"name":"Fixture","maxPlayers":true}','{"name":"Fixture","maxPlayers":4,"world":"/other/world"}'):
+                with self.assertRaises(ValueError):module.config_bytes(bad,7890)
+        finally:module.select_game('teeworlds')
+
+class TerrariaStopTests(unittest.TestCase):
+    def test_veloren_graceful_stop_uses_registered_sigterm_handler(self):
+        scope=module.scope_path(ID,42)
+        binding={'profile':'veloren-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000}
+        def read(path,*args,**kwargs):return '0::/system.slice/'+scope.name if path.name=='cgroup' else 'populated 0'
+        with patch.object(module,'binding_read',return_value=binding),patch.object(module,'game_identity',return_value=IDENTITY),patch.object(Path,'exists',return_value=True),patch.object(Path,'stat',return_value=SimpleNamespace(st_uid=40000)),patch.object(Path,'read_text',read),patch.object(Path,'write_text') as kill,patch.object(module.os,'pidfd_open',return_value=100),patch.object(module.os,'close'),patch.object(module.signal,'pidfd_send_signal') as send:
+            self.assertEqual(module.stop_runtime(ID,42,IDENTITY),{'stopped':True,'graceful':True})
+            send.assert_called_once_with(100,module.signal.SIGTERM)
+            kill.assert_not_called()
+
+    def test_graceful_stop_uses_pidfd_and_requires_matching_uid_and_scope(self):
+        scope=module.scope_path(ID,42)
+        binding={'profile':'terraria-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000}
+        def read(path,*args,**kwargs):return '0::/system.slice/'+scope.name if path.name=='cgroup' else 'populated 0'
+        with patch.object(module,'binding_read',return_value=binding),patch.object(module,'game_identity',return_value=IDENTITY),patch.object(Path,'exists',return_value=True),patch.object(Path,'stat',return_value=SimpleNamespace(st_uid=40000)),patch.object(Path,'read_text',read),patch.object(Path,'write_text') as kill,patch.object(module.os,'pidfd_open',return_value=100),patch.object(module.os,'close'),patch.object(module.signal,'pidfd_send_signal') as send:
+            self.assertEqual(module.stop_runtime(ID,42,IDENTITY),{'stopped':True,'graceful':True})
+            send.assert_called_once_with(100,module.signal.SIGINT)
+            kill.assert_not_called()
+        with patch.object(module,'binding_read',return_value=binding),patch.object(module,'game_identity',return_value=IDENTITY),patch.object(Path,'exists',return_value=True),patch.object(Path,'stat',return_value=SimpleNamespace(st_uid=40001)),patch.object(module.os,'pidfd_open',return_value=100),patch.object(module.os,'close'),patch.object(module.signal,'pidfd_send_signal') as send:
+            with self.assertRaisesRegex(ValueError,'identity changed'):module.stop_runtime(ID,42,IDENTITY)
+            send.assert_not_called()
 
 if __name__ == '__main__': unittest.main()

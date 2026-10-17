@@ -39,6 +39,7 @@ const TES3MP_CONFIG_DIR = path.join(HOST_HOME, "tes3mp");
 function customerHomeDir(dirName, ctx) {
   const id = String(ctx?.partyId || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
   const home = path.join(HOST_HOME, dirName, `pb-${id}`);
+  if((ctx?.identityProfile==="triplea-unix-v1"&&dirName==="triplea-servers")||(ctx?.identityProfile==="veloren-unix-v1"&&dirName==="veloren-servers"))return home;
   if(ctx?.identityProfile!=="warzone-2100-unix-v1")fs.mkdirSync(home, { recursive: true, mode: 0o700 });
   return home;
 }
@@ -518,6 +519,7 @@ function appImageServerArgs(binary) {
  * without one fall back to a per-party directory, as before.
  */
 function tes3mpRoomDir(ctx) {
+  if(ctx?.identityProfile==="morrowind-unix-v1")return path.join(HOST_HOME,"morrowind-servers",`pb-${ctx.partyId}`);
   // A paid server's room is its isolated home, the folder dedicatedDataBackups.js snapshots.
   if (ctx.customerOwned) return customerHomeDir("morrowind-servers", ctx);
   const key = typeof ctx.saveKey === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(ctx.saveKey) ? ctx.saveKey : null;
@@ -616,7 +618,7 @@ export const recipes = {
      * per-room override is the user config at $HOME/.config/openmw/. Without
      * it every room shared port 25565 and one save tree in the install dir.
      */
-    spawnEnv: (_port, ctx) => ({
+    spawnEnv: (_port, ctx) => ctx?.identityProfile==="morrowind-unix-v1"?{}:({
       LD_LIBRARY_PATH: path.join(GAMES_ROOT, "morrowind", "lib"),
       HOME: tes3mpRoomDir(ctx),
     }),
@@ -879,6 +881,14 @@ export const recipes = {
     resolveBinary: (candidates, ctx) => {
       const ed = String(ctx?.editionSlug || "").toLowerCase();
       const mod = resolveOpenRaServerMod(ctx);
+      if(ctx?.identityProfile==="openra-unix-v1") {
+        const family=ed==="crystallized-nexus"?"crystallized-nexus":ed==="tiberian-dawn-hd"?"tiberian-dawn-hd":mod==="rv"?"romanovs-vengeance":mod==="ca"?"combined-arms":mod==="hv"?"openhv":mod==="e2140"?"earth-2140-trilogy":["ra","cnc","d2k"].includes(mod)?"openra":null;
+        if(!family)return null;
+        const binary=family==="openhv"?"OpenHV.Server":family==="earth-2140-trilogy"?"OpenE2140":"OpenRA.Server";
+        // Identity handoff must select the reviewed engine, never run-server
+        // wrappers or another edition's fallback binary.
+        return firstExisting([path.join(GAMES_ROOT,family,binary)]);
+      }
       if (ed === "crystallized-nexus") return firstExisting(gameBin("crystallized-nexus", ["OpenRA.Server"]));
       if (ed === "tiberian-dawn-hd") return firstExisting(gameBin("tiberian-dawn-hd", ["OpenRA.Server"]));
       if (mod === "rv") return firstExisting(gameBin("romanovs-vengeance", ["OpenRA.Server"]));
@@ -917,9 +927,10 @@ export const recipes = {
       `Server.LockBots=${acceptedSettingsFor("openra", ctx?.settings)["Server.LockBots"] === true ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
-    spawnEnv: isolatedHomeEnv("openra-servers"),
+    spawnEnv: (port,ctx)=>ctx?.identityProfile==="openra-unix-v1"?{}:isolatedHomeEnv("openra-servers")(port,ctx),
   },
   "earth-2140-trilogy": {
+    spawnEnv: (port,ctx)=>ctx?.identityProfile==="earth-2140-trilogy-unix-v1"?{}:isolatedHomeEnv("earth-2140-servers")(port,ctx),
     portStart: 1275,
     portEnd: 1290,
     protocol: "tcp",
@@ -1328,17 +1339,18 @@ export const recipes = {
     startupGraceMs: 5000,
     binaries: ["/opt/playbound-host/jre/temurin-25/bin/java"],
     resolveBinary: () => fs.existsSync(path.join(GAMES_ROOT, "triplea/bin/game-headless.jar")) ? firstExisting(["/opt/playbound-host/jre/temurin-25/bin/java"]) : null,
-    args: () => ["-server", "-Xmx512M", "-Djava.awt.headless=true", "-jar", path.join(GAMES_ROOT, "triplea/bin/game-headless.jar"), "-Ptriplea.server=true", "-Ptriplea.server.password="],
-    cwd: () => path.join(GAMES_ROOT, "triplea"),
-    prepareSpawn: async () => {
-      fs.mkdirSync(path.join(GAMES_ROOT, "triplea", "downloadedMaps"), { recursive: true });
+    args: (_port,ctx) => ["-server", ...(ctx?.customerOwned?[`-Duser.home=${customerHomeDir("triplea-servers",ctx)}`]:[]), "-Xmx512M", "-Djava.awt.headless=true", "-jar", path.join(GAMES_ROOT, "triplea/bin/game-headless.jar"), "-Ptriplea.server=true", "-Ptriplea.server.password="],
+    cwd: (_port,ctx) => ctx?.customerOwned?customerHomeDir("triplea-servers",ctx):path.join(GAMES_ROOT, "triplea"),
+    prepareSpawn: async (_port,ctx) => {
+      fs.mkdirSync(path.join(ctx?.customerOwned?customerHomeDir("triplea-servers",ctx):path.join(GAMES_ROOT,"triplea"), "downloadedMaps"), { recursive: true });
     },
-    spawnEnv: (port) => ({
+    spawnEnv: (port,ctx) => ctx?.identityProfile==="triplea-unix-v1"?{}:({
+      ...isolatedHomeEnv("triplea-servers")(port,ctx),
       BOT_COMMENT: "automated_host",
       BOT_NAME: `Bot_PB_${port}`,
       BOT_PORT: String(port),
       BOT_LOBBY_URI: "https://prod.triplea-game.org",
-      MAPS_FOLDER: path.join(GAMES_ROOT, "triplea", "downloadedMaps"),
+      MAPS_FOLDER: path.join(ctx?.customerOwned?customerHomeDir("triplea-servers",ctx):path.join(GAMES_ROOT,"triplea"), "downloadedMaps"),
     }),
   },
   "0-ad": {
@@ -1360,6 +1372,7 @@ export const recipes = {
     startupReadyTimeoutMs: 30_000,
   },
   bombsquad: {
+    resolveBinary: (candidates,ctx)=>ctx?.identityProfile==="bombsquad-unix-v1"?firstExisting([path.join(GAMES_ROOT,"bombsquad/runtime/dist/bombsquad_headless")]):firstExisting(candidates),
     portStart: 43210,
     portEnd: 43230,
     protocol: "udp",
@@ -1490,12 +1503,13 @@ export const recipes = {
     portStart: 27015,
     portEnd: 27025,
     protocol: "udp",
+    identityStartupReadyTimeoutMs: 900_000,
     // TF2's game libraries are 64-bit only now; the 32-bit srcds_run dies on
     // "Could not load: replay_srv.so".
     binaries: gameBin("team-fortress-2", ["srcds_run_64", "srcds_linux64"]),
     // Open Fortress requires the older SDK's 32-bit engine and its own mod.
     // The current 64-bit TF2 server is not a compatible fallback.
-    resolveBinary: (candidates, ctx) => ctx?.editionSlug === "open-fortress" ? null : firstExisting(candidates),
+    resolveBinary: (candidates, ctx) => ctx?.editionSlug === "open-fortress" ? null : ctx?.identityProfile==="team-fortress-2-unix-v1"?firstExisting([path.join(GAMES_ROOT,"team-fortress-2","srcds_linux64")]):firstExisting(candidates),
     // Without ~/.steam/sdk64/steamclient.so the server falls back to LAN-only
     // mode, which internet clients cannot join. The install doesn't ship a
     // 64-bit copy; copy steamcmd's linux64/steamclient.so into linux64/.
@@ -1507,7 +1521,7 @@ export const recipes = {
       fs.mkdirSync(sdk, { recursive: true });
       fs.symlinkSync(target, link);
     },
-    spawnEnv: isolatedHomeEnv("team-fortress-2-servers"),
+    spawnEnv: (port,ctx)=>ctx?.identityProfile==="team-fortress-2-unix-v1"?{}:isolatedHomeEnv("team-fortress-2-servers")(port,ctx),
     startupReadyTimeoutMs: 60_000,
     args: (port, ctx) => [
       "-game",
@@ -1539,6 +1553,8 @@ export const recipes = {
     ],
   },
   "counter-strike-2": {
+    identityStartupReadyTimeoutMs: 900_000,
+    resolveBinary: (candidates,ctx)=>ctx?.identityProfile==="counter-strike-2-unix-v1"?firstExisting([path.join(GAMES_ROOT,"counter-strike-2","game/bin/linuxsteamrt64/cs2")]):firstExisting(candidates),
     // Source RCON over TCP on the game port; -usercon enables it on Linux.
     rcon: "source",
     portStart: 27030,
@@ -1744,13 +1760,14 @@ export const recipes = {
         : firstExisting(gameBin("veloren", ["veloren-server-cli", "veloren-server"]));
     },
     args: () => [],
-    cwd: () => path.join(GAMES_ROOT, "veloren"),
-    spawnEnv: () => ({
+    cwd: (_port,ctx) => ctx?.customerOwned?customerHomeDir("veloren-servers",ctx):path.join(GAMES_ROOT, "veloren"),
+    spawnEnv: (port,ctx) => ctx?.identityProfile==="veloren-unix-v1"?{}:({
+      ...isolatedHomeEnv("veloren-servers")(port,ctx),
       SDL_VIDEODRIVER: "dummy",
       SDL_AUDIODRIVER: "dummy",
       // Upstream otherwise saves beside the executable, inside runtime. Keep
       // worlds/configuration outside both update and rollback directories.
-      VELOREN_USERDATA: path.join(GAMES_ROOT, "veloren", "userdata"),
+      VELOREN_USERDATA: ctx?.customerOwned ? path.join(customerHomeDir("veloren-servers",ctx),"userdata") : path.join(GAMES_ROOT, "veloren", "userdata"),
       VELOREN_ASSETS: path.join(GAMES_ROOT, "veloren", ...(fs.existsSync(path.join(GAMES_ROOT, "veloren", "runtime")) ? ["runtime", "assets"] : ["assets"])),
     }),
     /*
@@ -1763,7 +1780,8 @@ export const recipes = {
      */
     prepareSpawn: async (_port, ctx) => {
       if (!ctx.managed) return;
-      const cliSettings = path.join(GAMES_ROOT, "veloren", "userdata", "server-cli", "settings.ron");
+      const userdata=ctx?.customerOwned?path.join(customerHomeDir("veloren-servers",ctx),"userdata"):path.join(GAMES_ROOT,"veloren","userdata");
+      const cliSettings = path.join(userdata, "server-cli", "settings.ron");
       fs.mkdirSync(path.dirname(cliSettings), { recursive: true });
       try {
         // The recovered process has no stdin pipe. New default configurations
@@ -1771,7 +1789,7 @@ export const recipes = {
         fs.writeFileSync(cliSettings, "(shutdown_signals:[SIGTERM],update_shutdown_grace_period_secs:0,)\n", { flag: "wx", mode: 0o600 });
       } catch (error) { if (error.code !== "EEXIST") throw error; }
       const limit = managedPlayerLimit(ctx, 16);
-      const settingsPath = path.join(GAMES_ROOT, "veloren", "userdata", "server", "server_config", "settings.ron");
+      const settingsPath = path.join(userdata, "server", "server_config", "settings.ron");
       try {
         let content = fs.readFileSync(settingsPath, "utf8");
         if (/max_players\s*:/.test(content)) {
@@ -1904,7 +1922,7 @@ export const recipes = {
       ? firstExisting([path.join(spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).runtime,"Robust.Server")]) : firstExisting(candidates),
     cwd: (_port,ctx) => spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).runtime,
     prepareSpawn: async (_port,ctx) => prepareSpaceStation14Data(spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx),HOST_HOME,ctx?.customerOwned),
-    spawnEnv: (_port,ctx) => ({DOTNET_ROOT:"/usr/lib/dotnet",...(ctx?.customerOwned?{HOME:spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).home}:{})}),
+    spawnEnv: (_port,ctx) => ctx?.identityProfile==="space-station-14-unix-v1"?{}:({DOTNET_ROOT:"/usr/lib/dotnet",...(ctx?.customerOwned?{HOME:spaceStation14Paths(GAMES_ROOT,HOST_HOME,ctx).home}:{})}),
     // RobustToolbox takes any CVar as --cvar name=value, overriding both its
     // defaults and the config file, so nothing has to be written to disk.
     args: (port, ctx) => [
@@ -1946,6 +1964,7 @@ export const recipes = {
     args: (port) => ["-p", String(port), "-a", String(port + 1), "-b", "0", "-d"],
   },
   openhv: {
+    spawnEnv: (port,ctx)=>ctx?.identityProfile==="openhv-unix-v1"?{}:isolatedHomeEnv("openhv-servers")(port,ctx),
     portStart: 1255,
     portEnd: 1270,
     protocol: "tcp",
@@ -1956,6 +1975,8 @@ export const recipes = {
       `Server.Name=${ctx.name || "PlayBound.club Party"}`,
       `Server.ListenPort=${port}`,
       `Server.AdvertiseOnline=${ctx.managed ? "True" : "False"}`,
+      `Server.EnableSingleplayer=${acceptedSettingsFor("openhv", ctx?.settings)["Server.EnableSingleplayer"] === true ? "True" : "False"}`,
+      `Server.LockBots=${acceptedSettingsFor("openhv", ctx?.settings)["Server.LockBots"] === true ? "True" : "False"}`,
       "Server.OrderLatency=5",
     ],
     startupReadyTimeoutMs: 30_000,

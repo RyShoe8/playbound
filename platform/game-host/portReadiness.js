@@ -27,3 +27,9 @@ export function isLinuxPortBound(port, protocol, readFile = fs.readFileSync) {
   }
   return false;
 }
+
+/** Private world creation may need longer under a tenant CPU fence. */
+export function startupReadyTimeout(recipe, identityProfile) {
+  const value=Number(identityProfile ? recipe.identityStartupReadyTimeoutMs ?? recipe.startupReadyTimeoutMs : recipe.startupReadyTimeoutMs);
+  return Number.isFinite(value) && value>0 ? value : 10_000;
+}

@@ -667,7 +667,7 @@ const QUAKE3_GAMES = new Set([
 // gameplay). It responds to Steam server queries despite not being a Source game.
 const A2S_GAMES = new Set(["counter-strike-2", "counter-strike-source", "team-fortress-2", "unturned", "goldeneye-source", "open-fortress"]);
 // TCP games with no usable query protocol: counted by established connections.
-const TCP_CLIENT_GAMES = new Set(["freeciv", "battle-for-wesnoth", "triplea", "hedgewars", "warzone-2100", "ysoccer"]);
+const TCP_CLIENT_GAMES = new Set(["freeciv", "battle-for-wesnoth", "triplea", "hedgewars", "warzone-2100", "ysoccer", "terraria"]);
 
 /** Games this module can answer for, so the platform knows to ask. */
 export const LOCAL_QUERY_GAMES = new Set([

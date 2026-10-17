@@ -1,0 +1,599 @@
+{
+  "files": [
+    {
+      "path": "Server.jar",
+      "bytes": 20518515,
+      "sha256": "83e08ad78ceb5f6f24b5ed9bee96ce63160e4f72a7bff8dafd8b99cb649952ef"
+    },
+    {
+      "path": "jre/bin/java",
+      "bytes": 16320,
+      "sha256": "9276cb8ab3ca31f7185ae733ac4c599f0be64f97dffabbf7e121b1a233f00b08"
+    },
+    {
+      "path": "jre/lib/classlist",
+      "bytes": 71306,
+      "sha256": "535141d2fc95c712f7d64bd0610848294f5f8dad702c07a66fc0bae3eadf6a4d"
+    },
+    {
+      "path": "jre/lib/jexec",
+      "bytes": 16584,
+      "sha256": "fc6546c54a8230d00588d49cfad44a39c76debacb4123131bb1372c2c722ed2a"
+    },
+    {
+      "path": "jre/lib/jfr/default.jfc",
+      "bytes": 35918,
+      "sha256": "51099f07cbdafe8c9e12e94ea74db1c92c3e1ae950679ebf6d37a9b4be4f7634"
+    },
+    {
+      "path": "jre/lib/jfr/profile.jfc",
+      "bytes": 35871,
+      "sha256": "9da7ab71c763344677cabe8898496b0aad1fb42fe49363d5e1ae00df8a1baded"
+    },
+    {
+      "path": "jre/lib/jrt-fs.jar",
+      "bytes": 110512,
+      "sha256": "ec89b17b7d5dd84d80add7ca01d5b4b8e96f4db90b483b611c8a5307a5ed9fe4"
+    },
+    {
+      "path": "jre/lib/jspawnhelper",
+      "bytes": 21984,
+      "sha256": "163456f5da551635bff31c8232dce8ddd9996b1e400029b862baa909f8795056"
+    },
+    {
+      "path": "jre/lib/jvm.cfg",
+      "bytes": 29,
+      "sha256": "aa9efb969444c1484e29adecab55a122458090616e766b2f1230ef05bc3867e0"
+    },
+    {
+      "path": "jre/lib/libawt.so",
+      "bytes": 875416,
+      "sha256": "5da5146bebff61c56b103a42de70bfb638b1406faec3708d90a7e331c9eafe36"
+    },
+    {
+      "path": "jre/lib/libawt_headless.so",
+      "bytes": 46504,
+      "sha256": "58b80aa460c39f41106d00bc9c3983a4c9ae6222355047be01450ff9216703a1"
+    },
+    {
+      "path": "jre/lib/libawt_xawt.so",
+      "bytes": 604016,
+      "sha256": "6b201fd498de094d00059af7030068b45b216a830e478614bb10e90e7dcffd3c"
+    },
+    {
+      "path": "jre/lib/libdt_socket.so",
+      "bytes": 35928,
+      "sha256": "2fcb851110d30c4320f65fb8c61ef3b6dcdb0602a3f87037053db0ea6f73b886"
+    },
+    {
+      "path": "jre/lib/libextnet.so",
+      "bytes": 16624,
+      "sha256": "8c754a4b4ffe7f8988a9d4e739d1b8c69d03116973ef3d3b54ed93057194ed50"
+    },
+    {
+      "path": "jre/lib/libfontmanager.so",
+      "bytes": 1995704,
+      "sha256": "098b89ee130b87bdff3c941ac8e303ef26d81bd29b9fca5761792ba915ee7c53"
+    },
+    {
+      "path": "jre/lib/libfreetype.so",
+      "bytes": 776048,
+      "sha256": "728fdca3e9349d4e613f863153b9835644e486f5828b2ddf36483a5a0c1af897"
+    },
+    {
+      "path": "jre/lib/libinstrument.so",
+      "bytes": 54304,
+      "sha256": "7df777bb429f66a071036a24fb595f3d39df43cec1d305c1e5ce26f4ab4d21ee"
+    },
+    {
+      "path": "jre/lib/libj2gss.so",
+      "bytes": 50944,
+      "sha256": "49c3162900dafae50baffb45956627e4e00de8eda45c9e866814e03787f3865e"
+    },
+    {
+      "path": "jre/lib/libj2pcsc.so",
+      "bytes": 21488,
+      "sha256": "7adfc3298b264babd5e11d9ad65f4713d2b353440c0335c193aadd27114728c3"
+    },
+    {
+      "path": "jre/lib/libj2pkcs11.so",
+      "bytes": 100512,
+      "sha256": "7b7b0b9a586e5092ae4c2a9a885ae1597c96cbc6ec06c2eac3cf263461455348"
+    },
+    {
+      "path": "jre/lib/libjaas.so",
+      "bytes": 15616,
+      "sha256": "6437c4e9c98ceb1f22fd01cce8b2a25b6a1a71e418c61152700716cd0e49e79e"
+    },
+    {
+      "path": "jre/lib/libjava.so",
+      "bytes": 201608,
+      "sha256": "a1dde1cc24d629d664d7c8f90f21a149cd1a588d74fa86f90b9e36c45119f504"
+    },
+    {
+      "path": "jre/lib/libjavajpeg.so",
+      "bytes": 239760,
+      "sha256": "53e9c85168746383d6dd2706cc4801c4f30b08407c2d804c1c706c617a703af1"
+    },
+    {
+      "path": "jre/lib/libjawt.so",
+      "bytes": 15600,
+      "sha256": "9f7954bf6d394512a94d3dad548aea888ba11a2fbf9ebd077af91c5d47416367"
+    },
+    {
+      "path": "jre/lib/libjdwp.so",
+      "bytes": 294112,
+      "sha256": "a58dc6f6c44bd61f8ba4b03ccbed819c940eeb1b3ea8f9f50b47c43c82d3e78b"
+    },
+    {
+      "path": "jre/lib/libjimage.so",
+      "bytes": 149520,
+      "sha256": "c1e5b1fe649e244e5f45ad4ab379b51fc0d17b2654dd0897fd2fc00266dd8c4c"
+    },
+    {
+      "path": "jre/lib/libjli.so",
+      "bytes": 120328,
+      "sha256": "4f1ca24320ab5d895f82cd96e6f78dc0707fc51824cac42ccc96643f09946e4c"
+    },
+    {
+      "path": "jre/lib/libjsig.so",
+      "bytes": 16648,
+      "sha256": "0784255cf2d38c70dddf2e154bb265d87ce46dfb8d4778e881fe762f4d30e137"
+    },
+    {
+      "path": "jre/lib/libjsound.so",
+      "bytes": 85368,
+      "sha256": "8155a41550ee6485a97fc4bb5dbfb6ff3e3949fc2dc8acce3650cf30ca3c3b47"
+    },
+    {
+      "path": "jre/lib/libjsvml.so",
+      "bytes": 871040,
+      "sha256": "01fee134b17b9fc4a09324abb53a9d79436582fd3669d495126711ddeea1777d"
+    },
+    {
+      "path": "jre/lib/liblcms.so",
+      "bytes": 607272,
+      "sha256": "895dec77530aa9af7c72f36eb5da0d1492df5630ab5cb4d1cb9474fffdbd9ffb"
+    },
+    {
+      "path": "jre/lib/libmanagement.so",
+      "bytes": 29384,
+      "sha256": "d726e6d23331060d20435e24f56d248abc320f62999aa90b4782e90bcba35c32"
+    },
+    {
+      "path": "jre/lib/libmanagement_agent.so",
+      "bytes": 15608,
+      "sha256": "f41ddc321a6be2860eeec89fbcef17e420f255a12bf0f1fc007437b174687ffe"
+    },
+    {
+      "path": "jre/lib/libmanagement_ext.so",
+      "bytes": 37016,
+      "sha256": "39c7484bc7394302c26996e69bb872311e1cdd00f281143354919ac2efe674a3"
+    },
+    {
+      "path": "jre/lib/libmlib_image.so",
+      "bytes": 606952,
+      "sha256": "bce5314783219db1baedab1d29d7a70755cd33062f91a1a90125beb87697d0c7"
+    },
+    {
+      "path": "jre/lib/libnet.so",
+      "bytes": 108896,
+      "sha256": "422dc4462ab8b1423a789e62a3721350bb99e850578ac3ff6628d589115decef"
+    },
+    {
+      "path": "jre/lib/libnio.so",
+      "bytes": 109400,
+      "sha256": "fcfcc573468080ae86d284d6da990d074d9dd5a233071a4eee957b4e4f2a4493"
+    },
+    {
+      "path": "jre/lib/libprefs.so",
+      "bytes": 15784,
+      "sha256": "1b87f8f8ac15842077f309a1ebd4c72461b02afffe17cc20a3f8d6791e96071f"
+    },
+    {
+      "path": "jre/lib/librmi.so",
+      "bytes": 15328,
+      "sha256": "373ce66fa4d95382cfdd7f8ad671bb7110da72b5f81706e5c6960b530d35c70c"
+    },
+    {
+      "path": "jre/lib/libsctp.so",
+      "bytes": 36016,
+      "sha256": "e9e8a115f972cdb5452c2303c579cb7a8db84dbad9283db1ebde28d27ff3479a"
+    },
+    {
+      "path": "jre/lib/libsplashscreen.so",
+      "bytes": 452024,
+      "sha256": "6bb6cc276e5b6933f351acd894685418e130cf7fd2df1d09c0ccaa4e21ac0c5e"
+    },
+    {
+      "path": "jre/lib/libsyslookup.so",
+      "bytes": 15232,
+      "sha256": "9a5f5a10aedbf2ea47ab048451905f63e03a113ee503070c11d67bfceb3c7c4e"
+    },
+    {
+      "path": "jre/lib/libverify.so",
+      "bytes": 64336,
+      "sha256": "db6031e5a9748fb1962e2580c1f6fcbcc3db4db15a1d0f1ec13ee2ca0a5985cc"
+    },
+    {
+      "path": "jre/lib/libzip.so",
+      "bytes": 132728,
+      "sha256": "2fa6bbb7398d28cce31a04b47c541d515b72297206b0b0c92530810fce606f77"
+    },
+    {
+      "path": "jre/lib/modules",
+      "bytes": 84519665,
+      "sha256": "425e9fd6feea0513867d89e99f494a6843ed283a083c87e70e89430c5653d365"
+    },
+    {
+      "path": "jre/lib/psfont.properties.ja",
+      "bytes": 3793,
+      "sha256": "5a4bd51b969bf187ff86d94f4a71fdfbfa602762975fa3c73d264b4575f7c78f"
+    },
+    {
+      "path": "jre/lib/psfontj2d.properties",
+      "bytes": 11390,
+      "sha256": "780c565d5af3ee6f68b887b75c041cdf46a0592f67012f12eeb691283e92630a"
+    },
+    {
+      "path": "jre/lib/security/blocked.certs",
+      "bytes": 2488,
+      "sha256": "96572f243f31c2ef81a6e627542e596f6a9295cff3c7ae095c1b595cb1457ded"
+    },
+    {
+      "path": "jre/lib/security/cacerts",
+      "bytes": 167880,
+      "sha256": "b93d8bb4c2b66e49ccb409bff72ac144e2855546c1c2c599dfeb2f0f9efe2bbb"
+    },
+    {
+      "path": "jre/lib/security/default.policy",
+      "bytes": 10213,
+      "sha256": "84d5057b12f2ed66aaa7c2027a5f06b461416eee879c1f4d242ff19dab9f400c"
+    },
+    {
+      "path": "jre/lib/security/public_suffix_list.dat",
+      "bytes": 228507,
+      "sha256": "5a3a571cc2e016fee10c221036cf1d2b52ee8ba39288ef20abe2667828ca30b4"
+    },
+    {
+      "path": "jre/lib/server/classes.jsa",
+      "bytes": 11980800,
+      "sha256": "19220f785204cebeef2c66d672b577460fda62185f080675239e64f43696fae5"
+    },
+    {
+      "path": "jre/lib/server/classes_nocoops.jsa",
+      "bytes": 10911744,
+      "sha256": "08c049ec8ad2e6b3bd4b8694f2282479400b0209125378ade442bcf401724f50"
+    },
+    {
+      "path": "jre/lib/server/libjsig.so",
+      "bytes": 16648,
+      "sha256": "0784255cf2d38c70dddf2e154bb265d87ce46dfb8d4778e881fe762f4d30e137"
+    },
+    {
+      "path": "jre/lib/server/libjvm.so",
+      "bytes": 24028816,
+      "sha256": "7d064a0dbf29c8cad232644b3fb1d52a559b3935039794422d25cb9762da509a"
+    },
+    {
+      "path": "jre/lib/tzdb.dat",
+      "bytes": 102820,
+      "sha256": "36cf71e63ce2816fe4456e9195e6c27fa7c9cd431c89ba762eba394ec2c7a1e3"
+    },
+    {
+      "path": "lib/byte-buddy-1.12.8.jar",
+      "bytes": 3823209,
+      "sha256": "42ba43dcccd8d9d77bfe8776a83e72b67f1fa52c4038a98629e7d288b648da4e"
+    },
+    {
+      "path": "lib/byte-buddy-agent-1.12.8.jar",
+      "bytes": 256885,
+      "sha256": "18faf4f33893c3e883a3220adfdab25d6ceff9e46b1ad760a5b6f83df9373307"
+    },
+    {
+      "path": "lib/jna-5.10.0.jar",
+      "bytes": 1756400,
+      "sha256": "e335c10679f743207d822c5f7948e930319835492575a9dba6b94f8a3b96fcc8"
+    },
+    {
+      "path": "lib/jna-platform-5.10.0.jar",
+      "bytes": 1343495,
+      "sha256": "1f71afd977051bf0109ef5e3767d4e2afd777be894d89788cc0f38ad68f6a16f"
+    },
+    {
+      "path": "lib/lwjgl-3.4.1-natives-linux.jar",
+      "bytes": 127853,
+      "sha256": "5dfee41aba83762229b27f969e0b567d68bc9cedda1edcaf82b91dc99fe34677"
+    },
+    {
+      "path": "lib/lwjgl-3.4.1-natives-macos-arm64.jar",
+      "bytes": 52299,
+      "sha256": "96cfb1ac127a684a2c7ce3f0a2f1da206c2190f6a2e962c377f1835e549a3dcb"
+    },
+    {
+      "path": "lib/lwjgl-3.4.1-natives-macos.jar",
+      "bytes": 77298,
+      "sha256": "b658a7cebfc978552cf773a7016b0d97c66223febccff672091d1d7afe7b9ea2"
+    },
+    {
+      "path": "lib/lwjgl-3.4.1-natives-windows.jar",
+      "bytes": 176521,
+      "sha256": "21872776b9be0a93c746d6f28797c12ac47a75e0f0188e5a4fad0c20c9a6a07e"
+    },
+    {
+      "path": "lib/lwjgl-3.4.1.jar",
+      "bytes": 1157957,
+      "sha256": "9b1c3a3a078c2377219ecb8a2662730b3dece07c10592cf1d12f957286037b69"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.4.1-natives-linux.jar",
+      "bytes": 139793,
+      "sha256": "d73bb4d13d636ac7e5af1a9ba1067320ba7b529d46a08da86e5f6e96d7f5b4cb"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.4.1-natives-macos-arm64.jar",
+      "bytes": 147477,
+      "sha256": "3a07ecaf898077ddc12bd77d1ab681f1ea368a0cb28e8ac6dd12596dfafb96ac"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.4.1-natives-macos.jar",
+      "bytes": 153018,
+      "sha256": "c8f697e10633fcca4fe51c9d51365dd50f62b194b563376323e717e080f66f44"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.4.1-natives-windows.jar",
+      "bytes": 173265,
+      "sha256": "20adab06c8f5bf1e3515a7e64db261cd83ca8131d674dc5f0af93b514deedac8"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.4.1.jar",
+      "bytes": 151893,
+      "sha256": "c2d93964f0a8b2a846708c7fb1b0a095e7d79dce8ea4c543969ffef508027190"
+    },
+    {
+      "path": "lib/lwjgl-openal-3.4.1-natives-linux.jar",
+      "bytes": 976446,
+      "sha256": "c3be36ffda26c46b77bfa359586424a95d7620be11427897c7a454abb16c0994"
+    },
+    {
+      "path": "lib/lwjgl-openal-3.4.1-natives-macos-arm64.jar",
+      "bytes": 613138,
+      "sha256": "704365e5bfc028c006d2fe54862742d661295bd4b960824a0d2fbe5a9c7b8ffd"
+    },
+    {
+      "path": "lib/lwjgl-openal-3.4.1-natives-macos.jar",
+      "bytes": 663508,
+      "sha256": "d5f3b84fe811f4c994dfda2cb601e5156c8be76317dcbb6b0e120d3d1e3cc409"
+    },
+    {
+      "path": "lib/lwjgl-openal-3.4.1-natives-windows.jar",
+      "bytes": 978825,
+      "sha256": "28d4065b9c6be68454eb4d7c0da665bd4bc7cc77d854c1f67afbd2f38ff730a3"
+    },
+    {
+      "path": "lib/lwjgl-openal-3.4.1.jar",
+      "bytes": 153919,
+      "sha256": "824a68b6f22220feb45cdaf06ebd5496b96e38c50e2588fc3ea0e819f910cf28"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.4.1-natives-linux.jar",
+      "bytes": 81196,
+      "sha256": "2eaca4892129653ca265625f640544ba10389d4d310cad036c41ef168be5c2b8"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.4.1-natives-macos-arm64.jar",
+      "bytes": 42897,
+      "sha256": "dcb250d5b270a9a8df2c82435bb8976fffc50f680c47f67063a3c8c07c6e43c6"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.4.1-natives-macos.jar",
+      "bytes": 54108,
+      "sha256": "fe0013c81bca2b7ba7833b6a1d932f2849764a01a4487f39ba14218b1cb52a81"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.4.1-natives-windows.jar",
+      "bytes": 97635,
+      "sha256": "e174a206709a91c89a840b5d935831bdb386f435ed224e570a0f15b063b4d9b4"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.4.1.jar",
+      "bytes": 937660,
+      "sha256": "a76b8fd9ff7428ae5e0f01b8f91a4e44debba87285048e965757742093418702"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.4.1-natives-linux.jar",
+      "bytes": 285924,
+      "sha256": "3da990015c5f504cec78f269a5aacf365a64f7d510a2908f3fd9cb749535b10a"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.4.1-natives-macos-arm64.jar",
+      "bytes": 185543,
+      "sha256": "d7871dcb448edbf5862cffddc2975c505c126021cd2f7205d9a464e5ca8d1df4"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.4.1-natives-macos.jar",
+      "bytes": 217615,
+      "sha256": "0eccf839e53f3cf3844ae27ee22d5c9794abced90a24599e70561efc730b3dfb"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.4.1-natives-windows.jar",
+      "bytes": 293099,
+      "sha256": "f782d33034d90967e92d45633f4a5c11658802f083507d2323f78aede8752b04"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.4.1.jar",
+      "bytes": 142927,
+      "sha256": "3d77b0a242b8a52788934356560191db910ed242ab23c521d55f030b4e867970"
+    },
+    {
+      "path": "lib/oshi-core-5.8.5.jar",
+      "bytes": 879623,
+      "sha256": "fe16bd8836eecf3d152585c2151322273b68237d13f223e662e0db959dd13680"
+    },
+    {
+      "path": "lib/slf4j-api-1.7.32.jar",
+      "bytes": 41513,
+      "sha256": "3624f8474c1af46d75f98bc097d7864a323c81b3808aa43689a6e1c601c027be"
+    },
+    {
+      "path": "lib/slf4j-nop-1.7.30.jar",
+      "bytes": 4020,
+      "sha256": "2d550dcefaea23d223b72027dbc7cbdb7327676ccefdd9cfe49cf9ea8e9ac8e0"
+    },
+    {
+      "path": "locale/ar.lang",
+      "bytes": 549465,
+      "sha256": "9aa7a031792fc548b7e346617687f2781b9dd13fa18b062bbc5cb8128231b85c"
+    },
+    {
+      "path": "locale/bg.lang",
+      "bytes": 535658,
+      "sha256": "efd6a719693e1bace5a9d93052857eff8a56866c26489a6a58cc30fe7169f212"
+    },
+    {
+      "path": "locale/ca.lang",
+      "bytes": 432239,
+      "sha256": "05f19cf249c1ce27186d9bad71178ec00c42341ac750b8a59e65329a54e29d9f"
+    },
+    {
+      "path": "locale/cs.lang",
+      "bytes": 399976,
+      "sha256": "a7963b8beac8637f384223b87d6a0530946b0bde09774b3b863d6405b6621ea3"
+    },
+    {
+      "path": "locale/da.lang",
+      "bytes": 407675,
+      "sha256": "c47711d5202106cc450aa3bf08b8c5088f96ee146d3e47538ccd37b684fd9eb2"
+    },
+    {
+      "path": "locale/de.lang",
+      "bytes": 384639,
+      "sha256": "27a7a2bd96c7bb9160935f5c3f4c4c519005e090ff1af8f6afa59fe170b149e8"
+    },
+    {
+      "path": "locale/en.lang",
+      "bytes": 345744,
+      "sha256": "d886452078dfc93d376d28149df1f831ad0a24f45e92f6a9d869c4c7a6d7df38"
+    },
+    {
+      "path": "locale/es.lang",
+      "bytes": 401055,
+      "sha256": "a5fefacb5a0dd34f389727475002a23758904e33d0d1e2ce5b33a375866c90f4"
+    },
+    {
+      "path": "locale/fi.lang",
+      "bytes": 434886,
+      "sha256": "5cc5d9a0ce0a341ab527694ece6ea9edfb04f40171b90a719812edb8dbc42a41"
+    },
+    {
+      "path": "locale/fr.lang",
+      "bytes": 406939,
+      "sha256": "bfacd99790907b0958164653c731e2daef553b32f5d3b5cbb8bd3add047bb52e"
+    },
+    {
+      "path": "locale/hr.lang",
+      "bytes": 406442,
+      "sha256": "a33ac1d6b2d9a569003718866004c901f83022bbd9f7144537985fe3339edfce"
+    },
+    {
+      "path": "locale/hu.lang",
+      "bytes": 407516,
+      "sha256": "ddf91f3b63afb07715bc8d68995ad9a402d5f49991c8d51671469f5e269a0242"
+    },
+    {
+      "path": "locale/id.lang",
+      "bytes": 380867,
+      "sha256": "8f7c858cb18a9af9a256ad5764cf77a93d53cd283165592a04cbd778fc88d210"
+    },
+    {
+      "path": "locale/it.lang",
+      "bytes": 386045,
+      "sha256": "07dbe2e7b8e101728a2f06620d8f1ad4ddc2e119eabb5b43918db416226bf754"
+    },
+    {
+      "path": "locale/ja.lang",
+      "bytes": 432073,
+      "sha256": "597559c696b18660e6e15e5a069e1dd3e8237f2cb19726da3d1fac10f41847f4"
+    },
+    {
+      "path": "locale/kr.lang",
+      "bytes": 443645,
+      "sha256": "dcd71e5fd23382f8e1779f36f2fac6e34158c7cb3d0abbd35778d84f07e7d001"
+    },
+    {
+      "path": "locale/lt.lang",
+      "bytes": 398957,
+      "sha256": "4914d2669bf9c80e09c9fe20003d304e3f88fdc98828ec52be4e4a4dd8c24e2c"
+    },
+    {
+      "path": "locale/nl.lang",
+      "bytes": 418723,
+      "sha256": "d554cbd28a19f4f08b5221afd5d87f1fa2cb0d1301898485dcefd4f4e4eb8f9a"
+    },
+    {
+      "path": "locale/no.lang",
+      "bytes": 425615,
+      "sha256": "fb418c924d5241b5788c5fcbdee4003984993a34e77b034ed5ce50eae2342bc8"
+    },
+    {
+      "path": "locale/pl.lang",
+      "bytes": 385274,
+      "sha256": "6187e918b8ceea01a78e1c0066954d3d0574d10a5ad950d5096da41d75620249"
+    },
+    {
+      "path": "locale/pt-BR.lang",
+      "bytes": 391527,
+      "sha256": "c726e46067c97d1a9e1e3b1f0a89bca638eb795f0fcd12053eafc18883f43898"
+    },
+    {
+      "path": "locale/ru.lang",
+      "bytes": 544525,
+      "sha256": "66bd1991f2b8ca26c17feca75c8746598a38fb7e1c69ff17bb760e9af16a0686"
+    },
+    {
+      "path": "locale/se.lang",
+      "bytes": 394427,
+      "sha256": "9cb883c937731bb8cccd13d4df1578465318559dd7e57c17c8318408e03310e9"
+    },
+    {
+      "path": "locale/th.lang",
+      "bytes": 602394,
+      "sha256": "6f537d026cb5547eff17f250360a8d8f93b8b2aa8da6926e53038dd7d8baff21"
+    },
+    {
+      "path": "locale/tr.lang",
+      "bytes": 383905,
+      "sha256": "985f5d0f266e8c55f2e6c28f7f752487006b6e8b868cb65542604178e7abfce8"
+    },
+    {
+      "path": "locale/uk.lang",
+      "bytes": 518555,
+      "sha256": "9b322e29cb4767bbb93e5784f66c2e41e4938c3f1bbeb9670fffe752706c3256"
+    },
+    {
+      "path": "locale/vi.lang",
+      "bytes": 425096,
+      "sha256": "30fee581c03e39df89333c026570b3e234d7e3ba15f7e22d1e5c5f69e7b1a6b9"
+    },
+    {
+      "path": "locale/zh-CN.lang",
+      "bytes": 351995,
+      "sha256": "636905dd01fa17014179ab857a8d2505a2c038506d79c6775e0116ad309b8e51"
+    },
+    {
+      "path": "locale/zh-TW.lang",
+      "bytes": 465337,
+      "sha256": "29a2b221f12a326b008cabda2cb300bcb266959404d73358486b1c092ad1fab0"
+    },
+    {
+      "path": "linux64/libsteamwebrtc.so",
+      "bytes": 7817336,
+      "sha256": "f5a85fa63b9838709fa4abd0b1287e811da810bec3e4bb4ac898beda9aed984e"
+    },
+    {
+      "path": "linux64/steamclient.so",
+      "bytes": 46728928,
+      "sha256": "1a99f39637a505ce2dbfec697dafa118c2d1b8df7dea1412557e2d5ad0a2c7d4"
+    }
+  ]
+}

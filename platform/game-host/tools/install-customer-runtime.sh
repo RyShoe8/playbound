@@ -67,3 +67,38 @@ printf '%s\n' \
 visudo -cf "$rule"
 install -o root -g root -m 440 "$rule" /etc/sudoers.d/playbound-customer-runtime
 echo 'Installed opt-in customer runtime handoff; live process users unchanged'
+
+python3 -m py_compile "$source_dir/customer-factorio-bootstrap.py"
+install -o root -g root -m 755 "$source_dir/customer-factorio-bootstrap.py" /usr/local/libexec/playbound-customer-factorio-bootstrap
+
+python3 -m py_compile "$source_dir/customer-openra.py"
+install -o root -g root -m 755 "$source_dir/customer-openra.py" /usr/local/libexec/playbound-customer-openra
+
+python3 -m py_compile "$source_dir/customer-rimworld.py" "$source_dir/customer-rimworld-bootstrap.py"
+install -o root -g root -m 755 "$source_dir/customer-rimworld.py" /usr/local/libexec/playbound-customer-rimworld
+install -o root -g root -m 755 "$source_dir/customer-rimworld-bootstrap.py" /usr/local/libexec/playbound-customer-rimworld-bootstrap
+
+python3 -m py_compile "$source_dir/customer-ss14.py"
+install -o root -g root -m 755 "$source_dir/customer-ss14.py" /usr/local/libexec/playbound-customer-ss14
+
+python3 -m py_compile "$source_dir/customer-dst.py"
+install -o root -g root -m 755 "$source_dir/customer-dst.py" /usr/local/libexec/playbound-customer-dst
+python3 -m py_compile "$source_dir/customer-openfortress.py"
+install -o root -g root -m 755 "$source_dir/customer-openfortress.py" /usr/local/libexec/playbound-customer-openfortress
+python3 -m py_compile "$source_dir/customer-source.py"
+install -o root -g root -m 755 "$source_dir/customer-source.py" /usr/local/libexec/playbound-customer-source
+python3 -m py_compile "$source_dir/customer-trackmania.py"
+install -o root -g root -m 755 "$source_dir/customer-trackmania.py" /usr/local/libexec/playbound-customer-trackmania
+python3 -m py_compile "$source_dir/customer-unturned.py"
+install -o root -g root -m 755 "$source_dir/customer-unturned.py" /usr/local/libexec/playbound-customer-unturned
+python3 -m py_compile "$source_dir/customer-battlefield.py"
+install -o root -g root -m 755 "$source_dir/customer-battlefield.py" /usr/local/libexec/playbound-customer-battlefield
+python3 -m py_compile "$source_dir/customer-bombsquad.py"
+install -o root -g root -m 755 "$source_dir/customer-bombsquad.py" /usr/local/libexec/playbound-customer-bombsquad
+python3 -m py_compile "$source_dir/customer-morrowind.py"
+install -o root -g root -m 755 "$source_dir/customer-morrowind.py" /usr/local/libexec/playbound-customer-morrowind
+install -o root -g root -m 444 "$source_dir/../tes3mp/playboundAdmin.lua" /usr/local/libexec/playbound-customer-morrowind-admin.lua
+python3 -m py_compile "$source_dir/customer-barotrauma.py"
+install -o root -g root -m 755 "$source_dir/customer-barotrauma.py" /usr/local/libexec/playbound-customer-barotrauma
+python3 -m py_compile "$source_dir/customer-veloren.py"
+install -o root -g root -m 755 "$source_dir/customer-veloren.py" /usr/local/libexec/playbound-customer-veloren

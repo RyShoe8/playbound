@@ -1,0 +1,29 @@
+{
+  "files": [
+    {
+      "path": "Packs/Trackmania.Title.Pack.Gbx",
+      "bytes": 38547784,
+      "sha256": "fe607611a96f160e375c9e59faa0ba3cfcb16c9116c852c16e7a8434a2a793e7"
+    },
+    {
+      "path": "Packs/dedicated.pak",
+      "bytes": 8174216,
+      "sha256": "55270cf001f982ac0f9d5109d6e9a2a88f62df279973ac7b6db030393c572b2a"
+    },
+    {
+      "path": "Packs/dedicated_TMStadium.pak",
+      "bytes": 292346632,
+      "sha256": "b020f6a47334b69a748fb0e9024959ec4f94b5fded95c5aecb5a66e78339856b"
+    },
+    {
+      "path": "Packs/resource.pak",
+      "bytes": 181768,
+      "sha256": "62b82c192e85b096fc70d001c568aad32e7c57abe447bd5f260fa1828bbd087c"
+    },
+    {
+      "path": "TrackmaniaServer",
+      "bytes": 30113288,
+      "sha256": "3b6107824feea402bd32c888e994dcd6df4a10afc8676a2647ac9560ccf0d779"
+    }
+  ]
+}

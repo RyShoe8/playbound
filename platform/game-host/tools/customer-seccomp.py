@@ -15,12 +15,16 @@ DENIED = (
 )
 
 
-def sealed_filter():
+def sealed_filter(legacy_x86=False):
+    if type(legacy_x86) is not bool:
+        raise ValueError("Invalid legacy ABI policy")
     if platform.machine() != 'x86_64':
         raise ValueError('Native syscall profile requires reviewed x86_64 ABI')
     library = ctypes.CDLL('libseccomp.so.2', use_errno=True)
     library.seccomp_init.argtypes = [ctypes.c_uint32]
     library.seccomp_init.restype = ctypes.c_void_p
+    library.seccomp_arch_add.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+    library.seccomp_arch_add.restype = ctypes.c_int
     library.seccomp_release.argtypes = [ctypes.c_void_p]
     library.seccomp_release.restype = None
     library.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]
@@ -34,6 +38,15 @@ def sealed_filter():
         raise ValueError('Could not construct native syscall boundary')
     descriptor = None
     try:
+        if legacy_x86:
+            if library.seccomp_arch_add(context, 0x40000003) != 0:  # SCMP_ARCH_X86
+                raise ValueError('Reviewed i386 ABI is unavailable')
+            # Never permit opaque pointer-based multiplexers. Modern i386
+            # direct socket syscalls retain the same argument checks below.
+            for name in ('socketcall', 'ipc'):
+                number = library.seccomp_syscall_resolve_name(name.encode('ascii'))
+                if library.seccomp_rule_add_array(context, 0x00050000 | errno.EPERM, number, 0, None) != 0:
+                    raise ValueError('Legacy multiplexer denial is unavailable')
         for name, error in [*((name, errno.EPERM) for name in DENIED), ('clone3', errno.ENOSYS)]:
             syscall = library.seccomp_syscall_resolve_name(name.encode('ascii'))
             if syscall < 0 or library.seccomp_rule_add_array(context, 0x00050000 | error, syscall, 0, None) != 0:

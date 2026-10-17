@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { CUSTOMER_IDENTITY_GAMES } from "./customerIdentityProfiles.js";
 import { runIsolatedWorldBackup } from "./worldBackupRunner.js";
 
 const id = "0123456789abcdef01234567";
 const token = "01234567-0123-4123-8123-0123456789ab";
 
-test("every verified native identity uses the protected snapshot helper",async()=>{
-  for (const game of ["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom"]) {
+test("every implemented native identity uses the protected snapshot helper",async()=>{
+  for (const game of CUSTOMER_IDENTITY_GAMES) {
     const result=await runIsolatedWorldBackup("createWorldBackup",[id,game],async(binary,args)=>{
       assert.equal(binary,"/usr/bin/sudo");
       assert.deepEqual(args,["-n","/usr/local/libexec/playbound-customer-world-backups","create",id,"3"]);
@@ -14,7 +15,7 @@ test("every verified native identity uses the protected snapshot helper",async()
     });
     assert.equal(result.gameSlug,game);
   }
-  await assert.rejects(runIsolatedWorldBackup("createWorldBackup",[id,"counter-strike-2"],()=>assert.fail("unverified profile reached helper")));
+  await assert.rejects(runIsolatedWorldBackup("createWorldBackup",[id,"unknown-engine"],()=>assert.fail("unknown profile reached helper")));
 });
 
 test("isolated snapshots use only the fixed root helper and typed identities", async () => {
