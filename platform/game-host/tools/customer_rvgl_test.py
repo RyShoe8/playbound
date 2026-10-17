@@ -2,6 +2,7 @@ import importlib.util
 import os
 from pathlib import Path
 import tempfile
+from unittest.mock import Mock, patch
 import unittest
 
 if os.name == 'nt':
@@ -13,6 +14,14 @@ spec.loader.exec_module(module)
 
 
 class RvglLayout(unittest.TestCase):
+    def test_configuration_rejects_extra_commands_settings_and_invalid_ports(self):
+        self.assertEqual(module.configuration('{"configuration":{},"port":2310}'),2310)
+        for value in ('{}','[]','{"configuration":{},"port":true}',
+                      '{"configuration":{"maxPlayers":8},"port":2310}',
+                      '{"configuration":{},"port":2310,"command":"unsafe"}',
+                      '{"configuration":{},"port":2331}', ' '*16385):
+            with self.assertRaises(ValueError): module.configuration(value)
+
     def test_private_layout_preserves_profile_and_never_creates_shared_links(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -49,6 +58,27 @@ class RvglLayout(unittest.TestCase):
         for port in (True, '2310', 2309, 2331, None):
             with self.assertRaises(ValueError):
                 module.arguments(port)
+
+    def test_supervisor_uses_private_lobby_environment_and_fixed_arguments(self):
+        helper = Mock()
+        helper.supervise_game.side_effect = lambda launch, factory: launch({'DISPLAY': ':1000', 'XAUTHORITY': '/server/.display/Xauthority'})
+        with patch.object(module.subprocess, 'Popen') as spawn:
+            module.supervise(2310, helper)
+        command = spawn.call_args.args[0]
+        options = spawn.call_args.kwargs
+        self.assertEqual(command, module.arguments(2310))
+        self.assertEqual(options['cwd'], '/server/runtime')
+        self.assertEqual(options['env']['HOME'], '/server')
+        self.assertEqual(options['env']['DISPLAY'], ':1000')
+        self.assertNotIn('shell', options)
+        self.assertTrue(options['close_fds'])
+        helper.start.assert_not_called()
+
+    def test_bad_port_never_reaches_display_supervisor(self):
+        helper = Mock()
+        with self.assertRaises(ValueError):
+            module.supervise(2309, helper)
+        helper.supervise_game.assert_not_called()
 
     @unittest.skipUnless(os.getuid() == 0, 'Root-owned retained bundle fixture')
     def test_readonly_public_bindings_and_exact_library_alias(self):

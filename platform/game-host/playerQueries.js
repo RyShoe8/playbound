@@ -88,7 +88,7 @@ export async function queryHxOccupancy(gamePort) {
   return reply ? parseHxInfo(reply,gamePort) : null;
 }
 
-/* ── Quake 3 family: getstatus ─────────────────────────────────────────── */
+/* â”€â”€ Quake 3 family: getstatus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const Q3_GETSTATUS = Buffer.concat([Buffer.from([0xff, 0xff, 0xff, 0xff]), Buffer.from("getstatus\n")]);
 // MOHAA (and OpenMOHAA) put a direction byte after the 0xFF header: 0x02 on
@@ -148,7 +148,7 @@ export function openMohaaBotCount(humanPlayers, configuredFill) {
   return Math.max(0, configuredFill - humanPlayers);
 }
 
-/* ── Mindustry: discovery ping ─────────────────────────────────────────── */
+/* â”€â”€ Mindustry: discovery ping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /** Mindustry's host info: UTF strings are a length byte then bytes; ints are big-endian. */
 export function parseMindustryPing(packet) {
@@ -188,7 +188,7 @@ export async function queryMindustry(port) {
   return parsed && parsed.players !== null ? parsed : null;
 }
 
-/* ── AssaultCube: info query on port + 1 ───────────────────────────────── */
+/* â”€â”€ AssaultCube: info query on port + 1 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /** Cube 2-era compressed int: one byte, or 0x80 + int16 LE, or 0x81 + int32 LE. */
 function cubeInt(buf, state) {
@@ -234,12 +234,12 @@ export async function queryAssaultCube(port) {
   return packet ? parseAssaultCubeInfo(packet) : null;
 }
 
-/* ── OpenTTD: TCP game info ────────────────────────────────────────────── */
+/* â”€â”€ OpenTTD: TCP game info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
  * PACKET_SERVER_GAME_INFO. Version-1 fields always come last: use_password,
  * clients_max, clients_on, spectators_on, map_width(u16), map_height(u16),
- * landscape, dedicated — so they are read from the end, whatever newer
+ * landscape, dedicated â€” so they are read from the end, whatever newer
  * versions add before them.
  */
 export function parseOpenTtdGameInfo(packet) {
@@ -273,7 +273,7 @@ export async function queryOpenTtd(port) {
   return reply ? parseOpenTtdGameInfo(reply) : null;
 }
 
-/* ── BZFlag: handshake + MsgQueryGame ──────────────────────────────────── */
+/* â”€â”€ BZFlag: handshake + MsgQueryGame â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
  * After "BZFS0221\0", the MsgQueryGame reply ("qg"): u16 len, u16 code, then
@@ -298,7 +298,7 @@ export async function queryBzflag(port) {
   return reply ? parseBzflagQueryGame(reply) : null;
 }
 
-/* ── Teeworlds 0.7: token handshake, then gie3 ─────────────────────────── */
+/* â”€â”€ Teeworlds 0.7: token handshake, then gie3 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /** Teeworlds' packed int: 6 data bits + sign in the first byte, 7 per continuation byte. */
 function twInt(buf, state) {
@@ -375,7 +375,7 @@ export async function queryTeeworlds(port, { host = "127.0.0.1" } = {}) {
   });
 }
 
-/* ── Veloren: Prometheus metrics (loopback, game port + 1) ─────────────── */
+/* â”€â”€ Veloren: Prometheus metrics (loopback, game port + 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
  * veloren-server-cli serves Prometheus metrics on 127.0.0.1:14005 by
@@ -407,11 +407,11 @@ export async function queryVeloren(gamePort, { settingsFile = null } = {}) {
   }
 }
 
-/* ── SuperTuxKart: LAN discovery ("stk-server" on 2757) ────────────────── */
+/* â”€â”€ SuperTuxKart: LAN discovery ("stk-server" on 2757) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
  * Reply: u32 server version, u8-length name, u8 max players, u8 connected
- * players, u16 game port, … The discovery port is shared by every STK server
+ * players, u16 game port, â€¦ The discovery port is shared by every STK server
  * on the host, so a reply only counts when its game port is this room's.
  */
 export function parseStkDiscovery(m, expectedPort) {
@@ -445,7 +445,7 @@ export async function querySuperTuxKart(roomPort, identityProfile) {
   return packet ? parseStkDiscovery(packet, roomPort) : null;
 }
 
-/* ── FlightGear (fgms): telnet status on game port + 1 ─────────────────── */
+/* â”€â”€ FlightGear (fgms): telnet status on game port + 1 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function parseFgmsStatus(text) {
   const m = String(text || "").match(/#\s*(\d+)\s+pilot\(s\)\s+online/i);
@@ -459,7 +459,7 @@ export async function queryFlightGear(port) {
   return reply ? parseFgmsStatus(reply.toString("latin1")) : null;
 }
 
-/* ── TCP games without a query protocol: count connected clients ───────── */
+/* â”€â”€ TCP games without a query protocol: count connected clients â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
  * Established TCP connections whose local port is the room's port, from the
@@ -503,7 +503,7 @@ export function queryTcpClients(port) {
   }
 }
 
-/* ── Zandronum (Freedoom): launcher protocol ───────────────────────────── */
+/* â”€â”€ Zandronum (Freedoom): launcher protocol â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /*
  * Replies are Huffman-coded with Skulltag's fixed tree (src/huffman/huffman.cpp,
@@ -582,10 +582,10 @@ export async function queryZandronum(port) {
   return decoded ? parseZandronumReply(decoded) : null;
 }
 
-/* ── BombSquad (Ballistica): host query V2 ─────────────────────────────── */
+/* â”€â”€ BombSquad (Ballistica): host query V2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
- * BA_PACKET_HOST_QUERY_V2 (38) + 4-byte id + JSON → 39 + id + JSON with
+ * BA_PACKET_HOST_QUERY_V2 (38) + 4-byte id + JSON â†’ 39 + id + JSON with
  * "sz" (party size) and "szx" (max party size). A dedicated server counts
  * itself as a party member, so players = sz - 1 and the cap = szx - 1.
  */
@@ -608,7 +608,7 @@ export async function queryBombSquad(port) {
   return packet ? parseBombSquadResponse(packet) : null;
 }
 
-/* ── Space Station 14: HTTP status ─────────────────────────────────────── */
+/* â”€â”€ Space Station 14: HTTP status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export async function querySpaceStation14(port) {
   try {
@@ -622,7 +622,7 @@ export async function querySpaceStation14(port) {
   }
 }
 
-/* ── TES3MP: the PlayBound admin hook's online snapshot ────────────────── */
+/* â”€â”€ TES3MP: the PlayBound admin hook's online snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
  * playboundAdmin.lua writes playbound-online.json on its first tick and again
@@ -631,7 +631,7 @@ export async function querySpaceStation14(port) {
  *
  * The max-player cap lives in the TES3MP server config, written to
  * `$HOME/.config/openmw/tes3mp-server.cfg` by prepareSpawn where `$HOME` is
- * `room.cwd`. Read the General → maximumPlayers value from that file so the
+ * `room.cwd`. Read the General â†’ maximumPlayers value from that file so the
  * admin panel can show a real cap instead of "?".
  */
 function tes3mpMaxPlayers(room) {
@@ -658,14 +658,14 @@ export function queryTes3mp(room) {
   return null;
 }
 
-/* ── Dispatch ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Dispatch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const QUAKE3_GAMES = new Set([
   "xonotic", "openarena", "wolfenstein-enemy-territory", "unvanquished", "medal-of-honor-allied-assault",
 ]);
 // Unturned's first UDP port is its server-list query port (the next port is
 // gameplay). It responds to Steam server queries despite not being a Source game.
-const A2S_GAMES = new Set(["counter-strike-2", "counter-strike-source", "team-fortress-2", "unturned", "goldeneye-source", "open-fortress"]);
+const A2S_GAMES = new Set(["counter-strike-2", "counter-strike-source", "team-fortress-2", "unturned", "goldeneye-source", "open-fortress", "core-keeper"]);
 // TCP games with no usable query protocol: counted by established connections.
 const TCP_CLIENT_GAMES = new Set(["freeciv", "battle-for-wesnoth", "triplea", "hedgewars", "warzone-2100", "ysoccer", "terraria"]);
 
@@ -689,8 +689,9 @@ export async function queryRoomOccupancy(room) {
   }
   if (A2S_GAMES.has(slug)) {
     const anyApp = slug !== "counter-strike-2";
-    return (await queryA2sOccupancy(room.port, { anyApp })) ||
-      (room.host ? queryA2sOccupancy(room.port, { anyApp, host: room.host }) : null);
+    const queryPort = slug === "core-keeper" ? room.port + 1 : room.port;
+    return (await queryA2sOccupancy(queryPort, { anyApp })) ||
+      (room.host ? queryA2sOccupancy(queryPort, { anyApp, host: room.host }) : null);
   }
   if (slug === "medal-of-honor-allied-assault") {
     const status = await queryQuake3(room.port, { mohaa: true });

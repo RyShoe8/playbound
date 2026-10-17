@@ -1,10 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { resourceScope, runCustomerGate } from "./customerRuntime.js";
+import { resourceScope, runCustomerGate, stopIdentityRuntime } from "./customerRuntime.js";
 import { customerResourceLimits } from "./customerResourceLimits.js";
 
 const id = "0123456789abcdef01234567";
+test("Core Keeper stop waits beyond the root display cleanup deadline", async () => {
+  const room = {communityServerId:id,pid:42,processIdentity:"01234567-0123-0123-0123-0123456789ab:100",identityProfile:"core-keeper-unix-v1"};
+  const calls = [];
+  const execute = async (...args) => { calls.push(args); return {stdout:JSON.stringify({stopped:true})}; };
+  assert.equal(await stopIdentityRuntime(room,execute),true);
+  assert.equal(calls[0][2].timeout,30000);
+  assert.deepEqual(calls[0][1].slice(2),["stop",id,"42",room.processIdentity]);
+  assert.equal(await stopIdentityRuntime({...room,identityProfile:"teeworlds-unix-v1"},execute),true);
+  assert.equal(calls[1][2].timeout,12000);
+  assert.equal(await stopIdentityRuntime({...room,identityProfile:"re-volt-rvgl-unix-v1"},execute),true);
+  assert.equal(calls[2][2].timeout,30000);
+  assert.equal(await stopIdentityRuntime(room,async()=>{throw new Error("timeout");}),false);
+  assert.deepEqual(customerResourceLimits("core-keeper"),{cpuMillis:1000,memoryMiB:2048});
+});
 const input = { id, gameSlug: "teeworlds", plan: { binary: "/usr/bin/prlimit", args: ["--core=0"], cwd: "/fixture", env: { PATH: "/usr/bin" } } };
 test("resource identities select only fixed per-runtime scope names", () => {
   assert.equal(resourceScope(id, 42), `playbound-customer-${id}-42.scope`);

@@ -92,5 +92,38 @@ class Boundaries(unittest.TestCase):
             link=Path(directory)/'link'; link.symlink_to(value)
             with self.assertRaises(OSError): module.private_value(link, os.getuid())
 
+    def test_credentials_reject_hardlinks_fifos_and_non_ascii_without_content_leaks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            value = root/'value'
+            value.write_bytes(b'fixture')
+            value.chmod(0o600)
+            alias = root/'alias'
+            os.link(value, alias)
+            with self.assertRaises(ValueError):
+                module.private_value(value, os.getuid())
+            alias.unlink()
+            fifo = root/'fifo'
+            os.mkfifo(fifo, 0o600)
+            with self.assertRaises(ValueError):
+                module.private_value(fifo, os.getuid())
+            value.write_bytes(b'private-fixture-\xff')
+            with self.assertRaisesRegex(ValueError, '^Invalid Steam credential encoding$'):
+                module.private_value(value, os.getuid())
+
+    def test_credential_changes_during_read_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = Path(directory)/'value'
+            value.write_bytes(b'fixture')
+            value.chmod(0o600)
+            original = module.os.read
+            def changed(descriptor, count):
+                content = original(descriptor, count)
+                value.write_bytes(b'changed fixture')
+                return content
+            with patch.object(module.os, 'read', side_effect=changed):
+                with self.assertRaisesRegex(ValueError, 'changed while reading'):
+                    module.private_value(value, os.getuid())
+
 
 if __name__ == '__main__': unittest.main()

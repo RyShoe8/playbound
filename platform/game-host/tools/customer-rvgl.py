@@ -1,11 +1,24 @@
 """RVGL private layout candidate. Not installed or enrolled as a runtime."""
 import os
+import json
 from pathlib import Path
 import stat
+import subprocess
 
 PUBLIC_DIRECTORIES = ('cars', 'cups', 'gallery', 'gfx', 'icons', 'levels', 'lib',
                       'licenses', 'models', 'packs', 'redbook', 'shaders', 'strings', 'wavs')
 PRIVATE_DIRECTORIES = ('profiles', 'cache', 'replays', 'times', 'edit')
+
+
+def configuration(text):
+    if not isinstance(text, str) or len(text.encode()) > 16384:
+        raise ValueError('Invalid RVGL configuration')
+    value = json.loads(text)
+    if (not isinstance(value, dict) or set(value) != {'configuration','port'}
+            or value['configuration'] != {}):
+        raise ValueError('RVGL candidate accepts only its fixed lobby configuration')
+    arguments(value['port'])
+    return value['port']
 
 
 def mounts(descriptor):
@@ -45,3 +58,28 @@ def arguments(port):
         raise ValueError('Invalid RVGL allocation')
     return ['/server/runtime/rvgl.64', '-lobby', '-profile', 'PlayBound',
             '-serverport', str(port), '-nosound', '-window', '640', '480']
+
+
+def supervise(port, display_helper):
+    command = arguments(port)
+    def launch(display_environment):
+        environment = {'PATH': '/usr/bin:/bin', 'HOME': '/server', 'LANG': 'C.UTF-8',
+                       'ALSOFT_DRIVERS': 'null', 'SDL_AUDIODRIVER': 'dummy',
+                       'LD_LIBRARY_PATH': '/server/runtime/lib:/server/runtime/lib/lib64',
+                       **display_environment}
+        return subprocess.Popen(command, cwd='/server/runtime', env=environment,
+                                close_fds=True, stdin=subprocess.DEVNULL)
+    return display_helper.supervise_game(launch, display_helper.start)
+
+
+if __name__ == '__main__':
+    import importlib.util
+    if not 40000 <= os.getuid() <= 40255:
+        raise SystemExit('Reserved runtime namespace required')
+    spec = importlib.util.spec_from_file_location('private_display', '/display-helper.py')
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    helper.verify_current()
+    port = configuration(Path('/server/server.cfg').read_text())
+    prepare(Path('/server'))
+    raise SystemExit(supervise(port, helper))

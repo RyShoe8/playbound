@@ -14,9 +14,8 @@ const IDENTITY_PROFILES = Object.freeze(Object.fromEntries(
 const PENDING_BOUNDARIES = Object.freeze({
   "goldeneye-source": "The installed server uses Wine/Xvfb. A private Wine prefix, isolated display/Unix sockets and reviewed Windows engine boundary are not implemented; customer enrollment remains unavailable.",
   "deus-ex": "HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable.",
-  "core-keeper": "World generation requires Xvfb. An isolated per-server display and Unix-socket boundary with private Unity data is not implemented; customer enrollment remains unavailable.",
   "aneurism-iv": "The existing network namespace supervisor still launches under the shared service identity. A private UID/filesystem handoff that preserves Steam identity, credentials and saves is not implemented.",
-  "re-volt-rvgl": "The installed dedicated lobby uses Xvfb. Private display sockets, profile/data bindings and a reviewed per-server graphical-runtime boundary are not implemented; customer enrollment remains unavailable.",
+  "re-volt-rvgl": "The Xvfb/private-profile staging lobby starts, binds its port and stops cleanly. Root identity launch integration, player query, recovery and UID-aware lobby controls remain pending; customer enrollment remains unavailable.",
 });
 
 export function hostingReadiness(key) {
@@ -58,6 +57,14 @@ export function hostingReadiness(key) {
   if (key==="open-fortress") { isolation="blocked"; reason="Local paired i386 SDK/mod candidate with separate read-only TF2 dependency, private defaults/cache/config and fixed library aliases implemented; engine networking, native query/RCON, startup/recovery and protected restore acceptance remain required."; }
   if (key==="battlefield-1942-anthology") { isolation="blocked"; reason="Local pinned static i386 candidate with private typed settings/map overlay and disabled legacy discovery implemented; engine direct-syscall compatibility, startup/query, controls, recovery and restore acceptance remain required."; }
   let contentReason="Plugin and Workshop installation remains disabled until this game's tenant boundary and its content source/compatibility/rollback path pass acceptance.";
+  if (key === "re-volt-rvgl") {
+    isolation = "blocked";
+    reason = "Typed agent/root lobby candidate with private profiles and authenticated display isolation is implemented. Root-generated engine shutdown, persistent adoption, player-query and private-data restore acceptance remain required; game settings and customer enrollment stay unavailable.";
+  }
+  if (key === "core-keeper") {
+    isolation = "blocked";
+    reason = "Xvfb/private-display staging passed. Typed agent/root identity handoff and fixed-alias snapshots are implemented; root-managed lifecycle, agent-restart adoption, saved-world restore and UID-aware controls still require acceptance. Customer enrollment remains unavailable.";
+  }
   if (key==="luanti") contentReason="Executable mods remain disabled: the pinned LuaJIT engine predates GHSA-g596-mf82-w8c3's fix. Engine mitigation/upgrade and content acceptance are required.";
   return {isolation,identityProfile:profile||null,reason,executableContentEnabled:false,contentReason};
 }

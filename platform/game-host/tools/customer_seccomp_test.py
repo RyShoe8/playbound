@@ -27,6 +27,62 @@ runtime = load('runtime', 'customer-runtime.py')
 
 
 class NativeSyscalls(unittest.TestCase):
+    def test_display_filter_requires_matching_reserved_enforced_label(self):
+        for value in (1, 'yes', None, {}):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                module.sealed_filter(private_display=value)
+        for uid in (0, 39999, 40256):
+            with patch.object(module.os, 'getuid', return_value=uid):
+                with self.assertRaises(ValueError):module.sealed_filter(private_display=True)
+        for label in ('unconfined', 'playbound-customer-ipc-40001 (enforce)',
+                      'playbound-customer-ipc-40000 (complain)'):
+            with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value=label):
+                with self.assertRaises(ValueError):module.sealed_filter(private_display=True)
+        with patch.object(module.os, 'getuid', return_value=40000):
+            with self.assertRaises(ValueError):module.sealed_filter(legacy_x86=True, private_display=True)
+
+    def test_display_filter_is_sealed_after_label_guard(self):
+        with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value='playbound-customer-ipc-40000 (enforce)'):
+            descriptor = module.sealed_filter(private_display=True)
+        try:
+            expected=fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL
+            self.assertEqual(fcntl.fcntl(descriptor, fcntl.F_GET_SEALS),expected)
+            self.assertGreater(os.fstat(descriptor).st_size,0)
+        finally:os.close(descriptor)
+
+    def test_display_filter_allows_only_reviewed_socket_pairs_in_real_kernel(self):
+        # Mock only the construction precondition locally. Actual peer-label
+        # isolation is verified separately by the VPS acceptance harness.
+        with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value='playbound-customer-ipc-40000 (enforce)'):
+            descriptor = module.sealed_filter(private_display=True)
+        self.addCleanup(os.close, descriptor)
+        code = '''import ctypes,errno,os,socket,sys
+raw=os.read(int(sys.argv[1]),32768)
+class Instruction(ctypes.Structure):
+ _fields_=[('code',ctypes.c_ushort),('jt',ctypes.c_ubyte),('jf',ctypes.c_ubyte),('k',ctypes.c_uint)]
+class Program(ctypes.Structure):
+ _fields_=[('length',ctypes.c_ushort),('filter',ctypes.POINTER(Instruction))]
+instructions=(Instruction*(len(raw)//8)).from_buffer_copy(raw)
+program=Program(len(instructions),instructions)
+libc=ctypes.CDLL(None,use_errno=True)
+assert libc.prctl(38,1,0,0,0)==0
+assert libc.syscall(317,1,0,ctypes.byref(program))==0
+for kind in (socket.SOCK_STREAM,socket.SOCK_DGRAM):
+ a,b=socket.socketpair(socket.AF_UNIX,kind);a.send(b'x');assert b.recv(1)==b'x';a.close();b.close()
+for operation in (lambda:socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM),lambda:socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)):
+ try:operation()
+ except OSError as error:assert error.errno==errno.EPERM
+ else:raise AssertionError('Unreviewed Unix socket operation admitted')
+for number in (272,321,101):
+ ctypes.set_errno(0)
+ assert libc.syscall(number,0,0,0,0,0,0)==-1 and ctypes.get_errno()==errno.EPERM
+print('display-kernel-filter-passed')
+'''
+        result = subprocess.run(['/usr/bin/python3', '-I', '-c', code, str(descriptor)],
+                                pass_fds=(descriptor,), capture_output=True, text=True,
+                                timeout=10, check=True)
+        self.assertEqual(result.stdout.strip(), 'display-kernel-filter-passed')
+
     def test_filter_enforces_unix_socket_and_privileged_syscall_denials_without_bwrap(self):
         # Exercise the real kernel filter even on test hosts without bubblewrap.
         # Installing it only in a child keeps the test runner unrestricted.

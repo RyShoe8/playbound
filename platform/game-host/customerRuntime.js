@@ -54,14 +54,15 @@ export function launchIdentityRuntime(id, pid, plan) {
   return child;
 }
 
-async function identityOperation(action, room) {
+async function identityOperation(action, room, execute = runFile) {
   resourceScope(room.communityServerId, room.pid);
   if (!room.processIdentity || !supportsCustomerIdentityProfile(room.identityProfile)) throw new Error("Invalid identity operation");
-  const { stdout } = await runFile("/usr/bin/sudo", ["-n", IDENTITY_HELPER, action, room.communityServerId, String(room.pid), room.processIdentity], { timeout: action === "stop" ? 12000 : 4000, maxBuffer: 4096, env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" } });
+  const timeout = action === "stop" ? (["core-keeper-unix-v1","re-volt-rvgl-unix-v1"].includes(room.identityProfile) ? 30000 : 12000) : 4000;
+  const { stdout } = await execute("/usr/bin/sudo", ["-n", IDENTITY_HELPER, action, room.communityServerId, String(room.pid), room.processIdentity], { timeout, maxBuffer: 4096, env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" } });
   return JSON.parse(stdout);
 }
-export async function stopIdentityRuntime(room) {
-  try { return (await identityOperation("stop", room)).stopped === true; } catch { return false; }
+export async function stopIdentityRuntime(room, execute = runFile) {
+  try { return (await identityOperation("stop", room, execute)).stopped === true; } catch { return false; }
 }
 export async function identityRuntimeHealthy(room) {
   try {

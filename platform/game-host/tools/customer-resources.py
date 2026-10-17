@@ -57,6 +57,8 @@ PROFILES = {
     'team-fortress-2': (1, 1024 ** 3, 128),
     'counter-strike-2': (2, 3*1024 ** 3, 128),
     'dont-starve-together': (1, 1024 ** 3, 128),
+    'core-keeper': (1, 2 * 1024 ** 3, 128),
+    're-volt-rvgl': (1, 1024 ** 3, 128),
 }
 
 

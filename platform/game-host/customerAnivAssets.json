@@ -1,0 +1,224 @@
+{
+  "files": [
+    {
+      "path": "GameAssembly.so",
+      "bytes": 141110160,
+      "sha256": "e3085f4aba32cd3f68a42c572abbda701b02915f7fbd6e7b819e7c335310fae7"
+    },
+    {
+      "path": "UnityPlayer.so",
+      "bytes": 30922576,
+      "sha256": "6fb129e99e63b3f06669aed0d5df6106a27cda4e26946a0c1239e3320439658a"
+    },
+    {
+      "path": "aniv_server.x86_64",
+      "bytes": 14800,
+      "sha256": "2f4534b3534d61c843a7f20cbd5df7c2deef9fb0211d60ea362cda7bdecdeabc"
+    },
+    {
+      "path": "aniv_server_Data/Plugins/lib_burst_generated.so",
+      "bytes": 127928,
+      "sha256": "6527bdd003f02f244366c6910199af515a2795cb4c154ef76b20054f44c925b1"
+    },
+    {
+      "path": "aniv_server_Data/Plugins/libgilzoide-sqlite-net.so",
+      "bytes": 1756832,
+      "sha256": "22ce9c084a584c30995b3f8a53bb5c48ac83079ee41d2192eff71bc5a0a4d193"
+    },
+    {
+      "path": "aniv_server_Data/Plugins/libsteam_api.so",
+      "bytes": 386864,
+      "sha256": "b343f8be18ad3b2ddb26f64f157f0cb6a8f84777f129160c7fb2cf83d6aba787"
+    },
+    {
+      "path": "aniv_server_Data/Plugins/steamclient.so",
+      "bytes": 45067032,
+      "sha256": "d8fbc2925af26522c3316f8bad2ac307b4726391a6174c220ca760fc3a421591"
+    },
+    {
+      "path": "aniv_server_Data/Resources/UnityPlayer.png",
+      "bytes": 2139,
+      "sha256": "cfa5b653511143b92b6e2de5908eb29f7e76a9ad540a4f8e8f048fc16e67fd24"
+    },
+    {
+      "path": "aniv_server_Data/Resources/unity default resources",
+      "bytes": 1564240,
+      "sha256": "a11e3e24520676183b3750564b4d9f5a90e8f41fd3523cbfb0c49f3989453da2"
+    },
+    {
+      "path": "aniv_server_Data/RuntimeInitializeOnLoads.json",
+      "bytes": 5468,
+      "sha256": "cd1cbe82109e3a773980235e2c0d0730a24b8b1e8c9248d3601ff53ee652d093"
+    },
+    {
+      "path": "aniv_server_Data/ScriptingAssemblies.json",
+      "bytes": 5288,
+      "sha256": "967def5b6c8bc7f3b0a7aada3eccdfda8277f6def3b7227769879c487bfa1059"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/AddressablesLink/link.xml",
+      "bytes": 5331,
+      "sha256": "b0764a63a171ef0c59942a7662245825e0f6da207d606821ed9501aa8101575b"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/defaultlocalgroup_assets_all_bc0c1a8a4a5d7112cf37c3670ce99c40.bundle",
+      "bytes": 1755879,
+      "sha256": "d9dacd190c365c612c1b7703aeb96729da7d6879fb729d35273a33ec687ca81f"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-assets-shared_assets_all.bundle",
+      "bytes": 15410,
+      "sha256": "3b2a5be3e69e81a0f186cd797550b6f3c3ab539d9e7336597debe67bcbc3eafe"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-locales_assets_all.bundle",
+      "bytes": 2673,
+      "sha256": "0c63e45fe348cc0d7b18463122003381edbc0d9fb2377697094630ae284d4350"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-string-tables-czech(cs)_assets_all.bundle",
+      "bytes": 24737,
+      "sha256": "b248dfab9de7305e7470380abd7483c8141daa59e902221f9335bebbb1436337"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-string-tables-english(en)_assets_all.bundle",
+      "bytes": 22893,
+      "sha256": "6231ba8f0ec3998c73a21a61a83680cd45962b088609a855691e9dc42004fecf"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-string-tables-french(fr)_assets_all.bundle",
+      "bytes": 24600,
+      "sha256": "4990d9adbf30d8af0b14fcf21d2c319c1079ac5e254e995211b8bee555240e4b"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-string-tables-portuguese(pt)_assets_all.bundle",
+      "bytes": 24182,
+      "sha256": "680e1d680aaa2b3237280c4ace00a2c9f3b180fd8b61342564b647be6bf7e99b"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/StandaloneLinux64/localization-string-tables-russian(ru)_assets_all.bundle",
+      "bytes": 26615,
+      "sha256": "ba6bc81bfc2b8b41500bc1e0222a4cb7fad5790765c03dd2688e4b2f07f4f980"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/catalog.json",
+      "bytes": 161804,
+      "sha256": "67da75f65551f5f3df93c45dac8ea017e470e8136ef78cca64c00ca1c60662a4"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aa/settings.json",
+      "bytes": 1602,
+      "sha256": "5410fd78176575d07d7a643846ab457f97153d62460b851dc4f480b479873cc2"
+    },
+    {
+      "path": "aniv_server_Data/StreamingAssets/aneurism-build-manifest.json",
+      "bytes": 434,
+      "sha256": "896d6b96eec29c9efc551cb21b5da05006da5f94df764378b43ca34b407cd8a4"
+    },
+    {
+      "path": "aniv_server_Data/app.info",
+      "bytes": 20,
+      "sha256": "e5a57f0aedaf184abee64c434694b3632f58c082727b92565e205cc6d052bf52"
+    },
+    {
+      "path": "aniv_server_Data/boot.config",
+      "bytes": 181,
+      "sha256": "1e141eb972aad987e2db57d4c3e557d796f3c3d74bbac73c4685a0966c351c8a"
+    },
+    {
+      "path": "aniv_server_Data/data.unity3d",
+      "bytes": 161949602,
+      "sha256": "b79e35ecde3610c298068e869738a08411168dc829080b0b3eb92ac93fdf85ec"
+    },
+    {
+      "path": "aniv_server_Data/il2cpp_data/Metadata/global-metadata.dat",
+      "bytes": 21232524,
+      "sha256": "8668c4b422e20d649e50442bb793efbba4d0971f5928ca8dfc8d5a1bbec8e7d5"
+    },
+    {
+      "path": "aniv_server_Data/il2cpp_data/Resources/Newtonsoft.Json.dll-resources.dat",
+      "bytes": 900,
+      "sha256": "531de49e73ddea25554c9f656f54da2a665946f3fec57048e0cfe3b9e49b03f8"
+    },
+    {
+      "path": "aniv_server_Data/il2cpp_data/Resources/System.Data.dll-resources.dat",
+      "bytes": 93718,
+      "sha256": "98a7950ec6de3242c2e190dfa630188dfa32511a125542b94baa952d1c757d49"
+    },
+    {
+      "path": "aniv_server_Data/il2cpp_data/Resources/System.Drawing.dll-resources.dat",
+      "bytes": 25453,
+      "sha256": "7c33aa707bc3fdc83991b81a97d6fc622b140762a767300f08f616c2c0a91255"
+    },
+    {
+      "path": "aniv_server_Data/il2cpp_data/Resources/System.JsonExtensions.dll-resources.dat",
+      "bytes": 314014,
+      "sha256": "9b5ba240a4075b000ba02bb98cc6caa996577b91d001565df8c2fdebe5141411"
+    },
+    {
+      "path": "aniv_server_Data/il2cpp_data/Resources/mscorlib.dll-resources.dat",
+      "bytes": 337563,
+      "sha256": "c5baa176a5b72cd545266340e42102d393a5e43d38c95796bc828918bb95277f"
+    },
+    {
+      "path": "aniv_server_Data/resources.resource",
+      "bytes": 91796576,
+      "sha256": "132cc12b0bb9adeac8ca94d88df0914cc4a166c1006727c7fa8950a483366b15"
+    },
+    {
+      "path": "aniv_server_Data/sharedassets0.resource",
+      "bytes": 9430642,
+      "sha256": "d9700329ed2826a4eeaf0f79b1692fb6cbbdff00f028c9632f3434bc05280234"
+    },
+    {
+      "path": "aniv_server_Data/sharedassets1.resource",
+      "bytes": 167217981,
+      "sha256": "339ccb9adb946ff4aa321aab8f0693bbf40be663f2a27e18445238ac2c20633a"
+    },
+    {
+      "path": "aniv_server_Data/sharedassets2.resource",
+      "bytes": 139424,
+      "sha256": "2d8b4337aa6e10bb888f1cdc2e60d5f26fe07091acaa678bf857adf8d8490d70"
+    },
+    {
+      "path": "aniv_server_Data/sharedassets3.resource",
+      "bytes": 80800,
+      "sha256": "40c49611550b7ba8af0d62b10be865eaa7d964fbe6cecab5a4b62fc8669efdd0"
+    },
+    {
+      "path": "aniv_server_Data/sharedassets4.resource",
+      "bytes": 89621280,
+      "sha256": "c90cabdc4b929dea92c35e4f7fab5674c0ca9e6669693d5e776c4f19d7fa0077"
+    },
+    {
+      "path": "aniv_server_Data/sharedassets7.resource",
+      "bytes": 4262208,
+      "sha256": "11fa3320b5452e11357462d48be760a630937c63c9d99b1eaa604c2e0272b18d"
+    },
+    {
+      "path": "libsteamwebrtc.so",
+      "bytes": 7633256,
+      "sha256": "e9472c9011e18f1f0d28d41b6000aa40473a9013a03db7b405dad15208f6ca1f"
+    },
+    {
+      "path": "linux64/libsteamwebrtc.so",
+      "bytes": 7817336,
+      "sha256": "f5a85fa63b9838709fa4abd0b1287e811da810bec3e4bb4ac898beda9aed984e"
+    },
+    {
+      "path": "linux64/steamclient.so",
+      "bytes": 46728928,
+      "sha256": "1a99f39637a505ce2dbfec697dafa118c2d1b8df7dea1412557e2d5ad0a2c7d4"
+    },
+    {
+      "path": "steam_appid.txt",
+      "bytes": 8,
+      "sha256": "898c67861181e1da63728ccb8b1daf507c0633ee01a4a28c4765561b2aeeea97"
+    },
+    {
+      "path": "steamclient.so",
+      "bytes": 49104528,
+      "sha256": "7cceb10c5c24beed4684803c808bb88ec9c3c29df39347bad3ca6edf666ecf8e"
+    }
+  ]
+}

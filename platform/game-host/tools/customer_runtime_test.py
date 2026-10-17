@@ -19,6 +19,206 @@ class RuntimeBoundaries(unittest.TestCase):
     def setUp(self):
         module.select_game('teeworlds')
 
+    def test_rvgl_candidate_requires_pinned_assets_and_display_handoff(self):
+        module.select_game('re-volt-rvgl')
+        try:
+            self.assertEqual(module.config_bytes('{}',2310),b'{"configuration": {}, "port": 2310}')
+            with self.assertRaises(ValueError):module.config_bytes('{"maxPlayers":8}',2310)
+            for port in ('2309','2331'):
+                with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'re-volt-rvgl',port,'1000','1024'])
+            helper = SimpleNamespace(mounts=Mock(return_value=['--ro-bind','/pinned/rvgl.64','/server/runtime/rvgl.64']))
+            with patch.object(module,'trusted_module',return_value=helper):
+                args = module.command(Path('/private/data'),7,2310,1024,asset_directory=19)
+                self.assertEqual(args[-3:],['/usr/bin/python3','-I','/rvgl-bootstrap.py'])
+                helper.mounts.assert_called_once_with(19)
+                self.assertIn('/display-helper.py',args)
+                self.assertNotIn('--seccomp',args)
+                for options in ({},{'asset_directory':19,'seccomp_fd':30}):
+                    with self.assertRaises(ValueError):module.command(Path('/private/data'),7,2310,1024,**options)
+        finally:module.select_game('teeworlds')
+
+    def test_scoped_command_finds_inner_supervisor_and_rejects_wrong_scope_or_uid(self):
+        expected = ['/usr/bin/python3','-I','/corekeeper-bootstrap.py']
+        scope = Path('/sys/fs/cgroup/system.slice/fixture.scope')
+        with tempfile.TemporaryDirectory() as temporary:
+            proc = Path(temporary)
+            for pid, children, command in [(10,'11',['/usr/bin/bwrap']), (11,'12',['/usr/bin/bwrap']), (12,'',expected)]:
+                directory = proc/str(pid)
+                (directory/'task'/str(pid)).mkdir(parents=True)
+                (directory/'task'/str(pid)/'children').write_text(children)
+                (directory/'cgroup').write_text('0::/system.slice/fixture.scope')
+                (directory/'cmdline').write_bytes(b'\0'.join(part.encode() for part in command)+b'\0')
+            def path(value):
+                return proc if str(value) == '/proc' else Path(value)
+            with patch.object(module,'Path',side_effect=path), \
+                 patch.object(module,'game_identity',side_effect=lambda pid:'boot:'+str(pid)):
+                self.assertEqual(module.scoped_command_identity(10,'boot:10',os.getuid(),scope,expected),(12,'boot:12'))
+                (proc/'12'/'cmdline').write_bytes(b'/game-data/veloren-server-cli\0')
+                self.assertEqual(module.scoped_command_identity(10,'boot:10',os.getuid(),scope,expected,[['/game-data/veloren-server-cli']]),(12,'boot:12'))
+                (proc/'12'/'cmdline').write_bytes(b'\0'.join(part.encode() for part in expected)+b'\0')
+                with self.assertRaises(ValueError):
+                    module.scoped_command_identity(10,'reused',os.getuid(),scope,expected)
+                with self.assertRaises(ValueError):
+                    module.scoped_command_identity(10,'boot:10',os.getuid()+1,scope,expected)
+                (proc/'12'/'cgroup').write_text('0::/system.slice/another.scope')
+                with self.assertRaises(ValueError):
+                    module.scoped_command_identity(10,'boot:10',os.getuid(),scope,expected)
+
+    def test_missing_graceful_control_never_signals_the_wrapper(self):
+        binding = {'profile':'core-keeper-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000}
+        with patch.object(module,'binding_read',return_value=binding), \
+             patch.object(module,'game_identity',return_value=IDENTITY), \
+             patch.object(Path,'exists',return_value=True), \
+             patch.object(module,'scoped_command_identity',side_effect=ValueError('refusing wrapper signal')), \
+             patch.object(module.os,'pidfd_open') as descriptor:
+            with self.assertRaisesRegex(ValueError,'refusing wrapper signal'):
+                module.stop_runtime(ID,42,IDENTITY)
+            descriptor.assert_not_called()
+
+    def test_legacy_graceful_stop_discovers_inner_command_without_rewriting_binding(self):
+        binding = {'profile':'core-keeper-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000}
+        scope = module.scope_path(ID,42)
+        def read(path,*args,**kwargs):
+            return '0::/system.slice/'+scope.name if path.name=='cgroup' else 'populated 0'
+        with patch.object(module,'binding_read',return_value=binding), \
+             patch.object(module,'game_identity',return_value=IDENTITY), \
+             patch.object(module,'scoped_command_identity',return_value=(54,IDENTITY)) as discover, \
+             patch.object(Path,'exists',return_value=True), \
+             patch.object(Path,'stat',return_value=SimpleNamespace(st_uid=40000)), \
+             patch.object(Path,'read_text',read), \
+             patch.object(module.os,'pidfd_open',return_value=100) as descriptor, \
+             patch.object(module.os,'close'), patch.object(module.signal,'pidfd_send_signal') as send, \
+             patch.object(module,'binding_write') as write:
+            self.assertEqual(module.stop_runtime(ID,42,IDENTITY),{'stopped':True,'graceful':True})
+            discover.assert_called_once_with(52,IDENTITY,40000,scope,
+                ['/usr/bin/python3','-I','/corekeeper-bootstrap.py'],[])
+            descriptor.assert_called_once_with(54)
+            send.assert_called_once_with(100,module.signal.SIGTERM)
+            write.assert_not_called()
+            binding['controlPid'] = 54
+            with self.assertRaisesRegex(ValueError,'Incomplete'):
+                module.stop_runtime(ID,42,IDENTITY)
+
+    def test_legacy_commands_allow_only_reviewed_profiles_and_factorio_ports(self):
+        self.assertEqual(module.legacy_control_commands({'profile':'veloren-unix-v1'}),[
+            ['/usr/bin/python3','-I','/veloren-bootstrap.py'],['/game-data/veloren-server-cli']])
+        for port in (None,True,34196,34218,'34197'):
+            with self.assertRaises(ValueError):
+                module.legacy_control_commands({'profile':'factorio-unix-v1','socketBindPort':port})
+        spec = importlib.util.spec_from_file_location('legacy_factorio',Path(__file__).with_name('customer-factorio-bootstrap.py'))
+        factorio = importlib.util.module_from_spec(spec);spec.loader.exec_module(factorio)
+        with patch.object(module,'trusted_module',return_value=factorio):
+            commands = module.legacy_control_commands({'profile':'factorio-unix-v1','socketBindPort':34197})
+            self.assertEqual(commands,[['/usr/bin/python3','-I','/bootstrap.py'],
+                ['/game-data/bin/x64/factorio','--config','/server/config.ini',
+                 '--start-server','/server/saves/save.zip','--server-settings',
+                 '/server/server-settings.json','--port','34197','--bind','0.0.0.0']])
+        with self.assertRaises(ValueError):
+            module.legacy_control_commands({'profile':'re-volt-rvgl-unix-v1'})
+
+    def test_legacy_terraria_reconstructs_only_the_fixed_engine_command(self):
+        command = ['/game-data/TerrariaServer.bin.x86_64','-port','7870',
+                   '-maxplayers','4','-world','/server/Worlds/world.wld',
+                   '-autocreate','2','-worldname','Fixture','-noupnp']
+        binding = {'profile':'terraria-unix-v1','gamePid':52,
+                   'gameIdentity':IDENTITY,'socketBindPort':7870}
+        with tempfile.TemporaryDirectory() as temporary:
+            proc = Path(temporary)
+            (proc/'52').mkdir()
+            file = proc/'52'/'cmdline'
+            def write(argv):
+                file.write_bytes(b'\0'.join(part.encode() for part in argv)+b'\0')
+            def path(value):
+                return proc if str(value)=='/proc' else Path(value)
+            with patch.object(module,'Path',side_effect=path), \
+                 patch.object(module,'game_identity',return_value=IDENTITY):
+                write(['/usr/bin/bwrap','--unshare-user','--',*command])
+                self.assertEqual(module.legacy_control_commands(binding),[command])
+                for position, replacement in [(0,'/other/engine'),(2,'7871'),(4,'65'),
+                                              (6,'/other/world'),(10,'bad\nname'),(11,'-exec')]:
+                    invalid = list(command);invalid[position] = replacement
+                    write(['/usr/bin/bwrap','--',*invalid])
+                    with self.assertRaises(ValueError): module.legacy_control_commands(binding)
+                write(['/other/wrapper','--',*command])
+                with self.assertRaises(ValueError): module.legacy_control_commands(binding)
+                file.write_bytes(b'x'*16385)
+                with self.assertRaises(ValueError): module.legacy_control_commands(binding)
+
+    @unittest.skipUnless(os.getuid() == 0, 'Root-owned persistent binding fixture')
+    def test_reloaded_core_controller_reads_persistent_binding_and_retries_stopped_scope(self):
+        fixture_id = 'f'*24
+        pid = os.getpid()
+        if module.scope_path(fixture_id, pid).exists():
+            self.skipTest('Reserved fixture scope is already present')
+        identity = module.game_identity(pid)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            root.chmod(0o711)
+            server = root/fixture_id
+            server.mkdir(mode=0o711)
+            (server/'control').mkdir(mode=0o700)
+            binding = {'profile':'core-keeper-unix-v1','serverId':fixture_id,
+                       'gatePid':pid,'gateIdentity':identity,'uid':40254,'gid':40254,
+                       'gamePid':pid,'gameIdentity':identity}
+            module.binding_write(server, binding)
+            spec = importlib.util.spec_from_file_location('reloaded_core_controller', Path(__file__).with_name('customer-runtime.py'))
+            reloaded = importlib.util.module_from_spec(spec);spec.loader.exec_module(reloaded)
+            reloaded.ROOT = root
+            reloaded.select_game('core-keeper')
+            self.assertEqual(reloaded.binding_read(fixture_id,pid,identity),binding)
+            for _ in range(2):
+                self.assertEqual(reloaded.stop_runtime(fixture_id,pid,identity),{'stopped':True})
+            with self.assertRaises(ValueError):
+                reloaded.stop_runtime(fixture_id,pid,identity+'0')
+
+    def test_corekeeper_uses_typed_config_query_pair_and_pinned_private_files(self):
+        import json
+        spec = importlib.util.spec_from_file_location('corekeeper_contract', Path(__file__).with_name('customer-corekeeper.py'))
+        core = importlib.util.module_from_spec(spec); spec.loader.exec_module(core)
+        module.select_game('core-keeper')
+        values = {'name': 'Saved world', 'maxPlayers': 4}
+        with patch.object(module, 'trusted_module', return_value=core):
+            result = json.loads(module.config_bytes(json.dumps(values), 1320))
+            self.assertEqual(result, {'configuration': values, 'port': 1320})
+            with self.assertRaises(ValueError):
+                module.config_bytes(json.dumps({**values, 'exec': 'unreviewed'}), 1320)
+        for port in ('1301', '1321'):
+            with self.assertRaises(ValueError):
+                module.request(['run-native', ID, '42', IDENTITY, 'core-keeper', port, '1000', '2048'])
+        module.request(['run-native', ID, '42', IDENTITY, 'core-keeper', '1320', '1000', '2048'])
+        mounts = [(20, 'GameInfo.txt'), (21, 'GameID.txt')]
+        args = module.command(Path('/fixture/data'), 7, 1320, 2048, native_settings=result,
+                              asset_directory=19, identity_files=mounts)
+        self.assertEqual(args[-3:], ['/usr/bin/python3', '-I', '/corekeeper-bootstrap.py'])
+        self.assertIn('--as=17179869184', args)
+        self.assertNotIn('--seccomp', args)
+        for descriptor, name in mounts:
+            position = args.index('/proc/self/fd/'+str(descriptor))
+            self.assertEqual(args[position-1:position+2], ['--bind', '/proc/self/fd/'+str(descriptor), '/game-data/'+name])
+        for changes in ({'identity_files': []}, {'asset_directory': None}, {'seccomp_fd': 30}):
+            options = {'asset_directory': 19, 'identity_files': mounts, **changes}
+            with self.assertRaises(ValueError):
+                module.command(Path('/fixture/data'), 7, 1320, 2048, native_settings=result, **options)
+
+    def test_private_display_handoff_requires_enforced_policy_and_trusted_sources(self):
+        policy, entry = Mock(), Mock()
+        policy.verify_enforced.return_value = 'playbound-customer-ipc-40000'
+        def dependency(name, filename):
+            return policy if filename.endswith('display-policy') else entry
+        args = ['/usr/bin/prlimit', '--core=0', '--', '/usr/bin/bwrap', '--unshare-user', '--', '/fixed-bootstrap']
+        with patch.object(module, 'trusted_module', side_effect=dependency):
+            result = module.private_display_handoff(args, 40000, 20, 21)
+            self.assertEqual(result[:4], ['/usr/bin/aa-exec', '-p', 'playbound-customer-ipc-40000', '--'])
+            self.assertEqual(result[4:7], args[:3])
+            self.assertEqual(result[7:12], ['/usr/bin/python3', '-I', '/proc/self/fd/20', '21', '--unshare-user'])
+            entry.verify_source.assert_any_call(20)
+            entry.verify_source.assert_any_call(21)
+            with self.assertRaises(ValueError):
+                module.private_display_handoff(['/usr/bin/bwrap', '--seccomp', '22', '--', '/fixed'], 40000, 20, 21)
+            policy.verify_enforced.side_effect = ValueError('missing enforced policy')
+            with self.assertRaises(ValueError):
+                module.private_display_handoff(args, 40000, 20, 21)
+
     def test_flightgear_status_port_is_adjacent_and_admin_listener_disabled(self):
         module.select_game('flightgear')
         self.assertEqual(module.config_bytes('{}',5010),b'{}')
@@ -597,6 +797,43 @@ class RuntimeBoundaries(unittest.TestCase):
             profile.return_value = None
             self.assertFalse(module.runtime_status(resources, ID, 42, IDENTITY)['running'])
 
+    def test_recovery_requires_live_complete_control_identity_in_the_same_scope(self):
+        value = {'uid':40000, 'gamePid':52, 'gameIdentity':IDENTITY,
+                 'controlPid':53, 'controlIdentity':IDENTITY,
+                 'networkProfile':None, 'hostNetworkGuard':'host-egress-v1',
+                 'bindPrograms':{'8':[1]}}
+        resources = SimpleNamespace(verify_process=Mock())
+        policy = SimpleNamespace(verify=Mock(), program_ids=Mock(return_value={'8':[1]}))
+        expected = '0::/system.slice/'+module.scope_path(ID,42).name
+        def read(path, *args, **kwargs):
+            return expected
+        with patch.object(module,'binding_read',side_effect=lambda *args:dict(value)), \
+             patch.object(module,'migration_network_profile',return_value=None), \
+             patch.object(module.pwd,'getpwnam',return_value=SimpleNamespace(pw_uid=1001)), \
+             patch.object(module,'trusted_module',return_value=policy), \
+             patch.object(Path,'read_text',read):
+            self.assertTrue(module.runtime_status(resources,ID,42,IDENTITY)['running'])
+            resources.verify_process.assert_any_call(53,IDENTITY,40000)
+            def gone(pid, *args):
+                if pid == 53: raise ProcessLookupError('controller exited')
+            resources.verify_process.side_effect = gone
+            self.assertFalse(module.runtime_status(resources,ID,42,IDENTITY)['running'])
+            resources.verify_process.side_effect = None
+            with patch.object(Path,'read_text',side_effect=lambda path: '0::/other.scope' if str(path)=='/proc/53/cgroup' else expected):
+                self.assertFalse(module.runtime_status(resources,ID,42,IDENTITY)['running'])
+            for key, bad in [('controlPid',True),('controlPid',0),('controlIdentity','')]:
+                original = value[key]
+                value[key] = bad
+                self.assertFalse(module.runtime_status(resources,ID,42,IDENTITY)['running'])
+                value[key] = original
+            for key in ('controlPid','controlIdentity'):
+                original = value.pop(key)
+                self.assertFalse(module.runtime_status(resources,ID,42,IDENTITY)['running'])
+                value[key] = original
+            del value['controlPid'], value['controlIdentity']
+            self.assertTrue(module.runtime_status(resources,ID,42,IDENTITY)['running'])
+        policy.verify.assert_called()
+
     def test_parent_identity_and_actual_kernel_limits_are_required_before_execution(self):
         scope = module.scope_path(ID, 42)
         resources = SimpleNamespace(verify_process=lambda *args: None)
@@ -660,9 +897,28 @@ class TerrariaTypedTests(unittest.TestCase):
         finally:module.select_game('teeworlds')
 
 class TerrariaStopTests(unittest.TestCase):
+    def test_private_display_supervisors_get_time_to_reap_engine_and_xvfb(self):
+        scope = module.scope_path(ID, 42)
+        def read(path, *args, **kwargs):
+            return '0::/system.slice/'+scope.name if path.name == 'cgroup' else 'populated 0'
+        for profile in ('core-keeper-unix-v1', 're-volt-rvgl-unix-v1'):
+            binding = {'profile': profile, 'gamePid': 52, 'gameIdentity': IDENTITY, 'uid': 40000, 'controlPid': 52, 'controlIdentity': IDENTITY}
+            with self.subTest(profile=profile), \
+                 patch.object(module, 'binding_read', return_value=binding), \
+                 patch.object(module, 'game_identity', return_value=IDENTITY), \
+                 patch.object(Path, 'exists', return_value=True), \
+                 patch.object(Path, 'stat', return_value=SimpleNamespace(st_uid=40000)), \
+                 patch.object(Path, 'read_text', read), patch.object(Path, 'write_text') as kill, \
+                 patch.object(module.os, 'pidfd_open', return_value=100), patch.object(module.os, 'close'), \
+                 patch.object(module.signal, 'pidfd_send_signal') as send, \
+                 patch.object(module.time, 'monotonic', side_effect=[0, 9]):
+                self.assertEqual(module.stop_runtime(ID, 42, IDENTITY), {'stopped': True, 'graceful': True})
+                send.assert_called_once_with(100, module.signal.SIGTERM)
+                kill.assert_not_called()
+
     def test_veloren_graceful_stop_uses_registered_sigterm_handler(self):
         scope=module.scope_path(ID,42)
-        binding={'profile':'veloren-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000}
+        binding={'profile':'veloren-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000,'controlPid':52,'controlIdentity':IDENTITY}
         def read(path,*args,**kwargs):return '0::/system.slice/'+scope.name if path.name=='cgroup' else 'populated 0'
         with patch.object(module,'binding_read',return_value=binding),patch.object(module,'game_identity',return_value=IDENTITY),patch.object(Path,'exists',return_value=True),patch.object(Path,'stat',return_value=SimpleNamespace(st_uid=40000)),patch.object(Path,'read_text',read),patch.object(Path,'write_text') as kill,patch.object(module.os,'pidfd_open',return_value=100),patch.object(module.os,'close'),patch.object(module.signal,'pidfd_send_signal') as send:
             self.assertEqual(module.stop_runtime(ID,42,IDENTITY),{'stopped':True,'graceful':True})
@@ -671,7 +927,7 @@ class TerrariaStopTests(unittest.TestCase):
 
     def test_graceful_stop_uses_pidfd_and_requires_matching_uid_and_scope(self):
         scope=module.scope_path(ID,42)
-        binding={'profile':'terraria-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000}
+        binding={'profile':'terraria-unix-v1','gamePid':52,'gameIdentity':IDENTITY,'uid':40000,'controlPid':52,'controlIdentity':IDENTITY}
         def read(path,*args,**kwargs):return '0::/system.slice/'+scope.name if path.name=='cgroup' else 'populated 0'
         with patch.object(module,'binding_read',return_value=binding),patch.object(module,'game_identity',return_value=IDENTITY),patch.object(Path,'exists',return_value=True),patch.object(Path,'stat',return_value=SimpleNamespace(st_uid=40000)),patch.object(Path,'read_text',read),patch.object(Path,'write_text') as kill,patch.object(module.os,'pidfd_open',return_value=100),patch.object(module.os,'close'),patch.object(module.signal,'pidfd_send_signal') as send:
             self.assertEqual(module.stop_runtime(ID,42,IDENTITY),{'stopped':True,'graceful':True})

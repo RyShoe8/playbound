@@ -2482,3 +2482,584 @@ Counts remain 22 accepted, 25 local candidates awaiting runtime acceptance and
 five unimplemented runtime boundaries. Core Keeper/RVGL still need the actual
 confined display/Unix-peer acceptance and root launch integration; GoldenEye,
 Deus Ex and ANEURISM also retain their documented pending boundaries.
+
+
+### Shared display lifetime and HX private configuration candidates
+
+Core Keeper and RVGL now share the internal display/game lifetime state machine.
+Cancellation during display startup cannot spawn an engine. During execution,
+cancellation or display exit terminates/reaps the engine before releasing the
+private display. Failed spawn/wait paths still clean the display and restore
+original signal handlers. Trusted fixed bootstrap callbacks construct commands;
+no command, environment, display number or executable is accepted from an API.
+RVGL's candidate bootstrap now constructs the fixed private lobby environment,
+refuses unsupported configuration fields and checks the enforced display label
+before preparing private files. Its layout/launch is not registered or installed;
+player caps and UID-aware lobby capture/input still need implementation/acceptance.
+
+A separate unused customer-hx.py prepares Deus Ex HX private System, Save,
+Wine-prefix, runtime and cache directories. It retains existing saves and custom
+INI rules, enforces 2..8 slots and the existing three-port allocation, and disables
+package downloads/uplink. Managed duplicate keys are removed across repeated
+case-insensitive sections; authoritative values are inserted in the first matching
+section. Private configuration reads reject links/hardlinks/exposed permissions,
+are bounded, and replacement is atomic/fsynced. No caller INI path or executable
+endpoint is exposed. This is configuration preparation, not a Wine runtime boundary;
+public asset pinning, Wine/IPC launch supervision and scoped control remain pending.
+
+Local Linux helper suite: 273 passed, two skipped (275 total). New checks cover
+RVGL's fixed command/environment, cancellation before/during launch, failed spawn,
+failed wait, handler restoration, HX save/custom-rule retention, repeat-safe INI
+updates, typed slots/ports and unsafe-file rejection. No deployments, service
+restarts, kernel policy changes, customer enrollments, database writes or commits
+were performed for this batch. Accepted/candidate/pending runtime counts are
+unchanged: 22 / 25 / 5. Actual confined display-peer and per-engine acceptance is
+still required before enabling these candidates.
+
+
+### GoldenEye/HX Wine contracts — candidate preparation only
+
+customer-goldeneye.py now validates only declared name, slots, map, time limit
+and private RCON settings, matching the current recipe's request range. It creates
+private configuration, Python runtime/cache, map graphs, logs/downloads and Wine
+prefix directories using the immutable Source filesystem contract. Generated
+RCON configuration stays 0600 and its password never enters argv. Existing custom
+rules and Python state survive preparation. Bots, arbitrary launch options,
+control characters and unsafe private files are rejected. Its fixed Wine command
+uses the private srcds.exe and existing strict port/no-restart flags. Actual
+engine admission limits remain an acceptance gate; the typed range alone is not
+proof that the game enforces every requested slot count.
+
+HX now also exposes a fixed candidate HCC command and private Wine/XDG paths.
+Neither Wine candidate selects its own display or accepts inherited host
+configuration. These functions do not start Wine, initialize prefixes, register
+an identity, install public assets or enable executable customer content. Full
+public inventory/layout, private IPC/legacy ABI compatibility and scoped wineserver
+lifecycle remain necessary before root launch integration.
+
+Read-only code review of ANEURISM confirms its current network helper launches
+under the service account with supplementary groups. That is not the required
+per-customer UID/filesystem boundary and has not been reclassified or enabled.
+Its root-owned namespace/token ownership logic must be preserved while adding
+the migration-authorized account and filesystem/cgroup handoff. No credentials
+were retrieved and no live helper was changed.
+
+Linux helper suite after this batch: 278 passed, two skipped (280 total).
+New checks cover GoldenEye argument/config injection, private credentials, fixed
+Wine/XDG paths, retained customer rules/state, linked configuration/shared-prefix
+rejection, and HX fixed argv. No deployment, restart, policy load, enrollment,
+DB write or commit occurred. Runtime counts remain 22 accepted, 25 candidates,
+five pending boundaries; these additional contracts do not establish live parity.
+
+
+### ANEURISM public asset boundary — not activated
+
+Read-only VPS inventory pinned 44 public engine files (880,816,429 bytes): the
+native server, Unity/GameAssembly/Steam libraries, aniv_server_Data and linux64.
+No credential, instance data, Steam download state, build metadata or Unity lock
+file was read. customerAnivAssets.json records sizes/hashes. The fixed operator-only
+publisher and retained-directory verifier now support this family without
+accepting caller paths, symlinks or download URLs. Only aniv_server.x86_64 receives
+execute permission; package data/libraries are read-only. Existing bounds suffice:
+128 files, 768 MiB per file and 2 GiB aggregate. The actual full inventory passes
+validation before publication; no duplicate VPS copy was made.
+
+Tests cover publisher/verifier roundtrip, tamper/unlisted-entry checks, executable
+permissions and rejection of gslt/owner files, instance saves/home, steamapps,
+metadata, lock files and traversal paths. Linux suite: 279 passed, two skipped
+(281 total). The publisher is not installed and the live ANEURISM helper remains
+unchanged. Root migration-authorized UID/filesystem/cgroup launch integration,
+namespace/token lock preservation, scoped cleanup, recovery and player-query
+acceptance still remain; this public bundle is not evidence of tenant isolation.
+Runtime counts remain 22 accepted, 25 candidates and five pending boundaries.
+No deployment, restart, policy change, DB write, credential retrieval or commit.
+
+
+### Resumed isolated VPS staging: private display/IPC acceptance
+
+The user explicitly authorized resuming isolated staging deployments. Live agent
+restart, customer enrollment and production rollout were not performed. A new
+operator-only customer-display-acceptance.py uses fixed test UIDs 40254/40255 and
+refuses assigned accounts, existing labels or processes under either UID. It
+loads only those two policies, runs bounded fixture processes, and removes them
+in finally. The root staging scripts remain in
+/root/playbound-isolation-staging-20261016; they are not installed service helpers.
+
+Actual VPS kernel checks passed: same-label abstract stream connection succeeds;
+cross-label, unconfined-host-to-private and private-to-unconfined-host connections
+are denied. Authenticated Xvfb startup inside bubblewrap under the reserved UID
+and enforced label passed; an invalid cookie is rejected and close reaps the
+display/removes authority. The fixture also confirms host private directories are
+absent and /usr is read-only. Numeric IDs are unused staging UIDs, not accounts
+or customer enrollments. No real game/Steam credentials were read or passed.
+
+The real fixture exposed missing bubblewrap construction permissions, corrected
+narrowly for root directory read, /newroot scratch construction, six-character
+/bindfile temporary names, same-label proc-fd read/readby mediation and disabling
+nested user namespaces. No general filesystem write or Unix peer rule was added;
+ptrace trace/attach is not granted. All four peer-denial/positive checks were
+rerun after policy adjustments and still passed. The staging filesystem fixture
+uses directory mounts for /bin,/lib,/lib64; the production command's symlink
+construction path is not yet accepted under this label.
+
+Cleanup verification found zero remaining test profiles, zero test-UID processes
+and zero staging-display workspaces. Local focused checks: 23 passed. ANEURISM's
+credential reader also now rejects hardlinks/FIFOs/changing/non-ASCII files with
+bounded nonblocking reads and content-free errors; ten tests passed. That code
+has not been deployed to the live helper.
+
+This accepts the display/IPC component only. It deliberately did not relax or
+install the game seccomp filter, launch a customer game, or prove resource/query/
+recovery behavior. Next integration must combine the accepted label with the
+reviewed syscall boundary and root launch/cgroup path before engine acceptance.
+Runtime family counts remain 22 accepted / 25 candidates / five pending.
+
+
+### Combined private-display/syscall staging acceptance
+
+customer-seccomp.py now has an opt-in private_display mode. It fails unless the
+current process has a reserved customer UID and exactly its matching enforced
+IPC label. It rejects combination with the unaccepted legacy i386 display ABI.
+Only AF_UNIX stream creation is added; datagram/seqpacket socket creation/pairs,
+privileged syscalls and nested namespace creation remain restricted. Existing
+callers use the unchanged default and no production runtime selects this mode.
+The exported BPF is sealed; no supplied filter bytes/rules/paths are accepted.
+
+The VPS staging harness now constructs that filter after entering the private
+label/UID, passes it to bubblewrap, and starts authenticated Xvfb with it applied.
+Actual combined checks passed: Xvfb startup/invalid-cookie rejection/cleanup,
+AF_UNIX datagram denial, unshare EPERM, host-private path absence and readonly
+/usr. Same-label positive, cross-label negative and host/private negative tests
+also pass. This does not claim peer denial was separately retested inside every
+game; it combines the tested label with the stricter syscall boundary in the
+fixture. Kernel checks and fixtures remain separate from family acceptance.
+
+Local helpers: 281 passed, two skips (283 total), plus ten ANEURISM helper tests.
+Additional cases reject nonboolean flags, nonreserved UIDs, unconfined/mismatched/
+complain labels and legacy-display combinations; guarded BPF sealing is checked.
+Cleanup verified zero test labels, test-UID processes or staging workspaces.
+No live service restart, customer enrollment, game launch, DB write or commit.
+Next: root launch/cgroup handoff and actual engine/query/recovery acceptance;
+family counts remain 22 accepted, 25 candidates, five pending boundaries.
+
+
+### Core Keeper and RVGL actual-engine staging acceptance
+
+Actual Core Keeper staging now combines the reserved UID/enforced label,
+private filesystem/display, guarded syscall filter, readonly pinned public bundle,
+private world/identity storage and resource scope (CPUQuota=100%, MemoryMax=2G,
+MemorySwapMax=0, TasksMax=128). The display fixture's 1 GiB virtual-address limit
+was unsuitable for Unity: the engine fixture uses 16 GiB virtual address space
+while retaining the 2 GiB cgroup memory ceiling. Observed startup memory reached
+about 1.35 GB; this is a startup observation, not an occupied-load baseline or an
+approved fleet envelope. No resource samples or hosting records were written to DB.
+
+The real engine exposed two additional requirements. Private /dev/shm objects
+need file-lock permission, and Steam needs AF_UNIX datagram socket pairs. A
+staging-only distinct denial errno confirmed the blocked pair type without
+permitting it. Actual same-label/cross-label/host-peer reconnection tests then
+passed for datagram pairs. Only guarded private-display mode admits pairs after
+UID/enforced-label validation; ordinary Unix datagram socket creation, seqpacket
+pairs and privileged syscalls remain denied. Default game filters are unchanged.
+The temporary diagnostic filter was replaced with the reviewed source.
+
+Core Keeper now prepares its fixed private .steam/sdk64 binding, uses umask 077
+and retains an open stdin pipe, matching the existing engine requirements. It
+also needs GameInfo.txt and GameID.txt beside the engine. Public bundles contain
+only fixed zero-byte readonly mountpoints; root staging binds private 0600 backing
+files there. Publication never imports a shared installation's identity files,
+and verification rejects a nonempty public mountpoint. Saved private identities
+are retained; linked/exposed/oversized files are rejected. Public mountpoints
+were verified still empty after actual execution.
+
+The offline namespace proved port bind and clean stop, but Steam/DNS failed as
+expected without a route. The fixed import-only staging egress helper then added
+outbound-only IPv4 access: private/host destinations blocked, established replies
+permitted, unsolicited inbound dropped, no DNAT/public game port. Rules are
+interface/source/comment scoped and removed exactly; failed removal remains
+tracked for retry. IPv6 is disabled only in the temporary namespace; global
+forwarding is required already enabled and is never changed. Public DNS and CA
+certificates are readonly namespace inputs; no Steam login token/customer secret
+was accessed. The final bounded online run returned native A2S query results:
+zero players, four maximum players, zero bots. It generated both identity files
+privately and exited cleanly with code zero after the longer startup period.
+An earlier immediate stop needed kill fallback, so the final result supersedes
+that early-startup shutdown observation without concealing it. Some nonfatal
+Steam/client-interface/Unity diagnostics remain; no human Join is claimed.
+
+The normal player-count adapter now queries Core Keeper's allocated game port+1
+with the existing A2S implementation and platform agent-local mapping. UDP fixture
+checks verify the auxiliary port, human/bot distinction and invalid-port failure.
+This source change is not deployed to the live agent/site.
+
+RVGL's installed public assets had group-writable archive permissions, so the
+publisher correctly refused them. Live files/permissions were not changed and
+the publisher was not weakened. A root-private staging mirror copied only exact
+manifest-pinned bytes with no-follow single-link regular-file checks, pre/post
+metadata and SHA256 verification, normalizing permissions in the mirror only.
+The strict publisher/verifier then accepted 2,549 files / 272,275,563 bytes,
+including the flattened reviewed library alias; the mirror was removed.
+Actual RVGL in its readonly asset/private profile layout, reserved UID, enforced
+label, guarded filter, private display/network namespace and limited resource
+scope started, bound UDP 2310, and stopped with engine exit zero and no captured
+errors. This is engine lifecycle acceptance, not player-query/control/recovery
+or persistent root identity API acceptance.
+
+Fixed three operator publisher manifest-name errors (Core Keeper, RVGL, ANEURISM).
+A catalog-wide entry-point test now checks exact-case manifest literals exist.
+Additional tests cover identity-file retention, immutable empty mountpoints,
+privileged/default syscall denials, guarded datagram pairs and scoped firewall
+cleanup/retry. Local Python suite before the final cleanup-retry case: 289 passed,
+two skipped (291 total), plus ten ANEURISM tests. The added cleanup-retry test
+also passed (four staging-network cases). Platform player-query tests: seven
+passed; agent query tests: 21 passed; readiness tests: 13 passed.
+
+Windows full agent tests encountered transient EPERM atomic-renames in existing
+update-job tests; those tests passed on focused rerun. The current agent source
+was then tested on VPS Node 20 as an unprivileged staging UID with cleared env,
+isolated network/filesystem and resource limits. After correcting fixture mounts,
+407 tests passed and five nested-namespace tests failed due to the outer test
+container. The full affected namespace test file was rerun under the unprivileged
+UID with isolated network/resource scope but without the extra outer filesystem
+container: all 13 runnable tests passed, five skipped. Thus all 412 distinct
+runnable Linux agent tests passed across these runs, with six total skips; no test
+was changed/skipped merely to conceal a failing application assertion.
+
+Cleanup found zero staging-UID processes, temporary profiles, network namespaces,
+firewall rules, workspaces or active test scopes. The obsolete first Core Keeper
+staging bundle was removed after ownership/path checks. Reviewed v2 Core Keeper
+and RVGL bundles and staging source/test logs remain for subsequent integration;
+these are public engine/code copies, not customer saves. The live agent/service,
+actual customer identities, database and hosting eligibility were unchanged.
+No commit/push was performed. Readiness messages now report the actual staging
+progress while retaining blocked enrollment. Runtime family counts remain
+22 accepted / 25 candidates / five pending root integration boundaries; full
+identity launch, restart/save recovery and UID-aware control still remain for
+these two games. GoldenEye/Deus Ex Wine and ANEURISM UID handoff remain pending.
+
+### Private-display identity transition and fail-closed staging acceptance
+
+The staging launch now drops to the reserved customer UID/GID and clears groups
+**before** entering its enforced AppArmor label. This matches the ordering needed
+by the root runtime's unprivileged child rather than relying on root to perform
+the label transition. Actual VPS probes passed stream and datagram-pair same-label
+communication and cross-label/host-peer denials, plus authenticated Xvfb startup
+and cleanup under this ordering.
+
+Core Keeper's actual outbound-only staging run again answered A2S with 0/4 humans
+and zero bots, wrote both private identity files, and exited with engine status 0
+after the supervised stop. Its existing Steam/Unity diagnostic warnings remain;
+this is not a human Join or persistent root recovery acceptance. RVGL passed the
+same unprivileged-before-label launch, bound its gameplay port, and exited 0.
+
+The acceptance harness now rejects spawn-only success: a premature supervisor
+exit, missing listener, forced engine termination, or (for online Core Keeper)
+missing query, incorrect slots/occupancy, or absent private identity output fails
+the probe. Both in-namespace assertions and host-side result validation enforce
+this. Teardown attempts all independent descriptors, network rules, namespaces,
+workspaces and IPC labels even after an earlier cleanup failure, and reports
+resource names without exposing subprocess/game output.
+
+Local Python verification: 298 customer tests ran, 296 passed and two skipped;
+all ten ANEURISM tests passed. Final VPS inspection found no reserved-UID
+processes, temporary IPC profiles, staging namespaces/firewall rules, private
+workspaces or active Core Keeper/RVGL scopes. No production service, catalog,
+database, eligibility or customer enrollment changed. No commit/push performed.
+Counts remain 22 accepted / 25 candidates / five pending root integration;
+the next implementation remains persistent root identity launch, adoption and
+control integration for Core Keeper/RVGL.
+
+### Reusable private-display handoff and pinned Core Keeper identity files
+
+Replaced the staging-only inline syscall bootstrap with the internal
+`customer-display-entry.py` helper. It is not a sudo endpoint and is not enrolled
+as a privileged operation. It refuses root/saved-root identities, mismatched or
+saved groups, supplementary groups, and an absent/wrong/complain-mode IPC label
+before loading a syscall helper. The inherited source descriptor must identify
+a bounded, root-owned, single-link, non-writable-to-others regular file opened
+read-only. The code executes only a stable bounded byte snapshot after metadata
+verification; it does not reopen a path or use bytecode caches. The constructed
+filter must be fully sealed, and the source descriptor is close-on-exec before
+the fixed bubblewrap executable starts. Caller-supplied filter arguments fail.
+
+Core Keeper's root-side `identity_mounts` now creates or verifies its two fixed
+private identity outputs and returns pinned descriptors. Staging mounts those
+descriptors rather than reopening customer-writable names. Existing saved
+contents are retained; symlinks, hard links, wrong ownership/group, non-private
+modes and oversized files fail closed. Partial failures close all prior handles.
+Tests exercise path replacement, preserved contents and failure cleanup.
+
+The root stop controller now has explicit future Core Keeper/RVGL supervisor
+contracts: identity-checked pidfd SIGTERM with a 20-second window, allowing the
+10-second engine shutdown and engine/display reaping to finish. Existing games'
+stop signals/deadlines are unchanged. This does not add either game to the
+independent root/agent enrollment allowlists, and is not evidence of actual root
+adoption/recovery or external controller shutdown acceptance.
+
+Actual outbound-only Core Keeper staging passed with the shared handoff, dropped
+UID/GID, enforced policy, sealed filter and pinned identity mounts: A2S 0/4,
+zero bots, both private outputs written, clean engine exit 0. Existing Steam/Unity
+diagnostic warnings remain. Local verification: 313 customer tests ran, 311 passed
+and two skipped; ten ANEURISM tests passed. Production, database, catalog and
+eligibility remain unchanged; no commit/push performed.
+
+RVGL also passed the shared handoff on the VPS, bound its gameplay port and
+exited 0 with no recorded engine errors. Final inspection again found no staging
+UID processes, temporary profiles, namespaces, firewall rules, private workspaces
+or active game scopes. Persistent root enrollment/recovery and UID-aware control
+integration remain pending; the 22/25/5 family acceptance counts are unchanged.
+
+### Core Keeper persistent root-runtime wiring — local candidate
+
+Core Keeper now has independent root runtime, resource placement, immutable
+engine-bundle, migration-root and world-snapshot recognition. Its fixed legacy
+root is `core-keeper-servers`; allocations use even gameplay ports 1300–1320
+with the existing auxiliary UDP query-port bind policy. Typed configuration is
+validated by the shared Core Keeper contract. The runtime builds the existing
+root-owned configuration descriptor, uses pinned private identity outputs, and
+enters its enforced per-UID IPC policy only after Popen drops UID/GID/groups.
+The syscall filter is constructed by the shared unprivileged handoff instead
+of the root supervisor. Missing enforced policy or untrusted helper descriptors
+refuse launch. Physical memory remains cgroup-limited; the engine receives the
+16 GB virtual-address allowance required by the earlier Unity staging results.
+
+The opt-in runtime installer now carries the four display/Core Keeper helpers;
+it does not load policy, migrate a server, restart a service, or enable an agent
+profile. No installer or new root runtime was deployed to the VPS in this step.
+The agent identity allowlist and accepted-isolation flags are unchanged.
+
+Snapshot/migration copying now handles one derived alias for this game only:
+`.steam/sdk64/steamclient.so` targeting `/game-data/linux64/steamclient.so`.
+It validates ownership, single-link metadata and the exact target, records the
+alias without following it, recreates it in root-private copies, and changes
+ownership without dereferencing it. Other games, other paths, and different
+targets retain the existing rejection. A legacy alias pointing at a host path
+is deliberately not silently rewritten or followed; legacy enrollment still
+requires explicit handling of such an installation before acceptance.
+
+Verification: 317 customer Python tests ran, 315 passed and two skipped; ten
+ANEURISM tests passed. Focused agent identity/readiness tests passed 19 runnable
+tests with 12 platform-dependent skips on Windows. Installer shell syntax and
+diff checks passed. New tests cover configuration/port constraints, pinned
+mounts, guarded handoff, canonical alias copy/ownership round-trip, and refusal
+of other symlinks. Actual root-managed launch, agent-restart adoption, saved-world
+recovery and external management-stop acceptance remain pending, as does agent
+identity translation. RVGL's persistent root integration remains pending. No
+production/database/catalog changes or commit/push were performed.
+
+### Core Keeper agent handoff wired — acceptance remains blocked
+
+The shared agent identity registry now recognizes `core-keeper-unix-v1`, its
+1300–1320 port range, and a 1-core/2-GB default allocation matching the root
+resource contract. A strict translator accepts only the reviewed xvfb-run
+recipe: exact engine, gameplay port, slot count, data and log paths, and bounded
+name. It emits typed name/slots JSON for the root supervisor, not caller-provided
+arguments. Root-owned activated migration metadata remains mandatory before a
+handoff can launch; there is no fallback to a legacy/unrestricted process.
+
+For enrolled Core Keeper, the agent skips legacy recipe preparation and uses
+the gate's neutral working directory. Argument construction no longer creates
+or reopens the sealed legacy home. Non-enrolled party/community behavior stays
+on its existing path. Core Keeper stop calls now allow 30 seconds for the root
+controller's 20-second graceful-stop window plus completion overhead; other
+games retain their existing deadlines. The existing identity health/stop and
+managed registry adoption paths recognize the new profile, but actual recovery
+acceptance has not yet been run.
+
+Readiness reports a **blocked candidate**, with its implemented profile shown;
+it does not report accepted isolation, permit customer enrollment, or enable
+executable content. Current family status: 22 accepted, 26 implemented candidates
+awaiting acceptance, four pending full root/agent implementation (GoldenEye,
+Deus Ex HX, ANEURISM IV and RVGL). This classification is implementation progress,
+not a new engine/customer-isolation acceptance.
+
+Verification: the complete local Windows agent suite ran 422 tests: 373 passed,
+49 platform-dependent skips, no failures. Added cases cover fixed recipe
+translation and injection/path/port rejection, resource defaults, stop deadlines,
+absence of legacy-directory writes, and blocked readiness. Root/agent profile
+contract consistency and diff checks passed. No VPS files, production services,
+database/catalog rows, hosting eligibility or customers were changed in this
+step; nothing committed or pushed. Next acceptance work is the isolated actual
+root-managed launch, external stop, agent restart/adoption and saved-world restore.
+
+### Core Keeper root-generated namespace and filesystem restore checks
+
+Added `--corekeeper-root-command` to the direct-root staging harness. It imports
+the reviewed root runtime source and calls its actual `command()` builder with
+the verified immutable assets, sealed typed configuration and pinned private
+identity outputs. The staging-only substitutions copy verified helper bytes into
+read-only mounts, rather than installing anything under `/usr/local/libexec`.
+The initial attempt exposed an inaccessible `/root` source path in the fixture;
+that fixture substitution was corrected without changing the AppArmor policy.
+
+The VPS run passed using the root-generated namespace: typed configuration was
+read successfully, the actual engine started, its gameplay port bound, A2S
+reported 0/4 humans and zero bots, both private identity outputs were written,
+and the engine exited 0 after the timed supervised stop. The root's virtual
+address limit, private filesystem layout and bounded temporary filesystem were
+used. Existing nonfatal Steam/Unity diagnostics remain. The harness now requires
+an explicit root-command result marker so a simpler fixture cannot be mistaken
+for this check.
+
+This is deliberately **namespace-builder acceptance**, not full root controller
+or agent-restart acceptance: the fixture invokes the actual game helper with
+its timed query/stop monitor. It does not exercise `run_runtime` provisioning,
+the root binding journal, external pidfd stop, host/cgroup network-policy setup
+or persistent agent adoption. Those gates are still required before promotion.
+
+The actual filesystem snapshot/restore transaction also passed a new Core Keeper
+fixture locally: saved world selection/seed/name, identity outputs and the fixed
+Steam alias survive restore and ownership reassignment; the later world remains
+retained for rollback, and the runtime activation inode is updated correctly.
+This is not an actual-engine world-reload result.
+
+Python verification: 319 customer tests ran, 317 passed and two skipped; ten
+ANEURISM tests passed. Diff checks passed. Final VPS inspection found no staging
+UID processes, profiles, namespaces, firewall rules, private workspaces or active
+game scope. Only private staging source was updated; no installed production
+helper/service, database, catalog, eligibility or customer account changed.
+No commit/push. Family status remains 22 accepted / 26 candidates / four pending
+implementations. Core Keeper remains blocked pending its full controller and
+restart/restore acceptance.
+
+### Core Keeper external stop — wrapper lifecycle bug fixed in staging
+
+The new external-stop fixture uses the root runtime's actual persistent binding
+writer/reader, scope derivation, PID/start-identity checks, UID/cgroup verification
+and pidfd signalling. Only its ROOT directory is redirected to a private fixture
+tree; no production binding, customer account or installed helper is changed.
+A fixture scope-name mismatch was caught and corrected before controller
+acceptance; a pre-spawn guard now requires launch/controller scopes to match.
+
+The next run exposed a genuine bug: signalling the outer bubblewrap PID can
+trigger `--die-with-parent` and kill its sandboxed command. Cgroup emptiness was
+therefore insufficient evidence of graceful shutdown. The runtime now records a
+separate `controlPid`/`controlIdentity` for the actual root-built sandbox command,
+while retaining the wrapper PID for liveness. Discovery is bounded to 128 tasks,
+checks the exact UID/cgroup and process identities, and matches only internal
+root-built argv. Graceful signals target that command and keep the wrapper alive.
+Core Keeper, Terraria, Factorio and Veloren populate this identity on new starts;
+the two exec-style bootstraps also recognize their exact post-exec engine argv.
+No caller-supplied executable/selector is added to the privileged request format.
+
+**Rollout requirement:** older active graceful-profile bindings without these
+fields now refuse a wrapper signal. They must receive explicit, verified adoption
+or re-enrollment before deploying this change; do not use an unsafe wrapper
+fallback. Native external-stop acceptance must also be repeated for the other
+three affected games before promoting their revised path. Existing installed
+production helpers have not been updated.
+
+Core Keeper's actual VPS external-stop run passed: root-generated namespace,
+successful A2S 0/4 humans and zero bots, private identity outputs, root controller
+graceful stop, engine exit 0, and no forced cgroup kill. This differs from the
+earlier fixture self-stop test. Local tests additionally verify that a reloaded
+controller reads a real root-owned persisted binding, safely retries an already
+stopped scope and rejects a mismatched identity. This is not agent restart/adoption
+or the full `run_runtime` provisioning/network-policy acceptance.
+
+Verification: 323 customer Python tests ran, 321 passed and two skipped; ten
+ANEURISM tests passed. Diff checks passed. Final VPS inspection found no staging
+UID processes, temporary profiles, namespaces, firewall rules, private workspaces
+or active fixture scopes. Root start/adoption and actual-engine saved-world
+reload remain pending; customer enrollment stays blocked. No production service,
+installed helper, database, catalog or eligibility changed. No commit/push.
+
+### Recovery controller health follow-up
+
+Recovery status now verifies the persisted control PID/start identity and tenant
+UID as well as its exact runtime cgroup. A surviving sandbox wrapper cannot mark
+a dead or moved controller healthy. Partial or malformed control identities fail
+closed. Legacy bindings with neither control field remain readable; status does
+not silently adopt processes or rewrite a binding. Their explicit adoption or
+re-enrollment requirement above remains unresolved.
+
+Regression coverage checks healthy recovery, controller disappearance, scope
+changes, incomplete identities, invalid PID values and legacy compatibility.
+All 324 customer Python tests ran: 322 passed and two skipped. All ten ANEURISM
+tests passed. These are local checks, not new VPS acceptance. No deployment,
+production restart, database change, commit or push was performed.
+
+### Legacy graceful-control recovery
+
+The missing-control-field rollout blocker now has a read-only recovery path for
+Core Keeper, Veloren, Factorio and Terraria. Stop discovers only a reviewed
+command beneath the exact persisted wrapper, verifies tenant UID/cgroup and
+PID/start identity, then signals the discovered command through a pidfd. The
+wrapper itself is explicitly excluded as a signal candidate. No existing binding
+is rewritten, no new privileged endpoint is added, and status remains read-only.
+This supersedes the earlier requirement to rewrite or re-enroll every otherwise
+valid legacy binding before stopping it. Unrecognized commands, incomplete control
+fields and invalid/missing port metadata still require operator recovery.
+
+Core Keeper and Veloren use fixed bootstrap commands; Veloren and Factorio also
+recognize their reviewed post-exec engine argv. Factorio's port comes only from
+the protected binding. Terraria accepts only the fixed original bubblewrap
+command shape, private world path, bounded name/player settings and matching
+protected port; arbitrary executable or world paths are rejected.
+
+Local verification: 327 customer tests ran, 325 passed and two skipped; ten
+ANEURISM tests passed. Recovery tests verify the inner PID is signalled without
+binding writes, malformed identities fail closed, and altered Terraria commands
+are rejected. Native external-stop acceptance for the other three games and full
+Core Keeper start/adoption/world-reload acceptance remain pending.
+
+The isolated VPS external-stop fixture was repeated with this controller source:
+Core Keeper answered A2S with 0/4 humans and zero bots, wrote its private identity
+outputs, and exited the actual engine with code 0 after a graceful root-controller
+stop. Existing Steam/Unity diagnostic messages remain visible; this is not a
+human Join or legacy-binding acceptance claim. Cleanup inspection found zero
+staging-UID processes, namespaces, temporary profiles or private workspaces.
+Only the private staging source was copied; installed production helpers and
+services, databases and catalog records were untouched. No commit/push.
+
+### RVGL persistent supervisor candidate
+
+The root supervisor now recognizes RVGL's fixed 2310–2330 allocation and private
+`rvgl-servers` migration namespace. It builds the reviewed Python lobby bootstrap
+inside the existing per-UID authenticated display handoff, retains immutable
+asset descriptors, mounts public game content read-only and keeps profiles,
+cache, replays, times and edits in private customer data. New bindings record
+the inner control PID/start identity for the existing 20-second graceful stop.
+The candidate resource default is one CPU core and 1 GB RAM; this is a limit,
+not a newly measured workload baseline. Installer source includes the reviewed
+RVGL helper; no installer was run.
+
+RVGL accepts only an empty game-settings object plus the root-provided port.
+Arbitrary commands, extra configuration and unverified player-limit settings are
+rejected. No party/agent identity enrollment or public readiness promotion was
+added: those remain pending along with actual root-generated RVGL namespace,
+persistent restart/adoption and controller-stop acceptance. The earlier isolated
+engine fixture is not evidence for these new paths. Family acceptance counts
+therefore remain unchanged.
+
+Local verification: 329 customer Python tests ran, 327 passed and two skipped;
+ten ANEURISM tests passed. New coverage checks configuration rejection, fixed
+bootstrap command, retained assets and required private-display handoff. No VPS
+deployment, production restart, database change, catalog change or commit/push.
+
+### RVGL root namespace and agent handoff follow-up
+
+The isolated VPS RVGL root-command/external-stop fixture passed: gameplay UDP
+bound, the real engine ran inside the root-generated namespace, controller stop
+was graceful, engine exit code was 0 and the engine reported no errors. The
+fixture substitutes its timed supervisor for the bootstrap entry point while
+calling the real RVGL/display helpers. It does not exercise full `run_runtime`,
+host/BPF policy setup, persistent agent adoption, occupancy query or restore.
+Cleanup found zero staging UID processes, namespaces, temporary profiles or
+private workspaces. Installed production helpers/services were not changed.
+
+Agent source now recognizes RVGL's fixed identity/port contract and translates
+only the exact reviewed 64-bit xvfb lobby recipe into empty typed settings. It
+requires matching migration metadata, skips shared-display preparation for the
+identity path and uses neutral working-directory handling. Additional settings
+and altered launch arguments fail closed. Display-runtime stop calls allow 30
+seconds so the root's 20-second cleanup is not prematurely cancelled. Public
+readiness stays blocked and executable content stays disabled.
+
+Verification: 424 Windows game-host tests ran, 375 passed and 49 platform skips;
+the subsequent stop-timeout change passed all ten focused runtime tests. Python:
+329 customer tests ran, 327 passed and two skipped; ten ANEURISM tests passed.
+Diff checks passed. No customer migration/enrollment, production deployment,
+database/catalog changes, commit or push. RVGL is now an implemented candidate,
+not accepted isolation: 22 accepted families, 27 implemented candidates and three
+remaining full integration families (GoldenEye, Deus Ex HX, ANEURISM).
