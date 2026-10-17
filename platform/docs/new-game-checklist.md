@@ -54,6 +54,40 @@ save safety, capacity, and release verification for every offered server game.
   game back from the admin page and confirm the Install section is populated;
   source-file text alone does not prove the database has those steps. Never
   claim one-click support on an OS that only has a store/client handoff.
+- **One-click is the default goal for every game that can support it.** Before
+  settling for `external`, work through this ladder and record what you found:
+  1. Official direct zip/7z/RAR/installer on the developer's own site →
+     `direct-zip` / `direct-7z` / `direct-installer` (e.g. Hydorah's
+     `locomalito.com/files/hydorah.zip`).
+  2. A **ModDB file page** is valid as the recipe `url`: the launcher resolves
+     the signed CDN link and verifies the page's MD5 at install time
+     (`launcher/services/moddbDownload.js`). RAR is extracted through the 7-Zip
+     path, so use `direct-7z` for `.rar` (Wings of Dawn) and `direct-zip` for
+     `.zip` (Wreckage).
+  3. GitHub release asset → `github-zip` / `github-installer` / `github-jar`.
+  4. itch.io page with a free build → `itch-zip`.
+  5. Free-to-play Steam title → `steamcmd` only if an anonymous SteamCMD
+     download is proven to work (PlanetSide 2 is the reference). If it has not
+     been tested, use `external` with `steam://run/<appid>` and say in the
+     recipe `note` that it is a steamcmd candidate. Do not claim anonymous
+     install without testing it.
+  6. Paid game → **check GOG first**, then Steam, then the developer's store.
+     A DRM-free GOG purchase is preferred because it gives an offline installer
+     that never needs a client running. Record every store as an `access.offers`
+     entry (GOG first when it exists) and use `external` pointing at the GOG
+     page, with an install step that tells the player to press **Locate** after
+     installing. If a game is not on GOG, say so in the install steps and FAQ
+     ("we found no GOG listing").
+  7. Legally unredistributable clients (Capcom's Dragon's Dogma Online client,
+     the Nintendo-takedown AM2R v1.1 archive) get no one-click recipe and no
+     instructions for obtaining the files. See "Legal red flags" below.
+- **Verify the archive before wiring the recipe.** Do not guess the executable
+  or whether the archive has a single root folder. Fetch the file listing with
+  HTTP range requests (a small Python script using `zipfile` for zips, or the
+  `rarfile` package for RARs, with a file-like object that issues
+  `Range:` requests) and record the real exe path, root folder name,
+  uncompressed size and any readme. Then set `knownExePaths`, `exeHint` and
+  `unwrapSingleRoot` from what you saw, not from what is typical.
 - **Accurate install size**: Determine and record the real download / installed disk footprint in `sizeMB`. Do not leave placeholder or guessed sizes. Inspect the upstream package archives and extracted folder sizes so the launcher and game cards accurately reflect disk requirements to players.
 - **Multi-version & architecture wiring**: Ensure games are wired for all versions, architectures, and platforms they support (Windows 64-bit/32-bit, Linux, macOS). If distinct architectures or engine variations exist (such as legacy 32-bit Windows builds or community forks), create dedicated Editions (`src/lib/data/editions.ts`) or per-platform recipe URLs (`urlLinux`, `urlMac`, `urlMacX64`) so players on any supported configuration have a one-click install.
 - **Hardware requirements are mandatory for every supported platform.** Copy
@@ -251,3 +285,123 @@ Every field in the Admin Game Form (`/admin/games/[slug]/edit`), the TypeScript 
 | **Install** | Launcher Install | `launcherInstall` | `LauncherInstall` object | Direct one-click recipe for the launcher (`direct-zip`, `github-zip`, `direct-installer`, etc.). |
 | **System & servers** | System Requirements | `systemRequirements` | `{ min: string, recommended: string }` | Break out minimum and recommended CPU, RAM, GPU/graphics API, OS, and free disk space for every supported platform; state when a tier is unpublished. |
 | **System & servers** | Hardware Requirements | `hardwareRequirements` | Structured minimum/recommended CPU, GPU, RAM, VRAM, storage, graphics API and OS, with source URLs | Enter only developer-supported figures. Preserve platform-specific differences in the text breakdown; a Windows-only API or OS must not cause the compatibility checker to reject a supported Mac/Linux build. |
+
+## 8. Working method — how a batch of games is actually entered
+
+This is the procedure that produced the October 2026 batch (Double Dragon
+Trilogy, KOF '97 Global Match, Sport Animals, Omega Strikers, Regular Human
+Basketball, City of Heroes: Homecoming, PlanetSide 2, Hypersomnia, Wings of
+Dawn, Wreckage, Hydorah, Boll Deluxe, Project Celeste, Dragon's Dogma Online).
+Follow it so every game ends up with the same completeness.
+
+### Reading and writing the catalog through the admin session
+
+- Work in a browser that is **signed in as an admin** (`/api/auth/session`
+  must return a user; unauthenticated calls return `403 Admin only`). The
+  agent never types credentials; ask the user to sign in.
+- **Read** a game from the database-backed edit page: fetch
+  `/admin/games/<slug>/edit`, join the `self.__next_f.push` chunks, take the
+  `"initial":{...}` object and resolve `"$NN"` references (long strings are
+  sent as separate `NN:T<len>,` rows). `"$undefined"` means unset.
+- **Create** with `POST /api/admin/games` (full payload). A `409 Slug already
+  exists` means a placeholder row is there already — read it, then `PATCH`.
+- **Update** with `PATCH /api/admin/games/<slug>` using the *entire* payload
+  (read, merge, strip `"$undefined"` strings and server-only fields such as
+  `createdAt`, `updatedAt`, `adminUpdatedAt`, `publishedAt`, `externalIds`),
+  or the save fails validation.
+- **Media**: `POST /api/admin/games/media` with `{steamAppId, slug}` or
+  `{url, slug}` is the "Refresh media" button. For Steam titles it returns a
+  header cover, screenshots and HLS trailers (HLS plays on the site). For
+  everything else prefer, in order: the developer's own gallery, the store
+  page, then Wikipedia box art. Never use forum avatar thumbnails or
+  `thumb_` / `crop_` variants as screenshots.
+- **Controls**: `PATCH /api/admin/games/<slug>/controls` with `{controls}`.
+  Bindings need a `sourceUrl` (a readme shipped in the download is a good
+  source) or must be marked verified; otherwise write notes only.
+- **Status**: `testing` and `ready` are admin-visible; only `published` is
+  public. When the user asks for a game to be "ready", set `status: "ready"`
+  and do not publish. Do not tick "tested by PlayBound" unless it was played.
+- Read every game back afterwards and check: status, long-description word
+  count (400+), why-we-picked-it, best-for/not-for (2+ each), FAQ (4+), install
+  steps, verdict (40+ chars) and date, structured hardware, size, cover,
+  screenshots, video, launcher recipe kind and developer.
+
+### Research method
+
+- Use the browser, not a fetch tool, for sites that return 403 to bots
+  (ModDB, Hard Light, GOG pages sometimes). Never try to solve a Cloudflare
+  challenge or CAPTCHA; if a site demands one, use another source (the
+  developer's own site, a store page, a readme inside the download).
+- Take facts from the developer's page, the store page and files shipped in the
+  download (readme, license). Cross-check with a second source. Facts and
+  numbers may be reused; sentences may not.
+- **Prices**: record the regular price, not a temporary sale price, and set
+  `lastCheckedAt`. Mention the sale in the FAQ only if it is long-running.
+- **Sizes**: `sizeMB` is the real installed footprint when you can measure it
+  (archive listing, store page). When you only know the installer/download
+  size, use that, say which it is in the FAQ, and give the store's published
+  free-space figure separately.
+- **Developer**: credit who actually made the game (the ModDB creator, the
+  studio on the store page), not a placeholder or the publisher unless they are
+  the same. Use a slug and the display name; the admin API creates the
+  developer if it does not exist.
+- **Placeholders**: a row whose website is `example.com`, whose repo is
+  `example/...` or whose developer does not exist (the "Cosmic Platformer"
+  test row) is not a game to fill in. Flag it for deletion instead of
+  inventing data.
+- Platform and version support comes from the developer, not the store tag.
+  macOS/Linux builds that exist only as community ports are described in the
+  install steps as unofficial and are **not** added to `platforms`.
+
+### Editorial reminders learned in practice
+
+- A long description is **400–600 words** even though the validator only
+  enforces 150. State the honest catches: language, age, abandoned status,
+  quiet servers, content warnings, which tiers the developer did not publish.
+- If the developer publishes no recommended tier, say "not published" in text
+  and leave the structured field unset. Never copy Windows numbers to other
+  platforms.
+- Do not claim controller support the developer does not state. The store tag
+  is not proof; a readme, config or store listing is.
+- Multiplayer answers must match reality: local-only, store-matchmaking, or a
+  community server. Only claim PlayBound Connect/dedicated hosting for games
+  registered in `HOSTABLE_GAMES` / `MULTIPLAYER_ADAPTERS`. For local-only
+  games, the screen-sharing couch party is the route for faraway friends.
+
+### Legal red flags — stop and ask before marking ready
+
+- **Nintendo/Sega/Capcom fan games under an active takedown** (AM2R: Nintendo
+  DMCA'd the original build; the community launcher needs an archive that is
+  not legally redistributable). Do not write instructions for obtaining the
+  files and do not host them. Leave the entry on `watchlist` and ask.
+- **Clients that are not redistributable** (Dragon's Dogma Online): list only
+  what the community publishes, say plainly PlayBound distributes nothing, and
+  do not offer a one-click recipe.
+- Fan games without a rights-holder arrangement (Boll Deluxe) are listed with
+  an explicit unlicensed-use caveat in the long description and FAQ.
+- Any `watchlist` game with a broken official link (the AM2R community site
+  returns "Site not found") needs its `website` replaced before it can be ready.
+
+### Private-server editions (reference: SWG Infinity, LegacyDDON, Dogma Rising)
+
+When a game survives only on fan servers, each server is an **Edition**
+(`type: "private"`, `isStandalone: true`), created with `POST /api/editions`
+and updated with `PATCH /api/editions/<id>` (full payload). The base game keeps
+an `external` recipe and a long description that points at the editions; the
+site synthesizes the "Official" edition itself, so never add one.
+
+- If the server publishes its own launcher that downloads the client
+  (LegacyDDON's `DDO_Launcher.exe`), wire it as `installMethod:
+  "playbound_installer"` with `kind: "direct-exe"` or `"direct-installer"`.
+  PlayBound fetches only the server's launcher; the launcher fetches the
+  client. Say in the install steps that the player registers and downloads the
+  client inside it.
+- If the client is only available as a Google Drive/Mega archive
+  (Dogma Rising), use `installMethod: "manual"` with concrete steps and tell the
+  player to **Locate** the result. Do not link or script the archive, and say
+  plainly in the FAQ why it is not one-click.
+- Respect folder warnings from the server (LegacyDDON wants a non-user
+  folder on `C:`); PlayBound's default games folder is under the user profile,
+  so put the workaround in the steps and FAQ.
+- Mark `verificationLevel: "untested"` until the install has been run end to
+  end.

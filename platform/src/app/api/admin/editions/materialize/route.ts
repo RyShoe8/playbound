@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
@@ -92,6 +93,7 @@ export async function POST(req: Request) {
       created.push(wouldDuplicateDefault ? `${key} (not default — game already has one)` : key);
     }
 
+    revalidateTag("editions", { expire: 0 });
     return NextResponse.json({ created, skipped, dryRun });
   } catch (err) {
     console.error("POST /api/admin/editions/materialize failed:", err);

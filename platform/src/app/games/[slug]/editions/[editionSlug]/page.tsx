@@ -264,7 +264,9 @@ export default async function EditionPage({
           // Who made this edition, so search engines can attribute the software.
           edition.developerName || edition.license || edition.releaseYear
             ? {
-                "@type": "SoftwareApplication",
+                // VideoGame, not SoftwareApplication: Google validates the latter as a
+                // rich result and requires a rating or review an edition does not have.
+                "@type": "VideoGame",
                 "@id": `${absoluteUrl(pageBase)}#software`,
                 name: edition.name,
                 url: absoluteUrl(pageBase),

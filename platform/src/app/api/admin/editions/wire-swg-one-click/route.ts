@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
@@ -73,6 +74,7 @@ export async function POST(req: Request) {
         },
       },
     })));
+    revalidateTag("editions", { expire: 0 });
     return NextResponse.json({ updated: review.map((item) => item.edition) });
   } catch (err) {
     console.error("POST /api/admin/editions/wire-swg-one-click failed:", err);

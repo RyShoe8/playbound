@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { zodFieldError } from "@/lib/zodFieldError";
@@ -85,6 +86,7 @@ export async function POST(req: Request) {
       }
     }
 
+    revalidateTag("editions", { expire: 0 });
     return NextResponse.json(
       { success: true, id: String(doc._id), slug: doc.slug },
       { status: 201 }
