@@ -10,7 +10,7 @@ import { listOpenPublicParties } from "@/lib/playTogether/party";
 import { NewEventsSchedule } from "@/components/new/NewEventsSchedule";
 import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import { OpenPartiesSection } from "@/components/events/OpenPartiesSection";
-import { JsonLd, graph, breadcrumbSchema, eventSchema } from "@/components/JsonLd";
+import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -52,8 +52,10 @@ export default async function EventsPage() {
   return <div className="new-page new-events-page">
       <JsonLd data={graph(
         { "@type": "CollectionPage", name: "PlayBound Events & Game Nights", url: absoluteUrl("/events"), description: "Upcoming PlayBound Game Nights, tournaments, and community events." },
-        breadcrumbSchema([{ name: "Events", path: "/events" }]),
-        events.map(event => eventSchema({ id: event.id, title: event.title, description: event.description, startsAt: event.startsAt, endsAt: event.endsAt, coverImage: event.coverImage, gameSlug: event.gameSlug, gameTitle: event.gameSlug ? titles.get(event.gameSlug) : null }))
+        // No Event entities here: Google asks for one event per page with its own
+        // markup, and rejects Events without a physical location. Each game night's
+        // own page carries its Event; this list is a CollectionPage.
+        breadcrumbSchema([{ name: "Events", path: "/events" }])
       )} />
       <header className="new-page-heading"><div><p className="new-eyebrow">Your next game night</p><h1>Events & game nights</h1><p>A week of reasons to get the group together.</p></div>
         {<Link href="/events/create" className="new-button primary"><Plus className="size-4" /> Create event</Link>}

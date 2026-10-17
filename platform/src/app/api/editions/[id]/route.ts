@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { zodFieldError } from "@/lib/zodFieldError";
 import { z } from "zod";
@@ -128,6 +129,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       void requestDiscordProvision(existing.gameSlug);
     }
 
+    revalidateTag("editions", { expire: 0 });
     return NextResponse.json({ success: true, id: String(existing._id), slug: existing.slug });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -193,6 +195,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         { upsert: true, setDefaultsOnInsert: true }
       );
 
+      revalidateTag("editions", { expire: 0 });
       return NextResponse.json({ success: true });
     }
 
@@ -209,6 +212,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       }
     }
 
+    revalidateTag("editions", { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Delete edition error:", err);

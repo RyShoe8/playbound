@@ -13,7 +13,7 @@ import { getMultiplayerActivitySnapshot } from "@/lib/multiplayer/activity";
 import { listOpenPublicParties } from "@/lib/playTogether/party";
 import { listPublicEvents } from "@/lib/events/service";
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
-import { JsonLd, graph, itemListSchema, eventSchema, breadcrumbSchema } from "@/components/JsonLd";
+import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
 
 export const metadata: Metadata = pageMetadata({
   title: "Multiplayer — Open Parties, Live Servers & Looking to Play · PlayBound",
@@ -63,18 +63,9 @@ export default async function MultiplayerPage() {
             "/multiplayer",
             multiplayerGames
           ),
-          breadcrumbSchema([{ name: "Multiplayer", path: "/multiplayer" }]),
-          initialEvents.map((e) =>
-            eventSchema({
-              id: e.id,
-              title: e.title,
-              description: e.description,
-              startsAt: e.startsAt,
-              endsAt: e.endsAt,
-              coverImage: e.coverImage,
-              gameSlug: e.gameSlug,
-            })
-          )
+          // Events are marked up on their own pages, not here: Google wants one
+          // event per page, and a hub listing several is not eligible.
+          breadcrumbSchema([{ name: "Multiplayer", path: "/multiplayer" }])
         )}
       />
       <Suspense

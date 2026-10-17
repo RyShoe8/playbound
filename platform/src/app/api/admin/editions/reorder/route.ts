@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
@@ -85,6 +86,7 @@ export async function POST(req: Request) {
       }))
     );
 
+    revalidateTag("editions", { expire: 0 });
     return NextResponse.json({ success: true, reordered: validRequests.length });
   } catch (err) {
     if (err instanceof z.ZodError) {

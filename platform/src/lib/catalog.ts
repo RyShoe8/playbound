@@ -860,9 +860,42 @@ export async function gamesFor(
     return slugs.map((s) => map.get(s)).filter((g): g is Game => Boolean(g));
   }
 
+  /*
+   * A handful of games should not cost the whole catalog.
+   *
+   * This used to read listGames() — every visible game, with its long
+   * description, FAQ and media — to pick out the five to ten an alternatives or
+   * comparison page names. When that cache was cold (every admin write drops it
+   * immediately, and a crawler arriving afterwards regenerates dozens of pages
+   * at once) each page paid for the full read, and the 27 /alternatives pages
+   * measured 19–30 seconds. Asking Mongo for just these slugs, behind its own
+   * cache entry, makes a cold page a single small query.
+   *
+   * Long lists still take the full path, where one shared read is cheaper than
+   * a key per slug set.
+   */
+  const unique = [...new Set(slugs)].sort();
+  if (unique.length <= 60) {
+    const found = await unstable_cache(
+      () => readVisibleGamesBySlugs(unique),
+      ["catalog-games-by-slugs", unique.join(",")],
+      { revalidate: 300, tags: ["catalog"] }
+    )();
+    const bySlug = new Map(found.map((g) => [g.slug, g]));
+    return slugs.map((s) => bySlug.get(s)).filter((g): g is Game => Boolean(g));
+  }
+
   const all = await listGames();
   const map = new Map(all.map((g) => [g.slug, g]));
   return slugs.map((s) => map.get(s)).filter((g): g is Game => Boolean(g));
+}
+
+async function readVisibleGamesBySlugs(slugs: string[]): Promise<Game[]> {
+  return fromMongo({
+    ...mongoVisibleFilter({ includeTesting: false }),
+    playboundSupported: { $ne: false },
+    slug: { $in: slugs },
+  });
 }
 
 /** Newest catalog game by Mongo `createdAt` (homepage spotlight). */

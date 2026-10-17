@@ -150,7 +150,12 @@ export default async function ModPage({
       <JsonLd
         data={graph(
           {
-            "@type": "SoftwareApplication",
+            /*
+             * A mod is a game modification, so it is typed VideoGame rather than
+             * SoftwareApplication: Google validates a SoftwareApplication as a
+             * rich result and demands a rating or review that mods do not have.
+             */
+            "@type": "VideoGame",
             name: mod.title,
             url: absoluteUrl(`/mods/${mod.slug}`),
             description: mod.longDescription || mod.description,
@@ -166,7 +171,7 @@ export default async function ModPage({
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
             ...(baseGame
               ? {
-                  requirements: `Requires ${baseGame.title}`,
+                  softwareRequirements: `Requires ${baseGame.title}`,
                   isPartOf: {
                     "@type": "VideoGame",
                     name: baseGame.title,
@@ -180,7 +185,7 @@ export default async function ModPage({
                 "@type": "HowTo",
                 name: `How to install ${mod.title} for ${base}`,
                 description: `Step-by-step instructions for installing ${mod.title}, a free add-on for ${base}.`,
-                estimatedCost: { "@type": "MonetaryAmount", currency: "USD", value: "0" },
+                estimatedCost: { "@type": "MonetaryAmount", currency: "USD", value: 0 },
                 step: mod.installSteps.map((s, i) => ({
                   "@type": "HowToStep",
                   position: i + 1,

@@ -1,5 +1,6 @@
 import type { Game, Developer, Collection } from "@/lib/data/types";
 import { bestPurchase } from "@/lib/access/offers";
+import { vimeoId, youtubeId } from "@/lib/mediaEmbed";
 import {
   SITE_URL,
   SITE_NAME,
@@ -32,6 +33,48 @@ export function JsonLd({ data }: { data: Json | Json[] }) {
 function absImage(url?: string): string | undefined {
   if (!url) return undefined;
   return url.startsWith("http") ? url : absoluteUrl(url);
+}
+
+/**
+ * schema.org's GamePlayMode is an enumeration, so its members are written as
+ * their schema.org URLs. Bare "SinglePlayer" text is not a member, and a
+ * validator reports every game page for it.
+ */
+function playModes(game: Game): string[] {
+  const features = game.features ?? [];
+  const modes = ["https://schema.org/SinglePlayer"];
+  if (features.some((f) => /multiplayer/i.test(f))) modes.push("https://schema.org/MultiPlayer");
+  if (features.some((f) => /co-?op/i.test(f))) modes.push("https://schema.org/CoOp");
+  return modes;
+}
+
+/**
+ * `video` takes VideoObject (or Clip) values, not URL strings. We store bare
+ * URLs, so each is described from what the URL itself proves — the embed and
+ * thumbnail a YouTube id implies, or the file URL for a direct video — with the
+ * game's cover as the thumbnail otherwise. No upload date is invented: the
+ * catalog does not know it, and the property is optional.
+ */
+function videoObjects(game: Game): Json[] {
+  const cover = absImage(game.coverImage);
+  const urls = (game.videos ?? []).filter(Boolean).slice(0, 10);
+  return urls.map((url, index) => {
+    const label = urls.length > 1 ? `${game.title} video ${index + 1}` : `${game.title} video`;
+    const base = { "@type": "VideoObject", name: label, description: `${label}: trailer or gameplay footage.` };
+    const yt = youtubeId(url);
+    if (yt) {
+      return {
+        ...base,
+        thumbnailUrl: `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`,
+        embedUrl: `https://www.youtube.com/embed/${yt}`,
+      };
+    }
+    const vm = vimeoId(url);
+    if (vm) {
+      return { ...base, ...(cover ? { thumbnailUrl: cover } : {}), embedUrl: `https://player.vimeo.com/video/${vm}` };
+    }
+    return { ...base, ...(cover ? { thumbnailUrl: cover } : {}), contentUrl: url };
+  });
 }
 
 /** Stable @id for a game, so schema graphs can reference it. */
@@ -198,7 +241,7 @@ export function videoGameSchema(
     ...(game.screenshots?.length
       ? { screenshot: game.screenshots.map(absImage).filter(Boolean) }
       : {}),
-    ...(game.videos?.length ? { video: game.videos } : {}),
+    ...(game.videos?.length ? { video: videoObjects(game) } : {}),
     author: developer
       ? {
           "@type": "Organization",
@@ -207,9 +250,7 @@ export function videoGameSchema(
         }
       : undefined,
     publisher: { "@id": ORGANIZATION_ID },
-    playMode: game.features.some((f) => /multiplayer/i.test(f))
-      ? ["SinglePlayer", "MultiPlayer"]
-      : ["SinglePlayer"],
+    playMode: playModes(game),
     offers: {
       "@type": "Offer",
       price: (priceCents / 100).toFixed(2),
@@ -410,7 +451,7 @@ export function howToSchema(
     name: `How to install ${game.title} for free`,
     description: `Step-by-step instructions for installing ${game.title}, a free ${game.genres[0]} game, on ${game.platforms.join(", ")}.`,
     totalTime: "PT10M",
-    estimatedCost: { "@type": "MonetaryAmount", currency: "USD", value: "0" },
+    estimatedCost: { "@type": "MonetaryAmount", currency: "USD", value: 0 },
     supply: [],
     tool: [],
     step: steps.map((s, i) => ({

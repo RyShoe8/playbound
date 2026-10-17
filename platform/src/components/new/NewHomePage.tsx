@@ -29,10 +29,23 @@ export default async function NewHomePage() {
   const editionsByGame = await listEditionsForGames(games);
   const newestEditions = games.flatMap(game => (editionsByGame.get(game.slug) || [])
     .filter(edition => edition.createdAt && !edition.id.startsWith("seed:"))
-    .map(edition => ({ game: toHomeCardGame(game), edition })))
-    .sort((a, b) => Date.parse(b.edition.createdAt!) - Date.parse(a.edition.createdAt!)).slice(0, 24);
+    .map(edition => ({ game, edition })))
+    .sort((a, b) => Date.parse(b.edition.createdAt!) - Date.parse(a.edition.createdAt!)).slice(0, 24)
+    .map(({ game, edition }) => ({
+      game: toHomeCardGame(game),
+      edition: {
+        id: edition.id, slug: edition.slug, name: edition.name, shortDescription: edition.shortDescription,
+        platforms: edition.platforms, branding: { heroImage: edition.branding.heroImage, logo: edition.branding.logo },
+      },
+    }));
   // Keep publication order: latest released on PlayBound, not original release year.
   const released = games.filter(game => game.releaseYear <= new Date().getFullYear());
+  /*
+   * The client filters these by Discovery and Compatibility and shows four, so
+   * it needs a deep-enough slice of the newest games, not the whole catalog.
+   * Sending every released game twice made the home page's payload ~1.1MB.
+   */
+  const newestForClient = released.slice(0, 80).map(toHomeCardGame);
   const nextNight = events.find(event => event.eventType === "game_night");
   const modCandidates = [...mods].sort((a, b) => (Date.parse(b.createdAt || "") || 0) - (Date.parse(a.createdAt || "") || 0)).slice(0, 24).map(mod => {
     const base = bySlug.get(mod.baseGameSlug);
@@ -43,11 +56,11 @@ export default async function NewHomePage() {
     <NewHomeHeading />
     <div className="new-home-layout">
       <div className="new-main-stack">
-        <NewHomeFeature games={released.map(toHomeCardGame)} />
+        <NewHomeFeature games={newestForClient} />
         <NewHomeGames games={popular.map(toHomeCardGame)} title="Most Popular this week" counts={counts} />
         <section className="new-home-event"><div className="new-section-heading"><h2>Next game night</h2><Link href="/events">Full schedule →</Link></div>{nextNight ? <EventCard event={nextNight} gameTitle={nextNight.gameSlug ? bySlug.get(nextNight.gameSlug)?.title : null} /> : <div className="new-panel new-pad"><h3>Make the next game night happen</h3><p>Gather your friends around a game you love.</p><Link className="new-button primary" href="/events/create">Create event</Link></div>}</section>
         <Suspense fallback={<FreeGamesSectionFallback />}><FreeGamesSection diversifyStores /></Suspense>
-        <NewHomeGames games={released.map(toHomeCardGame)} title="Newest Games" counts={counts} />
+        <NewHomeGames games={newestForClient} title="Newest Games" counts={counts} />
         <NewHomeEditions candidates={newestEditions} />
         <FeaturedModsRow candidates={modCandidates} limit={8} title="Newest Mods" grid />
       </div>

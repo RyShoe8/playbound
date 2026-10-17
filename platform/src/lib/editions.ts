@@ -548,6 +548,43 @@ async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]
   }
 }
 
+/**
+ * Every stored edition, grouped by game, read once and shared.
+ *
+ * Game pages used to run a Mongo query for their own editions on every
+ * request. That kept each of them off the cache and, on a cold serverless
+ * instance, put a database connection on the path of every page view — about
+ * 1.5 seconds of tail latency on a page whose shell is ready in 250ms. One
+ * snapshot serves every game page, and a crawler walking the catalog warms it
+ * for all of them instead of paying a query per slug.
+ *
+ * A short window plus the "editions" tag: the admin edition routes drop it
+ * immediately, and writers that do not (the version cron, the launcher-package
+ * route) show up within the window.
+ */
+type StoredEditionState = { editions: Edition[]; occupiedSeedSlugs: string[] };
+
+async function readStoredEditionSnapshot(): Promise<Record<string, StoredEditionState>> {
+  await dbConnect();
+  const docs = await EditionModel.find({}).sort({ sortOrder: 1, name: 1 }).lean();
+  const out: Record<string, StoredEditionState> = {};
+  for (const doc of docs) {
+    const lean = doc as LeanEdition;
+    const slug = str(lean.gameSlug);
+    const bucket = (out[slug] ||= { editions: [], occupiedSeedSlugs: [] });
+    bucket.occupiedSeedSlugs.push(str(lean.slug));
+    if (lean.suppressesSeed !== true) bucket.editions.push(toEdition(lean));
+  }
+  return out;
+}
+
+function loadStoredEditionSnapshot(): Promise<Record<string, StoredEditionState>> {
+  return unstable_cache(readStoredEditionSnapshot, ["stored-editions-snapshot"], {
+    revalidate: 120,
+    tags: ["editions"],
+  })();
+}
+
 /** Stored editions plus seed slugs deliberately deleted through admin. */
 async function fetchEditionStateForGame(
   gameSlug: string
@@ -557,13 +594,11 @@ async function fetchEditionStateForGame(
     return { editions: [], occupiedSeedSlugs: new Set() };
   }
   try {
-    await dbConnect();
-    const docs = await EditionModel.find({ gameSlug }).sort({ sortOrder: 1, name: 1 }).lean();
-    const occupiedSeedSlugs = new Set(docs.map((d) => str((d as LeanEdition).slug)));
-    const editions = docs
-      .filter((d) => (d as LeanEdition).suppressesSeed !== true)
-      .map((d) => toEdition(d as LeanEdition));
-    return { editions, occupiedSeedSlugs };
+    const bucket = (await loadStoredEditionSnapshot())[gameSlug];
+    return {
+      editions: bucket?.editions ?? [],
+      occupiedSeedSlugs: new Set(bucket?.occupiedSeedSlugs ?? []),
+    };
   } catch (err) {
     if (process.env.NEXT_PHASE === "phase-production-build") {
       return { editions: [], occupiedSeedSlugs: new Set() };
@@ -693,19 +728,14 @@ async function fetchEditionStateForGames(
     return bySlug;
   }
   try {
-    await dbConnect();
-    const docs = await EditionModel.find({ gameSlug: { $in: gameSlugs } })
-      .sort({ sortOrder: 1, name: 1 })
-      .lean();
-    for (const doc of docs) {
-      const lean = doc as LeanEdition;
-      const slug = str(lean.gameSlug);
-      const bucket = bySlug.get(slug) || { editions: [], occupiedSeedSlugs: new Set() };
-      bucket.occupiedSeedSlugs.add(str(lean.slug));
-      if (lean.suppressesSeed !== true) {
-        bucket.editions.push(toEdition(lean));
-      }
-      bySlug.set(slug, bucket);
+    const snapshot = await loadStoredEditionSnapshot();
+    for (const slug of gameSlugs) {
+      const stored = snapshot[slug];
+      if (!stored) continue;
+      bySlug.set(slug, {
+        editions: [...stored.editions],
+        occupiedSeedSlugs: new Set(stored.occupiedSeedSlugs),
+      });
     }
   } catch (err) {
     if (process.env.NEXT_PHASE !== "phase-production-build") {

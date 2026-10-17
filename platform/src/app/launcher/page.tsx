@@ -22,8 +22,7 @@ import { LauncherHeroDownload } from "@/components/LauncherHeroDownload";
 import { GameArt } from "@/components/GameArt";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
-import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
-import { absoluteUrl } from "@/lib/site";
+import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 
 /*
  * ISR, matched to the live-activity window — see developers/page.tsx for the
@@ -147,17 +146,12 @@ export default async function LauncherPage() {
     <div className="space-y-14 px-4 py-6 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
-          {
-            "@type": "SoftwareApplication",
-            name: "PlayBound Launcher",
-            applicationCategory: "GameApplication",
-            operatingSystem: "Windows, macOS, Linux",
-            url: absoluteUrl("/launcher"),
-            description:
-              "Free desktop launcher for free PC games. One-click installs from official releases, cloud saves, mod management, and parties.",
-            offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            publisher: { "@id": ORGANIZATION_ID },
-          },
+          /*
+           * No SoftwareApplication here. Google requires an aggregateRating or a
+           * review on one, and the launcher has neither — a rating we made up
+           * would be markup that contradicts the page. Add the node back when
+           * real user ratings exist.
+           */
           breadcrumbSchema([
             { name: "Home", path: "/" },
             { name: "Launcher", path: "/launcher" },

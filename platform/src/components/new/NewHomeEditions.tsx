@@ -8,7 +8,17 @@ import { useFilteredGames } from "@/components/compatibility/useFilteredGames";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isEditionCompatible } from "@/lib/compatibility/compatibility";
 
-export function NewHomeEditions({ candidates }: { candidates: { game: HomeCardGame; edition: Edition }[] }) {
+/**
+ * The handful of edition fields the card reads. The page used to send whole
+ * Edition documents — long description, FAQ, steps, credits — for 24
+ * candidates, most of it never rendered, in the page payload of the busiest
+ * route on the site.
+ */
+export type HomeCardEdition = Pick<Edition, "id" | "slug" | "name" | "shortDescription" | "platforms"> & {
+  branding: Pick<Edition["branding"], "heroImage" | "logo">;
+};
+
+export function NewHomeEditions({ candidates }: { candidates: { game: HomeCardGame; edition: HomeCardEdition }[] }) {
   const accessible = new Set(useFilteredGames(candidates.map(c => c.game)).map(g => g.slug));
   const { mode, device } = useCompatibilityFilter();
   const visible = candidates.filter(({ game, edition }) => accessible.has(game.slug) &&
