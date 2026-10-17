@@ -19,6 +19,8 @@ export const WORLD_BACKUP_GAMES = [
   "barotrauma", "dont-starve-together", "necesse",
   "0-ad", "assaultcube", "flightgear", "freedoom", "hurry-curry", "hypersomnia",
   "medal-of-honor-allied-assault", "supertuxkart", "wolfenstein-enemy-territory", "xonotic", "ysoccer",
+  "earth-2140-trilogy", "openhv", "openra", "space-station-14", "trackmania",
+  "triplea", "unturned", "unvanquished", "veloren",
 ] as const;
 
 export function hasWorldBackups(recipeSlug: string): boolean {
