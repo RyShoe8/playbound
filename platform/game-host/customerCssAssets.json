@@ -1,0 +1,5544 @@
+{
+  "files": [
+    {
+      "path": "bin/basehaptics.txt",
+      "bytes": 1740,
+      "sha256": "115c7afa7b0890f39cbc0891ac3e79dcb7851d65176ee676a8f12483b5702bff"
+    },
+    {
+      "path": "bin/crashhandler.so",
+      "bytes": 1126484,
+      "sha256": "52b0b2e3d8732642f4e43d50deb57cb28d5ba7b3fb59d360fe916bb1132aae68"
+    },
+    {
+      "path": "bin/datacache_srv.so",
+      "bytes": 657616,
+      "sha256": "21bc06b3d8901509dd67e62e17c12f5a8333d5055d46725dcb315df278699c20"
+    },
+    {
+      "path": "bin/dedicated_srv.so",
+      "bytes": 3130360,
+      "sha256": "853b4078a316fc01542d85372bb20cdda4736a98ae5eaf738d65e3d2b68ee1e4"
+    },
+    {
+      "path": "bin/engine_srv.so",
+      "bytes": 3451612,
+      "sha256": "8f550552fb90d8f79304fade9ce6a0c4debff4b7c1b18c8005562ff7cf62a0d0"
+    },
+    {
+      "path": "bin/filesystem_stdio.so",
+      "bytes": 2179448,
+      "sha256": "44b2a843e48856c10ee850146c2dd6f8e7dae6b7bb3913d5ab0daa5deee29e47"
+    },
+    {
+      "path": "bin/libprofiler.so.0",
+      "bytes": 272177,
+      "sha256": "31793a54ab82f80c42c06913d215360ef9a5b5686bc4f0e2966eefd1e8a5860a"
+    },
+    {
+      "path": "bin/libsteam_api.so",
+      "bytes": 375272,
+      "sha256": "02b56ade7b271a3b9998fb6acedd4248e52289ecac26d8f9458c1ef6b4f336a8"
+    },
+    {
+      "path": "bin/libtier0.so",
+      "bytes": 214592,
+      "sha256": "10ca8e3c8ac92bf5ff4f1368b25651efce4fc6c16906253bd9176566f0be7fc0"
+    },
+    {
+      "path": "bin/libtier0_srv.so",
+      "bytes": 243956,
+      "sha256": "a4c0901ff5f0ae881bddc998ec99b88edf138818551c8f21adc0601e0404e424"
+    },
+    {
+      "path": "bin/libvstdlib.so",
+      "bytes": 352056,
+      "sha256": "7f058e66be9f9cd599afbdc523a567ab3344561fa0a919feb40f8313bfa19440"
+    },
+    {
+      "path": "bin/libvstdlib_srv.so",
+      "bytes": 423204,
+      "sha256": "50cf0eacaaef041ad837145e988043c4bdeac0bb056dabf70abe4036b5d36d73"
+    },
+    {
+      "path": "bin/linux64/datacache_srv.so",
+      "bytes": 676072,
+      "sha256": "0946190b6762185be7d9585f66626c30c5b8eedd088b74556b1c58f1344f7b97"
+    },
+    {
+      "path": "bin/linux64/dedicated_srv.so",
+      "bytes": 3359112,
+      "sha256": "27ac8d13f029a664920208a97c6d83469ea682ba93a4683fd17eecc6b161473e"
+    },
+    {
+      "path": "bin/linux64/engine_srv.so",
+      "bytes": 3341776,
+      "sha256": "395d356f02b83398855980a7c531ef57ec688084835857a2010c6a5c350d3ccf"
+    },
+    {
+      "path": "bin/linux64/libtier0_srv.so",
+      "bytes": 245416,
+      "sha256": "cce4f91943ec2b108afcf9f261057642d1af7af95ce3029f20f05b7ffcc26940"
+    },
+    {
+      "path": "bin/linux64/libvstdlib_srv.so",
+      "bytes": 432864,
+      "sha256": "342d01c9171714df76824020911493a688c2ae8e476fa34b43ecaf400d41a01c"
+    },
+    {
+      "path": "bin/linux64/materialsystem_srv.so",
+      "bytes": 2041816,
+      "sha256": "91d2626ddada34cf11b07e1a72d571a0ce700bda9b122155ad238343e14f82ac"
+    },
+    {
+      "path": "bin/linux64/replay_srv.so",
+      "bytes": 850848,
+      "sha256": "e6112af61d0d487417b1099dd66081c95d83d06a83d5340c935daa5ffd42cbd5"
+    },
+    {
+      "path": "bin/linux64/scenefilecache_srv.so",
+      "bytes": 228352,
+      "sha256": "5e15e28a4634924f4e7ba556ae5362b5aae4aab351afde0acb8e9158b7e049f5"
+    },
+    {
+      "path": "bin/linux64/shaderapiempty_srv.so",
+      "bytes": 271984,
+      "sha256": "a219ea5d573df3ba3e625ddd3b9877e456981920054a797b939d42d73e1f7c5a"
+    },
+    {
+      "path": "bin/linux64/soundemittersystem_srv.so",
+      "bytes": 352296,
+      "sha256": "46971af32c0a3932ef2594094d18a9bcbf36b6635c2bd43f332616fe9348f19a"
+    },
+    {
+      "path": "bin/linux64/studiorender_srv.so",
+      "bytes": 1048032,
+      "sha256": "73732e3eb4c16299b068f2233553205580f1f037238fe8d268e5eba82445f6f1"
+    },
+    {
+      "path": "bin/linux64/vphysics_srv.so",
+      "bytes": 2236520,
+      "sha256": "de7427cf446417066e58aae39bfdb48d89f4a8605e2e230b6ea33097162cad16"
+    },
+    {
+      "path": "bin/linux64/vscript_srv.so",
+      "bytes": 826128,
+      "sha256": "95a8b80c07ad55df9b1b27c671eb3af2597e214c8966098bf573afa764e965e9"
+    },
+    {
+      "path": "bin/materialsystem_srv.so",
+      "bytes": 1985800,
+      "sha256": "3ddbd5affef58aa939b279a5b12edc38ac801a7fb3cfd2c5f7bfeea34f7ad1cd"
+    },
+    {
+      "path": "bin/replay_srv.so",
+      "bytes": 882780,
+      "sha256": "88067e78743dbfa6afdc120db84d8848c8a8d056a700138ec4fb2d7098e8896d"
+    },
+    {
+      "path": "bin/scenefilecache_srv.so",
+      "bytes": 222048,
+      "sha256": "5d874688fe62994d94f119980a33305420cc1b7af6e2dd84923aac1127ed746d"
+    },
+    {
+      "path": "bin/shaderapiempty_srv.so",
+      "bytes": 254000,
+      "sha256": "b8e5e04dfea6806ab4e90be3dbbda4c9da70db8ca187d96d0f18babb6f2bbb37"
+    },
+    {
+      "path": "bin/soundemittersystem_srv.so",
+      "bytes": 346748,
+      "sha256": "11bd47caf4a69e49db685f1ef186b4bf155341b0f4dfba8e8e69f05152448d38"
+    },
+    {
+      "path": "bin/steamclient.so",
+      "bytes": 46861876,
+      "sha256": "34e622790e57827ee3676f5c861acd000eea7cfac9c441d6202632de384bb72d"
+    },
+    {
+      "path": "bin/studiorender_srv.so",
+      "bytes": 1077168,
+      "sha256": "c231261da7879a0e69e930de32643fb6608f2b14368477713d3a92c10f3eff1d"
+    },
+    {
+      "path": "bin/vphysics_srv.so",
+      "bytes": 2216668,
+      "sha256": "83b4abafbe37f738962b38a6fb4a5a0f6c4fcf2829e6bfe71553153d5cc3efa4"
+    },
+    {
+      "path": "bin/vscript_srv.so",
+      "bytes": 812644,
+      "sha256": "96c24a4fac348535576aaccf3de30f970e741a4ba9127dca9586b89ea11f788f"
+    },
+    {
+      "path": "cstrike/bin/linux64/server_srv.so",
+      "bytes": 16281720,
+      "sha256": "55267933ad85e8d41f21ea1795bcaa8ac6a833656953f118423833f9fa87a794"
+    },
+    {
+      "path": "cstrike/bin/server_srv.so",
+      "bytes": 14044416,
+      "sha256": "f9b9732c6d5c8a5b9a3f0bc2ce5b347065704d9d7bcf21f190be04db134fad64"
+    },
+    {
+      "path": "cstrike/cstrike_pak.vpk.sound.cache",
+      "bytes": 5347736,
+      "sha256": "b65f29919a47589ab5d21c826c7be9e93c178eb0fb970c4ff959c1b8e6973beb"
+    },
+    {
+      "path": "cstrike/cstrike_pak_000.vpk",
+      "bytes": 108603432,
+      "sha256": "877e208c9dedc65cece5e90658760be221f492b46309d92c5b7fb59733a86c90"
+    },
+    {
+      "path": "cstrike/cstrike_pak_001.vpk",
+      "bytes": 107774950,
+      "sha256": "f4ec6fc06318795eff68b34177dbcbd0196593f8f8f29b0d87d7f05546b3f581"
+    },
+    {
+      "path": "cstrike/cstrike_pak_002.vpk",
+      "bytes": 107653189,
+      "sha256": "bf8422cb0a0fb5866211c3169447606cc6f9415e9f5dc6488dda4a23408887ef"
+    },
+    {
+      "path": "cstrike/cstrike_pak_003.vpk",
+      "bytes": 107750148,
+      "sha256": "33c5dd1233eac4aa127593eb17a7ca9b07ab2aa88eee17ca6d17f8805b5dd085"
+    },
+    {
+      "path": "cstrike/cstrike_pak_004.vpk",
+      "bytes": 107872174,
+      "sha256": "81fcb3c98ef3702821f0f3b9ab93e1168363b18d40bb70fb82ad806380c2ea35"
+    },
+    {
+      "path": "cstrike/cstrike_pak_005.vpk",
+      "bytes": 107683771,
+      "sha256": "b0e190cd832a4ac8049d4f240138414e55a193810fd4641aa8480f0bb4e2fcf2"
+    },
+    {
+      "path": "cstrike/cstrike_pak_006.vpk",
+      "bytes": 107700789,
+      "sha256": "ca0b0fe24f852af81554d5ca2a1c3772ef1b0b1060e50d2e97c6951a18771428"
+    },
+    {
+      "path": "cstrike/cstrike_pak_007.vpk",
+      "bytes": 107680403,
+      "sha256": "2e18aea45d53d92d8c2ffc3da2dfa2cf8cfb5a63babcee0d7311d0a1e048cc0b"
+    },
+    {
+      "path": "cstrike/cstrike_pak_008.vpk",
+      "bytes": 102656099,
+      "sha256": "95c7a8e801ba5b7f78288c5e46bbef4141eb7b2f9d3a38d2819193295b0f2f6e"
+    },
+    {
+      "path": "cstrike/cstrike_pak_009.vpk",
+      "bytes": 107436333,
+      "sha256": "04af149903f98a39992a2b22367067a935fabd6015622f3581f1e39cbfa1eb28"
+    },
+    {
+      "path": "cstrike/cstrike_pak_010.vpk",
+      "bytes": 107890697,
+      "sha256": "169e5becdc7dda03dd148347712a5135b08ab04e47fb083ff14f0ba054104c00"
+    },
+    {
+      "path": "cstrike/cstrike_pak_011.vpk",
+      "bytes": 107132514,
+      "sha256": "3d70406b10c31f53eb1c8913826cfbdf0db74879ff9883c667795c4f09538369"
+    },
+    {
+      "path": "cstrike/cstrike_pak_012.vpk",
+      "bytes": 107021338,
+      "sha256": "5d274652baa7b66a80f68c9d16a09417c8f7fe2dbeadf3998761a08a5c7c630c"
+    },
+    {
+      "path": "cstrike/cstrike_pak_dir.vpk",
+      "bytes": 668881,
+      "sha256": "6f446421be6157e4f67afeaed8fdde30da00d3ac62da75fb9b664d96c61b41ad"
+    },
+    {
+      "path": "cstrike/gameinfo.txt",
+      "bytes": 3545,
+      "sha256": "349b430be890cf27669e823fb13475d98b5cd1883dc46a815a62fbe13a7b66b7"
+    },
+    {
+      "path": "cstrike/maps/cs_assault.bsp",
+      "bytes": 10779556,
+      "sha256": "37c8fd281a52190f506e74a278f5d7271e0a5edc63044f6a17b08eebaf2cc589"
+    },
+    {
+      "path": "cstrike/maps/cs_compound.bsp",
+      "bytes": 7285256,
+      "sha256": "084b2e1c608a84cbe541f19edf53311ec026871d0c78563a131fb3b28ea8a7a7"
+    },
+    {
+      "path": "cstrike/maps/cs_havana.bsp",
+      "bytes": 9887492,
+      "sha256": "4e31a3e206e54f32a0ea6e04abd73432e619a363f741c78b879a95a589ace03d"
+    },
+    {
+      "path": "cstrike/maps/cs_italy.bsp",
+      "bytes": 8749960,
+      "sha256": "aecfc32eba61d7b1beb84c1b05fd9fbe09e28d4b30def0a7b7521a6faaec2f53"
+    },
+    {
+      "path": "cstrike/maps/cs_militia.bsp",
+      "bytes": 25173348,
+      "sha256": "f524ef3f9d1683c5d90a286980a57b9a4ad497fac95658724e34a3d4e2c81fb2"
+    },
+    {
+      "path": "cstrike/maps/cs_office.bsp",
+      "bytes": 9830412,
+      "sha256": "92cc7f97ab531f618e7d8dbabd0311c0e1a0ddc81e6e558b3b353c637b7bd043"
+    },
+    {
+      "path": "cstrike/maps/de_aztec.bsp",
+      "bytes": 15808992,
+      "sha256": "f000d496709af32681b060cc2b659652628c136bf646a2bcdb1d34ccbcf93c9f"
+    },
+    {
+      "path": "cstrike/maps/de_cbble.bsp",
+      "bytes": 10764020,
+      "sha256": "b7261ad2f4180bdabc1d2144677d4eb2f5dafb13dc67ff0e412ffb552a7fd1b9"
+    },
+    {
+      "path": "cstrike/maps/de_chateau.bsp",
+      "bytes": 13661888,
+      "sha256": "881a43a2e43f1b4a4ae53d5f2cf4596e7876aaea074f113bdda8bca883e21e92"
+    },
+    {
+      "path": "cstrike/maps/de_dust.bsp",
+      "bytes": 16283200,
+      "sha256": "7794b0470cd3c2e991848659409a937a3eae8c7e6c1f7bd026fc0e74fe0a9483"
+    },
+    {
+      "path": "cstrike/maps/de_dust2.bsp",
+      "bytes": 16487028,
+      "sha256": "3e24a3cf2954463f7b6d0ac640aee758aa9e0a6f8d0bb06dda6fa1cb9ed78359"
+    },
+    {
+      "path": "cstrike/maps/de_inferno.bsp",
+      "bytes": 16997964,
+      "sha256": "3b4bbd9b933711a03df450a41a85b2eed1113a5f8523cd708e47e2b8957537bd"
+    },
+    {
+      "path": "cstrike/maps/de_nuke.bsp",
+      "bytes": 14607228,
+      "sha256": "058695812f46592fe7c22d59efbce754725e9b0ff113c4fefcbd29f544d87ba3"
+    },
+    {
+      "path": "cstrike/maps/de_piranesi.bsp",
+      "bytes": 12369628,
+      "sha256": "15878677108f15ffd3b1d422dc007b319c96fa912d15d0b4565546f7c3c2c0f7"
+    },
+    {
+      "path": "cstrike/maps/de_port.bsp",
+      "bytes": 7748400,
+      "sha256": "e4c94cf1bd19489fc11c352298402e9ed32188804067c30159da248da28b6de8"
+    },
+    {
+      "path": "cstrike/maps/de_prodigy.bsp",
+      "bytes": 8255112,
+      "sha256": "e41f494b37a73119a420dbb84542bae23248ddfea97dc1ff1f483194825b29e7"
+    },
+    {
+      "path": "cstrike/maps/de_tides.bsp",
+      "bytes": 9779756,
+      "sha256": "98a581b1476b7e3617286e77ec68abe49ec1a86b38fe3e94aa98daa62464f2a8"
+    },
+    {
+      "path": "cstrike/maps/de_train.bsp",
+      "bytes": 11091880,
+      "sha256": "d6948d7beeaddb0fd0bdead8e43bfe7eb46119eb851ff237047c1f696a9573b0"
+    },
+    {
+      "path": "cstrike/maps/test_hardware.bsp",
+      "bytes": 10698944,
+      "sha256": "23481058731d6fc7b3ca818302a992d461da9b8a36e5bb0eebb453b5df7c1025"
+    },
+    {
+      "path": "cstrike/maps/test_speakers.bsp",
+      "bytes": 287772,
+      "sha256": "32fe1420f3b068f02bbad13b165046e8f1ec31e857e39a4cb3198f8c3c3e7968"
+    },
+    {
+      "path": "cstrike/modelsounds.cache",
+      "bytes": 6840,
+      "sha256": "d8bfc581af0a7798ecc6a335781c0c84b1878917d9062933d6d689f8371fe473"
+    },
+    {
+      "path": "cstrike/resource/cs.ttf",
+      "bytes": 115464,
+      "sha256": "b926723a1e14c891354f1a536b9be2c8b33510441b2ccb72d1a5a78a40125816"
+    },
+    {
+      "path": "cstrike/resource/csd.ttf",
+      "bytes": 44188,
+      "sha256": "891d3622cae4e89f2be7485d1f8d391e8f8e418ca55720e3a5643c39bd7b7a0f"
+    },
+    {
+      "path": "cstrike/resource/cslogo.ttf",
+      "bytes": 5756,
+      "sha256": "e9a0b42e8d6276c8ee7d13a135eed4889b77f47c31088df0cda6609222e03fe2"
+    },
+    {
+      "path": "cstrike/resource/cstrike.ttf",
+      "bytes": 129332,
+      "sha256": "1ff5eaa2ec551f84b2e9040397e4debcd9ffd60e486cf05095777e24ccaa2bbe"
+    },
+    {
+      "path": "cstrike/resource/cstrike_brazilian.txt",
+      "bytes": 501698,
+      "sha256": "74a9a97870fe41148f9ff9c70110f10d321cd86560c33662d702eb2276858b03"
+    },
+    {
+      "path": "cstrike/resource/cstrike_bulgarian.txt",
+      "bytes": 503706,
+      "sha256": "06d7408c23f36bb4dd447b9167d7296fe5e5b0f25d0dfe0a4246b4ea1ed5aaaa"
+    },
+    {
+      "path": "cstrike/resource/cstrike_czech.txt",
+      "bytes": 494678,
+      "sha256": "5f399f763df62f590a8116e5761120f3511017a276892833260222995d6c6c95"
+    },
+    {
+      "path": "cstrike/resource/cstrike_danish.txt",
+      "bytes": 496360,
+      "sha256": "b4a052447d591cf311653c7d353b8b6c22a61aea8fb564b8319fb3b8f1f027e0"
+    },
+    {
+      "path": "cstrike/resource/cstrike_dutch.txt",
+      "bytes": 505114,
+      "sha256": "f1a522b72a3aa538be9426c131cfd3c6adf2cac8dbb8146a19ece3de726199d9"
+    },
+    {
+      "path": "cstrike/resource/cstrike_english.txt",
+      "bytes": 246122,
+      "sha256": "84b31b9da2c0fb3d303a549c27825bfecd9ee97aae11b829a8382d94bb8baf8c"
+    },
+    {
+      "path": "cstrike/resource/cstrike_finnish.txt",
+      "bytes": 497538,
+      "sha256": "4f188f7b10d711b1325352d4ed1ffb73422730d879410e9d29d71938648c06c8"
+    },
+    {
+      "path": "cstrike/resource/cstrike_french.txt",
+      "bytes": 507838,
+      "sha256": "771a7657f9543890ad3500c9f9487b4c79102697f1a30f20a640b4a7463bd9d0"
+    },
+    {
+      "path": "cstrike/resource/cstrike_german.txt",
+      "bytes": 513360,
+      "sha256": "da49b800f81ec790ed6ef4be18a915fd84dd2f2a23de6c0b76395993bfd11dd7"
+    },
+    {
+      "path": "cstrike/resource/cstrike_greek.txt",
+      "bytes": 501144,
+      "sha256": "7edf96a4dbab5f92a7ce7a36f04a239a7aa18fb4d144f4265cc3528f137f8e12"
+    },
+    {
+      "path": "cstrike/resource/cstrike_hungarian.txt",
+      "bytes": 499818,
+      "sha256": "35def95cbb3370c6c153dee7f4f33d8978ae7c51901db48fce1a5c622880c490"
+    },
+    {
+      "path": "cstrike/resource/cstrike_italian.txt",
+      "bytes": 507288,
+      "sha256": "6c4915434f5ec1987efcbd05a15c341c32e401b0eb6b3fcc72aa978a04eb7e6a"
+    },
+    {
+      "path": "cstrike/resource/cstrike_japanese.txt",
+      "bytes": 440484,
+      "sha256": "7fe20bced2757446e5ca0b0d6752ceff9b5791c2b45b2ac4c38b55d3b740065d"
+    },
+    {
+      "path": "cstrike/resource/cstrike_korean.txt",
+      "bytes": 447126,
+      "sha256": "c242acbc143f25b81b4c13b9014ce5ffb48c55525c5eb05426d0b987a0f5ec27"
+    },
+    {
+      "path": "cstrike/resource/cstrike_koreana.txt",
+      "bytes": 447126,
+      "sha256": "c242acbc143f25b81b4c13b9014ce5ffb48c55525c5eb05426d0b987a0f5ec27"
+    },
+    {
+      "path": "cstrike/resource/cstrike_latam.txt",
+      "bytes": 505018,
+      "sha256": "1f08ec4e66d7f37af049efc3011ce0cc5a0bd5129b2fdc345190596bf2b2f62d"
+    },
+    {
+      "path": "cstrike/resource/cstrike_norwegian.txt",
+      "bytes": 494474,
+      "sha256": "7725974a2210efe61311369a88b063cb10d6e2105ddaef336221a6e7f26ab397"
+    },
+    {
+      "path": "cstrike/resource/cstrike_polish.txt",
+      "bytes": 498174,
+      "sha256": "df9abc5fc185e0ba7635c434de6c564153ff24982750c688d5c280d625bf9038"
+    },
+    {
+      "path": "cstrike/resource/cstrike_portuguese.txt",
+      "bytes": 503702,
+      "sha256": "ee04b9d1807686b5eabe1b42d2178a9d0974b5bcf5a2d74a31da8a88684c3b4b"
+    },
+    {
+      "path": "cstrike/resource/cstrike_romanian.txt",
+      "bytes": 503446,
+      "sha256": "93637fc241cde323f214e201860784b86a98824a6ccf2805ba26539bcc5c869a"
+    },
+    {
+      "path": "cstrike/resource/cstrike_russian.txt",
+      "bytes": 495944,
+      "sha256": "35b5f7121581866c855c50e30dc3119cef59e41e8b3f3d139bb16817975b0b0d"
+    },
+    {
+      "path": "cstrike/resource/cstrike_schinese.txt",
+      "bytes": 432400,
+      "sha256": "2f4765073f2c68a6be9f911f48d14ec45a11c28793c4572d23f93154030604f6"
+    },
+    {
+      "path": "cstrike/resource/cstrike_spanish.txt",
+      "bytes": 505024,
+      "sha256": "4149193998596d19a0d491b903b117e4f2012d45e1d728fc65ddb36254452446"
+    },
+    {
+      "path": "cstrike/resource/cstrike_swedish.txt",
+      "bytes": 493570,
+      "sha256": "cb61169ce0d8e9ca80eb946ecdca33dd474a67cb992dc91c2af745cc5a0c97d9"
+    },
+    {
+      "path": "cstrike/resource/cstrike_tchinese.txt",
+      "bytes": 431314,
+      "sha256": "300fc58d5e8e6659f88077a0229d9d79532bc4a95bc9c169ed9a5f65cdead2a6"
+    },
+    {
+      "path": "cstrike/resource/cstrike_thai.txt",
+      "bytes": 484294,
+      "sha256": "7706f3f4d9b9dd1a375e84a1486d9c25f526ac174459bba3b8f3d9719abdc5eb"
+    },
+    {
+      "path": "cstrike/resource/cstrike_turkish.txt",
+      "bytes": 493344,
+      "sha256": "6125ee6bc1f30fd039e6e402812fb445ed21eff426d35906d739147c8006fca9"
+    },
+    {
+      "path": "cstrike/resource/cstrike_ukrainian.txt",
+      "bytes": 496362,
+      "sha256": "9548d6fdda1a0e6b3964f7bac561de7bca6c2012ce0e213f31c7730afbb35889"
+    },
+    {
+      "path": "cstrike/resource/game-icon.bmp",
+      "bytes": 4166,
+      "sha256": "683a0168ec50df37bbb627560dcb9e0ccaef54c7db28829c1ee91dfeec196307"
+    },
+    {
+      "path": "cstrike/resource/game.icns",
+      "bytes": 249652,
+      "sha256": "aac1253d0869c4368c80c27b35cdccb4794efa08820d1eb3551d8fd3afdc5fa6"
+    },
+    {
+      "path": "cstrike/resource/game.ico",
+      "bytes": 7782,
+      "sha256": "13a9046a55d6059bbf1df982569ca56a6e6d48f70917103fb71256b41e473168"
+    },
+    {
+      "path": "cstrike/resource/game_1bpp.ico",
+      "bytes": 326,
+      "sha256": "5ca3ffc84464db6c7b80781e745aa9a35260ca80ee30cfaccbdc76cbc2336127"
+    },
+    {
+      "path": "cstrike/resource/gameui_brazilian.txt",
+      "bytes": 137982,
+      "sha256": "a60f4406a6e5d0093c2e8caaed220f9bb9e720186f8ada95505bdc1c97e08dd3"
+    },
+    {
+      "path": "cstrike/resource/gameui_bulgarian.txt",
+      "bytes": 138276,
+      "sha256": "cfa9cb3cfa076269ba3acc7f30965103153b28fe90ce3745ca88226f1386991c"
+    },
+    {
+      "path": "cstrike/resource/gameui_czech.txt",
+      "bytes": 135624,
+      "sha256": "3275ab77b6de87a5604fef4e33f9384939d67ee67f79776a7d89429c626928a9"
+    },
+    {
+      "path": "cstrike/resource/gameui_danish.txt",
+      "bytes": 135104,
+      "sha256": "b027fd4a6048b91dab450e491a8faae2129d93bfad78639320f3842c7238d948"
+    },
+    {
+      "path": "cstrike/resource/gameui_dutch.txt",
+      "bytes": 138378,
+      "sha256": "a33102f5a997a3d04e5bef79605ddb40173a5d8d6da86b611e8915620fa34414"
+    },
+    {
+      "path": "cstrike/resource/gameui_english.txt",
+      "bytes": 65706,
+      "sha256": "58505ea2f038f604ff68600cac868ee1055f9bb74c750283ab54a724d402dfbf"
+    },
+    {
+      "path": "cstrike/resource/gameui_finnish.txt",
+      "bytes": 136930,
+      "sha256": "885d5b94ddbd3bfcdb6c09d5221489a1c4ff14680642e5a260e3486f69b3fad4"
+    },
+    {
+      "path": "cstrike/resource/gameui_french.txt",
+      "bytes": 139948,
+      "sha256": "09d00cfbb39b03fef9b93c340be78f1047fd6306f3c00361275208d72a2b36ff"
+    },
+    {
+      "path": "cstrike/resource/gameui_german.txt",
+      "bytes": 137754,
+      "sha256": "4e40ef53146def45c244fb0acb70087141a612d28082e2b234ccbed0f81bce92"
+    },
+    {
+      "path": "cstrike/resource/gameui_greek.txt",
+      "bytes": 137828,
+      "sha256": "83d1725a9e4a28851a2b3115fae69b16bfec1274869897682dc5e3885b597801"
+    },
+    {
+      "path": "cstrike/resource/gameui_hungarian.txt",
+      "bytes": 136752,
+      "sha256": "d47e3b167623d274203fc59abe71517b03b5cd38c436bcbbb07ca1b6acad8fb8"
+    },
+    {
+      "path": "cstrike/resource/gameui_italian.txt",
+      "bytes": 138972,
+      "sha256": "b8b083ad10439a484676bf82dcd5d5047b655b4d8bc0bd845589eb1c4b85e8f3"
+    },
+    {
+      "path": "cstrike/resource/gameui_japanese.txt",
+      "bytes": 123410,
+      "sha256": "039558f0f8c572ffb6f17702460b3676a7e6d76f0d36d2b663a3dda5c490a971"
+    },
+    {
+      "path": "cstrike/resource/gameui_korean.txt",
+      "bytes": 122394,
+      "sha256": "2d1ab916d33e5a4741341b8ed4c77fe907b41ee966b91f2e9fc3b0afb30b8215"
+    },
+    {
+      "path": "cstrike/resource/gameui_koreana.txt",
+      "bytes": 122394,
+      "sha256": "2d1ab916d33e5a4741341b8ed4c77fe907b41ee966b91f2e9fc3b0afb30b8215"
+    },
+    {
+      "path": "cstrike/resource/gameui_latam.txt",
+      "bytes": 139190,
+      "sha256": "0ea91bfe58aa321e75f86c1e87bbacf8a7e5ce97afff0bc90d1c037acc23c225"
+    },
+    {
+      "path": "cstrike/resource/gameui_norwegian.txt",
+      "bytes": 134676,
+      "sha256": "77816eae66be4a4d0a4e612ed9710e92723e76d9feddc3608b945d01ae56619f"
+    },
+    {
+      "path": "cstrike/resource/gameui_polish.txt",
+      "bytes": 135884,
+      "sha256": "d48cb422ad3a3320c0ef545a48a51005fcc5b71916ed6f29133bc89340e8859c"
+    },
+    {
+      "path": "cstrike/resource/gameui_portuguese.txt",
+      "bytes": 137490,
+      "sha256": "002dfa0fad7316561029bd380121cf8a37f0c686fca2c4e7e926c67831ff42bb"
+    },
+    {
+      "path": "cstrike/resource/gameui_romanian.txt",
+      "bytes": 139432,
+      "sha256": "247dfa699c143bdae2f5b16afe73a075e02482be7cfd53425fbd523d2d93521d"
+    },
+    {
+      "path": "cstrike/resource/gameui_russian.txt",
+      "bytes": 135366,
+      "sha256": "e8292320a4a995262320b9ea466470c774e52936d4c75f9f514b430266d9c986"
+    },
+    {
+      "path": "cstrike/resource/gameui_schinese.txt",
+      "bytes": 119412,
+      "sha256": "e988b3b9d81805a8e6a3c091076155a75eac18baf0f4e413a2e070987c80355d"
+    },
+    {
+      "path": "cstrike/resource/gameui_spanish.txt",
+      "bytes": 139324,
+      "sha256": "07cdb2beae5fb5ebd3cd83619a4d6b1bca5f38b09fda3fca8ac427c4d31ff66b"
+    },
+    {
+      "path": "cstrike/resource/gameui_swedish.txt",
+      "bytes": 136190,
+      "sha256": "911d876c32de8c431422ca4403d90c4f39fbb00ce15153071845c5389142ee3a"
+    },
+    {
+      "path": "cstrike/resource/gameui_tchinese.txt",
+      "bytes": 119354,
+      "sha256": "15a6c0f45abc78375e7aee1479d71e0b33b023a44bd911668b10fabe2c748158"
+    },
+    {
+      "path": "cstrike/resource/gameui_thai.txt",
+      "bytes": 134144,
+      "sha256": "b0c3ca48d5d2e48a3b75020b1d3cf1b6d3785f1bed1eebe325d2fdf53781d532"
+    },
+    {
+      "path": "cstrike/resource/gameui_turkish.txt",
+      "bytes": 136466,
+      "sha256": "45a150cd97eeaa745dc3fda285cbbd43b2bbae2a2a98ad8c7878a4db9777b457"
+    },
+    {
+      "path": "cstrike/resource/gameui_ukrainian.txt",
+      "bytes": 136786,
+      "sha256": "a09f852c9391cc58e415bd1b37a0192baf7543f193eb2d258a26c5e8f164e987"
+    },
+    {
+      "path": "cstrike/steam.inf",
+      "bytes": 123,
+      "sha256": "ace66c3c21daa62d0f19899cb8bb7abeb438ec3b3a7d1fae7b2ee0809d248af1"
+    },
+    {
+      "path": "hl2/hl2_misc_000.vpk",
+      "bytes": 117003307,
+      "sha256": "cb2374ec66301057c237e2eb449f6b388a41e2a2d3ce3dba7ca516784ca83cfc"
+    },
+    {
+      "path": "hl2/hl2_misc_001.vpk",
+      "bytes": 117227797,
+      "sha256": "5060deb8f9dc061b305af0ab83166cd097669a940bc2b94ef4b15edb8c70d0e3"
+    },
+    {
+      "path": "hl2/hl2_misc_002.vpk",
+      "bytes": 116914889,
+      "sha256": "4158ec0b39050a316d7257d83cc89c0ab23c56f35d13b1787bd6d1fbdc2dffff"
+    },
+    {
+      "path": "hl2/hl2_misc_003.vpk",
+      "bytes": 131921865,
+      "sha256": "778807d6c49d913b4e451663ead027d24c689196952dd4da4ea62746fdba2339"
+    },
+    {
+      "path": "hl2/hl2_misc_dir.vpk",
+      "bytes": 708980,
+      "sha256": "7619e04c371315cb330abcc37b66a62e301e6741c2e312143a625aaf97df7522"
+    },
+    {
+      "path": "hl2/hl2_sound_misc.vpk.sound.cache",
+      "bytes": 20868868,
+      "sha256": "02e1c06c48498d25f130a11af3a9d5392736ef7d82a7b53b47eef6cc69fba744"
+    },
+    {
+      "path": "hl2/hl2_sound_misc_dir.vpk",
+      "bytes": 113310,
+      "sha256": "6c41570377173f9af8f6474d069718db3ba0d62fe1478bf476d2d545d6f97817"
+    },
+    {
+      "path": "hl2/hl2_sound_vo_english.vpk.sound.cache",
+      "bytes": 29164433,
+      "sha256": "978d497764cdef513f42b59eb922a8cf169148ed77d29018de8cc5835038b2d5"
+    },
+    {
+      "path": "hl2/hl2_sound_vo_english_dir.vpk",
+      "bytes": 97210,
+      "sha256": "d049e603d4c919cebfd5d53188ac6b874d1ba84a23eb17f7803b570fbdd34d10"
+    },
+    {
+      "path": "hl2/hl2_textures_dir.vpk",
+      "bytes": 214465,
+      "sha256": "cf72db7aa0808882c7705c4528a92a93f291835de7af1fed59cf33fd1ce7f1c4"
+    },
+    {
+      "path": "hl2/resource/askconnectpanel.res",
+      "bytes": 1523,
+      "sha256": "eed15d38fe4e3fa98ac49f37291cc495da2f852b65c862967f977c727bb9a166"
+    },
+    {
+      "path": "hl2/resource/baseactioncdtrackstartdialog.res",
+      "bytes": 6694,
+      "sha256": "efeda9c43271fccb98c1c52b390246eb94bdce0798702350b4426ba400f02393"
+    },
+    {
+      "path": "hl2/resource/baseactionpausedialog.res",
+      "bytes": 8002,
+      "sha256": "0d3c42b1f8e094b46bb0a9f8237e7a3915bcc912fb52ba12faae40f1d3374a31"
+    },
+    {
+      "path": "hl2/resource/baseactionplaybackratedialog.res",
+      "bytes": 8982,
+      "sha256": "7b066176aba82be6fcca114623e61096eaa51ad9462f7731cc722101d351e7bc"
+    },
+    {
+      "path": "hl2/resource/baseactionplaycommandsdialog.res",
+      "bytes": 8039,
+      "sha256": "4cd5875379a490ce0843725abdb3427dda8d6e04c23e48400055d0a8348721d0"
+    },
+    {
+      "path": "hl2/resource/baseactionplaysoundstartdialog.res",
+      "bytes": 6773,
+      "sha256": "7134b9e41c9e534b2ba6ad6e8438e6808efc847af0afc9137ace24214a9835f4"
+    },
+    {
+      "path": "hl2/resource/baseactionscreenfadestartdialog.res",
+      "bytes": 11267,
+      "sha256": "d1694b3eaadc7a33d1b211e9cd6bd2d9573fc35d122870a3806c7d31731e23e1"
+    },
+    {
+      "path": "hl2/resource/baseactionskipaheaddialog.res",
+      "bytes": 8348,
+      "sha256": "b563568fa2864a49d01453a22fc323409bcf48a1b4a0168314990d4cf6afea14"
+    },
+    {
+      "path": "hl2/resource/baseactionstopplaybackdialog.res",
+      "bytes": 7387,
+      "sha256": "4c070b6292ed3688d4a9dfcdaf0180d6514274273dabb2afa9eb80931739c0b0"
+    },
+    {
+      "path": "hl2/resource/baseactiontextmessagestartdialog.res",
+      "bytes": 14213,
+      "sha256": "27ce59bfdfd6d1151fa1da2be3465950a5cee06c8a8552daf02e00102275e2fe"
+    },
+    {
+      "path": "hl2/resource/baseactionzoomdialog.res",
+      "bytes": 9788,
+      "sha256": "de2787b53718fc0a99a32167e5420ea2d1ba146e52576df40e16bec09f56b4c2"
+    },
+    {
+      "path": "hl2/resource/benchmarkdialog.res",
+      "bytes": 1515,
+      "sha256": "cb64afff3f78f96102218dc46333a144b2a4fb7802baca9bc5f28a8e48fd67ea"
+    },
+    {
+      "path": "hl2/resource/benchmarkresultsdialog.res",
+      "bytes": 1565,
+      "sha256": "873f5fea28ac1f9f40f5679902e90477772b10c9a79e8cdffc8e2c7c70e02e7c"
+    },
+    {
+      "path": "hl2/resource/block.cur",
+      "bytes": 326,
+      "sha256": "cba8bda882f220e271a6df20ee88dc1184363989201499fe504d548ba8ad49ba"
+    },
+    {
+      "path": "hl2/resource/bonusmappanel.res",
+      "bytes": 1764,
+      "sha256": "86e4662ccd15c82ced8aeddcae9e7ab9804f64eaa2f80f3d720a4caea5f8020b"
+    },
+    {
+      "path": "hl2/resource/bonusmapsdialog.res",
+      "bytes": 8149,
+      "sha256": "521e8ecc139a1f8ee3744880ad60e47a876445d0d3af237f1dc9b8ed2c9f8f0d"
+    },
+    {
+      "path": "hl2/resource/boxrocket.res",
+      "bytes": 20363,
+      "sha256": "2eebcdaa248f128a36e0d4ce58fa29431298f617913868343c1a583385a3bcfe"
+    },
+    {
+      "path": "hl2/resource/boxrocket.ttf",
+      "bytes": 55464,
+      "sha256": "83110e5dba6b8cade754dd577d29e918937669a35fb316111634aa0c60347403"
+    },
+    {
+      "path": "hl2/resource/boxrocket_english.txt",
+      "bytes": 28610,
+      "sha256": "285d5f314734b87e3997aecfc3b0cdba6b5a1aa011b5b4053c9d46590cdf7017"
+    },
+    {
+      "path": "hl2/resource/bugreporter.res",
+      "bytes": 79,
+      "sha256": "04e0b48c5dc91332be05c01fa78aeb16e4341ddac7e6365c7530a03000558a4d"
+    },
+    {
+      "path": "hl2/resource/bugreporteruploadfinished.res",
+      "bytes": 1108,
+      "sha256": "d2e3bb2c8c1f4b89643f49c5c5f6305ed0d86b61ef8f391368f4eb169a522d6e"
+    },
+    {
+      "path": "hl2/resource/bugreporteruploadprogress.res",
+      "bytes": 1375,
+      "sha256": "0eb4a2bafbe2a182be36790a187cc37ad855e5482825eb510e803699a1e7f72e"
+    },
+    {
+      "path": "hl2/resource/buguipanel.res",
+      "bytes": 20387,
+      "sha256": "d550ba58760ce23cb397e19e5d2ed32924239c69bf502a9419af135712f0fe68"
+    },
+    {
+      "path": "hl2/resource/buguipanel_filequeue.res",
+      "bytes": 20283,
+      "sha256": "164e50f6a2f56693e4be853652c3455e49271d884393a7a474b19816b2132699"
+    },
+    {
+      "path": "hl2/resource/buguipanel_public.res",
+      "bytes": 15319,
+      "sha256": "ee2d546a2842a93d25a41a047bc414479dade680ff2102fdd9fee53c2e721a41"
+    },
+    {
+      "path": "hl2/resource/bxbookmarkdialog.res",
+      "bytes": 4060,
+      "sha256": "5b4701ba854e2a1e8da87cca4ef2d89521212202df2944ad1cd0baeb671fbe28"
+    },
+    {
+      "path": "hl2/resource/bxchoosemidisource.res",
+      "bytes": 1865,
+      "sha256": "29e5d4c114149f31db735d424d5e05b2c75ebb9d6bd1b7a21e0647113c1c9904"
+    },
+    {
+      "path": "hl2/resource/bxclipbrowserclientarea.res",
+      "bytes": 587,
+      "sha256": "7eecdab037ad4012543dd9c028664a78cde9edd9aa0b008d0f79bab1725f9598"
+    },
+    {
+      "path": "hl2/resource/bxclipbrowserpage.res",
+      "bytes": 2128,
+      "sha256": "82e17474c1564e35c58ced7e510b01fd13c66dac1ec652908434e1c53a573ed6"
+    },
+    {
+      "path": "hl2/resource/bxclipeditorstoryboardpage.res",
+      "bytes": 1187,
+      "sha256": "b40ef43adaa9b48fa18aeb2ec3f634b33f10219fd3d7bb10681faceb87b9fce5"
+    },
+    {
+      "path": "hl2/resource/bxclipeditortimelinepage.res",
+      "bytes": 884,
+      "sha256": "ea394c8a49e67173a80021d448b35875d40bd635036c89201c1e7ac025a922bf"
+    },
+    {
+      "path": "hl2/resource/bxclipimagepanel.res",
+      "bytes": 2309,
+      "sha256": "ebd76b23054ce67e12182c6d090aec834fe014ece30d13305a3b93587ffd524c"
+    },
+    {
+      "path": "hl2/resource/bxclipimagestoryboardpanel.res",
+      "bytes": 1937,
+      "sha256": "b7c1be38b3eac13a9a58e0603f75c279b4eab45e1b9ed48b7f24191e71d5bb48"
+    },
+    {
+      "path": "hl2/resource/bxclipplayer.res",
+      "bytes": 4626,
+      "sha256": "2d93c340ed71bf7627bc1861c2991bdc02bc2ccad8f1d8f67a53eaa9c62a8f9b"
+    },
+    {
+      "path": "hl2/resource/bxelementproperties.res",
+      "bytes": 378,
+      "sha256": "7907d678430fe450839d41f0ad1aa91262d31db09334d9e0d7e692ebff423592"
+    },
+    {
+      "path": "hl2/resource/bxelementpropertiestree.res",
+      "bytes": 1128,
+      "sha256": "4eda178c050d2da741cc073f2c63a774e44ca350821b2aff44417ecf118a158a"
+    },
+    {
+      "path": "hl2/resource/bxelementpropertiestreeframe.res",
+      "bytes": 1829,
+      "sha256": "1018e98b05d2ec8545eb712d521394a758a1ee3933e30c9ad51ac94987c9f0d9"
+    },
+    {
+      "path": "hl2/resource/bxfilterlog.res",
+      "bytes": 3338,
+      "sha256": "a4d03034607a1ca72dece34aa451085083560598840b2a281c39790d680846a4"
+    },
+    {
+      "path": "hl2/resource/bxfullscreenviewport.res",
+      "bytes": 3034,
+      "sha256": "d2f8a8f42bf157c4c225586dac967eadd071bda08fa0c5ed3776776b378c47eb"
+    },
+    {
+      "path": "hl2/resource/bxinteractivefilmmakerinfo.res",
+      "bytes": 1477,
+      "sha256": "570342c9582c617650394e371c5df8b13ca9993e7e0dc2589d45baeabd18241c"
+    },
+    {
+      "path": "hl2/resource/bxmovierecord.res",
+      "bytes": 13320,
+      "sha256": "778fa49f4b32baa7c8f7222fbd54ccb57a9cc0f5c43c0fe782ba5fe5c6ac4eee"
+    },
+    {
+      "path": "hl2/resource/bxmovierecordprogress.res",
+      "bytes": 1555,
+      "sha256": "b16032186a6e98b4334dc606a1f12f1f80c3a6e39cb9b71815e9bc546e7877ce"
+    },
+    {
+      "path": "hl2/resource/bxposterlayoff.res",
+      "bytes": 11272,
+      "sha256": "1a01ddd740bee32c925aab86e2c2b5ecff6f46a65e32b7a46ba83606883e661f"
+    },
+    {
+      "path": "hl2/resource/bxrecordgame.res",
+      "bytes": 14096,
+      "sha256": "256d70c87335860d16824818bfb2f25d75806a3a72d0b098ce648bbb6253e40a"
+    },
+    {
+      "path": "hl2/resource/bxsavedocumentquery.res",
+      "bytes": 1871,
+      "sha256": "093567c87d61f9a36450991fbc4e886b39387c8742cd8fb031c438ad03ed19c2"
+    },
+    {
+      "path": "hl2/resource/bxtimecode.res",
+      "bytes": 1163,
+      "sha256": "3ad32f547ed3fd4039ae321557df6f43f925911ad7c1c2fc4db48e4f26a7a27d"
+    },
+    {
+      "path": "hl2/resource/bxviewport.res",
+      "bytes": 3161,
+      "sha256": "35a1765ed47023068acb983acd3e59f58c4c5f5e7da7f3de51e64dd8ebf2a1ed"
+    },
+    {
+      "path": "hl2/resource/chat_brazilian.txt",
+      "bytes": 854,
+      "sha256": "0e5e758d1e0e87f5d6acb97e721c02820ac4fda805052900bc41b8e20f807fcb"
+    },
+    {
+      "path": "hl2/resource/chat_bulgarian.txt",
+      "bytes": 924,
+      "sha256": "ae9fbe8226633b34926fa8511d9d04d0200aac818e89ec2ca3ebb0036ca77aad"
+    },
+    {
+      "path": "hl2/resource/chat_czech.txt",
+      "bytes": 812,
+      "sha256": "3f7ac2c157a086fc74c7eab6505941422eb310f1ee34f54471198fbbde6568bb"
+    },
+    {
+      "path": "hl2/resource/chat_danish.txt",
+      "bytes": 822,
+      "sha256": "f682744500a28517fcaf10a12497be3554fae8282e71057f0635fbfe1920ca0e"
+    },
+    {
+      "path": "hl2/resource/chat_dutch.txt",
+      "bytes": 836,
+      "sha256": "93645ff6c2295c619070c985f9cc59b9ad59eaea5dd101a3902ff90cb67c0e02"
+    },
+    {
+      "path": "hl2/resource/chat_english.txt",
+      "bytes": 798,
+      "sha256": "0d5e046544f5c81bbd388d4fff857ce2773ba2f9c390035ec07b4032c2a15187"
+    },
+    {
+      "path": "hl2/resource/chat_finnish.txt",
+      "bytes": 862,
+      "sha256": "537b019dbd24b58877d541103abd4ac8aa57fd558396924280692ae25691e939"
+    },
+    {
+      "path": "hl2/resource/chat_french.txt",
+      "bytes": 844,
+      "sha256": "bc40f8a8572a83ddbdeabae638fdfe2e15d526379705baf2aa334d98384391ad"
+    },
+    {
+      "path": "hl2/resource/chat_german.txt",
+      "bytes": 874,
+      "sha256": "d8aa7595a474cf936d82b76c048f9dc91ceb563d39c1f9474a0d5dbbcba8d822"
+    },
+    {
+      "path": "hl2/resource/chat_greek.txt",
+      "bytes": 858,
+      "sha256": "442b81d69bd4cc0e0494fe1a3bb91c0d2398702cec5d51bad7ce47ed6acb9786"
+    },
+    {
+      "path": "hl2/resource/chat_hungarian.txt",
+      "bytes": 840,
+      "sha256": "51e927012ea7daed902e803e08a3aa1f7798c6f0cfc3974861b616997b1eef11"
+    },
+    {
+      "path": "hl2/resource/chat_italian.txt",
+      "bytes": 858,
+      "sha256": "c7e53f7a5c5fd39ed0d9f5e2c9c7356d15819a28ad11c6a8906be8488b42f462"
+    },
+    {
+      "path": "hl2/resource/chat_japanese.txt",
+      "bytes": 692,
+      "sha256": "25eb87601c9a4a453668a9845ba4edf1da77424a7ba158c21489f02692276604"
+    },
+    {
+      "path": "hl2/resource/chat_korean.txt",
+      "bytes": 660,
+      "sha256": "7c87bfd265c12453835caa9e38b3f3995ab471cde27b583157782df7eb706b78"
+    },
+    {
+      "path": "hl2/resource/chat_koreana.txt",
+      "bytes": 660,
+      "sha256": "7c87bfd265c12453835caa9e38b3f3995ab471cde27b583157782df7eb706b78"
+    },
+    {
+      "path": "hl2/resource/chat_latam.txt",
+      "bytes": 836,
+      "sha256": "5b4666250ae3261e2d54a3a75e88270691740791fbe7284f1163602598e21094"
+    },
+    {
+      "path": "hl2/resource/chat_norwegian.txt",
+      "bytes": 840,
+      "sha256": "070afc37e3fd900ad1d59c377419b4f858e76787e3c2f035729f03b387f62757"
+    },
+    {
+      "path": "hl2/resource/chat_polish.txt",
+      "bytes": 856,
+      "sha256": "f9029509a3a412e138ccc8afbc9bf00763cc57234abcf33fb1cc34a07fc74f34"
+    },
+    {
+      "path": "hl2/resource/chat_portuguese.txt",
+      "bytes": 878,
+      "sha256": "e548da0b3a417aa71099c6a382edb000a97dfdda9da78cecb2bbc02902619bff"
+    },
+    {
+      "path": "hl2/resource/chat_romanian.txt",
+      "bytes": 772,
+      "sha256": "9928a4c908d53d51c33e1e94335a01706218ea8c5b74a062d29f8ca4d3ddbff1"
+    },
+    {
+      "path": "hl2/resource/chat_russian.txt",
+      "bytes": 854,
+      "sha256": "b7d8ff6b5a265a70f3b672cb201241037bde72d71b872b7334c161ce9a44fcf8"
+    },
+    {
+      "path": "hl2/resource/chat_schinese.txt",
+      "bytes": 654,
+      "sha256": "76b8bc6b28ecb24242e2dfc3be3308d19b9b3a0f89492422b66e1ab392f6b894"
+    },
+    {
+      "path": "hl2/resource/chat_spanish.txt",
+      "bytes": 840,
+      "sha256": "51ad8b8e5f18c46eded86384fa143a99f7a5f0aac6098e18be46e7b604665d43"
+    },
+    {
+      "path": "hl2/resource/chat_swedish.txt",
+      "bytes": 822,
+      "sha256": "19ae7752478bed0c81c1a834f014dfbb642f295dbe5ded75176c739ba0bcf1a7"
+    },
+    {
+      "path": "hl2/resource/chat_tchinese.txt",
+      "bytes": 652,
+      "sha256": "7a9818ce8ff10f38d352044a61b1ea6d67f5be7f69f3c162b56696677aae8dbb"
+    },
+    {
+      "path": "hl2/resource/chat_thai.txt",
+      "bytes": 800,
+      "sha256": "570e00e2a2ab74d5aefced4cb4f06671a2bd02b5adf47949da2babfc52a7f20d"
+    },
+    {
+      "path": "hl2/resource/chat_turkish.txt",
+      "bytes": 864,
+      "sha256": "ae102d36c51cda26c5c80a83ddd2d88e2ace42412fce4cc04be06911b505cf90"
+    },
+    {
+      "path": "hl2/resource/chat_ukrainian.txt",
+      "bytes": 880,
+      "sha256": "358b51f8edbd5e9ea9d7a8df9625ed5d5cd64a694ab058382dd9136bbbdb55a5"
+    },
+    {
+      "path": "hl2/resource/chat_vietnamese.txt",
+      "bytes": 1800,
+      "sha256": "1c43f1d20199ec2b42182136a0f82907c120d93a72791d6f4f2a565c43ec3bc0"
+    },
+    {
+      "path": "hl2/resource/chatscheme.res",
+      "bytes": 16241,
+      "sha256": "c77a8bf93ed0cdd98f9739ab0cfd235654e644e4a55ae776755c4d2d6222db7b"
+    },
+    {
+      "path": "hl2/resource/clientscheme.res",
+      "bytes": 14603,
+      "sha256": "845beba83690ba5f5e964bad06163e6c4fd559b49f0ff1094a97fde06d7fa635"
+    },
+    {
+      "path": "hl2/resource/closecaption_brazilian.dat",
+      "bytes": 875520,
+      "sha256": "a8d3728b0f1218aed6856e1833234e384885897b22386b56538699dd02ed0462"
+    },
+    {
+      "path": "hl2/resource/closecaption_brazilian.txt",
+      "bytes": 997242,
+      "sha256": "7ab98e4b1f55981e84af372e312699baa427da87f4a0285eb89aa0d4c0009eb5"
+    },
+    {
+      "path": "hl2/resource/closecaption_bulgarian.dat",
+      "bytes": 924672,
+      "sha256": "da19db62c656424139b012298334cd876eea0a88cfa498d7d0931f154abe30c9"
+    },
+    {
+      "path": "hl2/resource/closecaption_bulgarian.txt",
+      "bytes": 1026528,
+      "sha256": "b8de902063739bb217d349a448751cb89ced1d4b90d5011f0b4f73960ec7f156"
+    },
+    {
+      "path": "hl2/resource/closecaption_czech.dat",
+      "bytes": 867328,
+      "sha256": "6491e61aba622d3ac071766958b035d774471b9ba081daebd64ee0ed54c2d1ef"
+    },
+    {
+      "path": "hl2/resource/closecaption_czech.txt",
+      "bytes": 992850,
+      "sha256": "2e28fd0f346da3830d23169ffc219adf415c1508e59ae4251242d916d4e0922e"
+    },
+    {
+      "path": "hl2/resource/closecaption_danish.dat",
+      "bytes": 900096,
+      "sha256": "312dfbe7a23f85d68e8bec4aefae713bcfd8be28cf9e615e8411c0d99af51d94"
+    },
+    {
+      "path": "hl2/resource/closecaption_danish.txt",
+      "bytes": 1015822,
+      "sha256": "d3435f53a7c584027af95ff971f56bc3762ce6bc33b850dbc3b98019fff58164"
+    },
+    {
+      "path": "hl2/resource/closecaption_dutch.dat",
+      "bytes": 916480,
+      "sha256": "00ad3823b5c50d8a5d57e4d4ffb450a4c2bdece4900d6f0258ec083ffb1121b3"
+    },
+    {
+      "path": "hl2/resource/closecaption_dutch.txt",
+      "bytes": 1027244,
+      "sha256": "16d24fbfde4d2f15c0c54cb8197cfdb72e669d3020a1ba3a8b9a72e63192366a"
+    },
+    {
+      "path": "hl2/resource/closecaption_english.dat",
+      "bytes": 883712,
+      "sha256": "87905b85c69d27581ccdf6e161d6408eece514a3146a5118cb488d7207f4b547"
+    },
+    {
+      "path": "hl2/resource/closecaption_english.txt",
+      "bytes": 997440,
+      "sha256": "7a73ff28d0f2d103e428dbc55b9898728970afa300a96d7670682c8385ef1fda"
+    },
+    {
+      "path": "hl2/resource/closecaption_finnish.dat",
+      "bytes": 891904,
+      "sha256": "fd993912b5f867cbaf17f01e44f37a607ca0c1ebf79684f5d20ac96cc5b3d0d4"
+    },
+    {
+      "path": "hl2/resource/closecaption_finnish.txt",
+      "bytes": 1010792,
+      "sha256": "ebd5c3cb3d2712f916527d3b2d6d0fbd7bb55122861b876c4cc19312cb728198"
+    },
+    {
+      "path": "hl2/resource/closecaption_french.dat",
+      "bytes": 990208,
+      "sha256": "673aadf4d0adbbc485fa10468d1f27d1d68d173e6deb4b400a0fcbe789b14722"
+    },
+    {
+      "path": "hl2/resource/closecaption_french.txt",
+      "bytes": 1083176,
+      "sha256": "b171788ca2845a68848490d063a83a0e3acbdad2475aec7df75dac91864f40f9"
+    },
+    {
+      "path": "hl2/resource/closecaption_german.dat",
+      "bytes": 957440,
+      "sha256": "4534bcf8324636641bfd19696dc407e33cf6870f0439c9aadebd4b242eaed2b3"
+    },
+    {
+      "path": "hl2/resource/closecaption_german.txt",
+      "bytes": 1057966,
+      "sha256": "07e3cc6c0e329dddad8b63a97eb1d830cf2e3685da8086e1b91331a3a49ab594"
+    },
+    {
+      "path": "hl2/resource/closecaption_greek.dat",
+      "bytes": 1031168,
+      "sha256": "cebe306781c6059db2ed3af78e58940d35584366ed0b75aadc4e2484c0926098"
+    },
+    {
+      "path": "hl2/resource/closecaption_greek.txt",
+      "bytes": 1115296,
+      "sha256": "61f05d17df22f59134229ee54a1ebdbfe306918f6e0bb26fe23fd3307bf7647d"
+    },
+    {
+      "path": "hl2/resource/closecaption_hungarian.dat",
+      "bytes": 891904,
+      "sha256": "5df91efe35042b0a6f485f3920a63dfa5022a80a045329a34ab06b4d50dcb2de"
+    },
+    {
+      "path": "hl2/resource/closecaption_hungarian.txt",
+      "bytes": 1009986,
+      "sha256": "8c1ccdb71aef84b295e230370156e77f6179c3defdb046fec2d56782a63ecc47"
+    },
+    {
+      "path": "hl2/resource/closecaption_italian.dat",
+      "bytes": 900096,
+      "sha256": "a2c5903a082294ba59fb129516cff01df2915d0fd83f31ed49c5ec4782eb4265"
+    },
+    {
+      "path": "hl2/resource/closecaption_italian.txt",
+      "bytes": 1020596,
+      "sha256": "e7822ade2bb5e6ddbea423c2d7e9eee0269e98f9434f6dca69873c561ee9af70"
+    },
+    {
+      "path": "hl2/resource/closecaption_japanese.dat",
+      "bytes": 490496,
+      "sha256": "3d519c5eecca89df66c46b33d27c6b31026409f95c7ab8eabc80d32f7379baba"
+    },
+    {
+      "path": "hl2/resource/closecaption_japanese.txt",
+      "bytes": 660654,
+      "sha256": "c50516666b166727e84748b76c935595cfc063ab9f7530abd225b213734a0c6b"
+    },
+    {
+      "path": "hl2/resource/closecaption_korean.dat",
+      "bytes": 490496,
+      "sha256": "c7f03d6cfabc63532a0956f65052578bbd534186baae42666d2ee62c9e65a7ca"
+    },
+    {
+      "path": "hl2/resource/closecaption_korean.txt",
+      "bytes": 657214,
+      "sha256": "4461f75e5e823e66fdac85b309058d1c73ec0416649cb493ff95a14101c787d8"
+    },
+    {
+      "path": "hl2/resource/closecaption_koreana.dat",
+      "bytes": 490496,
+      "sha256": "c7f03d6cfabc63532a0956f65052578bbd534186baae42666d2ee62c9e65a7ca"
+    },
+    {
+      "path": "hl2/resource/closecaption_koreana.txt",
+      "bytes": 657214,
+      "sha256": "4461f75e5e823e66fdac85b309058d1c73ec0416649cb493ff95a14101c787d8"
+    },
+    {
+      "path": "hl2/resource/closecaption_latam.dat",
+      "bytes": 941056,
+      "sha256": "e18da29a3df4e4d9a83c03213ecc21966b91aebb796e1e0081c0bc39156647db"
+    },
+    {
+      "path": "hl2/resource/closecaption_latam.txt",
+      "bytes": 1039274,
+      "sha256": "00c0512d5181ab7ffdfc767312568d11431a999114d230737e93c4bdc06bf4c0"
+    },
+    {
+      "path": "hl2/resource/closecaption_norwegian.dat",
+      "bytes": 826368,
+      "sha256": "3bcc10fe6c45f11a055f8697d03c0b3d8818f739a71c798bc32d3c4024c76660"
+    },
+    {
+      "path": "hl2/resource/closecaption_norwegian.txt",
+      "bytes": 959420,
+      "sha256": "09db43361250861324cdcc9c783d6936bfd0d9b81e76bf2250ab25824b572421"
+    },
+    {
+      "path": "hl2/resource/closecaption_polish.dat",
+      "bytes": 883712,
+      "sha256": "c3e0e90bf6a408830dd6a83938531dbca943bcf5d83a87c3203eb843806f45ff"
+    },
+    {
+      "path": "hl2/resource/closecaption_polish.txt",
+      "bytes": 1007168,
+      "sha256": "4cfa5491d99936166ae9985d21adbb947ee6e16bfca837174f4e63d08e2aa258"
+    },
+    {
+      "path": "hl2/resource/closecaption_portuguese.dat",
+      "bytes": 900096,
+      "sha256": "f47d58e3dbce45174bf68cbcfd45cafd20ca78d2aef5aac6b4efefdbda707358"
+    },
+    {
+      "path": "hl2/resource/closecaption_portuguese.txt",
+      "bytes": 1015072,
+      "sha256": "53451599f874accaa15d45a411fb57cc760224e080d516b3990c3d6d635dd785"
+    },
+    {
+      "path": "hl2/resource/closecaption_romanian.dat",
+      "bytes": 965632,
+      "sha256": "6b5a8cc33f8e7a3d8770633bd868f7d60558a3b2bbf56166bb137c4318bce9b9"
+    },
+    {
+      "path": "hl2/resource/closecaption_romanian.txt",
+      "bytes": 1057022,
+      "sha256": "97f7be39e427245cab9cacc370eff9c51a4d42abb3c3b7dac4456d752acf4988"
+    },
+    {
+      "path": "hl2/resource/closecaption_russian.dat",
+      "bytes": 834560,
+      "sha256": "4ff54e1377983b25de15397bb93ab175653a24e7c1a3f3027b61db719aaa1d40"
+    },
+    {
+      "path": "hl2/resource/closecaption_russian.txt",
+      "bytes": 963660,
+      "sha256": "7db0225b1dea04179f345d45cddf94a071c85f196878efbd531683975d915543"
+    },
+    {
+      "path": "hl2/resource/closecaption_schinese.dat",
+      "bytes": 384000,
+      "sha256": "ed6e8fe48b8f3ed930bd27fa4bf8f6efbb428036dea0a087d6e4de5b48a799a1"
+    },
+    {
+      "path": "hl2/resource/closecaption_schinese.txt",
+      "bytes": 562498,
+      "sha256": "50a46c669de04a6fc43d5044660b1fc194e8f778c21e23c8e384fca02ed00b43"
+    },
+    {
+      "path": "hl2/resource/closecaption_spanish.dat",
+      "bytes": 908288,
+      "sha256": "e4d3b92f40bc68c39ce7b86accecc58b66a9d5e6603de6bb697fae9ecf25989b"
+    },
+    {
+      "path": "hl2/resource/closecaption_spanish.txt",
+      "bytes": 1016646,
+      "sha256": "4b00e1d0a3d9d41ffc7c581b1d246cc43939dcd7d67bd4fb92f858eb3913f7a8"
+    },
+    {
+      "path": "hl2/resource/closecaption_swedish.dat",
+      "bytes": 867328,
+      "sha256": "7716b3737a9885313f0fad5134ce2e4bb14827f2d33789f0c5af1933b8fb4708"
+    },
+    {
+      "path": "hl2/resource/closecaption_swedish.txt",
+      "bytes": 994288,
+      "sha256": "f2217ad7d676aee47c3dfcecfeeeca2c418ebf91fda4da00a3aa9c65783ab82a"
+    },
+    {
+      "path": "hl2/resource/closecaption_tchinese.dat",
+      "bytes": 367616,
+      "sha256": "fd1714d3277767541c67d0f421379b41710a1bf43000e212c4de77eafd0d7864"
+    },
+    {
+      "path": "hl2/resource/closecaption_tchinese.txt",
+      "bytes": 541454,
+      "sha256": "fa9207a3142c6fad287f7adb48c420a7459c3a39626ce17a0582929d8fca2f0c"
+    },
+    {
+      "path": "hl2/resource/closecaption_thai.dat",
+      "bytes": 785408,
+      "sha256": "df15f4474cff9f98c430e1792bbb73ff4a7d6ce66a1f163364813a075932a403"
+    },
+    {
+      "path": "hl2/resource/closecaption_thai.txt",
+      "bytes": 921184,
+      "sha256": "f279c3c777b76d2d8deafbd59a9487dfa50ecd28ab0fb73c3562d944d254d7a7"
+    },
+    {
+      "path": "hl2/resource/closecaption_turkish.dat",
+      "bytes": 875520,
+      "sha256": "a96fca5e9081eb60fa4b1f87a0372d604984391408261ff4618c07107b2ddaf9"
+    },
+    {
+      "path": "hl2/resource/closecaption_turkish.txt",
+      "bytes": 995086,
+      "sha256": "9e629e730d7aa72f67d959d150318bc5cd4c7e00c20f242fae33284e97f2084d"
+    },
+    {
+      "path": "hl2/resource/closecaption_ukrainian.dat",
+      "bytes": 867328,
+      "sha256": "8a49f585ff34db2a319b580b0ae1349095ce05d722a692ee45b5b419d318d120"
+    },
+    {
+      "path": "hl2/resource/closecaption_ukrainian.txt",
+      "bytes": 986982,
+      "sha256": "bfa60e15b3319d5600528e77567dfcbce493d63da8d893b4dac01614f4a134ba"
+    },
+    {
+      "path": "hl2/resource/colorbalanceuipanel.res",
+      "bytes": 2797,
+      "sha256": "c005c17b47da230b86b983c417331add942b2c509c291bee97c2aba108a8b032"
+    },
+    {
+      "path": "hl2/resource/colorcorrectionuipanel.res",
+      "bytes": 711,
+      "sha256": "01763c1237f56527bfb88a9d86d90d424df028cd088600efb9cb97c8f965321e"
+    },
+    {
+      "path": "hl2/resource/colorcurvesuipanel.res",
+      "bytes": 1626,
+      "sha256": "b8de17073a71938485e9723252aeae751ffd24a49637432a6d03591cf021d2dd"
+    },
+    {
+      "path": "hl2/resource/colorlevelsuipanel.res",
+      "bytes": 2526,
+      "sha256": "171058875b6e78808643bff16a05b9590dca54f3d9cd4ad19636e35878cade10"
+    },
+    {
+      "path": "hl2/resource/colorlookupuipanel.res",
+      "bytes": 1060,
+      "sha256": "d29eef4739fa3b2a357813a93ee604248edc907bf7f6e9a681b4ed45d36c872b"
+    },
+    {
+      "path": "hl2/resource/coloroperationlistpanel.res",
+      "bytes": 3121,
+      "sha256": "02d9bffde7258f296e1b7003ae097f6a2d3d398803120e9c765f40a26790e636"
+    },
+    {
+      "path": "hl2/resource/colorpicker.cur",
+      "bytes": 842,
+      "sha256": "5c0138cc70dd9e4a2c901a193b60522ff3f900cb05f4a20633ab846f7079e60e"
+    },
+    {
+      "path": "hl2/resource/combinepanelscheme.res",
+      "bytes": 14250,
+      "sha256": "5b4ea96e9e3ec31d6247c9fc12854e2337dd736d231588823cff2566e1297c9b"
+    },
+    {
+      "path": "hl2/resource/commentarydialog.res",
+      "bytes": 2639,
+      "sha256": "026c2cd903a36a129178d9e16acf7e77c49d9df18c13d501bb11f98e87dc240c"
+    },
+    {
+      "path": "hl2/resource/commentaryexplanationdialog.res",
+      "bytes": 2774,
+      "sha256": "f26165aff58e1439659dbc210e1107aabe4cf039519f19616a801aa8fc0506a8"
+    },
+    {
+      "path": "hl2/resource/commentarynodebrowserpanel.res",
+      "bytes": 3060,
+      "sha256": "6ac7ba10ff1a037d1b1e643f32e0109fdc76012d33f3ea05d4403dea949b7787"
+    },
+    {
+      "path": "hl2/resource/commentarypropertiespanel.res",
+      "bytes": 1016,
+      "sha256": "201bb06bd8ccd6ee8d59fd7875439a426e8fb020d842b2dbced8a041e35231b9"
+    },
+    {
+      "path": "hl2/resource/commentarypropertiessubpanel_node.res",
+      "bytes": 15961,
+      "sha256": "bb72864c8a9996a8f8d78d5b90d3a373f146ec36b125113059af83781ede2af1"
+    },
+    {
+      "path": "hl2/resource/commentarypropertiessubpanel_target.res",
+      "bytes": 6631,
+      "sha256": "3d2cd8cf7a66706e69aefd5d6cb7054f86a7c439b63155390cc73e45a55d4d41"
+    },
+    {
+      "path": "hl2/resource/contentcontroldialog.res",
+      "bytes": 3232,
+      "sha256": "f3049ee84cd1212ad52bb6e8363c1852fa849cfa29307d7ad76de86cccf84a3c"
+    },
+    {
+      "path": "hl2/resource/createmultiplayergamegameplaypage.res",
+      "bytes": 1561,
+      "sha256": "ffe497ad532fdb0643de3d83a80c2e87daea926832da27b15d728a959c9939a5"
+    },
+    {
+      "path": "hl2/resource/createmultiplayergameserverpage.res",
+      "bytes": 1797,
+      "sha256": "9e718333bba8f969137955db8321374926d2589b58837c5c9a4d2aa05f462eff"
+    },
+    {
+      "path": "hl2/resource/crosshair.cur",
+      "bytes": 326,
+      "sha256": "6385194f612899ee3f1f3cc02f1c0e5e1ec9150ec8ccc49bff8ccb4960a30440"
+    },
+    {
+      "path": "hl2/resource/custombindingproperties.res",
+      "bytes": 2575,
+      "sha256": "b4509e69032b93b4f7010a26b714e654e5f5c17b2bd4ff7711dddf05dfe16705"
+    },
+    {
+      "path": "hl2/resource/customtabexplanationdialog.res",
+      "bytes": 7275,
+      "sha256": "bc897118b78a72927b0ebce1d53668508a1098eca94f9a33ac21656ff5ab460f"
+    },
+    {
+      "path": "hl2/resource/deck_brazilian.txt",
+      "bytes": 1616,
+      "sha256": "b87e5e16a16a6cbbba5463bc3e7e6c5c8a5a6d5efdc97249af5c4c812088ad22"
+    },
+    {
+      "path": "hl2/resource/deck_bulgarian.txt",
+      "bytes": 1790,
+      "sha256": "20e56c0439d6e5bbe8d92e5594d5ad73f464be71f4f5cd1a29b80b299f11e232"
+    },
+    {
+      "path": "hl2/resource/deck_czech.txt",
+      "bytes": 1630,
+      "sha256": "8a26970674db6a7d0046639fb8547adf6d76a6cebc6c06cd15f2bc440d0533d2"
+    },
+    {
+      "path": "hl2/resource/deck_danish.txt",
+      "bytes": 1546,
+      "sha256": "84946242d486bd5866efba0d43606b9fac693b4b89b081cbef2f9921e943d0d2"
+    },
+    {
+      "path": "hl2/resource/deck_dutch.txt",
+      "bytes": 1586,
+      "sha256": "f8dc9698e26e8ffd9600d1fa4e2869f59a1a7a03511070edc86182022d9567b2"
+    },
+    {
+      "path": "hl2/resource/deck_english.txt",
+      "bytes": 1500,
+      "sha256": "d0726949bd5d50113f29b9185e98461dc07478b4880b7faec508cd3770675318"
+    },
+    {
+      "path": "hl2/resource/deck_french.txt",
+      "bytes": 1570,
+      "sha256": "cb3ea0c8a0a94679d06b092fdb07363d7b12172a7e5cac7296ce364dab6bfaf5"
+    },
+    {
+      "path": "hl2/resource/deck_german.txt",
+      "bytes": 1620,
+      "sha256": "b922752665ff166edfb428b039422b11fabec2f72f1664ae70958b700c0176c6"
+    },
+    {
+      "path": "hl2/resource/deck_greek.txt",
+      "bytes": 1698,
+      "sha256": "81d308f2e67bd46e774e9584665c84a4cd23591f08398b89b0d61ae3704acaaa"
+    },
+    {
+      "path": "hl2/resource/deck_hungarian.txt",
+      "bytes": 1672,
+      "sha256": "7d6526180bec6ba6cbd8c8b8d32b871a563916f2e9f770fdca2fe7bb75c873e1"
+    },
+    {
+      "path": "hl2/resource/deck_italian.txt",
+      "bytes": 1576,
+      "sha256": "c543e5cc97d2139fee21ec06e04af8e8b0f094bbc89fc4042de0fa7468d0cacc"
+    },
+    {
+      "path": "hl2/resource/deck_japanese.txt",
+      "bytes": 1338,
+      "sha256": "7557a1988627ff065b94ca4346815555875a40c9f16a1b56d4922797459b6bb5"
+    },
+    {
+      "path": "hl2/resource/deck_korean.txt",
+      "bytes": 1294,
+      "sha256": "57188c60bc457bab87b0fb1d1bb36a5c7394697cd43d4c4c309ad54b896f67a3"
+    },
+    {
+      "path": "hl2/resource/deck_latam.txt",
+      "bytes": 1538,
+      "sha256": "2512c18e597597f2f0ef4fc946331c72f027749b0eb5fdb8a79633bd776d486f"
+    },
+    {
+      "path": "hl2/resource/deck_norwegian.txt",
+      "bytes": 1576,
+      "sha256": "309ad16a8c2acd764a4f37eef883ddb9bbdba37527b3cd84334cbc0b74ec88ca"
+    },
+    {
+      "path": "hl2/resource/deck_polish.txt",
+      "bytes": 1686,
+      "sha256": "e3ec4ebfc70a144477b76f561e83ef20cd1ae9067c7aae5ffa551cb73520cf26"
+    },
+    {
+      "path": "hl2/resource/deck_portuguese.txt",
+      "bytes": 1576,
+      "sha256": "298e0e270f0187c2e3a011dd7586e6f3afbc0d224a86efa6d73ba7e09517c4c3"
+    },
+    {
+      "path": "hl2/resource/deck_romanian.txt",
+      "bytes": 1660,
+      "sha256": "8a8fdd403981d31d99495d6d2ae2a059afafe0b4c93c2e9eb41c78f88409c616"
+    },
+    {
+      "path": "hl2/resource/deck_russian.txt",
+      "bytes": 1636,
+      "sha256": "0b8c19d80296a68d9fbd7cb30587d8cf6e5b3457faa584a0381faf95f934d7ad"
+    },
+    {
+      "path": "hl2/resource/deck_schinese.txt",
+      "bytes": 1276,
+      "sha256": "e9376035c0646d7a02941574d525c8ee1cacedd5de937d2f212b6e9de7d722a5"
+    },
+    {
+      "path": "hl2/resource/deck_spanish.txt",
+      "bytes": 1568,
+      "sha256": "8db42c57059dd74f6fc92ab73ba77832af9ff9b89dbd7edc67810df25fe3a270"
+    },
+    {
+      "path": "hl2/resource/deck_tchinese.txt",
+      "bytes": 1258,
+      "sha256": "7c57c9f095c31264e640ac2f45da1c09788d31a4dd129521945304ef4b5ce85c"
+    },
+    {
+      "path": "hl2/resource/deck_thai.txt",
+      "bytes": 1530,
+      "sha256": "90c0b8a47a7257c0de06b0647ee2710a6a39bf654260e286baac91fe4030d5ca"
+    },
+    {
+      "path": "hl2/resource/deck_vietnamese.txt",
+      "bytes": 1520,
+      "sha256": "f17de95ee6eb67e931480847d839dbc9839d518d563b4cf62bcc5925ef0355c0"
+    },
+    {
+      "path": "hl2/resource/demoeditorpanel.res",
+      "bytes": 3517,
+      "sha256": "156e7da775b648717dbb122d7e27b5b2bd6368bd568b830258cb86dd15add0a0"
+    },
+    {
+      "path": "hl2/resource/demosmootherpanel.res",
+      "bytes": 14899,
+      "sha256": "6c15496a6bd5513a55a598007d601cfbe06eb5f35fe52f6bc85d49684149de9e"
+    },
+    {
+      "path": "hl2/resource/demouipanel.res",
+      "bytes": 8795,
+      "sha256": "85a56235587b00759c399b0f0ef1a7adbed46086978f0abfd82d280fcf6ddeff"
+    },
+    {
+      "path": "hl2/resource/demouipanel2.res",
+      "bytes": 5436,
+      "sha256": "c2928be11562ca14fb0dc9144aa6fdb4ae7acd158b94e435b4b1fc01832cdf24"
+    },
+    {
+      "path": "hl2/resource/dialogoptionsingame.res",
+      "bytes": 1168,
+      "sha256": "78dc56276b0cb1d07bae3075747a41409df346e9d24b4e3940c79e9d7595c83a"
+    },
+    {
+      "path": "hl2/resource/dmecontrols_english.txt",
+      "bytes": 4428,
+      "sha256": "ece8dcfa389a3d747f1e11d766e17a10f11dfec15d52f86f1d00a42d651e486c"
+    },
+    {
+      "path": "hl2/resource/drag_copy.cur",
+      "bytes": 766,
+      "sha256": "5ad3f8441b46ea783883bd8949061a9c5566184bb20dcd240c20556e4453a4cd"
+    },
+    {
+      "path": "hl2/resource/drag_link.cur",
+      "bytes": 766,
+      "sha256": "3921056b7eead4360cf9aad3be5b85080f636522ab6af8ec6cc970da6866f364"
+    },
+    {
+      "path": "hl2/resource/drag_move.cur",
+      "bytes": 766,
+      "sha256": "9158e54c703efcb1fe2cb23214aaba5a25a41590448fe3b850a2883502303136"
+    },
+    {
+      "path": "hl2/resource/entity.cur",
+      "bytes": 326,
+      "sha256": "e8fb4071a5021cbb18ff93c94bcc794ae70bdc3492acd5e2e3a39a3323ef9515"
+    },
+    {
+      "path": "hl2/resource/entityreportpanel.res",
+      "bytes": 7209,
+      "sha256": "f594dac7ee8d638ae61d6bc9d5ebc27751dac5c4fb39739317006017fc500f97"
+    },
+    {
+      "path": "hl2/resource/eyedropper.cur",
+      "bytes": 326,
+      "sha256": "3af732a6bef9977d9599fa359df42860933c4262fa6f6a96d29e71e4b7f28b18"
+    },
+    {
+      "path": "hl2/resource/foguipanel.res",
+      "bytes": 20542,
+      "sha256": "e1cc6899c7698de064b4de617d87a6a0cc9d58be90e27c3df5132448bfa4f02e"
+    },
+    {
+      "path": "hl2/resource/g15.res",
+      "bytes": 2679,
+      "sha256": "87e4620b36c66b006e916748c4f3ca804bb71366bc95e6ed3072ac2f05ad2f21"
+    },
+    {
+      "path": "hl2/resource/game-icon.bmp",
+      "bytes": 9286,
+      "sha256": "c5de3ee9b40b56676913f2250e93329a92a30abee3fbc3c2652fc8ee576ec114"
+    },
+    {
+      "path": "hl2/resource/game.icns",
+      "bytes": 153036,
+      "sha256": "a532fc70b8dea31815077434422c9f319a89673fd9f5129617fa27c772ecff8b"
+    },
+    {
+      "path": "hl2/resource/game.ico",
+      "bytes": 29926,
+      "sha256": "a9195aea2d22a96bbc773747b52c642715ec68f46c3cde61bbbb005cbe38fc93"
+    },
+    {
+      "path": "hl2/resource/game_1bpp.ico",
+      "bytes": 326,
+      "sha256": "268000f2dcb6ad02f98c85d61d6108da5e5717a93932ba07e8d0e46a2f3ed14c"
+    },
+    {
+      "path": "hl2/resource/gameevents.res",
+      "bytes": 8443,
+      "sha256": "77778d2fbd36bad0430fb1c132c1a2ef9d701fca0d4f502966decfb633481801"
+    },
+    {
+      "path": "hl2/resource/gamemenu.res",
+      "bytes": 1323,
+      "sha256": "3fb64b68fdcddb934be9d27621c5fd3e49f258646489e2658b8a6d6695374917"
+    },
+    {
+      "path": "hl2/resource/gameui_brazilian.txt",
+      "bytes": 116596,
+      "sha256": "7f1eeb5284971bfa6fb59f1eb9c9701b12c8c3677394f06b305f219f448069d7"
+    },
+    {
+      "path": "hl2/resource/gameui_bulgarian.txt",
+      "bytes": 118784,
+      "sha256": "c7daae3a7c427c52a4a96fee58cdf3bd0d6be3e8cc066bbf7e1f412ef667455b"
+    },
+    {
+      "path": "hl2/resource/gameui_czech.txt",
+      "bytes": 112860,
+      "sha256": "02399bd64bc5f1fb866384b59d3373d25ee85969213970e506d4add90aa6e318"
+    },
+    {
+      "path": "hl2/resource/gameui_danish.txt",
+      "bytes": 112732,
+      "sha256": "bcc2b863661fd8971a9eb3e0e64a594b8cefe6a3c42c2a8448fc0391608dc9a3"
+    },
+    {
+      "path": "hl2/resource/gameui_dutch.txt",
+      "bytes": 117304,
+      "sha256": "2027a521651eb0ab5c52725fa25cf503a1edc51df3cce78f20f406b8110581c1"
+    },
+    {
+      "path": "hl2/resource/gameui_english.txt",
+      "bytes": 109624,
+      "sha256": "43730a193cec6892915532f809fa274397a122e827e75820514bced96f1f83f5"
+    },
+    {
+      "path": "hl2/resource/gameui_finnish.txt",
+      "bytes": 114788,
+      "sha256": "a76f0f81765260515aa2ca9f2c93a41ed6df8b1b62a56fa4d5b14a3f62974d1b"
+    },
+    {
+      "path": "hl2/resource/gameui_french.txt",
+      "bytes": 121172,
+      "sha256": "de9e9c984e4f53832fdea16eb17c9674916d0e96f82b9ac5a05167f59fb998cf"
+    },
+    {
+      "path": "hl2/resource/gameui_german.txt",
+      "bytes": 119804,
+      "sha256": "6bf0894fb5f627ca0b13fd98b066fe2bb82c7a64973e39eab37247b54c10600a"
+    },
+    {
+      "path": "hl2/resource/gameui_greek.txt",
+      "bytes": 119262,
+      "sha256": "b53403bcda84cdf63fb09d96ca6b1cf1ed02c0507f68892fbff4dbf771e4cbf4"
+    },
+    {
+      "path": "hl2/resource/gameui_hungarian.txt",
+      "bytes": 113198,
+      "sha256": "a98700a958f797b83939343a270647ab2277918a68de7c5b75960f8da87b5e36"
+    },
+    {
+      "path": "hl2/resource/gameui_italian.txt",
+      "bytes": 120122,
+      "sha256": "5418afadb5e0c1db78845bf19fa355be6d40403f70a8c582b871c456088c519e"
+    },
+    {
+      "path": "hl2/resource/gameui_japanese.txt",
+      "bytes": 89374,
+      "sha256": "6a71f8306b24ce37c7feae8375960c9d5de552c7a5cc8af8175f3cfb0f60df24"
+    },
+    {
+      "path": "hl2/resource/gameui_korean.txt",
+      "bytes": 88114,
+      "sha256": "61e5d49b332b13af45d730f4dc2d46c67cc250c77e160e143744a4775defcc15"
+    },
+    {
+      "path": "hl2/resource/gameui_koreana.txt",
+      "bytes": 88114,
+      "sha256": "61e5d49b332b13af45d730f4dc2d46c67cc250c77e160e143744a4775defcc15"
+    },
+    {
+      "path": "hl2/resource/gameui_latam.txt",
+      "bytes": 119192,
+      "sha256": "98a890e2b762746e1f0ebedcfaf44689c32d094f6388f0399beeab47bfde1c14"
+    },
+    {
+      "path": "hl2/resource/gameui_norwegian.txt",
+      "bytes": 112232,
+      "sha256": "b180ede4aa7226e51e4016609cd72a01e9a5bb72e5e887a04ffb5a28b2c300d7"
+    },
+    {
+      "path": "hl2/resource/gameui_polish.txt",
+      "bytes": 114678,
+      "sha256": "9c1707cf1f240320640e26fa201603f9eec07ac40e647848257ff3699049bf25"
+    },
+    {
+      "path": "hl2/resource/gameui_portuguese.txt",
+      "bytes": 116586,
+      "sha256": "1896291fa07eeb02310cf2583b8be497b470541891e177f9e342f1bfc0f5417f"
+    },
+    {
+      "path": "hl2/resource/gameui_romanian.txt",
+      "bytes": 119056,
+      "sha256": "0915eb913b211986456713f36456d0c1bddb764e91a2d205ebbf34597f9d2f33"
+    },
+    {
+      "path": "hl2/resource/gameui_russian.txt",
+      "bytes": 113014,
+      "sha256": "5a9aed1ed30d6c47a21612ea555f45265ca0724d1ef0649170696862d7d4404d"
+    },
+    {
+      "path": "hl2/resource/gameui_schinese.txt",
+      "bytes": 80746,
+      "sha256": "e3fb52ef2c5d3f7b9d6497bb63cdb3a163d8a3636cc0570d24e8e9a36f69e25a"
+    },
+    {
+      "path": "hl2/resource/gameui_spanish.txt",
+      "bytes": 118918,
+      "sha256": "65963e7f159378df08a5308da79b80d581d5a748d7d56ef545e66f4d8e0b5d03"
+    },
+    {
+      "path": "hl2/resource/gameui_swedish.txt",
+      "bytes": 113270,
+      "sha256": "7bc645aa69c6a7cf081fee2959b6198de6dca898f30286b5e0f65af19f6125da"
+    },
+    {
+      "path": "hl2/resource/gameui_tchinese.txt",
+      "bytes": 80772,
+      "sha256": "8771913584ad4c84f8c9a66f9e6bb251ab3ea93d9991d95d713bd16d95bd1b3d"
+    },
+    {
+      "path": "hl2/resource/gameui_thai.txt",
+      "bytes": 108862,
+      "sha256": "9a10f32def2062822787781e92fec0f835397004b3f5abf6159d06c7034ebbea"
+    },
+    {
+      "path": "hl2/resource/gameui_turkish.txt",
+      "bytes": 112380,
+      "sha256": "3ae1a0d1c7dcc7fdefecedbf388f97341608c21aefd7bc87881ad96f537d566c"
+    },
+    {
+      "path": "hl2/resource/gameui_ukrainian.txt",
+      "bytes": 114500,
+      "sha256": "7618bdb936f37ee4717843ebdbb1957a45be4344169df6d39be70d8b70fa9f1a"
+    },
+    {
+      "path": "hl2/resource/gameui_vietnamese.txt",
+      "bytes": 112354,
+      "sha256": "5a8403be3001f37c16fa062e53f944081de33bac04736e2ed65ad3dfcd09e6ab"
+    },
+    {
+      "path": "hl2/resource/halflife2.ttf",
+      "bytes": 92796,
+      "sha256": "c09544b387a15cfbc8d43765716ee69f89bbb6f0bb6d95409ec98282daac07e8"
+    },
+    {
+      "path": "hl2/resource/hl2_brazilian.txt",
+      "bytes": 16000,
+      "sha256": "4d3679c0ab93c59206c6aeadf05a43679126830a1ec1ca86173090a5ac223293"
+    },
+    {
+      "path": "hl2/resource/hl2_bulgarian.txt",
+      "bytes": 16012,
+      "sha256": "492ac9660b972de34fd1317d5a0b1f0188240a648fdf9bd7cf0c2b57090f4f2b"
+    },
+    {
+      "path": "hl2/resource/hl2_czech.txt",
+      "bytes": 15468,
+      "sha256": "da8a721637575c77b9bed597fb5fae0a55c26cfa8ee8f6dd632cbc8a91d09b36"
+    },
+    {
+      "path": "hl2/resource/hl2_danish.txt",
+      "bytes": 15192,
+      "sha256": "7b0802d3d2c0901f42f9af1e4e7e4c5f3cccff2fc6ca465f419e55df437a1611"
+    },
+    {
+      "path": "hl2/resource/hl2_dutch.txt",
+      "bytes": 15358,
+      "sha256": "4c6b81fb18388a0096a91f2b97ee69cd67aa259f470f021aa9683a7294240a8e"
+    },
+    {
+      "path": "hl2/resource/hl2_english.txt",
+      "bytes": 15240,
+      "sha256": "5cfb8733198a2ebc625d659797f1b88ef18f029b9c818fe81cceea04b0476d7f"
+    },
+    {
+      "path": "hl2/resource/hl2_finnish.txt",
+      "bytes": 15116,
+      "sha256": "3cb7134e3ea2af56a3545025eaab59e2211fc0df4c1a7569e355dff463e6afb8"
+    },
+    {
+      "path": "hl2/resource/hl2_french.txt",
+      "bytes": 16952,
+      "sha256": "271882b252f606fdeb248e2e92c4257e8183b17dd837098d0e23973aff0e688d"
+    },
+    {
+      "path": "hl2/resource/hl2_german.txt",
+      "bytes": 16290,
+      "sha256": "6379b3c1fe23c0606de84184768eabfb3d17c9c196ea196c857902e93fef389b"
+    },
+    {
+      "path": "hl2/resource/hl2_greek.txt",
+      "bytes": 16784,
+      "sha256": "f388ddbc92c8a1f05b22f1ff336ccf33019aca89dff80f8d74cd4aeea6436577"
+    },
+    {
+      "path": "hl2/resource/hl2_hungarian.txt",
+      "bytes": 15938,
+      "sha256": "68b4bc410ae8d032951c5d8b395a16fd810f033989dc952d8195aff91bdb48ea"
+    },
+    {
+      "path": "hl2/resource/hl2_italian.txt",
+      "bytes": 16536,
+      "sha256": "b3c0508acb15e4f9d1a7f0a8273673c9a661f5e87d984595a5e8b0236dedc823"
+    },
+    {
+      "path": "hl2/resource/hl2_japanese.txt",
+      "bytes": 12234,
+      "sha256": "7d8ff7ef15adb957049bb8e112f116d84e22d89e6a048c4838e704775ec06936"
+    },
+    {
+      "path": "hl2/resource/hl2_korean.txt",
+      "bytes": 12022,
+      "sha256": "615f0244bae3fe1983a068c5bdfdb72c787739ccfaf1f2f5d8adbd55e7f9e657"
+    },
+    {
+      "path": "hl2/resource/hl2_koreana.txt",
+      "bytes": 12022,
+      "sha256": "615f0244bae3fe1983a068c5bdfdb72c787739ccfaf1f2f5d8adbd55e7f9e657"
+    },
+    {
+      "path": "hl2/resource/hl2_latam.txt",
+      "bytes": 16084,
+      "sha256": "59a9ad6863817a353b35d08a4e053a0720b3febf3b190325fce4aed7b73e17b4"
+    },
+    {
+      "path": "hl2/resource/hl2_norwegian.txt",
+      "bytes": 15276,
+      "sha256": "f904c1d882da526e8728b00d8f42aaf2b249d1b8c52ca19a88e33df199bc061c"
+    },
+    {
+      "path": "hl2/resource/hl2_polish.txt",
+      "bytes": 15854,
+      "sha256": "2e7ac3624c070cdc21ccb36d4d7b3c77093780b6a7d13c7839821d18a3c6295c"
+    },
+    {
+      "path": "hl2/resource/hl2_portuguese.txt",
+      "bytes": 15946,
+      "sha256": "cdcb24918a6bd79a016a558b91531d5d4b1f05feb7626aa23b3730a11b4b5a73"
+    },
+    {
+      "path": "hl2/resource/hl2_romanian.txt",
+      "bytes": 15690,
+      "sha256": "044fdf5afcb637e54464633dfd19835d97052ad346dc255f361aa55bc76c1659"
+    },
+    {
+      "path": "hl2/resource/hl2_russian.txt",
+      "bytes": 15408,
+      "sha256": "49cb9de67b18b5589068ddc8bb530c047d56b8e26b772d48184f886f08b4dd76"
+    },
+    {
+      "path": "hl2/resource/hl2_schinese.txt",
+      "bytes": 11154,
+      "sha256": "77aacb069da06cbd11c08455ec204fc0402b6ac8d801a3530c9d441f1e44b19b"
+    },
+    {
+      "path": "hl2/resource/hl2_spanish.txt",
+      "bytes": 16160,
+      "sha256": "09218c854ec3946fdfad22b1b6c484f472fa726b9c4b770e6c8f5ae3b6851092"
+    },
+    {
+      "path": "hl2/resource/hl2_swedish.txt",
+      "bytes": 15124,
+      "sha256": "c23122be08bc6be2832a8b567167c1ef1854f7bf2eb7d9f0702707a524348880"
+    },
+    {
+      "path": "hl2/resource/hl2_tchinese.txt",
+      "bytes": 11160,
+      "sha256": "f20b34b0718e8dcaaaa8a49994bd6d2d817b2a1597b3e72d5d6a58ed91be616a"
+    },
+    {
+      "path": "hl2/resource/hl2_thai.txt",
+      "bytes": 14920,
+      "sha256": "d891f5dc926a9311fd27cf0a03532096d615b9ad0a60771699f902cae27d97b1"
+    },
+    {
+      "path": "hl2/resource/hl2_turkish.txt",
+      "bytes": 15482,
+      "sha256": "3f6eaa57a413e54a0a90274ee2d32f457b69bc88aa02fd2b138af8418d083479"
+    },
+    {
+      "path": "hl2/resource/hl2_ukrainian.txt",
+      "bytes": 15616,
+      "sha256": "77a5403774674b3698fd0f1d664f08ca460513005828f538a64b7d676ffb1efc"
+    },
+    {
+      "path": "hl2/resource/hl2crosshairs.ttf",
+      "bytes": 4000,
+      "sha256": "752a4357752d4d48e0780265de380ea876c3e51b20de968bdc848fc71eb5a635"
+    },
+    {
+      "path": "hl2/resource/hl2ep2.ttf",
+      "bytes": 5032,
+      "sha256": "01cb485a68c33bd055ec31b1f5e272f0a3ba33eba5cfdc527f6083de33656816"
+    },
+    {
+      "path": "hl2/resource/hltvevents.res",
+      "bytes": 2923,
+      "sha256": "42009260aabd3d139ca170057a8cdf901c9263e855e0f37f2addb54806aabf52"
+    },
+    {
+      "path": "hl2/resource/ifm_cliproll.cur",
+      "bytes": 766,
+      "sha256": "49cad3046293422348557abf2748a2f2fe4a4f32d5ca9b4c829997fb4516695b"
+    },
+    {
+      "path": "hl2/resource/ifm_cliprsr.cur",
+      "bytes": 766,
+      "sha256": "d1b24464464da35e0d071ebba614ea43207627a8646b3a0c52e6ec5a62a410dc"
+    },
+    {
+      "path": "hl2/resource/ifm_clipscale.cur",
+      "bytes": 766,
+      "sha256": "ccec1a56cc7342f2ecca7df8023d28294a27d54ae155c0717675f49c51d4acca"
+    },
+    {
+      "path": "hl2/resource/ifm_curve.cur",
+      "bytes": 766,
+      "sha256": "20985de53301da6a033fe55247b3999777f1b33570b20158cac31ee924d843f2"
+    },
+    {
+      "path": "hl2/resource/ifm_dragin.cur",
+      "bytes": 766,
+      "sha256": "a7f291c2dce4498e98367858a45c14913e40e1c6147e1c951c31f03a3f029ae9"
+    },
+    {
+      "path": "hl2/resource/ifm_dragin_roll.cur",
+      "bytes": 766,
+      "sha256": "d6e717018757c6ce59b8b5497d10f36ed040909abdf2c0926b24dfff9971607a"
+    },
+    {
+      "path": "hl2/resource/ifm_dragin_scale.cur",
+      "bytes": 766,
+      "sha256": "f23b5da3ddc9bd0ccab1f36d92a9eff4cb4040578649a56ed2a644034e05c1d0"
+    },
+    {
+      "path": "hl2/resource/ifm_dragout.cur",
+      "bytes": 766,
+      "sha256": "684948addea2019246d696167c50cc4ffec598217b5fb203c07258d970e72462"
+    },
+    {
+      "path": "hl2/resource/ifm_dragout_roll.cur",
+      "bytes": 766,
+      "sha256": "c483576eb2462be84f2110dfa1f87dc9dd7fb57380bede3068e7d3bcb12fa799"
+    },
+    {
+      "path": "hl2/resource/ifm_dragout_scale.cur",
+      "bytes": 766,
+      "sha256": "77230a99f896ecb7ab49d2cd53d6432d898166fae84100356858a424b55c31b7"
+    },
+    {
+      "path": "hl2/resource/ifm_grab.cur",
+      "bytes": 2238,
+      "sha256": "2b3fbd79aacda295dda88633064d83dd1e869b6020f422348c27213a951da8c1"
+    },
+    {
+      "path": "hl2/resource/ifm_inout.cur",
+      "bytes": 766,
+      "sha256": "88b0d1a1196178bdac6a7814cad88e90d5749a912c6bff16f5197da5e5bd65bb"
+    },
+    {
+      "path": "hl2/resource/ifm_inout_rr.cur",
+      "bytes": 766,
+      "sha256": "88b0d1a1196178bdac6a7814cad88e90d5749a912c6bff16f5197da5e5bd65bb"
+    },
+    {
+      "path": "hl2/resource/ifm_inout_rs.cur",
+      "bytes": 766,
+      "sha256": "43b7bcc9b8669f6c0154eda0badd612319637d58437d2f10f03bf6ebeca5d8de"
+    },
+    {
+      "path": "hl2/resource/ifm_inout_scale.cur",
+      "bytes": 766,
+      "sha256": "1ad7bff16b9122fb9acd7d4cfe41d0d0290da6f230a7193aa973fd75ae5d6414"
+    },
+    {
+      "path": "hl2/resource/ifm_inout_sr.cur",
+      "bytes": 766,
+      "sha256": "6f9c9d980f295b0431fb2b4bf3819bc95d77150e223e05060b86be9a9e4f27fd"
+    },
+    {
+      "path": "hl2/resource/ifm_inout_ss.cur",
+      "bytes": 766,
+      "sha256": "b6185217c51c0ce48c605816fb81f9ee3ca27aeb4f6137c31026ba2eb953897f"
+    },
+    {
+      "path": "hl2/resource/ifm_move.cur",
+      "bytes": 2238,
+      "sha256": "fe54d9629eaff8b0b8ca29330c9964dda31a6d3e2f23773009aba9ffaa439555"
+    },
+    {
+      "path": "hl2/resource/ifm_multiselect_after.cur",
+      "bytes": 766,
+      "sha256": "427ac4224160c07a5f4a22362355819031dad4e84299ba527988b05a147e9168"
+    },
+    {
+      "path": "hl2/resource/ifm_scaler.cur",
+      "bytes": 766,
+      "sha256": "6eb83b42b60365204edf6fbb8c839ea2dd5ec882c2b5b273d529bb92dd828666"
+    },
+    {
+      "path": "hl2/resource/ifm_select_after.cur",
+      "bytes": 766,
+      "sha256": "a0e1f10f416bfe439d015f6f2bd1fc15f8c0034ebd6eb689bbd0388bd04891de"
+    },
+    {
+      "path": "hl2/resource/ifm_ts_doubleline.cur",
+      "bytes": 766,
+      "sha256": "e74daac611875b7fe5a898b89cdec9560868a4e787b7fefdb6b70dffe337efbf"
+    },
+    {
+      "path": "hl2/resource/ifm_ts_full_region.cur",
+      "bytes": 766,
+      "sha256": "ba8e633b41c1b7480ea59fe39b71ca02122eeab913ba665b4926b96de6c77de4"
+    },
+    {
+      "path": "hl2/resource/ifm_ts_line.cur",
+      "bytes": 766,
+      "sha256": "e75ecb1ce91e87f67c2e3fb9eaa8eb81ff4930009f47adb457c8497e11845565"
+    },
+    {
+      "path": "hl2/resource/ifm_ts_region.cur",
+      "bytes": 766,
+      "sha256": "7e9f913ab2a9e51aa81935e883bec66cc63da3268271b818b26b2489b7414f9a"
+    },
+    {
+      "path": "hl2/resource/infotargetbrowserpanel.res",
+      "bytes": 3764,
+      "sha256": "4e2cb21286fd1d5a6497dc0590b27e8632be146acc50f92f4e010c6b7c88712c"
+    },
+    {
+      "path": "hl2/resource/infotargetpropertiespanel.res",
+      "bytes": 674,
+      "sha256": "c0d96137951e6a476a45e4d537f063306be07453f705e1b91542cf063d4f3eec"
+    },
+    {
+      "path": "hl2/resource/infotargetpropertiessubpanel_target.res",
+      "bytes": 6631,
+      "sha256": "d81ba88ca8700bd7edf983c0b3a2c8235b1bab4cd623ec830f8bcc1790971d7a"
+    },
+    {
+      "path": "hl2/resource/itemtest_english.txt",
+      "bytes": 31266,
+      "sha256": "8b30cd2ed94635f250d0b6fbf67364ee2d8822658f6985a00a468d0610350e2f"
+    },
+    {
+      "path": "hl2/resource/itemtest_scheme.res",
+      "bytes": 18407,
+      "sha256": "c4cef7fe96670ec6b294e9140c10cc56f9afc4d1cdaa635e1b54febfda055b25"
+    },
+    {
+      "path": "hl2/resource/jumptotime.cur",
+      "bytes": 842,
+      "sha256": "5c0138cc70dd9e4a2c901a193b60522ff3f900cb05f4a20633ab846f7079e60e"
+    },
+    {
+      "path": "hl2/resource/keybindinghelpdialog.res",
+      "bytes": 1468,
+      "sha256": "a814c7e32a47d692a58d382c730aadd464a056da6d4ec4a0da6e3324ad5d4527"
+    },
+    {
+      "path": "hl2/resource/keyboardeditordialog.res",
+      "bytes": 2312,
+      "sha256": "97d71f7caf0d8c141b641e76d8817c488f771432209fd3adb8233733b9ae6524"
+    },
+    {
+      "path": "hl2/resource/keyboardeditorpage.res",
+      "bytes": 569,
+      "sha256": "4ac77c70e9191ad2d8a5507212ce99539c13fb9cee32ee91e84d326a6fec524d"
+    },
+    {
+      "path": "hl2/resource/keyboardeditorpanel.res",
+      "bytes": 574,
+      "sha256": "ee2286a22dd073e23a5fb946258af12a480067d120037fcb318b9e7a140cc768"
+    },
+    {
+      "path": "hl2/resource/loadgamedialog.res",
+      "bytes": 3573,
+      "sha256": "d619a2b3083940bac9df8cdd7b0047effbd9803e8f681015866c7f068cf82236"
+    },
+    {
+      "path": "hl2/resource/loadingdialogerror.res",
+      "bytes": 2118,
+      "sha256": "f18624dea43ddeb196475fb5ae15831b72597686dd09e3716a8ce09a0c80a3cc"
+    },
+    {
+      "path": "hl2/resource/loadingdialogerrorloggedinelsewhere.res",
+      "bytes": 2288,
+      "sha256": "4f2f0536c944961830f1bff66694e2e24af369aa5b027588ced8aa7568967562"
+    },
+    {
+      "path": "hl2/resource/loadingdialogerrornosteamconnection.res",
+      "bytes": 2490,
+      "sha256": "c9aa0c669d6d40d1c06204949ca2236cc2d2c2f7b9a2aa194a6ad9fb1fe52751"
+    },
+    {
+      "path": "hl2/resource/loadingdialogerrorvacbanned.res",
+      "bytes": 1355,
+      "sha256": "8f0e097a4efd485c9c733d8de4d4632312afe1904e7bf1516f14e2fcaf95d66b"
+    },
+    {
+      "path": "hl2/resource/loadingdialognobanner.res",
+      "bytes": 3050,
+      "sha256": "eb3ca1cb5a747294536c8bc8cd9797c45a5b6828262af0995c5dcf6d5b2f6da8"
+    },
+    {
+      "path": "hl2/resource/loadingdialognobannersingle.res",
+      "bytes": 3042,
+      "sha256": "cffde579cef52d36f2dd794e68848014da866e38c2404b8adcc56c579df4718b"
+    },
+    {
+      "path": "hl2/resource/loadingdialogvac.res",
+      "bytes": 2278,
+      "sha256": "81cdac564b982aa4bed0658cda3d895caf46690194e24b870938ad89a82a87c9"
+    },
+    {
+      "path": "hl2/resource/loadingdiscpanel.res",
+      "bytes": 324,
+      "sha256": "e199d28f915492f8e0e9196bca0d5ade7524ffad4981964ac099be7c5941dba6"
+    },
+    {
+      "path": "hl2/resource/loggenerationdialog.res",
+      "bytes": 5683,
+      "sha256": "3bd89726479488365e66eb66f8202f6ed854dd03d2e6481d98dc330831e21a80"
+    },
+    {
+      "path": "hl2/resource/lookupviewwindow.res",
+      "bytes": 263,
+      "sha256": "f623eea38ece15fcad129f0806eeef85d460339de6ac99a96f6bc1764d5f2920"
+    },
+    {
+      "path": "hl2/resource/magnify.cur",
+      "bytes": 326,
+      "sha256": "d8aa6853b755b7856a83c5df7cdc1b163d4143a04830588ea0b07ef8e05d1f29"
+    },
+    {
+      "path": "hl2/resource/marlett.ttf",
+      "bytes": 6136,
+      "sha256": "3b6192eca4451835f4d634b0b6b0841da321ec65c1f3f1aa22d186da45787b9c"
+    },
+    {
+      "path": "hl2/resource/mp3player.res",
+      "bytes": 5023,
+      "sha256": "94fa82249e5501539c72d405e35a4eb94982cb367916a38421811f4f81d69ae9"
+    },
+    {
+      "path": "hl2/resource/mp3player_english.txt",
+      "bytes": 1292,
+      "sha256": "3b7261fe51cb131b8fb297f51a975d0f4a0f9f6778abc849eff45c47ef2f95ad"
+    },
+    {
+      "path": "hl2/resource/mp3settings.txt",
+      "bytes": 167,
+      "sha256": "5861d44a473cf8a79bfeefdb653d97689356c7268ee1872b0639308a680da5e8"
+    },
+    {
+      "path": "hl2/resource/multiplayeradvanceddialog.res",
+      "bytes": 1528,
+      "sha256": "46e0071e63dc8b337b884eb04c341cb67c963ffac9879b149df7a3aa37083f7d"
+    },
+    {
+      "path": "hl2/resource/multiplayercustomizedialog.res",
+      "bytes": 5949,
+      "sha256": "6ac293d2a9c0358b8964a1b2a9167568fa0e44846f3519af38ee3f1ed06ed16c"
+    },
+    {
+      "path": "hl2/resource/newgamechapterpanel.res",
+      "bytes": 1551,
+      "sha256": "082cbc7013e89a000dc1dd73854582361a0f2e6322bc44f3128e2884a6edc2a6"
+    },
+    {
+      "path": "hl2/resource/newgamedialog.res",
+      "bytes": 2376,
+      "sha256": "1c78eb8927c0aa07825cde2de5edbc74474850963846d26cf924664dc64f1d6a"
+    },
+    {
+      "path": "hl2/resource/newobj.cur",
+      "bytes": 326,
+      "sha256": "d15992c447c1eb4fb790c6dc2d2902096b96e01a3c942f0b245212ea96f45aea"
+    },
+    {
+      "path": "hl2/resource/newoperationdialog.res",
+      "bytes": 2544,
+      "sha256": "ab5d1d4b488cf9ea24c89edeb49bbb9a2c7c72f0d85d9f04552a62d9b546f707"
+    },
+    {
+      "path": "hl2/resource/optionssubaudio.res",
+      "bytes": 9231,
+      "sha256": "610c003f70285085917e930015d17ad772d6ec24d7ec4beda55f22f4d87bf42e"
+    },
+    {
+      "path": "hl2/resource/optionssubaudiothirdpartydlg.res",
+      "bytes": 1896,
+      "sha256": "6e03e67f08e7fb52c8bb2e589ac11475188da913e4cde7f6431f409f03c30419"
+    },
+    {
+      "path": "hl2/resource/optionssubdifficulty.res",
+      "bytes": 2735,
+      "sha256": "d580a0f7c9966ede1100c7d5563823503fb92decfc105424c67daf9bfd455e95"
+    },
+    {
+      "path": "hl2/resource/optionssubhaptics.res",
+      "bytes": 9168,
+      "sha256": "72f38c0a15a33291a0b8b23e6c3f4b4f9b85a4b516fc04d7a40d4fb3e50178a7"
+    },
+    {
+      "path": "hl2/resource/optionssubkeyboard.res",
+      "bytes": 1977,
+      "sha256": "99cc7c486fa19b58c76842a8ce5abf8b65ff13fbbd097f5eb7e195783b570902"
+    },
+    {
+      "path": "hl2/resource/optionssubkeyboardadvanceddlg.res",
+      "bytes": 1630,
+      "sha256": "fc9cfe367a14c0afdf31e09a87e571a8bfc9fe7080611b64a0f6be115fee0a55"
+    },
+    {
+      "path": "hl2/resource/optionssubmouse.res",
+      "bytes": 12170,
+      "sha256": "d66b4e5c5138ab5a03488f04275532e249834dfc56c55d648a61cc95e62730a7"
+    },
+    {
+      "path": "hl2/resource/optionssubportal.res",
+      "bytes": 2646,
+      "sha256": "4ba31a697dce39d83aeeeadf90fa7bc765e2fda2cc618186d21d3f4366b946f8"
+    },
+    {
+      "path": "hl2/resource/optionssubvideo.res",
+      "bytes": 6305,
+      "sha256": "0753652e496d0df7a8935a10f3360c275ed24f6dfe5c70f83695953754f0333a"
+    },
+    {
+      "path": "hl2/resource/optionssubvideoadvanceddlg.res",
+      "bytes": 18409,
+      "sha256": "6810e7b776ddaf2350fb2370fde6313cfc724bc7115841236cecccb5fd9e53c4"
+    },
+    {
+      "path": "hl2/resource/optionssubvideogammadlg.res",
+      "bytes": 2828,
+      "sha256": "1820881866018ea5499fa796dc81d6ebb79e37a228f808236af3f05994da229e"
+    },
+    {
+      "path": "hl2/resource/optionssubvideothirdpartydlg.res",
+      "bytes": 1896,
+      "sha256": "d284eda8d6e578cc4645e6fba94044d14c870e491e4b0ba5d497a5ce9fc094d5"
+    },
+    {
+      "path": "hl2/resource/optionssubvoice.res",
+      "bytes": 4976,
+      "sha256": "c72f989c979091c6ad9b0456039b9444be39962fc66fd816019914b7cf7f247d"
+    },
+    {
+      "path": "hl2/resource/particlechildrenpicker.res",
+      "bytes": 1594,
+      "sha256": "72879899bf61292c5b2603dd138c71ce95aee4971a89c12a5f7f5f33392fc4b2"
+    },
+    {
+      "path": "hl2/resource/particlefunctionbrowser.res",
+      "bytes": 640,
+      "sha256": "a522e5d752fd423afa55c616457bbb88bf9be7b61d03b96c6252de03dac2b7bc"
+    },
+    {
+      "path": "hl2/resource/particlefunctionpicker.res",
+      "bytes": 1584,
+      "sha256": "1309d4af6e55f0d556c8a2dc6138e1a386067d2f4781b30d794cef3730250562"
+    },
+    {
+      "path": "hl2/resource/particlesystemdefinitionbrowser.res",
+      "bytes": 4017,
+      "sha256": "c7e54e71c1ec2caa521bd75fce475e9ce5787bbd4ec5137654c8f127c4964a6e"
+    },
+    {
+      "path": "hl2/resource/particlesystempropertiespanel.res",
+      "bytes": 1548,
+      "sha256": "ca55e1abd3b61bbcfc003e1e2cbb02119d8e310527a2a4b64512ce3377d2c1b3"
+    },
+    {
+      "path": "hl2/resource/perfocclusionuipanel.res",
+      "bytes": 2583,
+      "sha256": "58447c966079fd753615a9422cf001c309ddd9ab1da6dae1c8ba2e7c7578d198"
+    },
+    {
+      "path": "hl2/resource/perfpropfadeuipanel.res",
+      "bytes": 2136,
+      "sha256": "e24870dbdf352a07ab309e66a435602b52c07c09cf95157807aa95175bbbbd32"
+    },
+    {
+      "path": "hl2/resource/perfuipanel.res",
+      "bytes": 652,
+      "sha256": "35c165bacadef23818871cad4c80f23a9197c6fcc51acffaacd378200cdc9ab7"
+    },
+    {
+      "path": "hl2/resource/postcommentarydialog.res",
+      "bytes": 1564,
+      "sha256": "55acfe3407a1ec38a0fa4247ff4ef5fee8b6c8cbcf41fa90f35b60737d4b1aa4"
+    },
+    {
+      "path": "hl2/resource/presetpicker.res",
+      "bytes": 1518,
+      "sha256": "7ffbdb54f51eacbdf9d8cfca9071325bb1ee6d41a70c791bce20ba8c8e7acd92"
+    },
+    {
+      "path": "hl2/resource/presetremappanel.res",
+      "bytes": 2438,
+      "sha256": "22055323153ec799bc4ba284fe985ea06a3ad4f7bd7464114576bb2cfa546627"
+    },
+    {
+      "path": "hl2/resource/refreshlogin.res",
+      "bytes": 3449,
+      "sha256": "467aa1e82956d4719fcf8fc9f0b250f3ca8d7603deced7387540d2e525d65133"
+    },
+    {
+      "path": "hl2/resource/replay_brazilian.txt",
+      "bytes": 50814,
+      "sha256": "8c59b06279a9a2b52a015acbe0c0fa11f7a44a281ce57032c942d00dc6b6d807"
+    },
+    {
+      "path": "hl2/resource/replay_bulgarian.txt",
+      "bytes": 51784,
+      "sha256": "a2035360b4a99f5e7190666041b83e54cb507c283da50d8170e09e9cb291b5ad"
+    },
+    {
+      "path": "hl2/resource/replay_czech.txt",
+      "bytes": 48478,
+      "sha256": "3b777e149bc464e75fbd718450ba610a95227b5ed05cca6600222fdf08f96780"
+    },
+    {
+      "path": "hl2/resource/replay_danish.txt",
+      "bytes": 49324,
+      "sha256": "69f39b3b9e7c9a97d7ad239952b67f329f13ae1fccde1dcddf84aa59e04fd580"
+    },
+    {
+      "path": "hl2/resource/replay_dutch.txt",
+      "bytes": 50704,
+      "sha256": "85dcc8be3da4c4b78ffb5cc84554a943210b2f574d284cabd6b2ddddfcd0788a"
+    },
+    {
+      "path": "hl2/resource/replay_english.txt",
+      "bytes": 47254,
+      "sha256": "53ddec1378cfeb2d1bf523118f901e173a9b20b4428132a580d7c80144f2bdb7"
+    },
+    {
+      "path": "hl2/resource/replay_finnish.txt",
+      "bytes": 49664,
+      "sha256": "f306c87f54869c46263f92f840180f67aff49d82f029d99cea7ea1828e93dec5"
+    },
+    {
+      "path": "hl2/resource/replay_french.txt",
+      "bytes": 53328,
+      "sha256": "b80282f7a1150cf422d2653572653c23d5cb978c90cfca726f22a166c7e52e30"
+    },
+    {
+      "path": "hl2/resource/replay_german.txt",
+      "bytes": 52612,
+      "sha256": "e83bffbf5c0d54f2885bc34499c9d21aca15d58c54d8ad87a893dc4055bbbfef"
+    },
+    {
+      "path": "hl2/resource/replay_greek.txt",
+      "bytes": 51736,
+      "sha256": "6093a2af9bb6a38d802a347b8ae190499b60656447aba30f18518e28c9b55322"
+    },
+    {
+      "path": "hl2/resource/replay_hungarian.txt",
+      "bytes": 50500,
+      "sha256": "38cd361183f393da500e6ab5d5ce2663e98ffb214c2e9257f9deae47f56cffe5"
+    },
+    {
+      "path": "hl2/resource/replay_italian.txt",
+      "bytes": 52438,
+      "sha256": "1661d3a125ffb7ed4cde141913800040b510188dffaed0975cf01e2e04424f9c"
+    },
+    {
+      "path": "hl2/resource/replay_japanese.txt",
+      "bytes": 38868,
+      "sha256": "aaf260a316f8699ce07729ac245e12ee918c8592917837e3f68921185e48c19b"
+    },
+    {
+      "path": "hl2/resource/replay_korean.txt",
+      "bytes": 38766,
+      "sha256": "c19b7f6b5161ae38dd3608890666563d1ad68ce85688b7f8ff278ea8ad72c003"
+    },
+    {
+      "path": "hl2/resource/replay_koreana.txt",
+      "bytes": 38766,
+      "sha256": "c19b7f6b5161ae38dd3608890666563d1ad68ce85688b7f8ff278ea8ad72c003"
+    },
+    {
+      "path": "hl2/resource/replay_latam.txt",
+      "bytes": 52146,
+      "sha256": "29e304eb3eaeb8af5d57ffe4f129b9d3951312ea19468014aa016dbfd948b32e"
+    },
+    {
+      "path": "hl2/resource/replay_norwegian.txt",
+      "bytes": 48218,
+      "sha256": "183743d0241493bc8d5700429cf79eb3033087521c2db2670e8dafe259fc3d4a"
+    },
+    {
+      "path": "hl2/resource/replay_polish.txt",
+      "bytes": 50630,
+      "sha256": "c731d64269320a80f899275451f50d020f18529d084c04a4b93890ca94cea16c"
+    },
+    {
+      "path": "hl2/resource/replay_portuguese.txt",
+      "bytes": 51616,
+      "sha256": "c8fa4f165c0b6113892d6eef39a0d4e035c0790a9c8d2d68abba361fd17b5557"
+    },
+    {
+      "path": "hl2/resource/replay_romanian.txt",
+      "bytes": 50290,
+      "sha256": "20cd78cc3c7ba86574fb2165c9a842f2ed0bc27747be8f91dc8f5ad70f3d21af"
+    },
+    {
+      "path": "hl2/resource/replay_russian.txt",
+      "bytes": 50088,
+      "sha256": "f1327f3973012d5c51b58180d202f57635abc94946b05d7b0bff1660a63f0bbf"
+    },
+    {
+      "path": "hl2/resource/replay_schinese.txt",
+      "bytes": 33830,
+      "sha256": "b8e3812dfb69f40bf75cb7910e1539797a49e85f4f24a8a535d410c95f0f08c5"
+    },
+    {
+      "path": "hl2/resource/replay_spanish.txt",
+      "bytes": 52152,
+      "sha256": "ae53880163e762874b90039fcd6d9144e27de0da3f1eb6c88879cc4ecb05dcb5"
+    },
+    {
+      "path": "hl2/resource/replay_swedish.txt",
+      "bytes": 49596,
+      "sha256": "218fb4048309e91852ab848b3b7983e37c234529ad5fd81ce7c2a19e22d4915d"
+    },
+    {
+      "path": "hl2/resource/replay_tchinese.txt",
+      "bytes": 33980,
+      "sha256": "03c422c5d17e777cd5ba257c533511899bf5466b5d33ad70900062a90e3df1ba"
+    },
+    {
+      "path": "hl2/resource/replay_thai.txt",
+      "bytes": 47158,
+      "sha256": "c413ffe2251b44efc8d3d7309ac7c64caf44b6cc75013a73fbb1ffdf7e9ed66b"
+    },
+    {
+      "path": "hl2/resource/replay_turkish.txt",
+      "bytes": 48392,
+      "sha256": "22c12944c4debe251abf63ab6f8e18d8e564fc15717b0949f41f6cbc2407795c"
+    },
+    {
+      "path": "hl2/resource/replay_ukrainian.txt",
+      "bytes": 49792,
+      "sha256": "cc72a24d804b20cf3d5b9eb012ef1097a2765f8fb4d9d3d16e9a8840bae64610"
+    },
+    {
+      "path": "hl2/resource/replayevents.res",
+      "bytes": 1758,
+      "sha256": "e68e2f96468bb91a0524e87b3ac5e082d8621f9ddcf06567c4ccbb96d425833e"
+    },
+    {
+      "path": "hl2/resource/rotate.cur",
+      "bytes": 326,
+      "sha256": "544ea6e27ca9a5731e21cbe0c2b64b4348a82b8b5595696f0682344968b302ee"
+    },
+    {
+      "path": "hl2/resource/savebeforequitdialog.res",
+      "bytes": 1975,
+      "sha256": "d590ba45edd1b7813befecabc43653fff6673dfaac7b409287357ebefab51c12"
+    },
+    {
+      "path": "hl2/resource/savegamedialog.res",
+      "bytes": 1774,
+      "sha256": "be14f175d9a401df75b50eb474ed0a5ca95c6530a9ebc07a7ab543f0cbaeb3bf"
+    },
+    {
+      "path": "hl2/resource/savegamepanel.res",
+      "bytes": 1905,
+      "sha256": "4a3ff4affd4954fb8445445d4797b7b57d8bf378f22686a29e1562a489deb0a5"
+    },
+    {
+      "path": "hl2/resource/selectedhsvuipanel.res",
+      "bytes": 5555,
+      "sha256": "cdfa1df8bccb2632a8506583933cfff0b9588481b01c340f1a331677a398295e"
+    },
+    {
+      "path": "hl2/resource/serverevents.res",
+      "bytes": 4551,
+      "sha256": "1b3f7658d3494da3bf2a9435f1fe163c37d9e3f2597ff59fdb52c92a29953929"
+    },
+    {
+      "path": "hl2/resource/setclipnamedialog.res",
+      "bytes": 4411,
+      "sha256": "ac548fe44d97d14c5fe428119b91220334a416b2021ef21ce204131e53cdaebb"
+    },
+    {
+      "path": "hl2/resource/setsoundnamedialog.res",
+      "bytes": 5572,
+      "sha256": "2cb83b38840ceef77c002048e7eb7735bdb61f1ab18f7dbcd335139a2ce65fbd"
+    },
+    {
+      "path": "hl2/resource/sfm_animationsetcreateframe.res",
+      "bytes": 3018,
+      "sha256": "6ae1478cc2cc1940f9b07a8016e989fbf45e94fc9bb6ac273f57c3b521bc9441"
+    },
+    {
+      "path": "hl2/resource/sfm_animationsetmodelpickerframe.res",
+      "bytes": 2327,
+      "sha256": "59786b4126151403e1fe0e64b97cb13e61044d316fd61f834761e277f47f3c7a"
+    },
+    {
+      "path": "hl2/resource/sfm_animationsetpicker.res",
+      "bytes": 930,
+      "sha256": "c7ed1f2b40447951c9f247195fce6a02e1feed6ded487ce1b6250adf85bb9650"
+    },
+    {
+      "path": "hl2/resource/sfm_animationsetpickerframe.res",
+      "bytes": 5559,
+      "sha256": "b3e784e4a5623f1a9bbccf7c3f7ec70a2bed3f7e2660abdc5606a5525e9d736c"
+    },
+    {
+      "path": "hl2/resource/sfm_setprogressiverefinementdialog.res",
+      "bytes": 8390,
+      "sha256": "86b7ee91feff673c18566fd7b62e472a37fcc8b497d19b4507d3262f92def4ac"
+    },
+    {
+      "path": "hl2/resource/sfmextractphonemesdialog.res",
+      "bytes": 6185,
+      "sha256": "f730382164a894b019602d5da12df3cd06ec6083c463ff92adb8113f22fe6f75"
+    },
+    {
+      "path": "hl2/resource/skillselectiondialog.res",
+      "bytes": 2388,
+      "sha256": "d05a0b64fd1b21f8e720a431e09e6e87ac0653a50b6631bd6bd1b1a7a01fb32a"
+    },
+    {
+      "path": "hl2/resource/slideshowdisplayscreen.res",
+      "bytes": 14282,
+      "sha256": "ddaa019e094f3f37222e859482dc771a5bf12b8e7056093b3d4ea202f7b498b7"
+    },
+    {
+      "path": "hl2/resource/smartclick.cur",
+      "bytes": 326,
+      "sha256": "2141da82cf338652750b811185835b932285fc363c00fd00eacdc277da7c6c2c"
+    },
+    {
+      "path": "hl2/resource/sourcescheme.res",
+      "bytes": 30,
+      "sha256": "f6da3f357c8678d9af72d2f889b77b7a24ef806da57383bb019c0b69ad07c857"
+    },
+    {
+      "path": "hl2/resource/steampassworddialog.res",
+      "bytes": 1881,
+      "sha256": "0347efab8e3380e0d1bce8d49522cd61c0ada4679ae093046c03d209d74c2fcd"
+    },
+    {
+      "path": "hl2/resource/toolactbusy_english.txt",
+      "bytes": 618,
+      "sha256": "f4aa0ab21d779c329d11f7be8f3e2331e23083b2198f25131bb79ab483d02d3f"
+    },
+    {
+      "path": "hl2/resource/toolcommedit_english.txt",
+      "bytes": 1278,
+      "sha256": "2e717090f4ff5f2dd6cda62e8e38be05f88da76e0329db10d08f8f988e986e3e"
+    },
+    {
+      "path": "hl2/resource/toolfoundry_english.txt",
+      "bytes": 1008,
+      "sha256": "e48e8dd9ea8f9754423639db06584c6053f4ceb3093550e9147140d778a67d40"
+    },
+    {
+      "path": "hl2/resource/toolperforcequery.res",
+      "bytes": 1847,
+      "sha256": "6b003d55cc07825c28cf1a25e1c194c71d0c03f451e33f02aff04e551fa3013f"
+    },
+    {
+      "path": "hl2/resource/toolpet_english.txt",
+      "bytes": 1518,
+      "sha256": "dff6c8d08a7a7f2000b571800301a718fbd93e03e6b90395f02901e2f72a69eb"
+    },
+    {
+      "path": "hl2/resource/toolsavedocumentquery.res",
+      "bytes": 2252,
+      "sha256": "f420e7493815d1733c4be64388482e342902fee1a14543afa03eed66f80cd8f5"
+    },
+    {
+      "path": "hl2/resource/toolshared_english.txt",
+      "bytes": 1722,
+      "sha256": "f6f05c07a2faf10deec4abe6d6454d3b709c177420196a662614e90d4e71a3a2"
+    },
+    {
+      "path": "hl2/resource/toolvcdblock_english.txt",
+      "bytes": 1434,
+      "sha256": "ab05122c50c579b65a7bec4097b68ce80b63d6f6aa94b01b26a01332ced7a736"
+    },
+    {
+      "path": "hl2/resource/toolvmt_english.txt",
+      "bytes": 630,
+      "sha256": "0cad34875ea3ae6b154576337d2a844ad3e80473bedff3a48b32d142f1ff6a6d"
+    },
+    {
+      "path": "hl2/resource/trackerscheme.res",
+      "bytes": 20810,
+      "sha256": "2ce3d7d6be850d8235fa80dc1ea9e303459f27c96ee6100d2938bdbe4bb8f024"
+    },
+    {
+      "path": "hl2/resource/txviewpanel.res",
+      "bytes": 989,
+      "sha256": "ab0ccf7b491b2c2a23f14526e6ec6da3c6571fad59147aac18d9837f90c28581"
+    },
+    {
+      "path": "hl2/resource/ui/achievementgroup.res",
+      "bytes": 2472,
+      "sha256": "c471de9246618d13594241e4362573ae5912f8a10fe78e669a9530d735e9d5f6"
+    },
+    {
+      "path": "hl2/resource/ui/achievementitem.res",
+      "bytes": 2686,
+      "sha256": "c00125a3d75d0e8900c3e4b028ef95066c6880d985726d70eb98eaf8d15ad1a7"
+    },
+    {
+      "path": "hl2/resource/ui/achievementnotification.res",
+      "bytes": 1335,
+      "sha256": "a3442055cb068ad55e92af94966d116cf3ba1cb2a4fbafe0fa096c618460b520"
+    },
+    {
+      "path": "hl2/resource/ui/achievementsdialog.res",
+      "bytes": 4011,
+      "sha256": "712d2f3913c569233e9f2b3b367391786499e0a165565efdc2a0215bbdc844dc"
+    },
+    {
+      "path": "hl2/resource/ui/appchooser.res",
+      "bytes": 1146,
+      "sha256": "759b3b093cc907f473e57b17d49f6b0e5a2e7f6846f7b303162de6a14f547e44"
+    },
+    {
+      "path": "hl2/resource/ui/basechat.res",
+      "bytes": 1380,
+      "sha256": "a58ac77ef73b476942e31658c30bd387550a8d75df95849886b0b3630710a3d2"
+    },
+    {
+      "path": "hl2/resource/ui/chatfilters.res",
+      "bytes": 2601,
+      "sha256": "4f64cbc5bfa5aa857c351571c214a0197224fcb34530c3cc1a8a8a7656671937"
+    },
+    {
+      "path": "hl2/resource/ui/classmenu.res",
+      "bytes": 1570,
+      "sha256": "567a3636ad3638df2d9506533e9157d5b4d9c0af5c4d9ff7334fbfc97cc1bf31"
+    },
+    {
+      "path": "hl2/resource/ui/commentarymodelviewer.res",
+      "bytes": 1315,
+      "sha256": "88fe4c84e873fb620d1abb71c7d5365b2243ca451b0cc7853596b60ca5af4d07"
+    },
+    {
+      "path": "hl2/resource/ui/econ/confirmdialog.res",
+      "bytes": 2922,
+      "sha256": "53c745c50cd997df8129eb9cc874654e935c49fc5e4337f17e4bcc47d4d7ae87"
+    },
+    {
+      "path": "hl2/resource/ui/econ/confirmdialog_sc.res",
+      "bytes": 3621,
+      "sha256": "7bbbae381e2af78d9eda22bcd4f7b995c30dd1b188d5dc4f57010167faff1dd9"
+    },
+    {
+      "path": "hl2/resource/ui/econ/messageboxdialog.res",
+      "bytes": 2282,
+      "sha256": "e0fdd3243fc880dd8ea1203355f0ae702bc0b19757a01cd793ec1fa931fd2972"
+    },
+    {
+      "path": "hl2/resource/ui/econ/messageboxdialog_sc.res",
+      "bytes": 2633,
+      "sha256": "ff42d36d674fe45ce90f17e5885e5995c96a3eb81a6072e82f85a1316cbd700e"
+    },
+    {
+      "path": "hl2/resource/ui/motd.res",
+      "bytes": 1205,
+      "sha256": "6d6ec6f91414da760067cfc356756c71db99782f206ebe8fa36b90e835a1b4bd"
+    },
+    {
+      "path": "hl2/resource/ui/plugin.res",
+      "bytes": 2272,
+      "sha256": "36f6860a93ce65d7dab00fadf8ef61319b0fabb2f8e6f7d19ddcee6e35caa6fe"
+    },
+    {
+      "path": "hl2/resource/ui/pluginhud.res",
+      "bytes": 586,
+      "sha256": "8deeaec7dbff5e58e7f230f4b438432e8a12bdf11629dbd3ea12ef028146fcce"
+    },
+    {
+      "path": "hl2/resource/ui/pluginmenu.res",
+      "bytes": 3631,
+      "sha256": "a211509948859c70b15c1227d56ea838afae43113aa0b50035cd0294da2baac9"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/basepage.res",
+      "bytes": 1219,
+      "sha256": "aee2eda2c73ac886b3e01f4e2e7031a416ac09434cdde23c90bb4c2d452c0c55"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/confirmquitdlg.res",
+      "bytes": 3456,
+      "sha256": "03f62bb65e9788395d6ac8bb275b4ccf4c24967fadc0e759ab407815c343335a"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/cutspanel.res",
+      "bytes": 3233,
+      "sha256": "aef9a830548d1221337e4cfba8eb2c8e9954119992ceea3ec263815dafb42ab0"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/detailspanel.res",
+      "bytes": 6078,
+      "sha256": "7b0d74e33864f6506469f149b8cbfb60562015a19bed5a359311b279f828ecfa"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/listthumbnail.res",
+      "bytes": 3483,
+      "sha256": "5b2edc10f3b8bfccef6e5c8bab59c95f25baecfdf6778ed2d9130c893a2a655f"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/mainpanel.res",
+      "bytes": 3287,
+      "sha256": "a81286367c027da7170f04d6c07d4f859fab5667b3344320ac801d06eaa31bf6"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/playbackpanel.res",
+      "bytes": 261,
+      "sha256": "a4eb619c952886d734939435f878e6852385090ad82448200ea71987e2e14ca3"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/playbackpanelslideshow.res",
+      "bytes": 561,
+      "sha256": "9e09351f54420e3b9c6844cb25197ec02367a73d84fba63bc6db9be412e1faa7"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/previewpanel.res",
+      "bytes": 3080,
+      "sha256": "3d1b1820e772c424c651b45fc2a4cbef1b40451a6a9ebc78754f5e6986734bd8"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/recordspanel.res",
+      "bytes": 1325,
+      "sha256": "246fef395021f774948df72cebe8bd11b3c496a94a90206e46d18610c2260bb9"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/renderdialog.res",
+      "bytes": 11648,
+      "sha256": "2090c748d2c4596d7aaa05873790eb16db48c965f927b34c040e842d3f6547a4"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/replaylistpanel.res",
+      "bytes": 996,
+      "sha256": "3c53cb47d8a53854e45f559f2b5b0eca62a5157a01a08e48e4b103497e8bdc7b"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/thumbnailcollection.res",
+      "bytes": 4521,
+      "sha256": "b5df18414766a9cca50a1169eb8a0b90368e545a3fac7fc3466df6f6f940221a"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/thumbnailrow.res",
+      "bytes": 353,
+      "sha256": "8a1b90e04a205527b4b5bdefeb3718c7f23794f7abc2fd286ce935aaccead6e5"
+    },
+    {
+      "path": "hl2/resource/ui/replaybrowser/titleeditpanel.res",
+      "bytes": 1719,
+      "sha256": "dd8e0acb81bb15ce56e0794d8061a2cb5fd3d9b5ccae9d208910af0cb9ac5106"
+    },
+    {
+      "path": "hl2/resource/ui/replayinputpanel.res",
+      "bytes": 3145,
+      "sha256": "4a22b1ad94d4d093f9d8c7a0f2a68f3eaa59baf0a240f46618fe2c190e344c84"
+    },
+    {
+      "path": "hl2/resource/ui/replaymessage.res",
+      "bytes": 1180,
+      "sha256": "915aa60c9557be39b56d83b6ba82652e3f1bd35e80fc57a840c4e1322fe752e9"
+    },
+    {
+      "path": "hl2/resource/ui/replaymessagedlg.res",
+      "bytes": 2709,
+      "sha256": "ec7d1593a863943865427f865b96aa99280a215ba732d428fb4692f789cd68b9"
+    },
+    {
+      "path": "hl2/resource/ui/replayperformanceeditor/camsettings_free.res",
+      "bytes": 1871,
+      "sha256": "90a73e66ce8e326f12d5dcd1ef5e593adfb7c7ced018476798f112c30af6e26d"
+    },
+    {
+      "path": "hl2/resource/ui/replayperformanceeditor/main.res",
+      "bytes": 13817,
+      "sha256": "389d2d3ff737170c1931c0b80d5b32077457ee827b204fecb581fa97628770b3"
+    },
+    {
+      "path": "hl2/resource/ui/replayperformanceeditor/reclight.res",
+      "bytes": 2002,
+      "sha256": "7d75ac7d09708bf15275006477ebac51ff03dcd06c89eebb00dec21d5f392f36"
+    },
+    {
+      "path": "hl2/resource/ui/replayperformanceeditor/savedlg.res",
+      "bytes": 3712,
+      "sha256": "731eaa5e5114856a2b0fbad41ddb9186ce024063e6729091ba6c13aa1948a4e5"
+    },
+    {
+      "path": "hl2/resource/ui/replayperformanceeditor/settings_timescale.res",
+      "bytes": 608,
+      "sha256": "a5ec4738f0bb23a245ec68fd460f578b71f03b8e56ed5666c1c8a74f631871ee"
+    },
+    {
+      "path": "hl2/resource/ui/replayperformanceeditor/tip.res",
+      "bytes": 546,
+      "sha256": "4709009072b016004163da8f97533459ae79402dff8a9430ca708801d142a5cd"
+    },
+    {
+      "path": "hl2/resource/ui/replayreminder.res",
+      "bytes": 1140,
+      "sha256": "c995442b3652f1709f1530c8dc1e89b3f45c7ba3aa47d5d65747f83036fc0acb"
+    },
+    {
+      "path": "hl2/resource/ui/replayrenderoverlay.res",
+      "bytes": 2577,
+      "sha256": "ee4d9f7f95a0aa830ed55cbc80c612aeac7060d06554be98ad734c751c71ba2c"
+    },
+    {
+      "path": "hl2/resource/ui/scoreboard.res",
+      "bytes": 1098,
+      "sha256": "4125fef79809409b11cd97877afa6f5c9015e501b5ebfd85bff823103dadc357"
+    },
+    {
+      "path": "hl2/resource/ui/statgroup.res",
+      "bytes": 1051,
+      "sha256": "2db713e55ff9bab30ad95585c0ad273beb67043da6078f03c9947ff74226715c"
+    },
+    {
+      "path": "hl2/resource/ui/statitem.res",
+      "bytes": 1027,
+      "sha256": "83ea85325ea86caccbed5146ebab87ff990bfe077b8e54fc1b1c223ddc56c280"
+    },
+    {
+      "path": "hl2/resource/ui/textwindow.res",
+      "bytes": 1549,
+      "sha256": "a8b91a01aa4320cb37c4d4f1733507dd895c81190b7781a5653afceb88537fcb"
+    },
+    {
+      "path": "hl2/resource/ui/videopanel.res",
+      "bytes": 384,
+      "sha256": "b2e0b97a32d6ee87f1f4ccaed70a24e42eca681f705667c7d67f6180bae4d3b3"
+    },
+    {
+      "path": "hl2/resource/ui/votehud.res",
+      "bytes": 12894,
+      "sha256": "e19c4ea909d460fc6fa743e1202777074698e21589107c9206d7aaba435f2011"
+    },
+    {
+      "path": "hl2/resource/ui/xboxdialogs.res",
+      "bytes": 26835,
+      "sha256": "aac797ebc3b2e756670b904e24759cdc7c0c2de550171bb2ef59f4c11e27e21d"
+    },
+    {
+      "path": "hl2/resource/ui/youtubelogindialog.res",
+      "bytes": 4093,
+      "sha256": "323a41a9746d426e4d9f83045020edc244ffa987f3cbfa667ea68f9e47faf0cd"
+    },
+    {
+      "path": "hl2/resource/ui/youtubeuploaddialog.res",
+      "bytes": 4974,
+      "sha256": "cddf96ffeb33e452682efd075cb746188570264933cd8211e645aefc6b42f337"
+    },
+    {
+      "path": "hl2/resource/ui/youtubeuploadwaitingdialog.res",
+      "bytes": 3742,
+      "sha256": "32288e7d6dd139b32788fac9106514f836a12f4c1a5cab58cc8fafb981337ff3"
+    },
+    {
+      "path": "hl2/resource/valve_brazilian.txt",
+      "bytes": 52916,
+      "sha256": "f8328a80f6306c3ea01f415c1f490217ac9b2cc2d557554a52048ba6d677a4e9"
+    },
+    {
+      "path": "hl2/resource/valve_bulgarian.txt",
+      "bytes": 54546,
+      "sha256": "45982cc49fb2a768253130ced0ba90052fa5ee7b6cd99033b8569da5a43f4cd5"
+    },
+    {
+      "path": "hl2/resource/valve_czech.txt",
+      "bytes": 51864,
+      "sha256": "8224aab9c89d24e655d37a2db408cb7854f53f256507ded9f334f430d5190d32"
+    },
+    {
+      "path": "hl2/resource/valve_danish.txt",
+      "bytes": 51906,
+      "sha256": "f1fc448b4f4acfb2a3841e0d772999c555346a18b6ec56216dce649adef40d75"
+    },
+    {
+      "path": "hl2/resource/valve_dutch.txt",
+      "bytes": 54094,
+      "sha256": "5f4aec63dd2df6df18feab05a77ff5cdb0d6aa6ecc32a9189e93fdb41c33c6d6"
+    },
+    {
+      "path": "hl2/resource/valve_english.txt",
+      "bytes": 51330,
+      "sha256": "4bbd3d8d9fca9d4f1dae999d9bdac16a0152dc28e8b3fcb9c5508c60a32dbcfa"
+    },
+    {
+      "path": "hl2/resource/valve_finnish.txt",
+      "bytes": 52308,
+      "sha256": "3808b76266c247d113e5547ea49ebd6971e3bc311ddab72e2afd1f13418b1ef9"
+    },
+    {
+      "path": "hl2/resource/valve_french.txt",
+      "bytes": 54860,
+      "sha256": "a915c8382ba2cb555bfeceec42cc0255dba98244e562361794a639510726cff4"
+    },
+    {
+      "path": "hl2/resource/valve_german.txt",
+      "bytes": 54808,
+      "sha256": "a7d9f7c2cfb17b6ca04cab51a1aa1a73deed226b9b6153f428b7a91f7f8b8ebc"
+    },
+    {
+      "path": "hl2/resource/valve_greek.txt",
+      "bytes": 54454,
+      "sha256": "3837819c5f0801a2aeb1c2472caaeb602c4602eae284568c5da4fca7135f1d4b"
+    },
+    {
+      "path": "hl2/resource/valve_hungarian.txt",
+      "bytes": 52404,
+      "sha256": "63499cf6f22ac881d3f5c7417e6f1fe2165de0929053a5ab7830065d1a208f46"
+    },
+    {
+      "path": "hl2/resource/valve_italian.txt",
+      "bytes": 54792,
+      "sha256": "36629390d9cf9b576f4bf8609ef01c887e89da484f43395ecf8287dabd06cce5"
+    },
+    {
+      "path": "hl2/resource/valve_japanese.txt",
+      "bytes": 41718,
+      "sha256": "fa3e9b2d7073aab682d62ee7e3b650b7ef29b82f56b01223d03d56eccb2cb5f6"
+    },
+    {
+      "path": "hl2/resource/valve_korean.txt",
+      "bytes": 40960,
+      "sha256": "7672d9970cd85fdcdb3facf3b3721b089025278ceb44ce06a15b33d7d19367f7"
+    },
+    {
+      "path": "hl2/resource/valve_koreana.txt",
+      "bytes": 40960,
+      "sha256": "7672d9970cd85fdcdb3facf3b3721b089025278ceb44ce06a15b33d7d19367f7"
+    },
+    {
+      "path": "hl2/resource/valve_latam.txt",
+      "bytes": 54660,
+      "sha256": "d799a0b07bf2c9224c371a9c93ffebddca1efcf349ff6582777ccf953eec653b"
+    },
+    {
+      "path": "hl2/resource/valve_norwegian.txt",
+      "bytes": 52058,
+      "sha256": "f28e67c6209bb8c1c3212fd033523146e7d968fbbebfba86096ee371b2116670"
+    },
+    {
+      "path": "hl2/resource/valve_polish.txt",
+      "bytes": 52574,
+      "sha256": "14579118c56af887a6bbd8f0d5890435d0e98cf430e0bb63e639cab60c015861"
+    },
+    {
+      "path": "hl2/resource/valve_portuguese.txt",
+      "bytes": 53170,
+      "sha256": "94a982fa77d4b2187c5a4bbf2e5ab7473bf1db31679258495add2a83c165b47a"
+    },
+    {
+      "path": "hl2/resource/valve_romanian.txt",
+      "bytes": 51720,
+      "sha256": "e1be60434fcce475b6faf2a21758adc0c8fc4ea3b64e6fcc887a7b36aefe781a"
+    },
+    {
+      "path": "hl2/resource/valve_russian.txt",
+      "bytes": 52062,
+      "sha256": "2aa56384abc260d656f5ab4e11ccd6c002df3a24cdc57e2ef79b3f54b7875654"
+    },
+    {
+      "path": "hl2/resource/valve_schinese.txt",
+      "bytes": 37960,
+      "sha256": "c33474fa61c60ab13ee9693472a5bd2ca74b5afb161ec089fcdfb87bc0f0311b"
+    },
+    {
+      "path": "hl2/resource/valve_spanish.txt",
+      "bytes": 54692,
+      "sha256": "b7636c761e62a0714c3c3d4991145488d89664b0477632c1b3aa1c8ab15ad2d7"
+    },
+    {
+      "path": "hl2/resource/valve_swedish.txt",
+      "bytes": 51852,
+      "sha256": "0a1c2d8999bbd9f83d6e1efec75160b4f44c9304902b7e02a9d156573be08c4b"
+    },
+    {
+      "path": "hl2/resource/valve_tchinese.txt",
+      "bytes": 38414,
+      "sha256": "6a76edd426a80e558b8da3ea5ef4d7e1cac098a5789dd8bf4147b08f13b2033d"
+    },
+    {
+      "path": "hl2/resource/valve_thai.txt",
+      "bytes": 50150,
+      "sha256": "5eea20c7f7075813745cbae1e1a2033757d880f6fd28d071863f40a9d445f532"
+    },
+    {
+      "path": "hl2/resource/valve_turkish.txt",
+      "bytes": 51768,
+      "sha256": "b3e9ace5a2171496d3abc08fbc678f8578e82f45f270717171ee5f468fa9fa1a"
+    },
+    {
+      "path": "hl2/resource/valve_ukrainian.txt",
+      "bytes": 52364,
+      "sha256": "164e0d2c6582313f03629649e76ea26f08d96179de1be80ef7c011f64ce36206"
+    },
+    {
+      "path": "hl2/resource/valve_vietnamese.txt",
+      "bytes": 98360,
+      "sha256": "8d795abff396e7121f399bc53396edd8370265318d7a033680c2f57591ecca57"
+    },
+    {
+      "path": "hl2/resource/valvecdkeyentrydialog.res",
+      "bytes": 3267,
+      "sha256": "d17371c392ad0d55f2b956917def495b468d22dcb50851d0415914c54357959f"
+    },
+    {
+      "path": "hl2/resource/videopanelscheme.res",
+      "bytes": 18529,
+      "sha256": "f11e587af39cc5bdb0ce6dd990ad3245f7e7e02ecc6a7e9bea89c7ea41906b37"
+    },
+    {
+      "path": "hl2/resource/vprofpanel.res",
+      "bytes": 4971,
+      "sha256": "ab47a5e074868c73b97d919d382013ad6cd3494a8a8b611fa66b95d54a58ae03"
+    },
+    {
+      "path": "hl2/resource/youtube_brazilian.txt",
+      "bytes": 6792,
+      "sha256": "20c67a3ff0dc00e83317acbd94c69075a75991b8c807e5c5d8889cc4c59b317b"
+    },
+    {
+      "path": "hl2/resource/youtube_bulgarian.txt",
+      "bytes": 6826,
+      "sha256": "7e2064cc8bf5146ee6c60b12d8cdf0d3cd24d4a6b14dc52a8cfa623c13a15260"
+    },
+    {
+      "path": "hl2/resource/youtube_czech.txt",
+      "bytes": 6590,
+      "sha256": "5d45eab8f727c35f9bb18d3b09712524cc982c9c9764f9c47b0a08b8ea6b27f5"
+    },
+    {
+      "path": "hl2/resource/youtube_danish.txt",
+      "bytes": 6720,
+      "sha256": "3a5132f4f9e992e1e8d385d97142a2ce3066793875e9f4e612f35e1dcace1f96"
+    },
+    {
+      "path": "hl2/resource/youtube_dutch.txt",
+      "bytes": 6840,
+      "sha256": "58bd9252fd8e905fe00e0438a914ffed4655772a94654a99a3d9d9e615e8fa55"
+    },
+    {
+      "path": "hl2/resource/youtube_english.txt",
+      "bytes": 6456,
+      "sha256": "da5fdc70c87afe47c488f81568350ec3d4eb9331beff4a7f46263a0c153ecff1"
+    },
+    {
+      "path": "hl2/resource/youtube_finnish.txt",
+      "bytes": 6642,
+      "sha256": "ecab473b8c8b7c6a49587a145630fade6d423102ee37f58dd0d69ea86301c9c6"
+    },
+    {
+      "path": "hl2/resource/youtube_french.txt",
+      "bytes": 6822,
+      "sha256": "508c3b49a6ee08dfc75d52d35f91e82efa7e663235099673b6a51baf96f42fa8"
+    },
+    {
+      "path": "hl2/resource/youtube_german.txt",
+      "bytes": 7150,
+      "sha256": "262332268fb0a5ed7ad54d7b85fefee9cbf080f9e449a12f7d6198e0d6fca7f4"
+    },
+    {
+      "path": "hl2/resource/youtube_greek.txt",
+      "bytes": 7208,
+      "sha256": "0fc22d31166441ae2097be5ff83e16784f88f1c1763bbdadf0a5aea8a40ea5ec"
+    },
+    {
+      "path": "hl2/resource/youtube_hungarian.txt",
+      "bytes": 6780,
+      "sha256": "24b2c5b1ebc5e20eeff93bf53518a55a1e93d14423b132c3aa59f5054a69c5d5"
+    },
+    {
+      "path": "hl2/resource/youtube_italian.txt",
+      "bytes": 6944,
+      "sha256": "acea96326e754803ddd17ebcdb97184faedc9bbd53572322447dd83467e42dc3"
+    },
+    {
+      "path": "hl2/resource/youtube_japanese.txt",
+      "bytes": 5158,
+      "sha256": "9a56c76c3ecda2f842907b765106e9169e42477f1f667d5619eba30e5bd3f1f5"
+    },
+    {
+      "path": "hl2/resource/youtube_korean.txt",
+      "bytes": 4896,
+      "sha256": "a4ddbd816af317c652955e550917ee38bdf978c8b688234d0e983ecb89963a44"
+    },
+    {
+      "path": "hl2/resource/youtube_koreana.txt",
+      "bytes": 4896,
+      "sha256": "a4ddbd816af317c652955e550917ee38bdf978c8b688234d0e983ecb89963a44"
+    },
+    {
+      "path": "hl2/resource/youtube_latam.txt",
+      "bytes": 7010,
+      "sha256": "8f3db521b673254c618d1852d8bae654b490cd7e3bf156b78a89741e577cc302"
+    },
+    {
+      "path": "hl2/resource/youtube_norwegian.txt",
+      "bytes": 6684,
+      "sha256": "32f98caeb7095afe30fcb061efd936aaf298703207e88f5eccec5338f0bcd380"
+    },
+    {
+      "path": "hl2/resource/youtube_polish.txt",
+      "bytes": 6780,
+      "sha256": "f0c9428172656b6241f77379c6619aefd6ce01a194d1aa2655b414c9410f9dfe"
+    },
+    {
+      "path": "hl2/resource/youtube_portuguese.txt",
+      "bytes": 6984,
+      "sha256": "647c6009a9ceee14b44a379ad2e1086584edca2629f3d7111641a8bcae6e1c03"
+    },
+    {
+      "path": "hl2/resource/youtube_romanian.txt",
+      "bytes": 6818,
+      "sha256": "9b5566ab633e16fdf9ac8b1989537e9905e348179359a4e6a3185e8782ffac22"
+    },
+    {
+      "path": "hl2/resource/youtube_russian.txt",
+      "bytes": 6782,
+      "sha256": "c9b4d97ce2da4355cf79df6c977c6be979eb4552b7f400aca7865e64c8b554c9"
+    },
+    {
+      "path": "hl2/resource/youtube_schinese.txt",
+      "bytes": 4284,
+      "sha256": "79e9182336dd11e76b0399ad94f7d5f04d681ec1234eeac10cd3fc532d8e6572"
+    },
+    {
+      "path": "hl2/resource/youtube_spanish.txt",
+      "bytes": 7018,
+      "sha256": "0674053794f3de95d89d38554b8c1fae0c236308a0c6ff1902a8f975a1f280ec"
+    },
+    {
+      "path": "hl2/resource/youtube_swedish.txt",
+      "bytes": 6828,
+      "sha256": "b8dfe3eb3fc10f28c863a1c282598ca2fd8eaf848af5572acfa521d915e3ef02"
+    },
+    {
+      "path": "hl2/resource/youtube_tchinese.txt",
+      "bytes": 4312,
+      "sha256": "fed39496678dc81632a2640323746ebedd8bdffce95a10760825e5e0c4f70e1b"
+    },
+    {
+      "path": "hl2/resource/youtube_thai.txt",
+      "bytes": 6522,
+      "sha256": "9801d363871cc39a1880a3a1399d7dd8d161244fced948db514d7b5e49a6e22b"
+    },
+    {
+      "path": "hl2/resource/youtube_turkish.txt",
+      "bytes": 6506,
+      "sha256": "77ae7beb897b7f52704ba06584e74e713df080697009f2233c559fa000c4ff24"
+    },
+    {
+      "path": "hl2/resource/youtube_ukrainian.txt",
+      "bytes": 6624,
+      "sha256": "71ecf4ef6564ff93f2cdb9d2b9641e83cffbc9ab7d357c0f161a9f1b389cd700"
+    },
+    {
+      "path": "hl2/scripts/actbusy.txt",
+      "bytes": 15443,
+      "sha256": "c7d43bc9c4fe92d5aa40d4b255b951c8a5a9363c04bb97eafdf6233f4874d0ed"
+    },
+    {
+      "path": "hl2/scripts/actremap.txt",
+      "bytes": 4946,
+      "sha256": "c2b67cfac752e75a79cfcfc72443bf7056f7e769489f638963788dd2215c549c"
+    },
+    {
+      "path": "hl2/scripts/bonus_maps_manifest.txt",
+      "bytes": 43,
+      "sha256": "7ceabfaf88ce7a25fb60adff6eef71cd9ab66cb5984c0d2d510318d493b8e61c"
+    },
+    {
+      "path": "hl2/scripts/bugreporter_defaults.txt",
+      "bytes": 19,
+      "sha256": "ab19c227eaa2aadfe7ab78a47466a108f94066a9b48225de81487567f4568782"
+    },
+    {
+      "path": "hl2/scripts/chapterbackgrounds.txt",
+      "bytes": 327,
+      "sha256": "ef6d766e3238608f3e091d5db243d6f11f327e06f798671bef0fe64e74f687e5"
+    },
+    {
+      "path": "hl2/scripts/cheatcodes.txt",
+      "bytes": 2877,
+      "sha256": "9e98956250cf8a6bafc1eae0aaf1513e5300758c63270c31e187cca00b1629fc"
+    },
+    {
+      "path": "hl2/scripts/credits.txt",
+      "bytes": 10689,
+      "sha256": "c2cfa33ce60d5f88e52e3be73d8536b5956f72cb1f44dbb0ae1929fb9bee8db7"
+    },
+    {
+      "path": "hl2/scripts/debugoptions.txt",
+      "bytes": 3681,
+      "sha256": "11e3db2e9a003b481afa33a52061f312f5f7020eb73bc75fbc93130c11eadd4d"
+    },
+    {
+      "path": "hl2/scripts/decals_subrect.txt",
+      "bytes": 9134,
+      "sha256": "12b9418b5e0a98dd6b82882ed4102a0dbe6f978d3886d935c2bdea760a753c01"
+    },
+    {
+      "path": "hl2/scripts/dsp_presets.txt",
+      "bytes": 45522,
+      "sha256": "51dc5629a9e6a416789056b3bfb3eb68ef726e138c264248df7cdad5e13ef3de"
+    },
+    {
+      "path": "hl2/scripts/effects/testeffect.txt",
+      "bytes": 9723,
+      "sha256": "01586040abacd5d93842d2c707ea3dc677166d950627a8e724c520cf0d0373fc"
+    },
+    {
+      "path": "hl2/scripts/enginevguilayout.res",
+      "bytes": 291,
+      "sha256": "ae75af2f0706c980a7abf46c97d452d019981db6a0230e1386e52ac4660ddbc7"
+    },
+    {
+      "path": "hl2/scripts/game_sounds.txt",
+      "bytes": 4118,
+      "sha256": "cb962ff9adbd4ee88013bbb5537270b379051e1f3dbfc7361c1ca30c6511b404"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_ambient_generic.txt",
+      "bytes": 10079,
+      "sha256": "f7db989cb2ec79996934b81b96aaa4335eb82678e9f830800403f97c9dc5769d"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_header.txt",
+      "bytes": 1399,
+      "sha256": "b4108dfa85e3af5c4262d15dc9ef8f747f5a74bc42a68032c2d51df209d1eab6"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_items.txt",
+      "bytes": 3627,
+      "sha256": "d7ffd90cb399d282cf7ff1e121183ca40a46790a8b47b4cb6669fbbd8ab3e4c5"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_manifest.txt",
+      "bytes": 3469,
+      "sha256": "77851cb187d6de1f53a9d83a820bdbf2015af7341c4ed21491031efb5487a6e2"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_physics.txt",
+      "bytes": 78422,
+      "sha256": "6a9432201ac5a530f99e6bbc09a15d72a22f041e6f4cae0be23839daf4686e38"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_player.txt",
+      "bytes": 4469,
+      "sha256": "ff1b0b1f4f8718aaee822b976b1ddeaade5f4fbf3504a395f4d1825d226c01d5"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_ui.txt",
+      "bytes": 2912,
+      "sha256": "d549f91622f7a535d8395ba9b39a0f08c2764ad16d63d5eaefc378621edd4db6"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_vehicles.txt",
+      "bytes": 16309,
+      "sha256": "525a5ef0fb7123b2540b6bb76e6eabf027be3446093fceaccacb168de6564e1a"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_weapons.txt",
+      "bytes": 27197,
+      "sha256": "ae1a859dc4f88f66041f500d52d5551ff36c51dc7cf25c68e0cb34aa3ecaafea"
+    },
+    {
+      "path": "hl2/scripts/game_sounds_world.txt",
+      "bytes": 21876,
+      "sha256": "331c67f34da66849b53514a2fed85451d55aa3c43aec4be7ff211fb66eedea23"
+    },
+    {
+      "path": "hl2/scripts/gamehaptics.txt",
+      "bytes": 22388,
+      "sha256": "b78fcbc03b29f63a6bd0c7a8836845bc7fdd2baede9e8061ea63b7b1a97cb9dc"
+    },
+    {
+      "path": "hl2/scripts/gameuianimations.txt",
+      "bytes": 8886,
+      "sha256": "02c44cdd01232badfd1e37ed44aa3fb343c330abb4c1a6128d2c8e85d0c02a5a"
+    },
+    {
+      "path": "hl2/scripts/global_actors.txt",
+      "bytes": 592,
+      "sha256": "3d90c47f23b561e206a5d0b8db39186e9586abec2f96103793bc7a0b32d78dff"
+    },
+    {
+      "path": "hl2/scripts/hl2_scripts.dsp",
+      "bytes": 7745,
+      "sha256": "5b8ce8bff444c3bb101fcb5e8df657caf9fb13f560a1c1242f29e3e9db9b8c65"
+    },
+    {
+      "path": "hl2/scripts/hud_textures.txt",
+      "bytes": 2008,
+      "sha256": "c61a9babfe891fac7315ebf6c34ad33e25eeb1b0c7c314b8dc2fa6ce80dccd9a"
+    },
+    {
+      "path": "hl2/scripts/hudanimations.txt",
+      "bytes": 26474,
+      "sha256": "7e2e97c91493d7cfee9a67bd04fcc242c8f6cfec2834a796df08bdbac8a94e1a"
+    },
+    {
+      "path": "hl2/scripts/hudlayout.res",
+      "bytes": 12132,
+      "sha256": "a403d159b4e2dc01dce8bd5666d7675208d617efb45a59ae891fd129a49e0673"
+    },
+    {
+      "path": "hl2/scripts/kb_act.lst",
+      "bytes": 1952,
+      "sha256": "7ade36f4312334b5aebd20aa4414eb4844804d46e225329d1b0bc157b347917a"
+    },
+    {
+      "path": "hl2/scripts/kb_def.lst",
+      "bytes": 1176,
+      "sha256": "63ba1227759fe455da089bd114cc6fedcf54022af0d7d689478bb6aa202fe937"
+    },
+    {
+      "path": "hl2/scripts/kb_keys.lst",
+      "bytes": 9507,
+      "sha256": "521ab2f9cc3a59a3c206dbe50c6baf5158f5c876d6d223087363e17c5b588172"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_breencast.txt",
+      "bytes": 21941,
+      "sha256": "bc360bddc55b524e4d4a0d860448153936b9c5d730b7a9ad5dd8e17d1c522820"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_canals.txt",
+      "bytes": 37793,
+      "sha256": "9f68f016937f49426885620dadae5802111f93268c42137175eae3f78c13464d"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_canals2.txt",
+      "bytes": 8382,
+      "sha256": "f84648470d827a0b20445e3599463476acb7b9a5c4c28ddaa8ae213746300634"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_citadel.txt",
+      "bytes": 72263,
+      "sha256": "290c04d3ff88f8fa11da7473e78f5cd476ee05af2c2eaed93c75da516e376ed3"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_coast.txt",
+      "bytes": 45882,
+      "sha256": "09ab9c8fcfcc9dccb02a3a2b4aff3815d0a25272e594f5879b41200db3ea3d31"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_e3_bugbait.txt",
+      "bytes": 790,
+      "sha256": "384ff228d4499cc7bd1949b946f1db27b5486fd24340182f560cf86bb134db86"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_e3_c17.txt",
+      "bytes": 1108,
+      "sha256": "84afa5d7d55c079ab70ebcee24ae6326d0b3713f8902eab637bf4d677ae3a909"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_e3_lab.txt",
+      "bytes": 4702,
+      "sha256": "20a85f9bba5e5ae3dc15c848e5ed8e881fafbca2baad56ee44c9ff3434b53390"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_e3_town.txt",
+      "bytes": 393,
+      "sha256": "a21ca28f395719d720284049d3d3d149d6836b503175709592865c88f2fb3643"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_eli_lab.txt",
+      "bytes": 43650,
+      "sha256": "5a44189f0a200c45d26b8b12be20166814ae60e6f09912a981bfbb1ad7fd4a5a"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_k_lab.txt",
+      "bytes": 77036,
+      "sha256": "e306edf93ee925b758692ecdcd81f8ae46ee9e85485052612738d3e2a26181ec"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_k_lab2.txt",
+      "bytes": 17884,
+      "sha256": "8b33509f2b2c0cd979cdef935b68580a998798ec264bb478f8d48ec5a33ccee9"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_music.txt",
+      "bytes": 16426,
+      "sha256": "159a6906cbc0ed7d884c05ef1daaa7228079b26a315378b67821b1d78119eb46"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_novaprospekt.txt",
+      "bytes": 89831,
+      "sha256": "10b441bf1c3b445289b1d36a5819535da697d5764bbf025c86d1f173462e916a"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_ravenholm.txt",
+      "bytes": 37096,
+      "sha256": "d74682dcb94f3d23b6818d1156ae7acbe505bf3e73683009077fbfa01e977eae"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_ravenholm2.txt",
+      "bytes": 16733,
+      "sha256": "05be0ac76749fa4a35f8344b2ad3cd797417b913569af5c95024d5d36b41c1f2"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_streetwar.txt",
+      "bytes": 50096,
+      "sha256": "ac4e6ff1ded307a96232794d8edee6387ba895842fa64b1c484134699ed66e04"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_streetwar2.txt",
+      "bytes": 14584,
+      "sha256": "4c00bf4622ad275b0a36c140ca7b0a379aeea59ccb0b0572c0993542d3be4908"
+    },
+    {
+      "path": "hl2/scripts/level_sounds_trainyard.txt",
+      "bytes": 60261,
+      "sha256": "f10e3bd73cc5d6bf686c57f4a92a1773795518059cf296a03a3e992b31954219"
+    },
+    {
+      "path": "hl2/scripts/liblist.gam",
+      "bytes": 219,
+      "sha256": "8bdf84139bb404142ba382153d91377c3ca099a7b87bcb00517033f83461e695"
+    },
+    {
+      "path": "hl2/scripts/mapautocompile.txt",
+      "bytes": 1371,
+      "sha256": "460092ae4e549dc49925c3c1c74deb69a552e0104eea29af8412c3060b793023"
+    },
+    {
+      "path": "hl2/scripts/newbindings.txt",
+      "bytes": 870,
+      "sha256": "f390f410037c3601420441f3a15feab17c02f75b268ca155832d9880474af4aa"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_alyx.txt",
+      "bytes": 18748,
+      "sha256": "265694cb5740adaa9eefa6ca5437e116fd86fbd036ff07df07c620841c5419f5"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_antlion.txt",
+      "bytes": 5142,
+      "sha256": "88437650a16321744c6517edcd8996ec8adbba6d9c17dac9fb36771048942c16"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_antlionguard.txt",
+      "bytes": 3322,
+      "sha256": "228c04f25e338257b99bfe8cf08f98348fec4bccde3f8d3be8b09436b28fd8e5"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_attackheli.txt",
+      "bytes": 2835,
+      "sha256": "970f22b0dda61f77be4374e69016e17d9ad903ffa5d346fa976c39ad5e0c2cf5"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_barnacle.txt",
+      "bytes": 3600,
+      "sha256": "80e37ff58205495dc820881a577c402a16b00c012313b1bc90ea813e0ebb0144"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_barney.txt",
+      "bytes": 20525,
+      "sha256": "2e3ee848b35a9c97ee841b646e1711359cb586716ae68679e8750e7830dc4148"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_birds.txt",
+      "bytes": 2599,
+      "sha256": "3ba6c40a4b5dd4c3f171f67242fe39acc783041d0c5007d46db9684473988a37"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_blackheadcrab.txt",
+      "bytes": 4283,
+      "sha256": "34e418dc8697f0db52096df51d0b18b121244fc24b27d7da0a898f050f41b53d"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_citizen.txt",
+      "bytes": 82754,
+      "sha256": "aeb7eaf4a44f97994fecf52168157d4fd1c9c3e6bbc03d259f987e5b0caf55e4"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_combine_ball.txt",
+      "bytes": 1480,
+      "sha256": "292bad0cacb037d271bbeb9b858bc09a21b722b54b6df7d4539c50ccc1bb8124"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_combine_mine.txt",
+      "bytes": 1243,
+      "sha256": "78b4e7ba76d4af05679cc8bf432ad5139e046bba6c2f20da87e8b75ea74624b0"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_combinecamera.txt",
+      "bytes": 1814,
+      "sha256": "55c5af45d59a692b9251789af99e707cd8becf7d25dc34b25ad17f93b998848d"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_dog.txt",
+      "bytes": 12418,
+      "sha256": "267cef1d6135e1617478b3f653e1a905f6348411a3b9dfeb5c13e4208ae7d6d7"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_dropship.txt",
+      "bytes": 1084,
+      "sha256": "34dcf597c9b60d80d251a231807825481c7c2a224ce763191a1dc2ae190c1955"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_eli.txt",
+      "bytes": 1262,
+      "sha256": "55cf8babde123b96571a1220fd9770e76459b5a9ff754bf3e25ca67d7dfd280c"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_env_headcrabcanister.txt",
+      "bytes": 1211,
+      "sha256": "53609c6b421b864a6ed4b8591129386b29a05346e042610a0cedf65f9a65185d"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_fastheadcrab.txt",
+      "bytes": 1787,
+      "sha256": "3c013506c634868be388be103f0765e4214221d7ad930e62788767ca46277d7a"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_fastzombie.txt",
+      "bytes": 3931,
+      "sha256": "675d3b6866c9cad0d643556971530116b672356c089d79d3ab01005200e9a8c7"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_gman.txt",
+      "bytes": 1755,
+      "sha256": "075d43c62326169e95742859aacbf47e9a3b8854b990e92d72e29c68ecacfa2c"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_gunship.txt",
+      "bytes": 2888,
+      "sha256": "b4a4d4d09fdeee58bebfc5f5ed56f9364975fd8823c9e8dcf85c43b1d94a3ded"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_headcrab.txt",
+      "bytes": 2591,
+      "sha256": "34caee2d07777255633a26a44c471b3c1dd8f3af5d4ca65fa26f232d52922d35"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_ichthyosaur.txt",
+      "bytes": 1901,
+      "sha256": "84ab6e84529dacf2d0d727c108421ad7570727eb6585ce66cebd611da19abc7f"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_manhack.txt",
+      "bytes": 2921,
+      "sha256": "125abc923f492e673c3ba02e2cd7b4b9597f740a8db73d53c9a6fdd3c2597e68"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_metropolice.txt",
+      "bytes": 8369,
+      "sha256": "2fbb096b44fc5a7d01ac841c2d8e7d5692a220ef57fba0a5914854386a79a2e2"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_poisonzombie.txt",
+      "bytes": 2460,
+      "sha256": "841e6af4c35adc74ce3efb80ffd6267e624680f33d5aebd6f6e4617b89e608d9"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_rollermine.txt",
+      "bytes": 3824,
+      "sha256": "c774ac4781ec6a0c1e29789bdb57bd2002bbe61958c449377436b5e0da39e391"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_scanner.txt",
+      "bytes": 7843,
+      "sha256": "459c0eb786af4693936903fa3d18923ea534cb17eb61ed9eee5ef9f09fc35c8a"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_sniper.txt",
+      "bytes": 2604,
+      "sha256": "d7ec885fc312672abcaade8e5d52050214a72faf709878366d889ebbd650bd73"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_soldier.txt",
+      "bytes": 2390,
+      "sha256": "c08e2fe696f92823e220ed9bf6f78621cf1698b383b38925e24f877a537f820b"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_stalker.txt",
+      "bytes": 1246,
+      "sha256": "f3cb15a1ee79b1cefb90e082b339243cabfd9d1d07ce12b84aa4ca91cb3d01b8"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_strider.txt",
+      "bytes": 4445,
+      "sha256": "11a191d8091b028fa1e075f0ac7c795a102e421de95fbb523b50edc4ff6efda6"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_turret.txt",
+      "bytes": 5320,
+      "sha256": "ec1870f82ba7367b38c7b75c928f9ef383440814123790c2941af00f54d9c785"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_vortigaunt.txt",
+      "bytes": 40169,
+      "sha256": "72e5cf1bb8dced5865a4828b110ff3e9284034cef426b906d9532d463773d934"
+    },
+    {
+      "path": "hl2/scripts/npc_sounds_zombie.txt",
+      "bytes": 4508,
+      "sha256": "63023859ad8841c57fd998351c3d87098d61ed9a9bd1c9b35420d59b98aaab21"
+    },
+    {
+      "path": "hl2/scripts/plugin_animations.txt",
+      "bytes": 1534,
+      "sha256": "b902275e971a9685d1c332c417e152b2415778aa636a942d7ec0873351da8f08"
+    },
+    {
+      "path": "hl2/scripts/preload_xbox.xsc",
+      "bytes": 1795,
+      "sha256": "42850238a2f66ff25c1e08b4ddcaa1fe6fc2408a347064db12c79293ee28ed68"
+    },
+    {
+      "path": "hl2/scripts/propdata.txt",
+      "bytes": 12187,
+      "sha256": "f8827f6060a77c61def246521f1675c83c51d13f66e66c2d936202d1341fd7de"
+    },
+    {
+      "path": "hl2/scripts/screens/slideshow_display_screen.res",
+      "bytes": 998,
+      "sha256": "952d25db5701acf54569ac07352455f32b6dc79bf827b7985581690492d75c12"
+    },
+    {
+      "path": "hl2/scripts/screens/teleport_countdown_screen.res",
+      "bytes": 1724,
+      "sha256": "da123d54bfce64a2dcaa5278a6e4adaad92fb8f5c0498416e8474ddcefecd661"
+    },
+    {
+      "path": "hl2/scripts/screens/vgui_test_screen.res",
+      "bytes": 1799,
+      "sha256": "265e8d25cfab8ed64773975579310372fb7d83d1465a843b73f8bcfef3ccb367"
+    },
+    {
+      "path": "hl2/scripts/sentences.txt",
+      "bytes": 80190,
+      "sha256": "b1b6514460c63a755d63bb342a364a07418ca459711b650ed289ce4e159d6b2c"
+    },
+    {
+      "path": "hl2/scripts/settings.scr",
+      "bytes": 1988,
+      "sha256": "837091d76e885116a38949012bbbc99d2a5d46438586e76c6983c3a02a21d008"
+    },
+    {
+      "path": "hl2/scripts/soundmixers.txt",
+      "bytes": 8822,
+      "sha256": "4df39df52c3634860fedb11df61ea3a6f51b552eb739528f4255999f9aea716e"
+    },
+    {
+      "path": "hl2/scripts/soundscapes.txt",
+      "bytes": 6161,
+      "sha256": "a818d932aadc67e2591912fee78325d2014c2f9f2df13d4a1a779f56bfca288d"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_canals.txt",
+      "bytes": 41988,
+      "sha256": "546d489a94dcf61faa344eb4b204b2113499584fb4077b1c75b3e94b5d3dc83d"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_citadel.txt",
+      "bytes": 13405,
+      "sha256": "382c35c55c2b9a85c3c9d89b1f2d6ed8379ae06dc85547a47194195aa89a1fc4"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_coast.txt",
+      "bytes": 12240,
+      "sha256": "da2efca3a980bee7d4398ed1a5ee82b8d7484d7421db02f1d01b327b015926f5"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_elab.txt",
+      "bytes": 9480,
+      "sha256": "a9e4a6605b8a8e1101848973825d0057cf71127500e0e66d52e622bed3e18150"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_klab.txt",
+      "bytes": 2831,
+      "sha256": "1265e97b99f24a0410c0f6656a640d020fcb179d57265a543bb413afc55cdc0c"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_manifest.txt",
+      "bytes": 497,
+      "sha256": "f1f990dcaff94114e156d9de290d9d7296246b46453651dd6bcb5e52b9cb38c5"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_prison.txt",
+      "bytes": 18366,
+      "sha256": "0bf4242d5409ab570fc810c5be4fdd8a8b60967f8357169f9561f1a1a6b33dca"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_streetwar.txt",
+      "bytes": 28544,
+      "sha256": "27f9ed3563cd4e99a7dbabfe46628ee531da7cd6e9f79007cd94c1e1c915fb4e"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_town.txt",
+      "bytes": 10674,
+      "sha256": "ff7364341d164d3e747324ae1a4c82c4aa4c21b2eeee607c1340f592863bba4d"
+    },
+    {
+      "path": "hl2/scripts/soundscapes_trainyard.txt",
+      "bytes": 9096,
+      "sha256": "7c86286e34e4b4a01d64af3b0772ae903b3e429d706895c1438a5abf66859638"
+    },
+    {
+      "path": "hl2/scripts/surfaceproperties.txt",
+      "bytes": 23266,
+      "sha256": "2aec45713c84d9dd8dd7fb40db3f1c63986778857c3700cc9c4885f2edbca7d4"
+    },
+    {
+      "path": "hl2/scripts/surfaceproperties_hl2.txt",
+      "bytes": 2800,
+      "sha256": "6eb6c622f9d566515d0909d610c6f7213d327ed69545807696d74162ee3c0280"
+    },
+    {
+      "path": "hl2/scripts/surfaceproperties_manifest.txt",
+      "bytes": 595,
+      "sha256": "d8bead334f07cd9f7cdfa30d691076b242ee469727aa0f0dcb734f3699d92a11"
+    },
+    {
+      "path": "hl2/scripts/talker/interjections.txt",
+      "bytes": 819,
+      "sha256": "9ab7c4d6337f6a6e39ab580d78b4147b7e119046d248958c04b6ec88c457423c"
+    },
+    {
+      "path": "hl2/scripts/talker/nags.txt",
+      "bytes": 5695,
+      "sha256": "b7d183c5d14fe90a8431de8378f51b0214190bd241b26af09316d064dca3354a"
+    },
+    {
+      "path": "hl2/scripts/talker/nags_canals.txt",
+      "bytes": 5036,
+      "sha256": "ec989aec2feaf799cabe4df85e6b52dcf8d68175a03e12bcf754a9c9d7539e7e"
+    },
+    {
+      "path": "hl2/scripts/talker/nags_citadel.txt",
+      "bytes": 8068,
+      "sha256": "81ba84dd67091eb4265b9331e4582a8a8dd942d080843e04ab59294c741896ee"
+    },
+    {
+      "path": "hl2/scripts/talker/nags_eli_lab.txt",
+      "bytes": 4897,
+      "sha256": "7a0d45ed8177c2d5d44e293294bd65e37ef3d041156687fc4fe798ad5f3f7e67"
+    },
+    {
+      "path": "hl2/scripts/talker/nags_k_lab.txt",
+      "bytes": 4563,
+      "sha256": "fd3992a51bfd5557cf1b9302f44afca9e5191451fbe87c6b99210cdc975cc28d"
+    },
+    {
+      "path": "hl2/scripts/talker/nags_prison.txt",
+      "bytes": 2088,
+      "sha256": "da8becdb20d0dc9c26286c1d8b77928e8627feaa06032151c153c24e2873b5c4"
+    },
+    {
+      "path": "hl2/scripts/talker/nags_trainyard.txt",
+      "bytes": 3048,
+      "sha256": "ce66993ac07969f6929157d4da9ca344aa3353726ff52ba58a0cac1b21b58b76"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_alyx.txt",
+      "bytes": 3013,
+      "sha256": "b2d5a7a5a13182f81528096974deede87abbe767d4c572697b7f19adbbbf2cd3"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_barney.txt",
+      "bytes": 7672,
+      "sha256": "4e5740bc22e86666132fd4832202d4fb060907af78ef92ca46c14931bdea2583"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen.txt",
+      "bytes": 28807,
+      "sha256": "df0602e7eba526c67223432f19eacc017204baafb1c1284c48a1f10b9b9e0acb"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen_c17.txt",
+      "bytes": 2131,
+      "sha256": "f3e0d0354b119863bc55a0be13ed12f1434cd283b24b2f983f05411d842a88e7"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen_canals.txt",
+      "bytes": 1805,
+      "sha256": "7d4ee7c83da375220192f2802674dfdccb6b4a31a4adf5349b2ac80eff3a3377"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen_coast.txt",
+      "bytes": 9032,
+      "sha256": "85017f4afaa638fa6b6eb6384b6e1f9c5f825c972db75a79756af34c34d2594a"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen_commandermode.txt",
+      "bytes": 16866,
+      "sha256": "5f033564d60be63d6af2cfb58a2fdcd44bc8f9604166923017935c3f69816f02"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen_tenement.txt",
+      "bytes": 4126,
+      "sha256": "ff8933f0c860a3198a41dd325b14343b1e507decd5bf7157ce8c37b8f82451e4"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_citizen_terminal.txt",
+      "bytes": 8974,
+      "sha256": "cc4315b571bc8c1e3abd0a104705927bf2ba3ed60746db4fe8d3c1a2cfbcbfbc"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_combine.txt",
+      "bytes": 585,
+      "sha256": "8c49793d756f356ed75feff8240d024988aea1cb7d85bf0ad923cfc6108014b6"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_grigori.txt",
+      "bytes": 8963,
+      "sha256": "96de88dc0becb6574a5bb710181ac8eb4e5149fce46925706093bec2f43cc8aa"
+    },
+    {
+      "path": "hl2/scripts/talker/npc_vortigaunt.txt",
+      "bytes": 21951,
+      "sha256": "2ca9059d60d861bcf4807840a6858c365990d6a10239537012d56f47f93ac0c6"
+    },
+    {
+      "path": "hl2/scripts/talker/response_eli_lab.txt",
+      "bytes": 1140,
+      "sha256": "5d3436e617a41fbddec2ca06df92658e427fe9250ab72f821c6dd5f29385160b"
+    },
+    {
+      "path": "hl2/scripts/talker/response_k_lab.txt",
+      "bytes": 3906,
+      "sha256": "e57d94a839d63dd0a95e8561b2e81fe96425cf8170d614eeb32d47d4f3bd0fc2"
+    },
+    {
+      "path": "hl2/scripts/talker/response_rules.txt",
+      "bytes": 15816,
+      "sha256": "19847d170dff55f15b4a8a69df9d6b1c025a7bb2a1e765d2abbb0f53ff296b08"
+    },
+    {
+      "path": "hl2/scripts/talker/terminal_pa.txt",
+      "bytes": 781,
+      "sha256": "617cd02a0f308a88ba12d61e2f22022b73dceda2422038f6aec7e9e1ba3720d2"
+    },
+    {
+      "path": "hl2/scripts/titles.txt",
+      "bytes": 5180,
+      "sha256": "e97e9bbda645ba2ceeacfd166c6d6c8d5f749a4cb5d2b9dafbde8f2aaad05198"
+    },
+    {
+      "path": "hl2/scripts/vehicles/airboat.txt",
+      "bytes": 2284,
+      "sha256": "2a30259669be2360b11c97995801c2cd616461c91ebcc6fb6d676620dc95a805"
+    },
+    {
+      "path": "hl2/scripts/vehicles/apc.txt",
+      "bytes": 3560,
+      "sha256": "1dd36e2dc20e0d8bd9d025c8f3a2418218d5a6a4c1d47c9e52b2d1beb0093665"
+    },
+    {
+      "path": "hl2/scripts/vehicles/apc_npc.txt",
+      "bytes": 4374,
+      "sha256": "8d9d26d5232745c8b6ade83baf6eef053dc460b573a173f2fa96a4d449ce34a4"
+    },
+    {
+      "path": "hl2/scripts/vehicles/cannon.txt",
+      "bytes": 3295,
+      "sha256": "f3545697c8eb1390393c8524db8735d031c9600028b094f65fc74ca041207f00"
+    },
+    {
+      "path": "hl2/scripts/vehicles/crane.txt",
+      "bytes": 3366,
+      "sha256": "deef84dcaca758cca3ce4b8f4d409fd2aebef16cef85f7724a52052e04408082"
+    },
+    {
+      "path": "hl2/scripts/vehicles/digger.txt",
+      "bytes": 1575,
+      "sha256": "9da4680871348ddfd9540b90ebcdf35df59d189bc3531ba1139f21f6ed7a38a9"
+    },
+    {
+      "path": "hl2/scripts/vehicles/driveway.txt",
+      "bytes": 1597,
+      "sha256": "4d8ebc0ad4168b6c88c908913262192684a97e36a43b9894fec19d3f689709db"
+    },
+    {
+      "path": "hl2/scripts/vehicles/fastdigger.txt",
+      "bytes": 1706,
+      "sha256": "6ac63f17882a0896ea7244916d3f05def5149a95e3153fc224cec793b021b060"
+    },
+    {
+      "path": "hl2/scripts/vehicles/jeep_test.txt",
+      "bytes": 5574,
+      "sha256": "2225e4579d7124457e3a514952541af672ab4165e521e74336998cde4efd1ec3"
+    },
+    {
+      "path": "hl2/scripts/vehicles/jetski.txt",
+      "bytes": 2060,
+      "sha256": "61ac27343402cd3e1a024de46354299281005f9304b0aeef3d4e6b9f005bb508"
+    },
+    {
+      "path": "hl2/scripts/vehicles/prisoner_pod.txt",
+      "bytes": 2930,
+      "sha256": "f290dddf772cb33ce44b1b8c7027007ee18e1c5c65bde3bc7c035b3182cd0442"
+    },
+    {
+      "path": "hl2/scripts/vehicles/reference_vehicle.txt",
+      "bytes": 1976,
+      "sha256": "aabec8242945dbcdc27a0445d46a051c60f24e9eed1f6fd567d064d8b3062d88"
+    },
+    {
+      "path": "hl2/scripts/vgui_screens.txt",
+      "bytes": 1238,
+      "sha256": "c595649414e7e2b1e85d0174cef4713f7e868e41cc6a9b587e6ac44df2ac3ec1"
+    },
+    {
+      "path": "hl2/scripts/weapon_357.txt",
+      "bytes": 1249,
+      "sha256": "3f6044cff692b05092bd9156c96631af675462131a4c76cb0e444209fd4cbe23"
+    },
+    {
+      "path": "hl2/scripts/weapon_alyxgun.txt",
+      "bytes": 1319,
+      "sha256": "1d6bc35bbdbb557582fe8294d46a7fd65039714c3a7ad3dcc9cde2863a78c475"
+    },
+    {
+      "path": "hl2/scripts/weapon_annabelle.txt",
+      "bytes": 1445,
+      "sha256": "32f62c8be6bfb92a6ce5c2908d1a2f4e1ad48517e15c316acfa10eabb498206a"
+    },
+    {
+      "path": "hl2/scripts/weapon_ar2.txt",
+      "bytes": 1680,
+      "sha256": "cc7de6931f0acd7d4f8675781d158ee194bdaa994b3996b6a8b981f32ace8304"
+    },
+    {
+      "path": "hl2/scripts/weapon_bugbait.txt",
+      "bytes": 1065,
+      "sha256": "2557a9b44c6aafb0c64b932a2bc3b07f9b3223f9d8427f596138a75c5953e9fc"
+    },
+    {
+      "path": "hl2/scripts/weapon_citizenpackage.txt",
+      "bytes": 1265,
+      "sha256": "530b2842183aa6f5fe951e68e66e69da3b8ed4106fe7d0749ec61f0ba926b215"
+    },
+    {
+      "path": "hl2/scripts/weapon_citizensuitcase.txt",
+      "bytes": 1417,
+      "sha256": "b38af88fc605ee1ac55413dbc3549536742bf694a3ca7322e6f57293efbfd47c"
+    },
+    {
+      "path": "hl2/scripts/weapon_crossbow.txt",
+      "bytes": 1528,
+      "sha256": "cb08bea8db972d317a64a2845706e0128687b1f1fcb198da57e898e23f61fd2b"
+    },
+    {
+      "path": "hl2/scripts/weapon_crowbar.txt",
+      "bytes": 1211,
+      "sha256": "ec6a7d282699222fdc96543a5fbf24f691956d2844bf4fbe89446ccc392150cf"
+    },
+    {
+      "path": "hl2/scripts/weapon_cubemap.txt",
+      "bytes": 1077,
+      "sha256": "aef772956ed32a13b14ff3fc5dfb3657717a0e0bd75567a7bbcfa47424dd84e5"
+    },
+    {
+      "path": "hl2/scripts/weapon_frag.txt",
+      "bytes": 1378,
+      "sha256": "b5820961a2ca34178baa274ba6a481c99c7ae267dfff2ac210ca6c94b13d4503"
+    },
+    {
+      "path": "hl2/scripts/weapon_manifest.txt",
+      "bytes": 727,
+      "sha256": "f9116cdef75348839a42958b41407784c68da75b6f3647783c6dc16bb3d978ce"
+    },
+    {
+      "path": "hl2/scripts/weapon_physcannon.txt",
+      "bytes": 1553,
+      "sha256": "f8fc6038845b3484c5d6ac03891afe13d7934d2de87de239ae31062470f9d0d2"
+    },
+    {
+      "path": "hl2/scripts/weapon_physgun.txt",
+      "bytes": 1143,
+      "sha256": "b5e61291ab5a0296ec6fa48e9e9f8a5712d2c350d3831411d4f3dd61e0bfc354"
+    },
+    {
+      "path": "hl2/scripts/weapon_pistol.txt",
+      "bytes": 1482,
+      "sha256": "fef09131ba84c71b300b3d1b26114fc7901c7274654552687fece7daf27729cc"
+    },
+    {
+      "path": "hl2/scripts/weapon_rpg.txt",
+      "bytes": 1525,
+      "sha256": "a66e7cb6dd7996e5d1904599a6b30ec1c0049ff1ec499968a313072f23b6ac18"
+    },
+    {
+      "path": "hl2/scripts/weapon_shotgun.txt",
+      "bytes": 1502,
+      "sha256": "e06d904e824b6ea0781246bbe89fb00bd810ca73e8726729aa5224a5026b46ae"
+    },
+    {
+      "path": "hl2/scripts/weapon_smg1.txt",
+      "bytes": 1692,
+      "sha256": "2cdc1a26b74ef512d874fd9f6b604a507217823e421b088eb7cc855f1289dda0"
+    },
+    {
+      "path": "hl2/scripts/weapon_stunstick.txt",
+      "bytes": 1285,
+      "sha256": "aac0fb9da49d1cf997b640b4550dc61b930fbd654f8e5b13e3c7b3235214f6f7"
+    },
+    {
+      "path": "platform/admin/admin_brazilian.txt",
+      "bytes": 41994,
+      "sha256": "8a80de30f63fb085b432d47a6e48d2d1aca2f258d399e3ff4077437fb5e25874"
+    },
+    {
+      "path": "platform/admin/admin_bulgarian.txt",
+      "bytes": 42496,
+      "sha256": "63cfe117ed9287b60f611cabf6d516747c222e703b430df3d9e3ee50d61c31a0"
+    },
+    {
+      "path": "platform/admin/admin_czech.txt",
+      "bytes": 41150,
+      "sha256": "94a01c76ffc876ba5abd065b6fad4575527b66fa023fdeafa2d8e011dbf60a66"
+    },
+    {
+      "path": "platform/admin/admin_danish.txt",
+      "bytes": 41758,
+      "sha256": "fccf40e63b2a9605c9c1c9e8ef05932ccd0fdd74e71cd65acd921f97a1e618c4"
+    },
+    {
+      "path": "platform/admin/admin_dutch.txt",
+      "bytes": 42128,
+      "sha256": "bdd5207bcdb271a04a2096670565111ad47638cf42637b77b54f9acb4bf860a5"
+    },
+    {
+      "path": "platform/admin/admin_english.txt",
+      "bytes": 19372,
+      "sha256": "0cbf6707f4f0256ab6a37e5163e977fce684f83f53c61f6eb556af021f0da68a"
+    },
+    {
+      "path": "platform/admin/admin_finnish.txt",
+      "bytes": 41530,
+      "sha256": "dde394e8639cff5b0b5f8df3bca063069688ee8aa710b65aaf04759349c564c9"
+    },
+    {
+      "path": "platform/admin/admin_french.txt",
+      "bytes": 42752,
+      "sha256": "bdb8bcff04e8edb37cedcebbb0c1f8ec1ddf2508b1700560a55fe850916fff85"
+    },
+    {
+      "path": "platform/admin/admin_german.txt",
+      "bytes": 42106,
+      "sha256": "6e0240f07ef5c97478f451015d452953bff821cd8f37bc03275ff7fab2cd08b2"
+    },
+    {
+      "path": "platform/admin/admin_greek.txt",
+      "bytes": 42634,
+      "sha256": "0a2ef87a4d9f0e04121ac54b7a157cda3e03bccfe8e855c326b889f9b02ab3ca"
+    },
+    {
+      "path": "platform/admin/admin_hungarian.txt",
+      "bytes": 41356,
+      "sha256": "191b23a0df98195dc6588f1fa37048f64004b7bde126f5cdf0eb836d56e7ad3d"
+    },
+    {
+      "path": "platform/admin/admin_italian.txt",
+      "bytes": 42152,
+      "sha256": "9a6768b08f327fd0a7aa6a46e04ecb4afbb5414c37fbd6f518dbb69898595665"
+    },
+    {
+      "path": "platform/admin/admin_japanese.txt",
+      "bytes": 37486,
+      "sha256": "fa68071191b4e939d8e1b16ab8f8899b120655e5dd50afebd1a5430b8b773d08"
+    },
+    {
+      "path": "platform/admin/admin_korean.txt",
+      "bytes": 37762,
+      "sha256": "7717d63e0d3b153f609d34a1c158fd1889f3165d264891776211c86a3ed936cc"
+    },
+    {
+      "path": "platform/admin/admin_koreana.txt",
+      "bytes": 37762,
+      "sha256": "7717d63e0d3b153f609d34a1c158fd1889f3165d264891776211c86a3ed936cc"
+    },
+    {
+      "path": "platform/admin/admin_latam.txt",
+      "bytes": 43114,
+      "sha256": "136e731a275126e5702feba6ff7e7e786a87204b229ab134b7aa3ab04f148dd4"
+    },
+    {
+      "path": "platform/admin/admin_norwegian.txt",
+      "bytes": 41784,
+      "sha256": "6406a8b8475a124ec6b933ff0ab05ef1bfb933ad05f8a18b88eaf3d1138e89f2"
+    },
+    {
+      "path": "platform/admin/admin_polish.txt",
+      "bytes": 40918,
+      "sha256": "08d83fd410b151cc760cf1d487d9c03f3ca8881951920a0f6e54530414994ec0"
+    },
+    {
+      "path": "platform/admin/admin_portuguese.txt",
+      "bytes": 42470,
+      "sha256": "e7ab9e36429fe27fbcc0e5bd92a25fb657d409430768fc581d0180ebc1c5471d"
+    },
+    {
+      "path": "platform/admin/admin_romanian.txt",
+      "bytes": 42178,
+      "sha256": "87a7c24ee5890f8dbbd3b49e1111be8e3808e7a8fde515aadba269aac8bfe5f6"
+    },
+    {
+      "path": "platform/admin/admin_russian.txt",
+      "bytes": 42208,
+      "sha256": "f75218049fe1f53c623f2b0c890e29b2423b34a3016b1a3217ba05c6b2f5628b"
+    },
+    {
+      "path": "platform/admin/admin_schinese.txt",
+      "bytes": 36702,
+      "sha256": "286a5752cfd86adb51831682543f5beffa4a69ea05cd6ed9fbe39f257faae7a5"
+    },
+    {
+      "path": "platform/admin/admin_spanish.txt",
+      "bytes": 43122,
+      "sha256": "0e0a81455e0b9e4bbeab29e9fa59f140fa75764564d63b04c3943d046fcd08a1"
+    },
+    {
+      "path": "platform/admin/admin_swedish.txt",
+      "bytes": 41788,
+      "sha256": "2d18857e426dbf2f353a15a147e789fdab7ac82771e3d6c40cdf4894629b36d6"
+    },
+    {
+      "path": "platform/admin/admin_tchinese.txt",
+      "bytes": 36890,
+      "sha256": "f24079aea826505290bbab1f3bf1219e4028d92462889720270ccd23735bcee2"
+    },
+    {
+      "path": "platform/admin/admin_thai.txt",
+      "bytes": 41136,
+      "sha256": "919c91499c17385ad568e0b780682a9b22801ecba64e62114eaa03ceb90e8b5c"
+    },
+    {
+      "path": "platform/admin/admin_turkish.txt",
+      "bytes": 40844,
+      "sha256": "acaf954ae104bdae199daec1b71c59f70f622b3cfca90039c3630c25fa46a42e"
+    },
+    {
+      "path": "platform/admin/admin_ukrainian.txt",
+      "bytes": 41622,
+      "sha256": "605b492196a2ff863124ce9835d1e87b4cc63e1b55df924fc630ed7ee499b3a9"
+    },
+    {
+      "path": "platform/admin/banpanel.res",
+      "bytes": 1681,
+      "sha256": "b434bf0eaceae7a6d026277254039d216cea322fb63dec987d199d5f2ca4a5ca"
+    },
+    {
+      "path": "platform/admin/budgetpanel.res",
+      "bytes": 286,
+      "sha256": "85aa0abd1541df1c579fdf65c9df27d5da8e6298d6c8e5b92d769f49802c9b30"
+    },
+    {
+      "path": "platform/admin/chatpanel.res",
+      "bytes": 999,
+      "sha256": "94038f3102f3364832db8146b9ba91a51c21ea6ea7f5f86e388238f32d3e5f4a"
+    },
+    {
+      "path": "platform/admin/configpanel.res",
+      "bytes": 4840,
+      "sha256": "89bcb4d29aa7c0f822b8648dca093bd74f2a9dc91f42fd1fc41caf36b5c5f534"
+    },
+    {
+      "path": "platform/admin/createmultiplayergameserverpage.res",
+      "bytes": 6766,
+      "sha256": "8afe0b0f212faea39518f0c2f527fd2f52c0825d1498e82e3e86a5fe23c63f4b"
+    },
+    {
+      "path": "platform/admin/dialogaddban.res",
+      "bytes": 4359,
+      "sha256": "787a76a83b22175ba9f4f86215c1eb6d7733ac6984b6a5c6dbdaafabcc539dc3"
+    },
+    {
+      "path": "platform/admin/dialogaddserver.res",
+      "bytes": 2224,
+      "sha256": "ec1d29935349233c2430fe2b1667a65014d1da5e0f683ef5a74b3ba7926827f4"
+    },
+    {
+      "path": "platform/admin/dialogadminserver.res",
+      "bytes": 3622,
+      "sha256": "c8b5c5e32ae30569778637f00e50b0fb30acca9633863129438adb0b8adb5848"
+    },
+    {
+      "path": "platform/admin/dialogcvarchange.res",
+      "bytes": 3005,
+      "sha256": "fab2d3d62e805f4cffaaa0916af4a8df8454e7c1d0988bf9ce5d3cf3db98072b"
+    },
+    {
+      "path": "platform/admin/dialoggamepanelinfo.res",
+      "bytes": 3107,
+      "sha256": "0b21e155026fcc140f68b9e7e63b5c61d926621610877e14dcfd658492fa8829"
+    },
+    {
+      "path": "platform/admin/dialogkickplayer.res",
+      "bytes": 1883,
+      "sha256": "ae84a92b2f845e76a5482af84f6c8c1ec599cd1e8521ab8780a2298d6167666f"
+    },
+    {
+      "path": "platform/admin/dialogserverpassword.res",
+      "bytes": 2278,
+      "sha256": "0688915456b57d838ddc62e6aac97d71c41d7c596b64151daf08df946e828202"
+    },
+    {
+      "path": "platform/admin/game_ready.wav",
+      "bytes": 8378,
+      "sha256": "9f839221582b729c925b1be1c6c09a4006d47566d6f9ff580337af1539b3679b"
+    },
+    {
+      "path": "platform/admin/gamepanelinfo.res",
+      "bytes": 3375,
+      "sha256": "937a2de9ef1106e14a318f90ffdce59121ea59fd99ae91ae13d926eb89fc8373"
+    },
+    {
+      "path": "platform/admin/graphpanel.res",
+      "bytes": 5966,
+      "sha256": "774ee36d0acfef49229dcb36114ffc7d18ce337488f141820769e7bf6a754388"
+    },
+    {
+      "path": "platform/admin/helpfile.vdf",
+      "bytes": 5094,
+      "sha256": "d718b7db7c4fb2ef09bfbb21c7beb0087d7c75b0afd24a82fc0cf089c45724b4"
+    },
+    {
+      "path": "platform/admin/helpfile_adminmod.vdf",
+      "bytes": 875,
+      "sha256": "78ec4457c6d5421dd6e6ca0f0a7e6a7f2a2b9c9c05f2b5b3435d95435fac1452"
+    },
+    {
+      "path": "platform/admin/helpfile_cstrike.vdf",
+      "bytes": 3412,
+      "sha256": "8735448c4232ecbdd991c6d2cd50fd0f4b6454558939f5a7feaeb845136dbf6b"
+    },
+    {
+      "path": "platform/admin/hlds_logo.tga",
+      "bytes": 1886,
+      "sha256": "ac9fa77401ff8f591fe24638ce49668b68d88b1fb9028cb0d1519407deb3e6fd"
+    },
+    {
+      "path": "platform/admin/mainserverconfig.vdf",
+      "bytes": 677,
+      "sha256": "19d17ba21215223a7d238712e2a111f29942b3d26e7d59be7891a16afedaa593"
+    },
+    {
+      "path": "platform/admin/mapcycleeditdialog.res",
+      "bytes": 3314,
+      "sha256": "d91ba482971a2caad538c22b8b60153281d8667997d6f9dd340edcaa2a6435b0"
+    },
+    {
+      "path": "platform/admin/motdpanel.res",
+      "bytes": 283,
+      "sha256": "b84ff704ec533b52cd84767180078fe1598a52735aa38d2487bf9853c0808045"
+    },
+    {
+      "path": "platform/admin/passwordpanel.res",
+      "bytes": 3011,
+      "sha256": "71269463da9e175ae45c92bb7243ced3734546b90088adbbe6d60572d1341e71"
+    },
+    {
+      "path": "platform/admin/playerpanel.res",
+      "bytes": 2264,
+      "sha256": "f6d5d40400a367e6eee492b7f71d5e0699bdaf17ac383124901b797eef1394ea"
+    },
+    {
+      "path": "platform/admin/rawlogpanel.res",
+      "bytes": 542,
+      "sha256": "8ea617f01e485b9d523c103e22d94cd4b9027f2b088d3e735852178a0ae810dc"
+    },
+    {
+      "path": "platform/admin/rulespanel.res",
+      "bytes": 664,
+      "sha256": "5cd79b30811fdd1419d137bf7ff9519748c648e7d39455098796d6469ddf1576"
+    },
+    {
+      "path": "platform/admin/server_brazilian.txt",
+      "bytes": 6398,
+      "sha256": "1391a31eea848f80aecc0684f8ea9644314ad800d61b0eb5e663e9d605c9e0dd"
+    },
+    {
+      "path": "platform/admin/server_bulgarian.txt",
+      "bytes": 6452,
+      "sha256": "c16702bf65318c104cd08949eab209a1deade1f861943f6c6162a442dae765c9"
+    },
+    {
+      "path": "platform/admin/server_czech.txt",
+      "bytes": 6322,
+      "sha256": "7a0e5c07247483f7b2dc3ba3f1894c4d3ccf407cf65771dc0267b547ba4dfd76"
+    },
+    {
+      "path": "platform/admin/server_danish.txt",
+      "bytes": 6244,
+      "sha256": "a38cd751a4ca97e775fc9142206671fdae169cf9737c01c05608e10bd1d5e558"
+    },
+    {
+      "path": "platform/admin/server_dutch.txt",
+      "bytes": 6424,
+      "sha256": "948ee5e29ee86149aeec35084f2649e406df25e5b87b240d81b5c5de9fb177c6"
+    },
+    {
+      "path": "platform/admin/server_english.txt",
+      "bytes": 3110,
+      "sha256": "0ba206272df79b4664b4a7dff67680dd1fbd89236e137b58eb7389979b5da44a"
+    },
+    {
+      "path": "platform/admin/server_finnish.txt",
+      "bytes": 6448,
+      "sha256": "2da2a2f113685afa183b415517338a57d27fb0f00285233713b6fd97c5f15685"
+    },
+    {
+      "path": "platform/admin/server_french.txt",
+      "bytes": 6450,
+      "sha256": "48c096336ea782a34a5ae9546fcf591697f3b61151ac70c4deb66dbab17ad442"
+    },
+    {
+      "path": "platform/admin/server_german.txt",
+      "bytes": 6438,
+      "sha256": "61d5d4250137667eabb8a7f71c0e370451ec467c1d4abc6ea3321262d2158148"
+    },
+    {
+      "path": "platform/admin/server_greek.txt",
+      "bytes": 6544,
+      "sha256": "550afc7859d0718141e84cc1d196133910b8b7e5bab922fb09d8cdd0a0e9b380"
+    },
+    {
+      "path": "platform/admin/server_hungarian.txt",
+      "bytes": 6300,
+      "sha256": "d97a9ce7a95efe145b8f549e3a19e69fe2b3470d4aa90a41af58809d4bf7244a"
+    },
+    {
+      "path": "platform/admin/server_italian.txt",
+      "bytes": 6392,
+      "sha256": "7b2f6a11d6f7992e5a5271b5f85e5de2488bfa381b7db2d28c96a8b74d4386e4"
+    },
+    {
+      "path": "platform/admin/server_japanese.txt",
+      "bytes": 5650,
+      "sha256": "33fc9ebac7c50aea954fcec3a4fff0c5a290a11f533d95a138bd3b62efaecfa1"
+    },
+    {
+      "path": "platform/admin/server_korean.txt",
+      "bytes": 5642,
+      "sha256": "0ec0a151e1d9b436ee88a9c9a602c9999a2ebc9998a3f6f6b395b05d70c683b9"
+    },
+    {
+      "path": "platform/admin/server_koreana.txt",
+      "bytes": 5642,
+      "sha256": "0ec0a151e1d9b436ee88a9c9a602c9999a2ebc9998a3f6f6b395b05d70c683b9"
+    },
+    {
+      "path": "platform/admin/server_latam.txt",
+      "bytes": 6448,
+      "sha256": "d3389e6888052fc56b628d4d4702d7fcc37b43cad8406a1da70fda050e13251f"
+    },
+    {
+      "path": "platform/admin/server_norwegian.txt",
+      "bytes": 6230,
+      "sha256": "30760194f283935e212f7cd902e795e052bf5946d78c2cf50f55ffe80ea72df5"
+    },
+    {
+      "path": "platform/admin/server_polish.txt",
+      "bytes": 6282,
+      "sha256": "c47aca3a297ca83b492d9780bfa843da4b8391f2be4730f3588e7f04cdddcef1"
+    },
+    {
+      "path": "platform/admin/server_portuguese.txt",
+      "bytes": 6388,
+      "sha256": "1931532db0b4eaa687c9411ceb81e549be0961798791b17a1cbcf8d2b5556755"
+    },
+    {
+      "path": "platform/admin/server_romanian.txt",
+      "bytes": 6396,
+      "sha256": "305496b7f5e08648a3bd56399d70e7c2246e9dd9bcdbe7abd3275e7663bff467"
+    },
+    {
+      "path": "platform/admin/server_russian.txt",
+      "bytes": 6412,
+      "sha256": "6afcba5171ae03b8f862fc5f8386d30b3d444557bfe34059d46889ce7ba4ffab"
+    },
+    {
+      "path": "platform/admin/server_schinese.txt",
+      "bytes": 5464,
+      "sha256": "0e53b2fae6b27f3c4f56220074eb3db27c8bf8140ab158b6c71f238a4b271ef2"
+    },
+    {
+      "path": "platform/admin/server_spanish.txt",
+      "bytes": 6436,
+      "sha256": "fdea50539338c549e6e6413510c6021ec4a1d808f294b1d6baaf48c2f5ec5983"
+    },
+    {
+      "path": "platform/admin/server_swedish.txt",
+      "bytes": 6278,
+      "sha256": "86594e2c9cde5e8c524805007de946ad2a0c6914651facb4059b172ddce0e0d5"
+    },
+    {
+      "path": "platform/admin/server_tchinese.txt",
+      "bytes": 5498,
+      "sha256": "244edbe19a8a93788aef112b2d0f541133f6ccf520a56c110313ea10be7cfe72"
+    },
+    {
+      "path": "platform/admin/server_thai.txt",
+      "bytes": 6282,
+      "sha256": "e842282314377b79077e9a2906a2ba8cc45cbd97522d7bb8448464855a3f1137"
+    },
+    {
+      "path": "platform/admin/server_turkish.txt",
+      "bytes": 6324,
+      "sha256": "e3161d766d70b58a21ace99f7355ced3942403a70f7bf2001350315a8f3c1b47"
+    },
+    {
+      "path": "platform/admin/server_ukrainian.txt",
+      "bytes": 6350,
+      "sha256": "b2fef2de8dd5e395f24e9af710604876443bc008d4d6aea5cc6b5e21ba81e6ba"
+    },
+    {
+      "path": "platform/admin/server_vietnamese.txt",
+      "bytes": 6334,
+      "sha256": "77aca0f6912eb37b699f158de114ffe99e890e20f1fc568c36aacbb35d5ff291"
+    },
+    {
+      "path": "platform/admin/serverconfigpanel.res",
+      "bytes": 922,
+      "sha256": "158ba34561b55eab2fc3860a370291972c3a693cf82532baa9edb5377ab8f8d8"
+    },
+    {
+      "path": "platform/admin/serverconfigpanel_cstrike.res",
+      "bytes": 4283,
+      "sha256": "5dd3f38341674037c2fee25c02a9760710010a171d8591c89a8772c138807392"
+    },
+    {
+      "path": "platform/admin/serverconfigpanel_dod.res",
+      "bytes": 5152,
+      "sha256": "9ab12b16ea7b9d2f264f55fe06fef0af2e89110f36a51449118916271d7fada6"
+    },
+    {
+      "path": "platform/admin/serverconfigpanel_valve.res",
+      "bytes": 3904,
+      "sha256": "f8cedfbd8912c2a45d26fa1c2a305b4fb5502568abbf2ca86e8316e63a7be74e"
+    },
+    {
+      "path": "platform/admin/vareditdialog_combobox.res",
+      "bytes": 2291,
+      "sha256": "f300c0545b83725c88e34fdc634123ed55530affaf9c303e7995ace807b88a57"
+    },
+    {
+      "path": "platform/admin/vareditdialog_string.res",
+      "bytes": 1730,
+      "sha256": "2e5d7c2cdd48cff43727d5f68b9eba78a207e58d77860dc634786e17e90594b7"
+    },
+    {
+      "path": "platform/platform_misc_000.vpk",
+      "bytes": 4806101,
+      "sha256": "fe892376ed7b521f3c7da344f3dd8a8aadc4dd5abc90e31ccf4b6ce674a8baff"
+    },
+    {
+      "path": "platform/platform_misc_dir.vpk",
+      "bytes": 15213,
+      "sha256": "6770139c4eae9cfc4867b0f29b81d56a1f9c317f92fc366b17a7a37282b38111"
+    },
+    {
+      "path": "platform/resource/addpresetdialog.res",
+      "bytes": 2261,
+      "sha256": "4a563baae80f4a19c4cbcc7785a49f1d3b9cc866f595b17a21ba44bbb596cf36"
+    },
+    {
+      "path": "platform/resource/assetbuilder.res",
+      "bytes": 2291,
+      "sha256": "4a016eabc2483fd083ec62bc5c3c52af0b05deb28f0f6b6781f8fbd8b2e7eb14"
+    },
+    {
+      "path": "platform/resource/assetbuildercompilepage.res",
+      "bytes": 1128,
+      "sha256": "678d267ad0a03bee1c3c45a41c1b39b262df53ffb51f97e2e9d17abf85b48163"
+    },
+    {
+      "path": "platform/resource/assetbuilderframe.res",
+      "bytes": 787,
+      "sha256": "711c1da2fba760933ff8dfd245a1cb736a05a0b22290762e4bc5e8bdd6b5f827"
+    },
+    {
+      "path": "platform/resource/assetbuilderinputpage.res",
+      "bytes": 1838,
+      "sha256": "2d519cfe06c2266e254547cb475a75d9acd8d8a0575f2ffa92c90f90898f66de"
+    },
+    {
+      "path": "platform/resource/assetbuilderoutputpage.res",
+      "bytes": 634,
+      "sha256": "1ad450d87cd2a9de316a67e1060da803a5c56a420647dc04e8a1414c76f6c72c"
+    },
+    {
+      "path": "platform/resource/assetbuilderoutputpreviewpage.res",
+      "bytes": 658,
+      "sha256": "5538aeccdaf7dd0c534e95ed9368ae67850428d5333190d909080269da325a85"
+    },
+    {
+      "path": "platform/resource/assetpicker.res",
+      "bytes": 4800,
+      "sha256": "84cde1fdc10a86e1cd9d6963e51514cfe2f8a3acb2d050991aeedba65f795856"
+    },
+    {
+      "path": "platform/resource/assetpickerframe.res",
+      "bytes": 1400,
+      "sha256": "593f3436d5117ca04060af2fd893f738037a3516a5ea4ae1a51a87a47128d033"
+    },
+    {
+      "path": "platform/resource/colorpicker.res",
+      "bytes": 7865,
+      "sha256": "beaa717e03ba981e3650b848c7727eac356d93b1c67f32997005c56edc5e6c72"
+    },
+    {
+      "path": "platform/resource/colorpickerframe.res",
+      "bytes": 1455,
+      "sha256": "e025dffeb30bdcdc0270ef5d53aa9ba03c52cd41bbc073497537cb47027cd263"
+    },
+    {
+      "path": "platform/resource/createtokendialog.res",
+      "bytes": 2543,
+      "sha256": "99e3252ff57081d9598a3bb40c3d5f3a24eb61a3b50bd9b2a94d5221628c6105"
+    },
+    {
+      "path": "platform/resource/dmeanimationlistpanel.res",
+      "bytes": 844,
+      "sha256": "761b1b0e63cf14d5e68c57e93a41557d6574b7d09348350ae0b566fe3aeba69e"
+    },
+    {
+      "path": "platform/resource/dmecombinationsystemeditor_rawcontrolpickerframe.res",
+      "bytes": 1580,
+      "sha256": "973d246653338989e8f9d232af5c9601bc2d86ae617c9634fa48ad4a83e7f26b"
+    },
+    {
+      "path": "platform/resource/dmecombinationsystemeditorframe.res",
+      "bytes": 1654,
+      "sha256": "2f15a9d4ef711a0bb8086d82c865fdef26157c811fb3955c64d47412c5bd2257"
+    },
+    {
+      "path": "platform/resource/dmecombinationsystemeditorpanel.res",
+      "bytes": 436,
+      "sha256": "a3cdf801eefb1cedbc46ca12e5c81ece171373f597c71c8721f7a3dee2d3cfc3"
+    },
+    {
+      "path": "platform/resource/dmecombinationsystemeditorpanel_controlspage.res",
+      "bytes": 1581,
+      "sha256": "1aec9cfa7e95cc47e075db47aea6806f6b2c183e997b1615d5ebacdbe2d5603e"
+    },
+    {
+      "path": "platform/resource/dmecombinationsystemeditorpanel_dominationpage.res",
+      "bytes": 927,
+      "sha256": "682830935c5505f3ae66441f1c423c2644a4e85e022a775049d1e449ec67156d"
+    },
+    {
+      "path": "platform/resource/dmedageditpanel.res",
+      "bytes": 1194,
+      "sha256": "ecd680c8776033d566a5b08fa136014fcf6610354de9e24cac5d53bcd03662b6"
+    },
+    {
+      "path": "platform/resource/dmedageditpanel_animationpage.res",
+      "bytes": 736,
+      "sha256": "87fcfd63526e2a969a12af718557d8974679c9532877140e9fa7a9c470278319"
+    },
+    {
+      "path": "platform/resource/dmedageditpanel_animationseteditorpage.res",
+      "bytes": 772,
+      "sha256": "347de735676bb44a8ebfb7aa61dbca50c81100f211e2f34f2e4dc60d080b74c0"
+    },
+    {
+      "path": "platform/resource/dmedageditpanel_combinationpage.res",
+      "bytes": 728,
+      "sha256": "099957f410700859ff641a9ba1e5a9b766aae2ba9b6a9a26746d0743ed245bb6"
+    },
+    {
+      "path": "platform/resource/dmedageditpanel_vertexanimationpage.res",
+      "bytes": 766,
+      "sha256": "6f7fb3b619dc97ca6ea1841773ab977644c1a655273ab69dfae0a59cf3276c97"
+    },
+    {
+      "path": "platform/resource/dmelogeditframe.res",
+      "bytes": 1765,
+      "sha256": "e4b4d75fcd8fa020d5f2dd9b6ed4ecd7b5f792cfbd585de4e5fe7a2c33f66390"
+    },
+    {
+      "path": "platform/resource/dmepicker.res",
+      "bytes": 1573,
+      "sha256": "cf8d4defcce64047370cfd47611cdc393a9d0c38f2ac0acd8c956ca226da458f"
+    },
+    {
+      "path": "platform/resource/dmepickerframe.res",
+      "bytes": 1392,
+      "sha256": "8fe0089db9d2773729bc4e26e26c1221881943f07dd1ac94cb5517c11218b1ac"
+    },
+    {
+      "path": "platform/resource/dmepresetgroupeditorframe.res",
+      "bytes": 1221,
+      "sha256": "0df5579fe44a7c1afc7b436ae7cd6c3a05d44af6e26f076bc634d7e624f0bfa3"
+    },
+    {
+      "path": "platform/resource/dmepresetgroupeditorpanel.res",
+      "bytes": 1578,
+      "sha256": "ca4ae1719a9210fcb9dd44e7246b0a2c68d1c9ea69e52925902cda87c4cb0165"
+    },
+    {
+      "path": "platform/resource/dmesourcedccfilepanel.res",
+      "bytes": 2166,
+      "sha256": "0594fed40b2df6b452580cbdd355ef101dd95274e08e05c7d1ae4a8433a532e5"
+    },
+    {
+      "path": "platform/resource/dmesourceskinpanel.res",
+      "bytes": 1869,
+      "sha256": "c98075dda20c7326848b6a3309f2898b7defa54566602610504273cc733a0f47"
+    },
+    {
+      "path": "platform/resource/edittokendialog.res",
+      "bytes": 4073,
+      "sha256": "672b8e1f77e82d403f2821762bc673fcd28fbc9a8420e512684358125247fde0"
+    },
+    {
+      "path": "platform/resource/fontinfo.kv",
+      "bytes": 418,
+      "sha256": "174c9d42d9033c80e6c2554c895f896525fbbdd44f3f561af8c1f3c24ad1b398"
+    },
+    {
+      "path": "platform/resource/icon_blank.tga",
+      "bytes": 1068,
+      "sha256": "b490e7f1176c6b61610f6db010efb9dbd200b54ae09026654a96bcfb12aa3470"
+    },
+    {
+      "path": "platform/resource/icon_file.tga",
+      "bytes": 911,
+      "sha256": "d706410a985dc06ab68fe425243af045223f8354cfaa3c26e6e8a81dec95ff28"
+    },
+    {
+      "path": "platform/resource/icon_folder.tga",
+      "bytes": 1406,
+      "sha256": "8d1abe7439d0977eaadb2a79a0ceb474cf73a585e380e30b12b71b04d6f53c75"
+    },
+    {
+      "path": "platform/resource/icon_folder_selected.tga",
+      "bytes": 911,
+      "sha256": "96e8bd83914f36c3570af984e9c1e5a88ebc44605239e2452c624df9e63bb7f1"
+    },
+    {
+      "path": "platform/resource/icon_folderup.tga",
+      "bytes": 1406,
+      "sha256": "ed25658e7a543f359d0a6c68956bdd1c6b97366b6dc541ab0fe2064c138c5c4d"
+    },
+    {
+      "path": "platform/resource/icon_hlicon1.tga",
+      "bytes": 1307,
+      "sha256": "db6edb7e6c775e916a3287e98a1520ae5e3c4ae69650aaf0f036218ee5047204"
+    },
+    {
+      "path": "platform/resource/icon_hlicon2.tga",
+      "bytes": 1307,
+      "sha256": "bdcd34d7b2d100dc8417c987f4409a3401e0463e43f3527f865fadc52e353ff1"
+    },
+    {
+      "path": "platform/resource/icon_password.tga",
+      "bytes": 1068,
+      "sha256": "37d7cdc015b47786abd0d0b976e211545f4cbef915a8025ccb8abac5b6e10fb6"
+    },
+    {
+      "path": "platform/resource/icon_replay.tga",
+      "bytes": 1068,
+      "sha256": "1c3b4fceeb70382fd99e3eb9e718bfc84157ef7bf02b9ff289f850bd05d357d5"
+    },
+    {
+      "path": "platform/resource/icon_steam.tga",
+      "bytes": 1307,
+      "sha256": "dc352dfbaa9afa9f7d8a631acf2e833948d229a1ab13ccebebb37fac562a2b81"
+    },
+    {
+      "path": "platform/resource/icon_steam_disabled.tga",
+      "bytes": 1307,
+      "sha256": "c5dea8d1644a716a75142babd792457bc7b3ec7e9949c7e740b131421b3d67b1"
+    },
+    {
+      "path": "platform/resource/linux_fonts/dejavusans-bold.ttf",
+      "bytes": 705684,
+      "sha256": "10fa207611d965b91051f70603aa67f887cc83e6d0b4e152a8527f2bfce289b7"
+    },
+    {
+      "path": "platform/resource/linux_fonts/dejavusans-boldoblique.ttf",
+      "bytes": 643288,
+      "sha256": "67982fcd217b6c253e11cdd21df019b826728e12e7d0fe63b06552c1e802d7d1"
+    },
+    {
+      "path": "platform/resource/linux_fonts/dejavusans-oblique.ttf",
+      "bytes": 635412,
+      "sha256": "52b80d9d368cff606f4efc52b02e23f956b7bf065822253729c11b75ad4da2f1"
+    },
+    {
+      "path": "platform/resource/linux_fonts/dejavusans.ttf",
+      "bytes": 757076,
+      "sha256": "2fb91d8d18b8312659070e66001a863b82fb6758a21e37df2c94f1cae83683ed"
+    },
+    {
+      "path": "platform/resource/linux_fonts/firasans-ofl.txt",
+      "bytes": 4557,
+      "sha256": "a7859b683d3e3e83e67685b09947da2302ef170ce7a94ea87cd116860cabb523"
+    },
+    {
+      "path": "platform/resource/linux_fonts/firasans-regular.ttf",
+      "bytes": 440984,
+      "sha256": "3dabf3d48bf4599f95cffd92f99ea426a014d5311f52a5eb5ec3af265e97cd97"
+    },
+    {
+      "path": "platform/resource/linux_fonts/liberationmono-regular.ttf",
+      "bytes": 319508,
+      "sha256": "95ac8946d4316630483e8073e7a59e7005597d7ce004311aa5af834c19fda97c"
+    },
+    {
+      "path": "platform/resource/linux_fonts/liberationsans-bold.ttf",
+      "bytes": 414456,
+      "sha256": "a45820951228ef902e70f2e69f182ff7190b53b5a61dadbcf46108a4651ee67e"
+    },
+    {
+      "path": "platform/resource/linux_fonts/liberationsans-regular.ttf",
+      "bytes": 410712,
+      "sha256": "9cce3d84b03e18ed4b47128d2e8b16c901645fdad1f95fdcca01f0ab6f6b0d7f"
+    },
+    {
+      "path": "platform/resource/linux_fonts/notosanscjk-regular.ttc",
+      "bytes": 19484784,
+      "sha256": "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"
+    },
+    {
+      "path": "platform/resource/linux_fonts/notosanscjk-regular_license.txt",
+      "bytes": 4393,
+      "sha256": "88f117575237307bdd86a17ef15e21790fc9a662fe4dfb103ca1ca077f0d9982"
+    },
+    {
+      "path": "platform/resource/linux_fonts/notosansthai.ttf",
+      "bytes": 217004,
+      "sha256": "2a3891727f5e0ab5bddfac2300900d3e1a81a9cf314850e91923e1654c921385"
+    },
+    {
+      "path": "platform/resource/linux_fonts/notosansthai_license.txt",
+      "bytes": 4393,
+      "sha256": "88f117575237307bdd86a17ef15e21790fc9a662fe4dfb103ca1ca077f0d9982"
+    },
+    {
+      "path": "platform/resource/localizationdialog.res",
+      "bytes": 4352,
+      "sha256": "b3a47a7830053d9c3ce6a6d030e487b43e5d34e744dc9861f85c424284bf9e7c"
+    },
+    {
+      "path": "platform/resource/mayaplugins.res",
+      "bytes": 25577,
+      "sha256": "fcdfcc6c85657c37b50c1f779efb287adfc1906ab11d3b45bef9465c4d7ae607"
+    },
+    {
+      "path": "platform/resource/mdlpicker.res",
+      "bytes": 6755,
+      "sha256": "5b74eecc8e2a79744bf5f40de8f0bffa4686bb6f3a3d868044e625218c97d1dd"
+    },
+    {
+      "path": "platform/resource/mdlpickerfilter.res",
+      "bytes": 1132,
+      "sha256": "fd0614b195606c35a860ef1916d6b0e73662d6e8e5d189abe53dc9e00bd9cec6"
+    },
+    {
+      "path": "platform/resource/mdlpickerframe.res",
+      "bytes": 1455,
+      "sha256": "28d83a344128accab3674ecf3cc0264c7d6ac7055670ee0da87edf39fd86e3dd"
+    },
+    {
+      "path": "platform/resource/mdlpickerinfo.res",
+      "bytes": 2656,
+      "sha256": "120df4ee1ae3fcc464a932065db2ee40fe0e2e37e79b2566a0f93c7c510a965f"
+    },
+    {
+      "path": "platform/resource/mdlpickerrender.res",
+      "bytes": 3028,
+      "sha256": "4f48cae33c1996ff0dd66eb299973fb709684e942dc02001c59730665cf4f68a"
+    },
+    {
+      "path": "platform/resource/mdlpickerscreencaps.res",
+      "bytes": 8321,
+      "sha256": "44cb58c7609a01bf23070dc4cc36938a3af77001b8b37d17eb2e186165e61b9a"
+    },
+    {
+      "path": "platform/resource/mdlsequencepicker.res",
+      "bytes": 2534,
+      "sha256": "98b4b679622ddd4d599d1cb800f20d018a037310536f160f0b3688bea9a8f647"
+    },
+    {
+      "path": "platform/resource/openedfilelist.res",
+      "bytes": 1060,
+      "sha256": "ef804019225cccf0cb30e719b2ef07b12c0bf65252d844832bdb507e8012206a"
+    },
+    {
+      "path": "platform/resource/particlesystempreviewpanel.res",
+      "bytes": 1690,
+      "sha256": "704f7930b7357aedea974325245657dbfa8c6006771b8c94050a552d6b3e44df"
+    },
+    {
+      "path": "platform/resource/particlesystempreviewpanel_renderpage.res",
+      "bytes": 2328,
+      "sha256": "86c70e0f4a7802ff6a90a169dd1d8fc08c7ef7da016058b49879e4d7b7c1735a"
+    },
+    {
+      "path": "platform/resource/perforcefilelist.res",
+      "bytes": 1441,
+      "sha256": "7325cf0084f7c2e16897dda87fe7716e8d4aaae294cd7e5569fe28b4febb0cd4"
+    },
+    {
+      "path": "platform/resource/perforcefilelistdescription.res",
+      "bytes": 2804,
+      "sha256": "a77c566dccc35c2ff5ec73b15d017085ac3eae3aca8baf2d4450866561904332"
+    },
+    {
+      "path": "platform/resource/picker.res",
+      "bytes": 1550,
+      "sha256": "163fb69fa8c977c9d5f55d209253b75b70ea462271cde1518a6b261561d2aca8"
+    },
+    {
+      "path": "platform/resource/pickerframe.res",
+      "bytes": 1359,
+      "sha256": "44e23f8b2e2893279bf73a9edb9fab8f1145df8a090be50cedc9aceff8f153cb"
+    },
+    {
+      "path": "platform/resource/platform_brazilian.txt",
+      "bytes": 1558,
+      "sha256": "cf86f3706a1baf99a1f26f3948b4adbcd61949f0157fe1c7a9844261631fc6b9"
+    },
+    {
+      "path": "platform/resource/platform_bulgarian.txt",
+      "bytes": 1548,
+      "sha256": "2340ff2612f34ff5ec54b301307470ffea65aac3c05993e298a4741d7ad80953"
+    },
+    {
+      "path": "platform/resource/platform_czech.txt",
+      "bytes": 1532,
+      "sha256": "35caa007e0d9f9b4ee3f35236778064db315060070aa79e4f525282d52022143"
+    },
+    {
+      "path": "platform/resource/platform_danish.txt",
+      "bytes": 1508,
+      "sha256": "3146720a5455908e6a6dd82294e845950fff55813db78bc9db134866a108c4a2"
+    },
+    {
+      "path": "platform/resource/platform_dutch.txt",
+      "bytes": 1560,
+      "sha256": "127fefb6468c1c26e0d2a9dc2877f94c0d6393fea5fc16505f892642d041c247"
+    },
+    {
+      "path": "platform/resource/platform_english.txt",
+      "bytes": 718,
+      "sha256": "55fb8f090eda25120aadbc81e0200667baf0068776925781ac83a873c46461c1"
+    },
+    {
+      "path": "platform/resource/platform_finnish.txt",
+      "bytes": 1544,
+      "sha256": "1fc06954fd86759419ab142dc827bfad2df9123a1ece18ab089c8b49923e091f"
+    },
+    {
+      "path": "platform/resource/platform_french.txt",
+      "bytes": 1556,
+      "sha256": "2d08bcd49e0efcd3cafa9a6d251b0b3a7a4095ee124f98b1909ba33974410849"
+    },
+    {
+      "path": "platform/resource/platform_german.txt",
+      "bytes": 1554,
+      "sha256": "d94eea26637d48915d7fe8c3b9c141fdc1a1df140d12a3c4727627136931c497"
+    },
+    {
+      "path": "platform/resource/platform_greek.txt",
+      "bytes": 1574,
+      "sha256": "374769ebfc0c7d53b2e0a946f6ca0f71500cc94019c8bbe7c1cd34ffc6528d93"
+    },
+    {
+      "path": "platform/resource/platform_hungarian.txt",
+      "bytes": 1540,
+      "sha256": "d6ee60679080836f53aa1e69a53a22feaabbf4cba6956556e3fe494487bdbcc6"
+    },
+    {
+      "path": "platform/resource/platform_italian.txt",
+      "bytes": 1528,
+      "sha256": "3348a5af08ca2de877d95b464678ec2a541f0d41bef16839c115594264720ccf"
+    },
+    {
+      "path": "platform/resource/platform_japanese.txt",
+      "bytes": 1430,
+      "sha256": "b030e1c5ea63738d0197fa00fe2b02e6bfd8512613d0d429acedd826dffb2db9"
+    },
+    {
+      "path": "platform/resource/platform_korean.txt",
+      "bytes": 1398,
+      "sha256": "0bafcf7adabfaf430d12e443c57ae02d98913a850781d04380503f397488241b"
+    },
+    {
+      "path": "platform/resource/platform_koreana.txt",
+      "bytes": 1398,
+      "sha256": "0bafcf7adabfaf430d12e443c57ae02d98913a850781d04380503f397488241b"
+    },
+    {
+      "path": "platform/resource/platform_latam.txt",
+      "bytes": 1538,
+      "sha256": "35910d8e472b8a93dc92c3681249c3dba1103bde0162f235e19cc396a3e5f814"
+    },
+    {
+      "path": "platform/resource/platform_norwegian.txt",
+      "bytes": 1534,
+      "sha256": "ee9a2d640164fa931919178f92202946ad1f6529cc094e147c49fc088b34b0ef"
+    },
+    {
+      "path": "platform/resource/platform_polish.txt",
+      "bytes": 1524,
+      "sha256": "279dc5aaddb2e33a7b67cf621a4abca74f215fc3b17c72b5b545827309b38c4f"
+    },
+    {
+      "path": "platform/resource/platform_portuguese.txt",
+      "bytes": 1554,
+      "sha256": "e235864a8c8e62027b14a9a3fbd738343ede06b96cc96435fa31e47f3effc540"
+    },
+    {
+      "path": "platform/resource/platform_romanian.txt",
+      "bytes": 1522,
+      "sha256": "b312aa2bd92feff6149932e16803342ba36e5c625cc6c36d632892200a54d145"
+    },
+    {
+      "path": "platform/resource/platform_russian.txt",
+      "bytes": 1516,
+      "sha256": "582e6dacd8d7fa5700dedbcd90118617690609cd3c270953ae723e6405aef016"
+    },
+    {
+      "path": "platform/resource/platform_schinese.txt",
+      "bytes": 1388,
+      "sha256": "1830ff574ec887904aab6cb7c23a3da86746738d62907c648ba2f6c2bd05eb7e"
+    },
+    {
+      "path": "platform/resource/platform_spanish.txt",
+      "bytes": 1542,
+      "sha256": "55020e8ee9c142898059f0c9f1efb1886f08dea65b34379bd459beaf40e814d8"
+    },
+    {
+      "path": "platform/resource/platform_swedish.txt",
+      "bytes": 1540,
+      "sha256": "cfc7cf8ea7818ff5c52778a63c0fa1f6d36cd637ccc11ac9f02b174e69cabeec"
+    },
+    {
+      "path": "platform/resource/platform_tchinese.txt",
+      "bytes": 1394,
+      "sha256": "cea5138576fe1c0a952e0beb210cc8c54ed506ddac1619128d56553bb4e95e50"
+    },
+    {
+      "path": "platform/resource/platform_thai.txt",
+      "bytes": 1526,
+      "sha256": "b048c41e08f8c56de699f783d9f938a8d85327adcee58615389e7f7349a4ffb3"
+    },
+    {
+      "path": "platform/resource/platform_turkish.txt",
+      "bytes": 1562,
+      "sha256": "e7b71ceafb8d9dab80e31c1ccdda085f1d0d7007739f555f46dfbd3abe1dbce8"
+    },
+    {
+      "path": "platform/resource/platform_ukrainian.txt",
+      "bytes": 1506,
+      "sha256": "b15456364cdd4fcf1c1ccfa30cfb5d09bdff2511251b9e49dbf0d376f32fce0d"
+    },
+    {
+      "path": "platform/resource/platform_vietnamese.txt",
+      "bytes": 1552,
+      "sha256": "1a7acc2d7ad9a8abcec36e580f7975869f91c7b5ffb013a85ec91394d47c39e6"
+    },
+    {
+      "path": "platform/resource/sequencepicker.res",
+      "bytes": 1356,
+      "sha256": "63e485753a5bfc3efb117203fe1e3d5de88853d3aa19650920ecec311fe6adfb"
+    },
+    {
+      "path": "platform/resource/sequencepickerframe.res",
+      "bytes": 1433,
+      "sha256": "bf9a81253afc5a82114543bf48a51d9ddf6dda2bc7bf4d8994b126981acb468a"
+    },
+    {
+      "path": "platform/resource/soundpicker.res",
+      "bytes": 752,
+      "sha256": "6117063e0125f67f984d0377f648463a905f2762b39add980ccefbcb79a10289"
+    },
+    {
+      "path": "platform/resource/soundpickerframe.res",
+      "bytes": 1400,
+      "sha256": "e4d9078fba14d6a0fbda078f27f9c8f37a935eb6195f2e8f69b69bdc1f08aa19"
+    },
+    {
+      "path": "platform/resource/soundpickergamesoundpage.res",
+      "bytes": 1547,
+      "sha256": "1d1e8c0b8eb87fa56841cd3d5825161726fb9868d905ad624d9d019b97603611"
+    },
+    {
+      "path": "platform/resource/soundpickerwavpage.res",
+      "bytes": 4850,
+      "sha256": "7ab870e836c601fd85cc0b9e35c4ba166a907ffcd4c11c16e4e9545da7ae87c9"
+    },
+    {
+      "path": "platform/resource/soundrecordpanel.res",
+      "bytes": 4038,
+      "sha256": "1d9d48418b42c770c9e62ac5e9ff6c55811403b428a4f8b48dc7b4bf4afccee4"
+    },
+    {
+      "path": "platform/resource/sourcescheme.res",
+      "bytes": 18661,
+      "sha256": "8bd6881eee4254dd3f6f2f3976fafd1f8969dbfb68de9b74f7552e9c624e4103"
+    },
+    {
+      "path": "platform/resource/sourceschemebase.res",
+      "bytes": 24487,
+      "sha256": "1ca27ea2d70db6af5a76605bd8f1655aabfecd61e3d19d89981e7eded972ea99"
+    },
+    {
+      "path": "platform/resource/trackerscheme.res",
+      "bytes": 14315,
+      "sha256": "2a858c64c0c01ef46cbab4fc9bc54ca913b0aead317a4698d7d876009284f110"
+    },
+    {
+      "path": "platform/resource/trackgroupvisibilitypanel.res",
+      "bytes": 1457,
+      "sha256": "b9cc701d69df65611226653f985e57374df202d5ba5dc01a101db4299e206a27"
+    },
+    {
+      "path": "platform/resource/valve_logo.tga",
+      "bytes": 10284,
+      "sha256": "028cf60dffead25ee0b77a8447f3f9717f842cc7b3526ebd73d28f530392a8b9"
+    },
+    {
+      "path": "platform/resource/vgui_brazilian.txt",
+      "bytes": 42734,
+      "sha256": "d715b629c7fbb3f383289e80d75977fd063a0c9bcbdd805b1361adcb91665791"
+    },
+    {
+      "path": "platform/resource/vgui_bulgarian.txt",
+      "bytes": 43228,
+      "sha256": "14063dcf831f9ce1d63d81b53f4a50e0cd8d4fa32ee625d10549921695fdd10c"
+    },
+    {
+      "path": "platform/resource/vgui_czech.txt",
+      "bytes": 42244,
+      "sha256": "5588996c2530ca3122c402d4631377a98144f35b020f034e2d54b7220c108d15"
+    },
+    {
+      "path": "platform/resource/vgui_danish.txt",
+      "bytes": 42218,
+      "sha256": "b4fa14f47240652c8d04739bf22e7dc849f79cca2b86f8e7e68ea805b5cbd489"
+    },
+    {
+      "path": "platform/resource/vgui_dutch.txt",
+      "bytes": 42486,
+      "sha256": "cf89b1f5ca8265a8d7dcdd5d84695238d90d83607d37215bc19123098b28bb18"
+    },
+    {
+      "path": "platform/resource/vgui_english.txt",
+      "bytes": 19510,
+      "sha256": "56a86da0be3ab3045d2fe766b852043ba1d641df70675097e24537f46c0096b4"
+    },
+    {
+      "path": "platform/resource/vgui_finnish.txt",
+      "bytes": 42192,
+      "sha256": "3e01d3414c9a8e3b982f992ef1996af5c7f3119d7b31cf0f831344dfcd9a7687"
+    },
+    {
+      "path": "platform/resource/vgui_french.txt",
+      "bytes": 43390,
+      "sha256": "5889651ac369c398ec493845758b68c30d457e1d0c98ce866e559725eff1196a"
+    },
+    {
+      "path": "platform/resource/vgui_german.txt",
+      "bytes": 42600,
+      "sha256": "acf2933b683a78f9cda18908c34fb60c6e822f58a70903bdf3ca35a984792b09"
+    },
+    {
+      "path": "platform/resource/vgui_greek.txt",
+      "bytes": 43006,
+      "sha256": "7ea88f4bf8e4a00452338a944cb7b7c1cda94c39324a5376feb23da7ae1add40"
+    },
+    {
+      "path": "platform/resource/vgui_hungarian.txt",
+      "bytes": 42402,
+      "sha256": "bc50c98266a8599b6558b652a3c54420c697a5549f65b8e8072ef51937eb3379"
+    },
+    {
+      "path": "platform/resource/vgui_italian.txt",
+      "bytes": 42808,
+      "sha256": "dbc7f63940ff78ab37b0cdc5e7c6215c0b2f6249c12a07971402c2b3494ddd78"
+    },
+    {
+      "path": "platform/resource/vgui_japanese.txt",
+      "bytes": 31672,
+      "sha256": "8a124e5c918e2913df9300fb73b4e3786eed9d0eef4c82686f539a7acb8381f6"
+    },
+    {
+      "path": "platform/resource/vgui_korean.txt",
+      "bytes": 38304,
+      "sha256": "e0c34c1b8a6a7ec2ec16919005bcfff590f7f67afa08c077aadb4e495aa07b26"
+    },
+    {
+      "path": "platform/resource/vgui_koreana.txt",
+      "bytes": 38304,
+      "sha256": "e0c34c1b8a6a7ec2ec16919005bcfff590f7f67afa08c077aadb4e495aa07b26"
+    },
+    {
+      "path": "platform/resource/vgui_latam.txt",
+      "bytes": 43134,
+      "sha256": "840e856096ea827751b698c3bfe704089f2dfdac69e87488c64a61df537b8220"
+    },
+    {
+      "path": "platform/resource/vgui_norwegian.txt",
+      "bytes": 42498,
+      "sha256": "be740fed3a401a9d407a0e3e2f27595a8d2fb41738ed6b1348edeef1ba001978"
+    },
+    {
+      "path": "platform/resource/vgui_polish.txt",
+      "bytes": 42064,
+      "sha256": "481a1e6627f611da8b2f3d9c303c6277db8d37613ad665a09668b1c96d82f801"
+    },
+    {
+      "path": "platform/resource/vgui_portuguese.txt",
+      "bytes": 42802,
+      "sha256": "20fcde0d004be4a5859498d8d64a26e133bdb8c089f18a1761d6274da4fc2565"
+    },
+    {
+      "path": "platform/resource/vgui_romanian.txt",
+      "bytes": 41916,
+      "sha256": "0a9ab92749cddc885841487a90ba5fd7b58df0280b0f8d5120c28234e7de99df"
+    },
+    {
+      "path": "platform/resource/vgui_russian.txt",
+      "bytes": 42474,
+      "sha256": "b8ae1cafb43c4450b2aaf05c29b974e54535f40e4003542897ace2115acc8894"
+    },
+    {
+      "path": "platform/resource/vgui_schinese.txt",
+      "bytes": 37336,
+      "sha256": "a8bd94461c6fd3583af2053c6dcb17fc6b1c11c38e442e8393b00521bd8cbd6e"
+    },
+    {
+      "path": "platform/resource/vgui_spanish.txt",
+      "bytes": 43136,
+      "sha256": "e10519d9618ed000d5603d17fe9b7405d248ae8b5abfe833608b472875437504"
+    },
+    {
+      "path": "platform/resource/vgui_swedish.txt",
+      "bytes": 41960,
+      "sha256": "4f9c4ac6f4174f227e8192c8049f81c4ff5fcf4a2a007943e9bbfa655b5c47ae"
+    },
+    {
+      "path": "platform/resource/vgui_tchinese.txt",
+      "bytes": 37390,
+      "sha256": "4eceff55959acfb9e96c89f9889a788745b01c681bd47611d19d8d354a6deb0a"
+    },
+    {
+      "path": "platform/resource/vgui_thai.txt",
+      "bytes": 41336,
+      "sha256": "ee395a8988635a65ee1e703bd99595712e3b52a8178929e5c08d5cec5dc812f2"
+    },
+    {
+      "path": "platform/resource/vgui_turkish.txt",
+      "bytes": 41634,
+      "sha256": "a7b1162a3f8903ceefa7574a2b69da7d5d8bfdefaba6b3ddbcec835bf0b0dd52"
+    },
+    {
+      "path": "platform/resource/vgui_ukrainian.txt",
+      "bytes": 42198,
+      "sha256": "dbfb8662352baaa2dd52b6ecb52b423d0571020b2bd5b303dddd476ac978251f"
+    },
+    {
+      "path": "platform/resource/vgui_vietnamese.txt",
+      "bytes": 41546,
+      "sha256": "2fcef9c42caa233c7c56435d28bc6c9051e6a6a78fae115dce5f20a0da438bf5"
+    },
+    {
+      "path": "platform/resource/vmtpicker.res",
+      "bytes": 6635,
+      "sha256": "ce85e50a1e2e7cb670b30acccf5b10dd5d3bf94dd6b066b025fac915470514ae"
+    },
+    {
+      "path": "platform/resource/vmtpickerframe.res",
+      "bytes": 1402,
+      "sha256": "89402157d64add13dd6e329171be0f02138b90671bc313ef6ca97b404942e18d"
+    },
+    {
+      "path": "platform/resource/vp4dialog.res",
+      "bytes": 1202,
+      "sha256": "b16f53993da99e4708e0193c5d7a955cce2afd58dd147d29edb58d02ba1b4a51"
+    },
+    {
+      "path": "platform/resource/vtfpicker.res",
+      "bytes": 5837,
+      "sha256": "7ebd9a1dd6a8b2c2350299c3dbec33bd887a311a0cdeaeb6e77c17b131c15fac"
+    },
+    {
+      "path": "platform/resource/vtfpickerframe.res",
+      "bytes": 1402,
+      "sha256": "bc0fd233f3f21ce5c89238ec363717111fda4011781ab9bb16913e1f69b66d04"
+    },
+    {
+      "path": "platform/resource/warning.wav",
+      "bytes": 5006,
+      "sha256": "9b290889ae0488ac98eb05ec625e854eb9dd158bef4cb438ae3dbd9a31b05715"
+    },
+    {
+      "path": "platform/servers/serverbrowser_brazilian.txt",
+      "bytes": 59458,
+      "sha256": "af3c89c21e6fafad0c833eba590792ef52007fa002352bf146c5895ad0802d21"
+    },
+    {
+      "path": "platform/servers/serverbrowser_bulgarian.txt",
+      "bytes": 59224,
+      "sha256": "c35b0ca972aebf73ba139ad6029358c74147b19f81381faf7ac8be002e27cd9d"
+    },
+    {
+      "path": "platform/servers/serverbrowser_czech.txt",
+      "bytes": 59152,
+      "sha256": "b36e8c4ed0069b42e64f5527851ead76b663720098e09d022abad881b4a601a4"
+    },
+    {
+      "path": "platform/servers/serverbrowser_danish.txt",
+      "bytes": 58944,
+      "sha256": "6478206893c91ab5be864c29ab2028229df911f5527c746b494e761d231396f6"
+    },
+    {
+      "path": "platform/servers/serverbrowser_dutch.txt",
+      "bytes": 59118,
+      "sha256": "6919a98fb3171fbdd50f01c72ff317a3dd61664dcef6d377765f7872159c4a5d"
+    },
+    {
+      "path": "platform/servers/serverbrowser_english.txt",
+      "bytes": 27402,
+      "sha256": "1b736b2eea64bf7178a54f4ffd7bfb9d1fdf7e7222dbfc7d679c28cb911e522c"
+    },
+    {
+      "path": "platform/servers/serverbrowser_finnish.txt",
+      "bytes": 58830,
+      "sha256": "82e1d04060fe53eaf1e6a8d276cef648b3a28850e62d27c42d0fae2efa3f2dec"
+    },
+    {
+      "path": "platform/servers/serverbrowser_french.txt",
+      "bytes": 59880,
+      "sha256": "942e1381bc9de47675c0a542f9017f85f26b3804c9d3f145070c15d4dd186d39"
+    },
+    {
+      "path": "platform/servers/serverbrowser_german.txt",
+      "bytes": 59954,
+      "sha256": "07889931454db2569bb3ba201979f34107fb588e67998d1ec2d26c7bd6651505"
+    },
+    {
+      "path": "platform/servers/serverbrowser_greek.txt",
+      "bytes": 61204,
+      "sha256": "e19f2ceaa1854925236043309de59097a7ad173f09b5bdc8ce37a0e7974e4c51"
+    },
+    {
+      "path": "platform/servers/serverbrowser_hungarian.txt",
+      "bytes": 58280,
+      "sha256": "a9f062eb21761aca7b314fe7bf8d206bf1b6ae43d1f739c26aa5cd2ecf69c7dd"
+    },
+    {
+      "path": "platform/servers/serverbrowser_italian.txt",
+      "bytes": 60132,
+      "sha256": "7ed99a46871b17be078c566fc7284762e6a21e3970f01d34e373a37caafa7254"
+    },
+    {
+      "path": "platform/servers/serverbrowser_japanese.txt",
+      "bytes": 52514,
+      "sha256": "53ca6f3255b923c73d18b9bf5318e99e3666372f5611d900f89c83dc1af49889"
+    },
+    {
+      "path": "platform/servers/serverbrowser_korean.txt",
+      "bytes": 52406,
+      "sha256": "4b56f8c65f95754d4eed1a06a7073a932c61a2ead4edf5c251e7d42f923e6482"
+    },
+    {
+      "path": "platform/servers/serverbrowser_koreana.txt",
+      "bytes": 52406,
+      "sha256": "4b56f8c65f95754d4eed1a06a7073a932c61a2ead4edf5c251e7d42f923e6482"
+    },
+    {
+      "path": "platform/servers/serverbrowser_latam.txt",
+      "bytes": 60688,
+      "sha256": "46fa31266e035a6eecd3fbbd1ae8427c73ca3f9f104e5b35918dc8d8150b1566"
+    },
+    {
+      "path": "platform/servers/serverbrowser_norwegian.txt",
+      "bytes": 58344,
+      "sha256": "8187fe28a595606dd50cc6ee73fce6fc38644359e08c90937e0a5349daf2a7f8"
+    },
+    {
+      "path": "platform/servers/serverbrowser_polish.txt",
+      "bytes": 58588,
+      "sha256": "601babe003be446accca14e9475c0f4eba6044bfd04ef724df33e1f731878ddd"
+    },
+    {
+      "path": "platform/servers/serverbrowser_portuguese.txt",
+      "bytes": 59364,
+      "sha256": "12e308f8b9d31ef3ee4aa253185ab3834a6387695ed83504c7851307e1492c99"
+    },
+    {
+      "path": "platform/servers/serverbrowser_romanian.txt",
+      "bytes": 59218,
+      "sha256": "d902cf600a43c4121c2d1224fa81911cca72787ac473db7858cebb733692e7f4"
+    },
+    {
+      "path": "platform/servers/serverbrowser_russian.txt",
+      "bytes": 57834,
+      "sha256": "c305db5519e2dd3c3a537c56fe9c8bbc7cf6f0dcf50a1b761dc78ee1de5fe379"
+    },
+    {
+      "path": "platform/servers/serverbrowser_schinese.txt",
+      "bytes": 50474,
+      "sha256": "e2ccf019b8a49310f74e13776ed774ac1ee1465f50f39cb596fbeda86dc3f9c0"
+    },
+    {
+      "path": "platform/servers/serverbrowser_spanish.txt",
+      "bytes": 60682,
+      "sha256": "b25c6ae0772572122c12e0b92b57479ec6f91803ffca4353fa96368f46b049d8"
+    },
+    {
+      "path": "platform/servers/serverbrowser_swedish.txt",
+      "bytes": 58750,
+      "sha256": "5d32b16f7dd32d65e5249d8ae542f2a869896175c6f692816a7650d4a47ff5e5"
+    },
+    {
+      "path": "platform/servers/serverbrowser_tchinese.txt",
+      "bytes": 50664,
+      "sha256": "4e69e506a5236f22260c9098b5345e4d8b425f4a26acb7711398d86be51a6039"
+    },
+    {
+      "path": "platform/servers/serverbrowser_thai.txt",
+      "bytes": 58610,
+      "sha256": "34df5739511559726c605148a095c024f4498d31bcdc547da80735c6fdfcc594"
+    },
+    {
+      "path": "platform/servers/serverbrowser_turkish.txt",
+      "bytes": 57842,
+      "sha256": "ce5d9057e765abb7cb50600fd40e1113fde1e8ae719b2f6e3f181b878fd349fa"
+    },
+    {
+      "path": "platform/servers/serverbrowser_ukrainian.txt",
+      "bytes": 58682,
+      "sha256": "e8f01b9c82f95e3c67078e5aa628497cbaa80d415048f5bedc65d3a20d62e49d"
+    },
+    {
+      "path": "platform/servers/serverbrowser_vietnamese.txt",
+      "bytes": 58562,
+      "sha256": "791ddb61efef99bfbdb76d56812a64f8b7b3d6e30ed9603823e9bbd3c519a9af"
+    },
+    {
+      "path": "platform/vgui/hud/800corner.tga",
+      "bytes": 210,
+      "sha256": "b26b9945148e36fbea4a0f8e1cbcfa1ed3b6c2d8e6edf3506d8fa134fb41d852"
+    },
+    {
+      "path": "platform/vgui/hud/800corner1.tga",
+      "bytes": 274,
+      "sha256": "30a0b742d6782623007544fa2a13f566a327173bd365c3ff9cb7443e5dbe8392"
+    },
+    {
+      "path": "platform/vgui/hud/800corner2.tga",
+      "bytes": 274,
+      "sha256": "9f31778118ba392fa28730bd5431f8e026a082bc15dc1e2e1232baecabf8a1e6"
+    },
+    {
+      "path": "platform/vgui/hud/800corner3.tga",
+      "bytes": 274,
+      "sha256": "9c2c6f5f9c9f42275bfdc50b6d9de07b55a1dc2903cdf022c221465b34dce130"
+    },
+    {
+      "path": "platform/vgui/hud/800corner4.tga",
+      "bytes": 274,
+      "sha256": "3e8d903cfd7101a41dca523ee3fe3507473ee22d25fb319f0feee4a1bcc56955"
+    },
+    {
+      "path": "platform/vgui/resource/icon_newfolder.tga",
+      "bytes": 812,
+      "sha256": "7d4ea9716237433475c6922d3150941b3d7e65b648768df98b2d1a202baa825a"
+    },
+    {
+      "path": "platform/vgui/resource/icon_steam.tga",
+      "bytes": 1307,
+      "sha256": "dc352dfbaa9afa9f7d8a631acf2e833948d229a1ab13ccebebb37fac562a2b81"
+    },
+    {
+      "path": "platform/vgui/resource/icon_steam_disabled.tga",
+      "bytes": 1307,
+      "sha256": "c5dea8d1644a716a75142babd792457bc7b3ec7e9949c7e740b131421b3d67b1"
+    },
+    {
+      "path": "srcds_linux",
+      "bytes": 15880,
+      "sha256": "aeccb1b7eae0e652b18c41b37c21f9090d018fa79ab07642d588c5c02fa9cb18"
+    },
+    {
+      "path": "steam_appid.txt",
+      "bytes": 5,
+      "sha256": "3674381ac564309c43cda356770d23cc31e9085df9dc05890138e6a989131bea"
+    }
+  ]
+}

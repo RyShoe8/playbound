@@ -1,3 +1,5 @@
+import { runtimeLaunchMode } from "./runtimeLaunchMode.js";
+import { supportsCustomerIdentity } from "./customerIdentityProfiles.js";
 /**
  * PlayBound game-host agent — run on the public VPS.
  *
@@ -41,7 +43,7 @@ import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
 import { createManagedRegistry, createManagedJobs, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
-import { isLinuxPortBound } from "./portReadiness.js";
+import { isLinuxPortBound, startupReadyTimeout } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
 import { spawnRimworld, sendRimworldCommand, queryRimworldBrowser } from "./rimworldControl.js";
 import { spawnAniv, waitForAniv, anivStatus, queryAnivLogs, retainAnivLogs } from "./anivControl.js";
@@ -888,7 +890,7 @@ async function startRoom(opts) {
 async function startRoomUnlocked({ gameSlug, partyId, communityServerId, name, editionSlug, mod, settings, leaderUsername, saveKey, customerOwned, resourceLimits, identityProfile, testSpawn = false }) {
   if (shuttingDown) return { error: "Agent is shutting down" };
   if (identityProfile && gameSlug==="freedoom" && editionSlug!=="zandronum") return {error:"This isolated profile supports only the Zandronum edition"};
-  if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
+  if (identityProfile !== undefined && (!supportsCustomerIdentity(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || !customerOwned || !communityServerId)) return { error: "Unsupported customer identity handoff" };
   if (customerOwned && CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) {
     try { resourceLimits = customerResourceLimits(gameSlug, resourceLimits); }
     catch (error) { return { error: error.message }; }
@@ -1045,7 +1047,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       return { error: "Customer runtime data paths could not be validated. The server was not prepared or launched." };
     }
 
-    if (recipe.prepareSpawn && !(identityProfile && ["openttd","luanti","hurry-curry","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug))) {
+    if (recipe.prepareSpawn && !(identityProfile && ["openttd","luanti","hurry-curry","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia","terraria","factorio","unvanquished","openra","openhv","earth-2140-trilogy","rimworld-together","space-station-14","triplea","necesse","veloren","barotrauma","dont-starve-together","morrowind","team-fortress-2","counter-strike-2","trackmania","unturned","bombsquad","counter-strike-source","open-fortress","battlefield-1942-anthology"].includes(gameSlug))) {
       try {
         await recipe.prepareSpawn(port, ctx);
       } catch (err) {
@@ -1066,7 +1068,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
       HOME: hostHome,
       ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
     });
-    const cwd = ["mindustry-unix-v1","hurry-curry-unix-v1","assaultcube-unix-v1","xonotic-unix-v1","wolfenstein-enemy-territory-unix-v1","medal-of-honor-allied-assault-unix-v1","freedoom-unix-v1","freeciv-unix-v1","warzone-2100-unix-v1","hypersomnia-unix-v1"].includes(identityProfile) ? "/" :
+    const cwd = ["mindustry-unix-v1","hurry-curry-unix-v1","assaultcube-unix-v1","xonotic-unix-v1","wolfenstein-enemy-territory-unix-v1","medal-of-honor-allied-assault-unix-v1","freedoom-unix-v1","freeciv-unix-v1","warzone-2100-unix-v1","hypersomnia-unix-v1","terraria-unix-v1","factorio-unix-v1","unvanquished-unix-v1","openra-unix-v1","openhv-unix-v1","earth-2140-trilogy-unix-v1","rimworld-together-unix-v1","space-station-14-unix-v1","triplea-unix-v1","necesse-unix-v1","veloren-unix-v1","barotrauma-unix-v1","dont-starve-together-unix-v1","morrowind-unix-v1","team-fortress-2-unix-v1","counter-strike-2-unix-v1","trackmania-unix-v1","unturned-unix-v1","bombsquad-unix-v1","counter-strike-source-unix-v1","open-fortress-unix-v1","battlefield-1942-anthology-unix-v1"].includes(identityProfile) ? "/" :
       typeof recipe.cwd === "function"
         ? recipe.cwd(port, ctx)
         : recipe.cwd || path.dirname(binary);
@@ -1076,14 +1078,15 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     }
     let isolated;
     try {
-      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile, settings: ctx.settings, startupPort:port, serverName:ctx.name });
+      isolated = customerIsolationLaunch({ gameSlug, customerOwned: ctx.customerOwned, communityServerId, binary, args, home: hostHome, resourceLimits, identityProfile, settings: ctx.settings, startupPort:port, serverName:ctx.name, rconPassword:ctx.rconPassword });
     } catch {
       freePort(gameSlug, port);
       return { error: "Customer runtime isolation could not be prepared. The server was not launched." };
     }
     const spawnGame = () => {
-      if (gameSlug === "aneurism-iv") return spawnAniv(port, ctx, {cwd,env:spawnEnv});
-      if (gameSlug === "rimworld-together") return spawnRimworld(binary, args, { cwd, env: spawnEnv });
+      const launchMode=runtimeLaunchMode({isolated,communityServerId,gameSlug});
+      if (launchMode === "aniv") return spawnAniv(port, ctx, {cwd,env:spawnEnv});
+      if (launchMode === "rimworld") return spawnRimworld(binary, args, { cwd, env: spawnEnv });
       // Give every room its own process group so wrappers and their children
       // stop together. Without this, an AppImage can orphan a live server.
       if (!communityServerId) return spawn(binary, args, { cwd, env: spawnEnv, stdio: ["pipe", "pipe", "pipe"], detached: true });
@@ -1252,7 +1255,7 @@ async function startRoomReserved({ gameSlug, partyId, communityServerId, name, e
     // Long Steam/map startup must survive an agent restart, too.
     if (communityServerId && gameSlug === "aneurism-iv") persistManagedRooms();
 
-    const readyTimeoutMs = Number(recipe.startupReadyTimeoutMs) || 10_000;
+    const readyTimeoutMs = startupReadyTimeout(recipe, identityProfile);
     const portReady = gameSlug === "aneurism-iv"
       ? await waitForAniv(room, child)
       : await waitForServerPort(port, recipe.protocol, child, readyTimeoutMs);
@@ -1549,7 +1552,7 @@ const server = http.createServer(async (req, res) => {
       if (retainedIdentity && retainedIdentity !== identityProfile) {
         json(res, 409, { error: "Customer identity profile cannot be downgraded" }); return;
       }
-      if (identityProfile !== undefined && (!["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"].includes(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
+      if (identityProfile !== undefined && (!supportsCustomerIdentity(gameSlug) || identityProfile !== `${gameSlug}-unix-v1` || body.customerOwned !== true || !/^[a-f0-9]{24}$/.test(communityServerId))) {
         json(res, 400, { error: "Unsupported customer identity handoff" }); return;
       }
       const activeId = byManaged.get(communityServerId);

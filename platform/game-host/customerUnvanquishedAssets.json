@@ -1,0 +1,189 @@
+{
+  "files": [
+    {
+      "path": "daemonded",
+      "bytes": 1503264,
+      "sha256": "98ce3b40a8b7161172d33ba011e920a428daabfd68a4204edbb9adfdcb037b09"
+    },
+    {
+      "path": "nacl_loader",
+      "bytes": 2770680,
+      "sha256": "0d42cffb00cb6bf406cce63943346611f1e1367247dd5124051c61b8c1ee51a8"
+    },
+    {
+      "path": "nacl_helper_bootstrap",
+      "bytes": 9808,
+      "sha256": "16f8ff33ecdaf94abf7f742896f50473d29971503b8bac0313843c29acbbcf0f"
+    },
+    {
+      "path": "irt_core-amd64.nexe",
+      "bytes": 622952,
+      "sha256": "d5021316cdff1633d0d923201f77810bf09fd5812ea62622201531882fd75ad4"
+    },
+    {
+      "path": "pkg/map-antares_1.1.dpk",
+      "bytes": 9399703,
+      "sha256": "244ae31eade151271788ea45753b665fcdf1a956d13f0241266d5580a71918ea"
+    },
+    {
+      "path": "pkg/map-chasm_1.3.dpk",
+      "bytes": 6146820,
+      "sha256": "134c273fe73356be06ec382af9ca9a4cb8bb71e41799cc52ecce6945f848e05f"
+    },
+    {
+      "path": "pkg/map-forlorn_0.16.dpk",
+      "bytes": 10380573,
+      "sha256": "195f4146a758e55456244427150bb3335ad314a2a27ed0c387ae1a69e955f93c"
+    },
+    {
+      "path": "pkg/map-parpax_2.8.dpk",
+      "bytes": 9636960,
+      "sha256": "2f6f35e3e0f2b0c26334ccafe07840300c2ed60da35096483b6a72cf2e57362e"
+    },
+    {
+      "path": "pkg/map-perseus_1.1.dpk",
+      "bytes": 18509934,
+      "sha256": "f24d1d09fb468cce4c3f0af82fe638219b2e25e9d520269dd48a072c7571d109"
+    },
+    {
+      "path": "pkg/map-plat23_1.14.dpk",
+      "bytes": 3808627,
+      "sha256": "97a2a5be4b41391ea950b0be39ed9a25ab0b8f98f9ae488f4e638af772ec28ea"
+    },
+    {
+      "path": "pkg/map-spacetracks_1.2.dpk",
+      "bytes": 14127052,
+      "sha256": "7b0e0ee6a9d350a539df48421e573a5a6a1204e60702fc7f999781d6baec5702"
+    },
+    {
+      "path": "pkg/map-station15_1.2.dpk",
+      "bytes": 33289771,
+      "sha256": "dc1d5d078ebb23d6137cd602d6e6d079aeb5ed380da8c4b8d7ea72c112e9716b"
+    },
+    {
+      "path": "pkg/map-thunder_1.4.dpk",
+      "bytes": 19551150,
+      "sha256": "d8a423acbad3720fbf3b62410ccff79bc7fc8e3f6e0da94944caf401ec00217e"
+    },
+    {
+      "path": "pkg/map-vega_1.5.dpk",
+      "bytes": 19425629,
+      "sha256": "0c9f1042de311ca3b8df7693f01ca26fb3ac8c4f7afc0a32425a87a2a860dda8"
+    },
+    {
+      "path": "pkg/map-yocto_1.1.dpk",
+      "bytes": 19103961,
+      "sha256": "254a7ac3830a37855e2bc2c68e4ef3382ecd6007af1dfbe0b89eb0d90469cb6b"
+    },
+    {
+      "path": "pkg/res-ambient_0.55.dpk",
+      "bytes": 1205184,
+      "sha256": "c1670609c8ebd1e432ebfe3bcb6eb44f5a2d05343089abc418d75f21d39616db"
+    },
+    {
+      "path": "pkg/res-buildables_0.56.dpk",
+      "bytes": 83013111,
+      "sha256": "dec6718fb06c203737e503c780fb88a0f1e649d4faf24294441613d96329ba39"
+    },
+    {
+      "path": "pkg/res-legacy_0.55.dpk",
+      "bytes": 2410327,
+      "sha256": "edfcaa222dbefaf44d1a0d9a8d8e568e28612965e4ea83cf902a6c0597b78bb4"
+    },
+    {
+      "path": "pkg/res-leveleditor_0.54.dpk",
+      "bytes": 868,
+      "sha256": "3a6c0b9d8b0c6489a9b84b890c00a13787f8e7968c9755351fce20618f7c198e"
+    },
+    {
+      "path": "pkg/res-players_0.56.2.dpk",
+      "bytes": 4131683,
+      "sha256": "cffa384730a8057a4c5d062f3f76d04ad9a6ffcd6dc72babf2c6b941bc36e9df"
+    },
+    {
+      "path": "pkg/res-players_0.56.dpk",
+      "bytes": 74442763,
+      "sha256": "d6b97f987396c1987e8ac78f0b2648714f7815f7ed02b368e526c7f2e3743e81"
+    },
+    {
+      "path": "pkg/res-soundtrack_0.54.dpk",
+      "bytes": 10104205,
+      "sha256": "f957c74d49de2b0303cb990cc7643843cea41f26f3c53fe60afd3e00ea2eda8b"
+    },
+    {
+      "path": "pkg/res-voices_0.56.dpk",
+      "bytes": 1959972,
+      "sha256": "a8b3f31c9670f151f2df97c483589b6ab63b3c514319ead5655b069397e0d685"
+    },
+    {
+      "path": "pkg/res-weapons_0.56.2.dpk",
+      "bytes": 131457,
+      "sha256": "57ecc985ed10a5068d7ab4a83081e717545834730d0f47e73509920f56a215f7"
+    },
+    {
+      "path": "pkg/res-weapons_0.56.dpk",
+      "bytes": 57118818,
+      "sha256": "2530314bc6b97d89c7085df67d77bfa0ac2d98ca0aae67d091bdeed573425da7"
+    },
+    {
+      "path": "pkg/tex-all_2.3.dpk",
+      "bytes": 519,
+      "sha256": "f98a2f1cef9b80784c85b48a1ac8830f5c7308d4fa3770b34097b0f3e0f2c3fb"
+    },
+    {
+      "path": "pkg/tex-common_2.5.dpk",
+      "bytes": 75195,
+      "sha256": "d85ffcf53866f0bd6843ab365bca1164d2057e0a0b95a85cfba2342b9a852fd9"
+    },
+    {
+      "path": "pkg/tex-ej01_1.3.1.dpk",
+      "bytes": 5481526,
+      "sha256": "fb2ca6b7afc49c763bfc2062118ae7b65ddd91a172543983a0d15e08ed936781"
+    },
+    {
+      "path": "pkg/tex-ex_1.3.1.dpk",
+      "bytes": 10928333,
+      "sha256": "a7ad3aef1cdb2827f9061c4391ae55d640cc83091a492685761a6801fc9dcfe1"
+    },
+    {
+      "path": "pkg/tex-exm_1.3.3.dpk",
+      "bytes": 1964231,
+      "sha256": "ef655bf821e4590f266d6fec0c4a39b01e9da48f772e05e440a9c48865c0d7be"
+    },
+    {
+      "path": "pkg/tex-pk01_1.3.1.dpk",
+      "bytes": 4785909,
+      "sha256": "d8be3ae347f6b4924a7dfec99da1611fcf34572573feed14cd9f24678aa17952"
+    },
+    {
+      "path": "pkg/tex-pk02_1.3.2.dpk",
+      "bytes": 23618489,
+      "sha256": "3d851034552f90650b15b90bb088843bf3a55ed86125cd2c9784ac2045f46576"
+    },
+    {
+      "path": "pkg/tex-space_1.3.dpk",
+      "bytes": 16388337,
+      "sha256": "92e599ae1ef653aff7a6512d6b9461a5fb4f62cb4bd8ebbe9ba5ca4629688958"
+    },
+    {
+      "path": "pkg/tex-tech_1.3.1.dpk",
+      "bytes": 18895689,
+      "sha256": "057b62570b22191f3bae73f9114941db2085aa886839ff28cb0111434e24073c"
+    },
+    {
+      "path": "pkg/tex-trak5_1.3.2.dpk",
+      "bytes": 10311721,
+      "sha256": "7dea233b374cd665c9ce0ff100f3c33db8952f7185639c022e1249f6cc12d64c"
+    },
+    {
+      "path": "pkg/tex-vega_1.5.dpk",
+      "bytes": 17669738,
+      "sha256": "d433a3c423f0606045214ed791b8c0a554cd8c5a59f5573febfbefcfdcbc0c00"
+    },
+    {
+      "path": "pkg/unvanquished_0.56.2.dpk",
+      "bytes": 18503967,
+      "sha256": "ffe4c28547c703dd2b457886269e5d98dadc7067befb4b582fd035d4f133b06c"
+    }
+  ]
+}

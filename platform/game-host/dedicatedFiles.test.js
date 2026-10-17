@@ -37,6 +37,18 @@ test("rejects traversal, secrets, executable code, other servers and malformed u
   assert.throws(() => run({ action: "write", path: "new.json", expectedEtag: "", contentBase64: "!invalid" }), /Invalid/);
   assert.throws(() => run({ action: "restore", path: "world.json", revision: "../" }), /Invalid/);
 });
+test("generated engine credentials are neither listed nor downloadable", t => {
+  const {run,root}=fixture(t);
+  const names=["Commands.dat","dedicated-account.json","dedicated_cfg.txt","cluster.ini","serversettings.xml","server.cfg","playbound.cfg","ServerConfig.json"];
+  for(const name of names)fs.writeFileSync(path.join(root,name),"fixture-private-value");
+  assert.deepEqual(run({action:"list"}).entries.map(entry=>entry.name),["world.json"]);
+  for(const name of names){
+    assert.throws(()=>run({action:"read",path:name}));
+    assert.throws(()=>run({action:"download",path:name}));
+    assert.throws(()=>run({action:"write",path:name,expectedEtag:"",contentBase64:"e30="}));
+  }
+});
+
 test("rejects linked roots, files, directories, and hard links", t => {
   const { run, home, root } = fixture(t);
   const outside = path.join(home, "outside.json"); fs.writeFileSync(outside, "private");

@@ -27,6 +27,44 @@ runtime = load('runtime', 'customer-runtime.py')
 
 
 class NativeSyscalls(unittest.TestCase):
+    def test_filter_enforces_unix_socket_and_privileged_syscall_denials_without_bwrap(self):
+        # Exercise the real kernel filter even on test hosts without bubblewrap.
+        # Installing it only in a child keeps the test runner unrestricted.
+        descriptor = module.sealed_filter()
+        self.addCleanup(os.close, descriptor)
+        code = '''import ctypes, errno, os, socket, sys
+fd=int(sys.argv[1])
+raw=os.read(fd,32768)
+class Instruction(ctypes.Structure):
+ _fields_=[('code',ctypes.c_ushort),('jt',ctypes.c_ubyte),('jf',ctypes.c_ubyte),('k',ctypes.c_uint)]
+class Program(ctypes.Structure):
+ _fields_=[('length',ctypes.c_ushort),('filter',ctypes.POINTER(Instruction))]
+instructions=(Instruction*(len(raw)//8)).from_buffer_copy(raw)
+program=Program(len(instructions),instructions)
+libc=ctypes.CDLL(None,use_errno=True)
+assert libc.prctl(38,1,0,0,0)==0
+assert libc.syscall(317,1,0,ctypes.byref(program))==0
+for number in (272,321,101):
+ ctypes.set_errno(0)
+ assert libc.syscall(number,0,0,0,0,0,0)==-1 and ctypes.get_errno()==errno.EPERM
+try: socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+except OSError as error: assert error.errno==errno.EPERM
+else: raise AssertionError('host Unix sockets were allowed')
+left,right=socket.socketpair()
+left.sendall(b'private')
+assert right.recv(32)==b'private'
+left.close();right.close()
+for kind in (socket.SOCK_DGRAM,socket.SOCK_SEQPACKET):
+ try: socket.socketpair(socket.AF_UNIX,kind)
+ except OSError as error: assert error.errno==errno.EPERM
+ else: raise AssertionError('reconnectable socketpair was allowed')
+print('kernel-filter-passed')
+'''
+        result = subprocess.run(['/usr/bin/python3', '-I', '-c', code, str(descriptor)],
+                                pass_fds=(descriptor,), capture_output=True, text=True,
+                                timeout=10, check=True)
+        self.assertEqual(result.stdout.strip(), 'kernel-filter-passed')
+
     def test_filter_is_bounded_sealed_and_cannot_be_modified(self):
         descriptor = module.sealed_filter()
         try:

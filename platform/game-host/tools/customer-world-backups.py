@@ -114,7 +114,7 @@ def reserve_disk(folder, entries):
 
 def operation(action, server_id, backup_id, runtime, identities, migration, file_input=None):
     game = runtime.journal_game(server_id)
-    if game not in ('teeworlds', 'bzflag', 'hedgewars', 'openttd', 'luanti', 'openarena', 'battle-for-wesnoth', 'supertuxkart', '0-ad', 'ysoccer', 'flightgear', 'mindustry', 'hurry-curry', 'assaultcube', 'xonotic', 'wolfenstein-enemy-territory', 'medal-of-honor-allied-assault', 'freedoom', 'freeciv', 'warzone-2100', 'hypersomnia'):
+    if game not in ('teeworlds', 'bzflag', 'hedgewars', 'openttd', 'luanti', 'openarena', 'battle-for-wesnoth', 'supertuxkart', '0-ad', 'ysoccer', 'flightgear', 'mindustry', 'hurry-curry', 'assaultcube', 'xonotic', 'wolfenstein-enemy-territory', 'medal-of-honor-allied-assault', 'freedoom', 'freeciv', 'warzone-2100', 'hypersomnia', 'terraria','factorio','unvanquished','openra','openhv','earth-2140-trilogy','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','bombsquad','counter-strike-source','open-fortress','battlefield-1942-anthology'):
         raise ValueError('This isolated engine has no world snapshot profile')
     runtime.select_game(game)
     migration.select_game(game)

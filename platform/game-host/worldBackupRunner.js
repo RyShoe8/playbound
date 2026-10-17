@@ -1,9 +1,10 @@
+import { CUSTOMER_IDENTITY_GAMES } from "./customerIdentityProfiles.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { Worker } from "node:worker_threads";
 
 const FUNCTIONS = new Set(["createWorldBackup", "listWorldBackups", "restoreWorldBackup"]);
-const ISOLATED_DATA_GAMES = new Set(["teeworlds","bzflag","hedgewars","openttd","luanti","openarena","battle-for-wesnoth","supertuxkart","0-ad","ysoccer","flightgear","mindustry","hurry-curry","assaultcube","xonotic","wolfenstein-enemy-territory","medal-of-honor-allied-assault","freedoom","freeciv","warzone-2100","hypersomnia"]);
+const ISOLATED_DATA_GAMES = new Set(CUSTOMER_IDENTITY_GAMES);
 
 /** Run one world-backup operation in a worker thread. Resolves to the result; rejects with a safe message. */
 export function runWorldBackup(fn, args) {

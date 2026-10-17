@@ -1,0 +1,864 @@
+{
+  "files": [
+    {
+      "path": "lib/libboost_filesystem.so.1.67.0",
+      "bytes": 116752,
+      "sha256": "20fa567a4b7bb0fca8bee81415fca20f1bf3064a765c5a6d5dbcb1c23a93143b"
+    },
+    {
+      "path": "lib/libboost_iostreams.so.1.67.0",
+      "bytes": 116752,
+      "sha256": "8d775aa627b85425817c0050bc2fe711e9f47ca9bbf6d5e11924979ca406cd15"
+    },
+    {
+      "path": "lib/libboost_program_options.so.1.67.0",
+      "bytes": 546840,
+      "sha256": "1178ff62b9022a762cd427d0371f9044d7c6f834d555db3180f41077f6f8b521"
+    },
+    {
+      "path": "lib/libboost_system.so.1.67.0",
+      "bytes": 22440,
+      "sha256": "759f31bcf2c508e936e9f10446ca5d0982b3f41f5e4c0372a4ccd9a52cad53d5"
+    },
+    {
+      "path": "resources/defaultfilters",
+      "bytes": 10957,
+      "sha256": "1f2863a8d0a7f42e2c938dd02283e00c0146b5f14b5a8109c59c0e1f5b3e5420"
+    },
+    {
+      "path": "resources/mygui/DejaVuLGCSansMono.ttf",
+      "bytes": 285304,
+      "sha256": "723793c9925d8012c792e36438605a31f6bf1608448d1b087d5dc0046737e5c9"
+    },
+    {
+      "path": "resources/mygui/OpenMWResourcePlugin.xml",
+      "bytes": 3303,
+      "sha256": "6490bf888add03fefa6c507fcf03d5b179b8b61dd67ebc72eafc8caa9eeb36d4"
+    },
+    {
+      "path": "resources/mygui/RussoOne-Regular.ttf",
+      "bytes": 39124,
+      "sha256": "bc0abcc660bd8b7ad3000ecb2898a27c58a29a50f7ec81652fa12e75148d09df"
+    },
+    {
+      "path": "resources/mygui/core.skin",
+      "bytes": 671,
+      "sha256": "14e3b0db994da67ac6531371ed99849e8956c397c93945c4335bf1ddd09f8e6f"
+    },
+    {
+      "path": "resources/mygui/core.xml",
+      "bytes": 257,
+      "sha256": "e5fa40e6fcf4791933c218768022d2182dc9863a59626e2ed68cb24ff62c6c19"
+    },
+    {
+      "path": "resources/mygui/core_layouteditor.xml",
+      "bytes": 241,
+      "sha256": "1cef4a5267ea9db904397865f6acddf2aef6f885a313a1d79b05d3d599c87e0c"
+    },
+    {
+      "path": "resources/mygui/openmw.png",
+      "bytes": 61332,
+      "sha256": "087671117b1e7dc54927ecc8455698627f1777500278696e49b60588012cada8"
+    },
+    {
+      "path": "resources/mygui/openmw_alchemy_window.layout",
+      "bytes": 4547,
+      "sha256": "9f0202e3745ec461233cb5768a4ba7b479d2ac541b9a44b564c374183d9097d8"
+    },
+    {
+      "path": "resources/mygui/openmw_book.layout",
+      "bytes": 2982,
+      "sha256": "e899c46cd6dac88adcb77bd59384d30550a8f038174be4d449e1eedf6f7b321d"
+    },
+    {
+      "path": "resources/mygui/openmw_box.skin.xml",
+      "bytes": 3567,
+      "sha256": "779acd9ef775ec9b77b66cc6e5009a7c3bc9b2cd267f58f90c6b943015359c77"
+    },
+    {
+      "path": "resources/mygui/openmw_button.skin.xml",
+      "bytes": 6590,
+      "sha256": "301beff967e61e65d81fc35a6baff8428ff3f441ac8e5807a7ab92aaab0fe670"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_birth.layout",
+      "bytes": 1246,
+      "sha256": "3b8f2ce3fd7c221a8fcf2f34cce0c9160dcd1ec479bc92cd70f11ea6f857e3b0"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_class.layout",
+      "bytes": 4835,
+      "sha256": "6be3d5c8dc976e35e54b6c2bd113ceab4c9207d6709bd1e929860104541b8e76"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_class_description.layout",
+      "bytes": 879,
+      "sha256": "a3a8b5c1bc9024feae25a8075d3f1105444530c5f3982a2701259aeed9059eb3"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_create_class.layout",
+      "bytes": 5249,
+      "sha256": "31c6ec6cbff888415f727345e28b85b691f89f0366d441a2aa977fb0f1afb55d"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_generate_class_result.layout",
+      "bytes": 1620,
+      "sha256": "0411dc6b832647c10be4b010a2b7ac189609c2a5626c842be7c61ba94736e7b4"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_race.layout",
+      "bytes": 4069,
+      "sha256": "1b714cdaa753eb58523cf183e4364f227dfbd3dd5de72d5c5bafe26980647cf7"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_review.layout",
+      "bytes": 7985,
+      "sha256": "f5f9f41efa3bd22fbeea89c2c415b715df4ac334c03235beff778abb79147853"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_select_attribute.layout",
+      "bytes": 2070,
+      "sha256": "c212fe9eb114c9b70429d3b2f58d3f0ae9a3f78233515d34cbdd36510f745ce7"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_select_skill.layout",
+      "bytes": 5286,
+      "sha256": "141f7ce3d687d58ca14f5482820ed276c81dec7c50105235879899ada9aaddf1"
+    },
+    {
+      "path": "resources/mygui/openmw_chargen_select_specialization.layout",
+      "bytes": 1759,
+      "sha256": "8e55998c86620849598a8fe550ac3a481f46b4222e9e5717ce4c8fbf831c2f68"
+    },
+    {
+      "path": "resources/mygui/openmw_companion_window.layout",
+      "bytes": 1351,
+      "sha256": "f4fce6a61d3bd01888bd3a243d5c07afe8b13616fb985aab63328ef2a4337cdb"
+    },
+    {
+      "path": "resources/mygui/openmw_confirmation_dialog.layout",
+      "bytes": 1331,
+      "sha256": "8ec0cebde8d26bc1546cefcb2318c1e2fe128800f9e961319a6c6aa7e04102fc"
+    },
+    {
+      "path": "resources/mygui/openmw_console.layout",
+      "bytes": 1092,
+      "sha256": "eaea07bef00f9f2a63c7c3e099d7cb026a6a29419a14e70fdfd65ab0279a24f2"
+    },
+    {
+      "path": "resources/mygui/openmw_console.skin.xml",
+      "bytes": 721,
+      "sha256": "6a02bb3b94a314590ea9e9c989eb17ed558f3a4fd31fe6fa54be2a21a8a231d6"
+    },
+    {
+      "path": "resources/mygui/openmw_container_window.layout",
+      "bytes": 1191,
+      "sha256": "f23b8d92da10a6eb303db7a37123503e9c01b4b7c6b5ced191879c2e89322921"
+    },
+    {
+      "path": "resources/mygui/openmw_count_window.layout",
+      "bytes": 1727,
+      "sha256": "cac03a8df5e193c37019b8c13bc772ae6cc0a325e4f0f4549f8a6b32d46b94f0"
+    },
+    {
+      "path": "resources/mygui/openmw_debug_window.layout",
+      "bytes": 607,
+      "sha256": "3cc878895f6042f779a0b0968b85e6fa5e1faf8acf2c63a3102af104d22857ed"
+    },
+    {
+      "path": "resources/mygui/openmw_debug_window.skin.xml",
+      "bytes": 752,
+      "sha256": "405e76b2e9cd168556895fbae5309e717f24f2a961ce854b482cd7cb9a406825"
+    },
+    {
+      "path": "resources/mygui/openmw_dialogue_window.layout",
+      "bytes": 1534,
+      "sha256": "5d81575ffdf08764e3484b053349a79e1de8d34f5454a64676080c76847cade3"
+    },
+    {
+      "path": "resources/mygui/openmw_dialogue_window.skin.xml",
+      "bytes": 87,
+      "sha256": "db9fed814bd522a2e98bc32ef7cacbcdea119ed28575a9be0eb8ef72e5c86a9c"
+    },
+    {
+      "path": "resources/mygui/openmw_edit.skin.xml",
+      "bytes": 1931,
+      "sha256": "14d81596e7b2afc741b852872fe5d732d163660db962fff1a94b4cf58aed3ce7"
+    },
+    {
+      "path": "resources/mygui/openmw_edit_effect.layout",
+      "bytes": 5206,
+      "sha256": "98bffd73321ef3009ea08fecf689136115ee9487706c8c96ab4d817dfbbdbcbf"
+    },
+    {
+      "path": "resources/mygui/openmw_edit_note.layout",
+      "bytes": 1374,
+      "sha256": "b0e0a8649b9d647f491e9575cf3130ba7fec23f0c327b75cde84d85017a0ebc3"
+    },
+    {
+      "path": "resources/mygui/openmw_enchanting_dialog.layout",
+      "bytes": 7695,
+      "sha256": "77380391588336c4186c5220d632127d04bd733e415e03bbf48c914228a83382"
+    },
+    {
+      "path": "resources/mygui/openmw_font.xml",
+      "bytes": 1011,
+      "sha256": "3bf01650a2fd0b8b04df5affa071002f7fa4b64a745b005bd02ec2c3e6a558cf"
+    },
+    {
+      "path": "resources/mygui/openmw_hud.layout",
+      "bytes": 7201,
+      "sha256": "6f5f5805190a51e439bb33a6ef8dfc355d83b426196656c5609968906c226573"
+    },
+    {
+      "path": "resources/mygui/openmw_hud_box.skin.xml",
+      "bytes": 2245,
+      "sha256": "125c6349e03960664ec45398c02cb2d0aa58870271e8d1af2659dc9f600ee33c"
+    },
+    {
+      "path": "resources/mygui/openmw_hud_energybar.skin.xml",
+      "bytes": 5073,
+      "sha256": "faf6ea1ae0f057a64f4bee315b0569bd738d435adb480b867fde4b78d31a841f"
+    },
+    {
+      "path": "resources/mygui/openmw_infobox.layout",
+      "bytes": 686,
+      "sha256": "d08ca1afc01d02f8a8062776c80fdffbd84b7b81f53cea5d5f1561e159bef958"
+    },
+    {
+      "path": "resources/mygui/openmw_interactive_messagebox.layout",
+      "bytes": 818,
+      "sha256": "684f12658c5be89fb3d662b9e30a0374c17d04376903ba5a85a81a10184e6bb0"
+    },
+    {
+      "path": "resources/mygui/openmw_interactive_messagebox_notransp.layout",
+      "bytes": 826,
+      "sha256": "b9d9ee5a27cb2e07017b545f22206ce49449ad8ca2d760523a4c2f4949219a2c"
+    },
+    {
+      "path": "resources/mygui/openmw_inventory_window.layout",
+      "bytes": 3195,
+      "sha256": "8bc60358a350dd13bb3246b659b5b93d70c0751eb413c21e71505cad8bb0e353"
+    },
+    {
+      "path": "resources/mygui/openmw_itemselection_dialog.layout",
+      "bytes": 663,
+      "sha256": "57b50e8039496bbb656b1229ede40e607c5c14fba207281d618213f209e40f1b"
+    },
+    {
+      "path": "resources/mygui/openmw_jail_screen.layout",
+      "bytes": 574,
+      "sha256": "7e12c9e8ca34dbfa8518cae51517110201c34f445e3b706b01cf8fd80d940cd0"
+    },
+    {
+      "path": "resources/mygui/openmw_journal.layout",
+      "bytes": 5159,
+      "sha256": "4995937136dbcb1a59a710fedc8a8c06780beb124dd6ba4e67ca42e5f2839299"
+    },
+    {
+      "path": "resources/mygui/openmw_journal.skin.xml",
+      "bytes": 1626,
+      "sha256": "2a23f8a821320f6f3150ce30d721bd62fcf2d821c233ab24fad0b971f1f66983"
+    },
+    {
+      "path": "resources/mygui/openmw_layers.xml",
+      "bytes": 1116,
+      "sha256": "16597f572e800cb2bcded20a8c9c0e8fc8b31c51634bb9815758ff8ebdac0616"
+    },
+    {
+      "path": "resources/mygui/openmw_levelup_dialog.layout",
+      "bytes": 9618,
+      "sha256": "6a3b6ce9d25973d507c0c936041d8cdd9652e142e413babf0311dba07dbba214"
+    },
+    {
+      "path": "resources/mygui/openmw_list.skin.xml",
+      "bytes": 10116,
+      "sha256": "ad052f296780f9262f1c02f62aa66de3d495f12cf3e53034b585fb78c8c41401"
+    },
+    {
+      "path": "resources/mygui/openmw_loading_screen.layout",
+      "bytes": 699,
+      "sha256": "9e8a7de8802b8196d03b64559010992b4602d3d527d6f7ee004e8aedd1daa7eb"
+    },
+    {
+      "path": "resources/mygui/openmw_magicselection_dialog.layout",
+      "bytes": 757,
+      "sha256": "ed9e685804603bbbf4a9925e4b2a9ab86f085978708860a5b5dff78653293022"
+    },
+    {
+      "path": "resources/mygui/openmw_mainmenu.layout",
+      "bytes": 606,
+      "sha256": "6964c5da13d2b651cc47019cb319f79ea90eee49ff099abd4124087760b28ffe"
+    },
+    {
+      "path": "resources/mygui/openmw_mainmenu.skin.xml",
+      "bytes": 87,
+      "sha256": "db9fed814bd522a2e98bc32ef7cacbcdea119ed28575a9be0eb8ef72e5c86a9c"
+    },
+    {
+      "path": "resources/mygui/openmw_map_window.layout",
+      "bytes": 1803,
+      "sha256": "69104c3141020bc5b6571cdbf471de7a115218ccaec052ae189da4dc1f0ef036"
+    },
+    {
+      "path": "resources/mygui/openmw_map_window.skin.xml",
+      "bytes": 565,
+      "sha256": "1110573629ff89b975c07efbae18528e486db029e6826eacac356b4abd00ef40"
+    },
+    {
+      "path": "resources/mygui/openmw_merchantrepair.layout",
+      "bytes": 1452,
+      "sha256": "1689578a050508f45a732dcf976ba6994f9c73d3c98b1bf0d3d385db1a6377fc"
+    },
+    {
+      "path": "resources/mygui/openmw_messagebox.layout",
+      "bytes": 728,
+      "sha256": "8947e79860013e0e11dee9064995e6a18e707b1b4978921cd5b40848534e4f29"
+    },
+    {
+      "path": "resources/mygui/openmw_persuasion_dialog.layout",
+      "bytes": 2432,
+      "sha256": "88c7814539aa9f5e54bbd6c16dc43e309f576e31aa4624a7325b41c8f6a7dd46"
+    },
+    {
+      "path": "resources/mygui/openmw_pointer.xml",
+      "bytes": 1689,
+      "sha256": "da17e2799f9497696eb3fbae61167763553cbad2947e8b672d5c2522f95487d2"
+    },
+    {
+      "path": "resources/mygui/openmw_progress.skin.xml",
+      "bytes": 4670,
+      "sha256": "e0fb5c49cb05df5b6a731cb81780d4d29a1438049d14da25b0877077489902b0"
+    },
+    {
+      "path": "resources/mygui/openmw_quickkeys_menu.layout",
+      "bytes": 2205,
+      "sha256": "7da70741c712564b1393d41a24b5d69878a063be400980eca8633bd962171669"
+    },
+    {
+      "path": "resources/mygui/openmw_quickkeys_menu_assign.layout",
+      "bytes": 1077,
+      "sha256": "877f06b8694684d6593922ec0243ba2073ce64d160c8d7a9a6356ab44d240ad6"
+    },
+    {
+      "path": "resources/mygui/openmw_recharge_dialog.layout",
+      "bytes": 1505,
+      "sha256": "65804f0a8f7998c08f44a9f3d3ae73e74cdee5161a36e312797e9e17e7de0ab7"
+    },
+    {
+      "path": "resources/mygui/openmw_repair.layout",
+      "bytes": 1959,
+      "sha256": "9345cbf386ae383e66e824354923b6db16c2ae911189d4a3709428e70a3fe87b"
+    },
+    {
+      "path": "resources/mygui/openmw_resources.xml",
+      "bytes": 9721,
+      "sha256": "8ad273d234ea4014292dc633d5554b8b933fff5960b7badf687702898db80f3b"
+    },
+    {
+      "path": "resources/mygui/openmw_savegame_dialog.layout",
+      "bytes": 3495,
+      "sha256": "5fc4ad45aab1bcbd0c2baab9e27d2fe9bfba9c625d7e19f21327fe813155895e"
+    },
+    {
+      "path": "resources/mygui/openmw_screen_fader.layout",
+      "bytes": 251,
+      "sha256": "f11ae9a173a35a0407dd35843ded6c8b41ed7278c0126cf22e5497701fd09331"
+    },
+    {
+      "path": "resources/mygui/openmw_screen_fader_hit.layout",
+      "bytes": 259,
+      "sha256": "aec19df203965c7aee61c5b787e6abeaea3da1c5d5cb8bde7cefff1e43fcec02"
+    },
+    {
+      "path": "resources/mygui/openmw_scroll.layout",
+      "bytes": 1277,
+      "sha256": "2f1c8be76490c31b290b9982a96a0995125cd8df8e235700c4081bb61cdb7ef5"
+    },
+    {
+      "path": "resources/mygui/openmw_scroll.skin.xml",
+      "bytes": 775,
+      "sha256": "f0c5f7af7f22d4bd1ccd7433d9fcb6ff1c333d4804ea005cac71a6198d3dfe30"
+    },
+    {
+      "path": "resources/mygui/openmw_settings.xml",
+      "bytes": 284,
+      "sha256": "e95708c7a97b0d6bb33dd122628870c2dd5e5069136b4153a713593a60d3dc2f"
+    },
+    {
+      "path": "resources/mygui/openmw_settings_window.layout",
+      "bytes": 47797,
+      "sha256": "3e99430cb8f16345df3a9bb3ce2f172ebb3baf0f648f93477415e4ffed69fe43"
+    },
+    {
+      "path": "resources/mygui/openmw_spell_buying_window.layout",
+      "bytes": 1454,
+      "sha256": "73929977b6a47ed5d44e98122d4f1dfe8111760f8dcc71c0b14ce86038b0a6c1"
+    },
+    {
+      "path": "resources/mygui/openmw_spell_window.layout",
+      "bytes": 1339,
+      "sha256": "c685f8af61925edccdbfdf2065701623a6bbcd4ead72b2f223637544adf25b16"
+    },
+    {
+      "path": "resources/mygui/openmw_spellcreation_dialog.layout",
+      "bytes": 4244,
+      "sha256": "b1b536094a0d2301d4058b2e73117486cb7ff32d40a45131358c5792404698f6"
+    },
+    {
+      "path": "resources/mygui/openmw_stats_window.layout",
+      "bytes": 16089,
+      "sha256": "2f9d1b365fdaed153405a68ecfeec287d4b16d3f9bb783f2c2d4017717c03e03"
+    },
+    {
+      "path": "resources/mygui/openmw_text.skin.xml",
+      "bytes": 8756,
+      "sha256": "ec65d743f1a6769e79c2b7ac088600b342c20358061dbe1d7b5cb331abd585d6"
+    },
+    {
+      "path": "resources/mygui/openmw_text_input.layout",
+      "bytes": 768,
+      "sha256": "a4e88bb163f0aa18b129f2b90c38f9d12f5573e6e2df5a71de4b4cc61fab7561"
+    },
+    {
+      "path": "resources/mygui/openmw_tooltips.layout",
+      "bytes": 15975,
+      "sha256": "0ff927fc717cd5c815a58bf6abd7c8dc1de7e946b0a7ca262704ba8c275dd489"
+    },
+    {
+      "path": "resources/mygui/openmw_trade_window.layout",
+      "bytes": 4448,
+      "sha256": "127801635e9cf3cb03067f948b1a36ab6abead1b1b015b6130c78f8ed650a920"
+    },
+    {
+      "path": "resources/mygui/openmw_trainingwindow.layout",
+      "bytes": 1256,
+      "sha256": "371d81c5bb1064531c89b9f15cd43cb744b9a98c8f750506153cc361025d183f"
+    },
+    {
+      "path": "resources/mygui/openmw_travel_window.layout",
+      "bytes": 1494,
+      "sha256": "f8f0823987997739392e294d16201c4e31cf419869034a2a4923ae48c40bcce7"
+    },
+    {
+      "path": "resources/mygui/openmw_wait_dialog.layout",
+      "bytes": 1684,
+      "sha256": "68c1ae7489efb1b4cbc045dc10e133266ab367046763adb20b16d4a3b7d5a764"
+    },
+    {
+      "path": "resources/mygui/openmw_wait_dialog_progressbar.layout",
+      "bytes": 515,
+      "sha256": "2789ddd8921bbb01903884117169662f0787dc336b2d8da50dd04c4efa23bd08"
+    },
+    {
+      "path": "resources/mygui/openmw_windows.skin.xml",
+      "bytes": 42979,
+      "sha256": "ce96d97217168f3d2e9deaaa7b3495be1fb0dde8f2b9f7165f9048582a89019e"
+    },
+    {
+      "path": "resources/mygui/skins.xml",
+      "bytes": 1017,
+      "sha256": "99d92fc7df2ccfdc3dff4e42885401f72b75a686e907c6920b5c6ecfc299d2a3"
+    },
+    {
+      "path": "resources/mygui/tes3mp_chat.layout",
+      "bytes": 1086,
+      "sha256": "4e70e43070c333a40f4c75975a4f9cc3cd3978954d96c0deea7495d8a8e5a0cd"
+    },
+    {
+      "path": "resources/mygui/tes3mp_chat.skin.xml",
+      "bytes": 723,
+      "sha256": "34a61db4e7581de3d77eef3f6c5c5a881541a9abbef445f8da7f8f473f55e258"
+    },
+    {
+      "path": "resources/mygui/tes3mp_dialog_list.layout",
+      "bytes": 1161,
+      "sha256": "6c5d3281f985ee770842a033c3ae26a45bf92899c5ff55b8f0efd59d8dab40a1"
+    },
+    {
+      "path": "resources/mygui/tes3mp_login.layout",
+      "bytes": 1283,
+      "sha256": "44480321c9f1794e38b47adaffd57fc7ab32dccc349e09f3f8545eb07c0061c3"
+    },
+    {
+      "path": "resources/mygui/tes3mp_login.skin.xml",
+      "bytes": 56,
+      "sha256": "b11588cb208581a62fd9a5f337dc27c834936f859b318186d534251d4b71fa41"
+    },
+    {
+      "path": "resources/mygui/tes3mp_logo.png",
+      "bytes": 107752,
+      "sha256": "861e5e8cc7ddec2dbfb842d68cdd45e7cc564079b9cb37ad113ff140bf424fd9"
+    },
+    {
+      "path": "resources/mygui/tes3mp_text_input.layout",
+      "bytes": 1338,
+      "sha256": "d35e8b1d6f0a1bc6d37648bbc4c6ec88e2f033067d7ad1e53aabce199fd26bfb"
+    },
+    {
+      "path": "resources/shaders/alpha.glsl",
+      "bytes": 2926,
+      "sha256": "fa5f68bcb34c5cf83e20be33aa750ca32b17eb94f2982598ec91f59ffe03a824"
+    },
+    {
+      "path": "resources/shaders/groundcover_fragment.glsl",
+      "bytes": 2390,
+      "sha256": "843aa797f344fc60d76818d535bea35a3cc8eb118e9784da79bf2faf4f3d51e3"
+    },
+    {
+      "path": "resources/shaders/groundcover_vertex.glsl",
+      "bytes": 5002,
+      "sha256": "508ff188666e6203fa2892a97bfb6949e839ee0eb5c9c4bc1875b81882160063"
+    },
+    {
+      "path": "resources/shaders/lighting.glsl",
+      "bytes": 2949,
+      "sha256": "13328a6b2e851692470a05afa24663cfce36cc0ad1b26916ca8802189043c8c7"
+    },
+    {
+      "path": "resources/shaders/lighting_util.glsl",
+      "bytes": 4053,
+      "sha256": "298fe8751394c76d18018c00c59aded7efe0c601bb3be0728326e3c380eabc98"
+    },
+    {
+      "path": "resources/shaders/nv_default_fragment.glsl",
+      "bytes": 2757,
+      "sha256": "6fcd748874203c298a4aafc626695b57cc789ee6c416272f57afb9e1e697edbb"
+    },
+    {
+      "path": "resources/shaders/nv_default_vertex.glsl",
+      "bytes": 1413,
+      "sha256": "26be10ceb1d34c16ea9ab66e697da916fef176ba6cf68f519b2136056eb1dd1d"
+    },
+    {
+      "path": "resources/shaders/nv_nolighting_fragment.glsl",
+      "bytes": 1079,
+      "sha256": "ead0c3c17de3a7574de264a586069feafe345483e740bd5dd9fa72a76598dc8a"
+    },
+    {
+      "path": "resources/shaders/nv_nolighting_vertex.glsl",
+      "bytes": 1028,
+      "sha256": "19905b20f25c42d21a6ef517f2883b0741405efb8018cf7420f0f5dc37313cfe"
+    },
+    {
+      "path": "resources/shaders/objects_fragment.glsl",
+      "bytes": 6267,
+      "sha256": "1ff9e614aede8639d39cb7cb0b2eb0965895352d58d53a3f0f5172ff75652961"
+    },
+    {
+      "path": "resources/shaders/objects_vertex.glsl",
+      "bytes": 3102,
+      "sha256": "46e326f787a0cc729b1f473c3eb4263299fc4c6cf21a058f174125b423010e2f"
+    },
+    {
+      "path": "resources/shaders/parallax.glsl",
+      "bytes": 292,
+      "sha256": "228988becce8503b7bac781c44ebe96686886fbd28b3e300315dbfd83eaaabaf"
+    },
+    {
+      "path": "resources/shaders/s360_fragment.glsl",
+      "bytes": 1175,
+      "sha256": "3b15d83eeb31859d6a6d5f25dbb6e1d91d82b794fbc169d4307a6c1731fdaa8c"
+    },
+    {
+      "path": "resources/shaders/s360_vertex.glsl",
+      "bytes": 139,
+      "sha256": "303307091b25706172f4e0725e8cb56592e7bd6b672da6564ff764a1efcf3960"
+    },
+    {
+      "path": "resources/shaders/shadowcasting_fragment.glsl",
+      "bytes": 776,
+      "sha256": "1712758697693e745d332062c7da677b37e337a44a8f6e50c082a9dd01e2edc2"
+    },
+    {
+      "path": "resources/shaders/shadowcasting_vertex.glsl",
+      "bytes": 901,
+      "sha256": "30761e9f7a1b32ca2e21c2b8f2343e1fc6416027e1cec0fa926899bece9d0f5a"
+    },
+    {
+      "path": "resources/shaders/shadows_fragment.glsl",
+      "bytes": 3581,
+      "sha256": "cb89dd392c76d7fcb93e888bae2489b169ea3011fe53ab991ebf8fb66c6ae401"
+    },
+    {
+      "path": "resources/shaders/shadows_vertex.glsl",
+      "bytes": 2153,
+      "sha256": "ef3568ccdb4238ff0eed23ec6816d570d4cfc354d0915e885afcf8b9b4ac5f8c"
+    },
+    {
+      "path": "resources/shaders/terrain_fragment.glsl",
+      "bytes": 3574,
+      "sha256": "79b553963af527dc45f86eabbbdb584c3ae5cf8aa86c7b80eebb3df3519bff2d"
+    },
+    {
+      "path": "resources/shaders/terrain_vertex.glsl",
+      "bytes": 1468,
+      "sha256": "9f01b1b9b807debaa86ba0936f0e6583c64eb7dc8c2e365c465ae5e1abc1ce16"
+    },
+    {
+      "path": "resources/shaders/vertexcolors.glsl",
+      "bytes": 883,
+      "sha256": "25a426208137206b286cd6ecfd532a9abab475a68f49ae27b5f3d62313fd138b"
+    },
+    {
+      "path": "resources/shaders/water_fragment.glsl",
+      "bytes": 10375,
+      "sha256": "846415470f747a9b79c2e683b39078b3c5d3dd3423e88a5850d1a4181ddf2b71"
+    },
+    {
+      "path": "resources/shaders/water_nm.png",
+      "bytes": 24405,
+      "sha256": "b1403eb31ec3142cd22962351148d3be53dbd67e6b4d1da21499b85885dd54dd"
+    },
+    {
+      "path": "resources/shaders/water_vertex.glsl",
+      "bytes": 671,
+      "sha256": "ce87889ddaa0aca63bc14720d58f9f333857141d6f40bc3eab8d1d27c00bb3c5"
+    },
+    {
+      "path": "resources/version",
+      "bytes": 89,
+      "sha256": "21cc451cc8e78b0d1d2820adfd0ed8d3087f87a72e739eeaef61e9ebe3edad2e"
+    },
+    {
+      "path": "resources/vfs/textures/omw_menu_scroll_center_h.dds",
+      "bytes": 640,
+      "sha256": "56a7914780082f411ee409fa23da4ed9fbaf69b41268e82b45e319e7073e887d"
+    },
+    {
+      "path": "resources/vfs/textures/omw_menu_scroll_center_v.dds",
+      "bytes": 640,
+      "sha256": "df0440f63ed3da40bb652537e5d5d6dd50dd2f20b8c1e7e363408128f45ffa5e"
+    },
+    {
+      "path": "resources/vfs/textures/omw_menu_scroll_down.dds",
+      "bytes": 1152,
+      "sha256": "a643cc089fb455cae5fd6723268141ad17a2b16abea303ef119894e1fe152471"
+    },
+    {
+      "path": "resources/vfs/textures/omw_menu_scroll_left.dds",
+      "bytes": 1152,
+      "sha256": "7e4161bddbc66aea1ccbfd294087664609ca8d3e5c71a67a65833d4f37905f82"
+    },
+    {
+      "path": "resources/vfs/textures/omw_menu_scroll_right.dds",
+      "bytes": 1152,
+      "sha256": "f1598fda7a3491d0162de77cfeeef698d51a1fbd9cdb56d49595991d9d877406"
+    },
+    {
+      "path": "resources/vfs/textures/omw_menu_scroll_up.dds",
+      "bytes": 1152,
+      "sha256": "f6fc4c6161ddd41f7ca76927a91ad033f74f1db9a69636a725352be31b1fbe7b"
+    },
+    {
+      "path": "server/data/requiredDataFiles.json",
+      "bytes": 533,
+      "sha256": "f91415d812dae770ef4746b4d767cfd5cfb5f19a1d0c634812d179718172ae89"
+    },
+    {
+      "path": "server/scripts/animHelper.lua",
+      "bytes": 3467,
+      "sha256": "39c257dfbd99953add6fdd55a92147a2be71f89e36307aee971d0e5738e8b3f5"
+    },
+    {
+      "path": "server/scripts/cell/base.lua",
+      "bytes": 79666,
+      "sha256": "e2caf8d26de34c2a66a176553e1fd5ab1d4408737ccba6e53e086298d253b2e8"
+    },
+    {
+      "path": "server/scripts/cell/json.lua",
+      "bytes": 2008,
+      "sha256": "8a78576d6ec779a3a1055115fa2031f868fc0d416c94ca4ea6712a7f5cdc1776"
+    },
+    {
+      "path": "server/scripts/cell/sql.lua",
+      "bytes": 462,
+      "sha256": "4f6a5ba5965a84e8e6bc0aa2a6f026f5d2be2aeb2c20924ac080326a9fb94927"
+    },
+    {
+      "path": "server/scripts/clientVariableScopes.lua",
+      "bytes": 22749,
+      "sha256": "a82991ea84895316a5f35c40858a80d81145052981855a754a8c323e8e657e97"
+    },
+    {
+      "path": "server/scripts/color.lua",
+      "bytes": 4273,
+      "sha256": "7778a82c5e37d7a6e22def3899c92746d91de71c46f0e070291be4dee2c5f2ec"
+    },
+    {
+      "path": "server/scripts/commandHandler.lua",
+      "bytes": 59528,
+      "sha256": "56de10f91c9a8e67a5517a61936a4fd7b9df67bba573d32a22f00c195d04d4c2"
+    },
+    {
+      "path": "server/scripts/config.lua",
+      "bytes": 24825,
+      "sha256": "6e413c6987abb0eac6c5f7011194202de631b713d123f70d5da47b923d6dcc8a"
+    },
+    {
+      "path": "server/scripts/contentFixer.lua",
+      "bytes": 5601,
+      "sha256": "6bea175a77db6df9d452dd3f260358ff70cb75ab47b3447d6266ae4c6d136bea"
+    },
+    {
+      "path": "server/scripts/customCommandHooks.lua",
+      "bytes": 3365,
+      "sha256": "85c86020f33a79457cd4f357beffa534a4d887112deacbeda45b5d0b1bb0eaa5"
+    },
+    {
+      "path": "server/scripts/customEventHooks.lua",
+      "bytes": 2120,
+      "sha256": "28f3fb71f94c9f61ebcd8512bbac9b53b7aa3cc946de472f3c16b8ceb68b04fd"
+    },
+    {
+      "path": "server/scripts/customScripts.lua",
+      "bytes": 293,
+      "sha256": "9242779f21390e28cad50c7f9c096b2119ed8356accd2f9552a96ccf49389a0a"
+    },
+    {
+      "path": "server/scripts/dataTableBuilder.lua",
+      "bytes": 922,
+      "sha256": "3578b4278b7bb05b3e0ff3c0ddd34569235712e0c2366afb01e358fd6620c5e4"
+    },
+    {
+      "path": "server/scripts/database.lua",
+      "bytes": 10418,
+      "sha256": "5ddbf32a58999be5f21389a925a4a1055c5d9cbdc9e531f4bde9f30b7ecbecc0"
+    },
+    {
+      "path": "server/scripts/defaultCommands.lua",
+      "bytes": 17749,
+      "sha256": "422f52d2d3e281036f05b153dd78661cb8881d4e611d38442c2a9a210ebf628f"
+    },
+    {
+      "path": "server/scripts/enumerations.lua",
+      "bytes": 5776,
+      "sha256": "989f4c14afbb3e4dab4ed500ac954bf9c0efb42c6d0bccb748589e597881076d"
+    },
+    {
+      "path": "server/scripts/eventHandler.lua",
+      "bytes": 85200,
+      "sha256": "403ce67d1c8adc1de8b24fd299df77bbd6a440d316a79eabce605f31d94800ab"
+    },
+    {
+      "path": "server/scripts/guiHelper.lua",
+      "bytes": 4231,
+      "sha256": "e4c393d77bce878f992d4f624c01f9c4c2d478b27815c57d887ebea7d6ebc992"
+    },
+    {
+      "path": "server/scripts/inventoryHelper.lua",
+      "bytes": 9356,
+      "sha256": "963710cee830fa8ea944b2980e66485a563549bd6ba1f6cb16d7cd2d94a87f27"
+    },
+    {
+      "path": "server/scripts/logicHandler.lua",
+      "bytes": 34731,
+      "sha256": "bea0c1db2bda0bcdde91bb759d755c1368815d25821197cbbaa2f632e94028ac"
+    },
+    {
+      "path": "server/scripts/menu/advancedExample.lua",
+      "bytes": 4519,
+      "sha256": "fccc50406a196eeb5f119952762e51bad9a4f7e67aff35c634e621415d6570f7"
+    },
+    {
+      "path": "server/scripts/menu/defaultCrafting.lua",
+      "bytes": 6680,
+      "sha256": "b8abfda7c7d4cb0ea1a1b6f2e2dd96d91a393b166187707388262e3d2ecd2deb"
+    },
+    {
+      "path": "server/scripts/menu/help.lua",
+      "bytes": 38498,
+      "sha256": "f97ec2826fd151e15b29a850992f69356d78a4085a2db7c1ecceda7b89e35dc8"
+    },
+    {
+      "path": "server/scripts/menuHelper.lua",
+      "bytes": 16445,
+      "sha256": "e7819f7d03c27d2cd7c9bdef2fbcd8b93f8448492e4dc78eb8bde79db0e8e310"
+    },
+    {
+      "path": "server/scripts/packetBuilder.lua",
+      "bytes": 33912,
+      "sha256": "69d78cb261e7bb02bd5e0746d3ee77ec5656ca3a3c55a8e9f6a22bcf513f10a9"
+    },
+    {
+      "path": "server/scripts/packetReader.lua",
+      "bytes": 29847,
+      "sha256": "4b4fe070ee06f8ef9c3b404ccc171ef5f75e14ee9ecb7a1ef2354d69ff503860"
+    },
+    {
+      "path": "server/scripts/player/base.lua",
+      "bytes": 59198,
+      "sha256": "4514a706505f2138ca2219ff7dc5964bf1a944b21e308be52dd15f71a3d5df7d"
+    },
+    {
+      "path": "server/scripts/player/json.lua",
+      "bytes": 2320,
+      "sha256": "9fd52fa2d0d84f210f942e9be333e92b0ef533fc47a95ef86d000654024fcb1e"
+    },
+    {
+      "path": "server/scripts/player/sql.lua",
+      "bytes": 1085,
+      "sha256": "22fe6f4a791a067a554a9b167507f0c46f8fdfa20053b8ce78c5444aabb4d3de"
+    },
+    {
+      "path": "server/scripts/recordstore/base.lua",
+      "bytes": 11845,
+      "sha256": "792a95d052738b0e1427df41c67b6c9623f356c7158412cd869b7b9eb0424bc7"
+    },
+    {
+      "path": "server/scripts/recordstore/json.lua",
+      "bytes": 1857,
+      "sha256": "f3ea44ff16d08a1fdceb08bc74943a4c9e9ee1fca722a07d52c97605fbc17396"
+    },
+    {
+      "path": "server/scripts/recordstore/sql.lua",
+      "bytes": 507,
+      "sha256": "1cbd034a34fabf57d623409c8e3f85a4713900155f3b4a721fd4c4c2054cfc78"
+    },
+    {
+      "path": "server/scripts/serverCore.lua",
+      "bytes": 25859,
+      "sha256": "7878adcc87eebb695db3d0028b9f2df97920581acd94ab0481e0bfca14d88537"
+    },
+    {
+      "path": "server/scripts/speechCollections.lua",
+      "bytes": 14518,
+      "sha256": "81a6e227ee67d8e9819b301b525060ec8df7857ade50d80076739853b92a4ff6"
+    },
+    {
+      "path": "server/scripts/speechHelper.lua",
+      "bytes": 5175,
+      "sha256": "34b8ebad2b35c069e584fffc466751c3a7327780808574a3b324cbb415bad6c1"
+    },
+    {
+      "path": "server/scripts/stateHelper.lua",
+      "bytes": 10115,
+      "sha256": "db6138d6ff00f4156d8fa9937ced6f1b6b6677df81bdf8d5a8f6ad764dee7494"
+    },
+    {
+      "path": "server/scripts/world/base.lua",
+      "bytes": 9949,
+      "sha256": "a7ded18d1696a66f01a6c96793db4750bce8cebb33254294fe9a6d3a6f4ac435"
+    },
+    {
+      "path": "server/scripts/world/json.lua",
+      "bytes": 2149,
+      "sha256": "b77ced5879a8328c0fafcf378af8c31c06623081abd058a0b18f0a54b5a15ed9"
+    },
+    {
+      "path": "server/scripts/world/sql.lua",
+      "bytes": 660,
+      "sha256": "fa1a4740735fe18eb84f224a661897ec6dc5bc330cb7234c0eccd2c6be6db52b"
+    },
+    {
+      "path": "tes3mp-server-default.cfg",
+      "bytes": 466,
+      "sha256": "d128f3c0751067463985dca4d49cc24ea1ca45780d765c685fea6882e128784c"
+    },
+    {
+      "path": "tes3mp-server.x86_64",
+      "bytes": 3594064,
+      "sha256": "961a688d23afe736eb2ef005b44eee2fedc61a8a1db201d3c56c0898e2f1c17a"
+    }
+  ]
+}

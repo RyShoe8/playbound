@@ -12,6 +12,7 @@ describe("managed player count", () => {
     expect(expectedRegistryMod("openra","constructor")).toBeUndefined();
   });
   it("falls back to the game's live query when a stored profile has no usable method", () => {
+    expect(managedQueryKind("terraria", { queryVerified: false, queryKind: "none" })).toBe("agent-local");
     expect(managedQueryKind("luanti", { queryVerified: true, queryKind: "none" })).toBe("luanti-master");
     expect(managedQueryKind("counter-strike-2", { queryVerified: false, queryKind: "none" })).toBe("agent-local");
     expect(managedQueryKind("counter-strike-source", null)).toBe("agent-local");

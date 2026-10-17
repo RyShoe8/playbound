@@ -33,11 +33,57 @@ ENGINES = {
     'warzone-2100': ('warzone2100', '/engine-native'),
     'freeciv': ('freeciv-server', '/engine-native'),
     'freedoom': ('zandronum-server', '/game-data/zandronum-server'),
+    'bombsquad': ('python3.14','/python/bin/python3.14'),
 }
 
 def sealed_engine_for(game):
     if game in ('ysoccer','mindustry'):
         return sealed_java_engine(game=game), '/engine.jar'
+    if game in ('openra','openhv','earth-2140-trilogy'):
+        return None, '/game-data/OpenRA.Server'
+    if game=='dont-starve-together':
+        return None, '/game-data/bin64/dontstarve_dedicated_server_nullrenderer_x64'
+    if game=='team-fortress-2':
+        return None, '/game-data/srcds_linux64'
+    if game=='counter-strike-2':
+        return None, '/game-data/game/bin/linuxsteamrt64/cs2'
+    if game=='trackmania':
+        return None, '/game-data/TrackmaniaServer'
+    if game=='unturned':
+        return None, '/game-data/Unturned_Headless.x86_64'
+    if game=='battlefield-1942-anthology':
+        return None, '/game-data/bf1942_lnxded.static'
+    if game=='open-fortress':
+        return None, '/game-data/srcds_linux'
+    if game=='counter-strike-source':
+        return None, '/game-data/srcds_linux'
+    if game=='bombsquad':
+        root=Path('/usr/local/libexec/playbound-isolated-bombsquad')
+        descriptor=sealed_engine(root/'python3.14',root/'profile.json',game)
+        if descriptor is None:raise ValueError('Reviewed BombSquad Python engine is required')
+        return descriptor, '/python/bin/python3.14'
+    if game=='morrowind':
+        return None, '/game-data/tes3mp-server.x86_64'
+    if game=='barotrauma':
+        return None, '/game-data/DedicatedServer'
+    if game=='veloren':
+        return None, '/game-data/veloren-server-cli'
+    if game=='necesse':
+        return None, '/game-data/jre/bin/java'
+    if game=='triplea':
+        return None, '/game-data/jre/temurin-25/bin/java'
+    if game=='space-station-14':
+        return None, '/game-data/Robust.Server'
+    if game=='rimworld-together':
+        return None, '/game-data/RTServer'
+    if game == 'unvanquished':
+        return None, '/game-data/daemonded'
+    if game == 'factorio':
+        return None, '/game-data/bin/x64/factorio'
+    if game == 'terraria':
+        # The mandatory root-owned immutable directory pins the native loader,
+        # assembly and matching libraries together. No shared install fallback.
+        return None, '/game-data/TerrariaServer.bin.x86_64'
     if game == 'hypersomnia':
         root=Path('/usr/local/libexec/playbound-isolated-hypersomnia')
         descriptor=sealed_engine(root/'Hypersomnia-Headless.AppImage',root/'profile.json',game)

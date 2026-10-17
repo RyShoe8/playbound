@@ -1,0 +1,294 @@
+{
+  "files": [
+    {
+      "path": "games/triplea/bin/game-headless.jar",
+      "bytes": 35811846,
+      "sha256": "123199064c5ed1cd2f48a7ccf4595eea7388b07f11b9af6e234362fb2c4e2fd1"
+    },
+    {
+      "path": "jre/temurin-25/bin/java",
+      "bytes": 16912,
+      "sha256": "97f98bc2e9d0c728b5462d702b0fa7387c2db7b458498bf04318aec4d7ba05cd"
+    },
+    {
+      "path": "jre/temurin-25/lib/classlist",
+      "bytes": 84836,
+      "sha256": "f540219da3c3c4dda16475d73af0a886872817e21fad447f514595fbedb0aa7a"
+    },
+    {
+      "path": "jre/temurin-25/lib/jexec",
+      "bytes": 16576,
+      "sha256": "2d23851d35c953340bf58c0e641f4fd0c8ca6847d30d038b3faea91a6f3bb7e7"
+    },
+    {
+      "path": "jre/temurin-25/lib/jfr/default.jfc",
+      "bytes": 40505,
+      "sha256": "26f2d7bf2f8473b3849f9480629eee695edf59fd667da838890a22919237718a"
+    },
+    {
+      "path": "jre/temurin-25/lib/jfr/profile.jfc",
+      "bytes": 40387,
+      "sha256": "3e2c847608b1e7d182337f56bbf75b6a026ba4e9634b398bd92aec865e9ea8a7"
+    },
+    {
+      "path": "jre/temurin-25/lib/jrt-fs.jar",
+      "bytes": 109855,
+      "sha256": "0ab41b15684030fbb2dfce29b2f3d981c6c80edb3b3c58fd1b62e252805f4432"
+    },
+    {
+      "path": "jre/temurin-25/lib/jspawnhelper",
+      "bytes": 21896,
+      "sha256": "32555690eb1e1695878de91616d93f8a982b83a22032cba79dcc48810c2e9714"
+    },
+    {
+      "path": "jre/temurin-25/lib/jvm.cfg",
+      "bytes": 29,
+      "sha256": "aa9efb969444c1484e29adecab55a122458090616e766b2f1230ef05bc3867e0"
+    },
+    {
+      "path": "jre/temurin-25/lib/libawt.so",
+      "bytes": 928936,
+      "sha256": "24543cd49e2de4dc52b18b0efdb6120198d885083792cb20dd881a0dfd79da46"
+    },
+    {
+      "path": "jre/temurin-25/lib/libawt_headless.so",
+      "bytes": 40480,
+      "sha256": "9e2d0077ac6de263a5d1857fede6d55643aaec611aff6b1599886fa8149e3464"
+    },
+    {
+      "path": "jre/temurin-25/lib/libawt_xawt.so",
+      "bytes": 525656,
+      "sha256": "b20906c564171efec2f093ba72fc12ff95ef0ff4eeb4af6299297f1d762a148e"
+    },
+    {
+      "path": "jre/temurin-25/lib/libdt_socket.so",
+      "bytes": 36616,
+      "sha256": "2f7357a6520af90c8d869e1fa447e335b788d77eb8c4f0b644136043df075459"
+    },
+    {
+      "path": "jre/temurin-25/lib/libextnet.so",
+      "bytes": 17376,
+      "sha256": "0ea6dd6ba858cf1701ecf3a1dbd12d6574c0f90649b3e480534530f2f81d604b"
+    },
+    {
+      "path": "jre/temurin-25/lib/libfontmanager.so",
+      "bytes": 2018520,
+      "sha256": "4a7be6d7139b00e8b1cdf703071ed92763efe6dd9e1555137d56a82a5f528ab5"
+    },
+    {
+      "path": "jre/temurin-25/lib/libfreetype.so",
+      "bytes": 780304,
+      "sha256": "169f4e7e4e811549c263818dfe90af822bfe168932287f3c448e46268ab6d0e5"
+    },
+    {
+      "path": "jre/temurin-25/lib/libinstrument.so",
+      "bytes": 55128,
+      "sha256": "5356ef05e254523ad0c06046d923fe6952dc605584984f4fb5d3a7142b80cef3"
+    },
+    {
+      "path": "jre/temurin-25/lib/libj2gss.so",
+      "bytes": 55664,
+      "sha256": "bd152ec46e0ed8995e52d5262a6102cc5fd73bbc957586ddfeca4f589eaed635"
+    },
+    {
+      "path": "jre/temurin-25/lib/libj2pcsc.so",
+      "bytes": 21936,
+      "sha256": "edbc0168eb3d2387adf7356a2409ae6ddf9a5a36c0fc04719bcc1eec3a162119"
+    },
+    {
+      "path": "jre/temurin-25/lib/libj2pkcs11.so",
+      "bytes": 101296,
+      "sha256": "52d80061632dd73270f31203e215eedb160a79ddf40c5bcddb96e9aa4a5ad557"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjaas.so",
+      "bytes": 16264,
+      "sha256": "d09eb4a73d12663ea469ab837e4d9d722de51bcf239c401b281e7ebad0fb9791"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjava.so",
+      "bytes": 180656,
+      "sha256": "4b31a8942a1a7eebdfa1505875ce8827dae4e8fa6dd99427bbb65653ed9febc2"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjavajpeg.so",
+      "bytes": 244424,
+      "sha256": "b78757a2a099f1c525c76be6c154c14ec2798254bdb83b40d53ca4b17dc68cdf"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjawt.so",
+      "bytes": 16152,
+      "sha256": "3ab1a65fae5838a28c82a8747e91d75666c6936f0770983684bf5a321c16d60c"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjdwp.so",
+      "bytes": 307464,
+      "sha256": "ccc4732b7fb45ab50fa2d84b79ee4db0b95c723fccc118483224014a179c7dd5"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjimage.so",
+      "bytes": 172424,
+      "sha256": "0a12af77b5ae78bdf44a55add821c26004611579a25a6eaeac703dfedcffae97"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjli.so",
+      "bytes": 125360,
+      "sha256": "54a80595a209e5d6c3aa690d0530bfb5f33b6a6bb73645d60f9fe6e963441f8a"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjsig.so",
+      "bytes": 17328,
+      "sha256": "07114e5e0f46abb606d56a8a84a1dbd35270f21fd4e5a056b88a5c77223f47df"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjsound.so",
+      "bytes": 85952,
+      "sha256": "e317cfd6589a269b494ee1964cd4a3a94a360bd16f38c777647e402a5ed7b069"
+    },
+    {
+      "path": "jre/temurin-25/lib/libjsvml.so",
+      "bytes": 871616,
+      "sha256": "611370ac8939ee4e10d349233c245d9879dfc80a26580bfbd83a29892476e262"
+    },
+    {
+      "path": "jre/temurin-25/lib/liblcms.so",
+      "bytes": 537936,
+      "sha256": "f9b4d8b3273befef7e5caf31f2d00392bb974d5648c23af4e0c4e3c4bb43339d"
+    },
+    {
+      "path": "jre/temurin-25/lib/libmanagement.so",
+      "bytes": 29944,
+      "sha256": "0c08d93368835233f6c8b6164e5443cf016fb1f7389f24c18d623336a0b25c6f"
+    },
+    {
+      "path": "jre/temurin-25/lib/libmanagement_agent.so",
+      "bytes": 16200,
+      "sha256": "e73c1fb818ec99ef0f6935996a405ae61b3dc9cbaac5e7eae670959b92803616"
+    },
+    {
+      "path": "jre/temurin-25/lib/libmanagement_ext.so",
+      "bytes": 37632,
+      "sha256": "ab50735a431664232beee6942dbefb1bb5b1b818e2cb5ed5972b73aeb0facbba"
+    },
+    {
+      "path": "jre/temurin-25/lib/libmlib_image.so",
+      "bytes": 607464,
+      "sha256": "10b3631a776f65b0ddcbdb17a7b8a18f30d3f8fac83ad6144e2290df1f76522f"
+    },
+    {
+      "path": "jre/temurin-25/lib/libnet.so",
+      "bytes": 66280,
+      "sha256": "547dfd783329effd3fd4d6b0d749f3e35188573576a1890ea773b6c0f80e1cae"
+    },
+    {
+      "path": "jre/temurin-25/lib/libnio.so",
+      "bytes": 114744,
+      "sha256": "21ffd66eced1627fb2089074788dd3908c00a56e6fd4c323f9c98e3669954fed"
+    },
+    {
+      "path": "jre/temurin-25/lib/libprefs.so",
+      "bytes": 16368,
+      "sha256": "6ce32ba930121e817fda7cac4371e91f8a322d32b0ec04c3e8cde18aeec2e386"
+    },
+    {
+      "path": "jre/temurin-25/lib/librmi.so",
+      "bytes": 15912,
+      "sha256": "783a862d4ce4b99fa4deada079300d400aa5841fc886424438fac2ac53412b4c"
+    },
+    {
+      "path": "jre/temurin-25/lib/libsctp.so",
+      "bytes": 36648,
+      "sha256": "92eaffc69bc41ce3950bf18ca77872b98a8863011269b0f7261e3ae91fc6d7c6"
+    },
+    {
+      "path": "jre/temurin-25/lib/libsimdsort.so",
+      "bytes": 270968,
+      "sha256": "4ddf36f97a58f5971bedb770ecf7d2aa43fc228fedee8de7fa19c5a9eb8442b2"
+    },
+    {
+      "path": "jre/temurin-25/lib/libsplashscreen.so",
+      "bytes": 367320,
+      "sha256": "55f678a0a7be3fd556cb1fe8cf885b06ac9df06034a62bcff1b64b393da19a1a"
+    },
+    {
+      "path": "jre/temurin-25/lib/libsyslookup.so",
+      "bytes": 15808,
+      "sha256": "64d919358f57370aeb692fc5629c85ab38b20bf44bc2009fab9c6041c3c4d86c"
+    },
+    {
+      "path": "jre/temurin-25/lib/libverify.so",
+      "bytes": 72856,
+      "sha256": "ac0f18b7e70b68437c3ba0e35f1f4cce376276060642ebb7de79ee54a1ced0de"
+    },
+    {
+      "path": "jre/temurin-25/lib/libzip.so",
+      "bytes": 133336,
+      "sha256": "9a3f692fa775419fd42d54bd27ffac6d12ff7f323a81b2ec9ac95ae38d06095b"
+    },
+    {
+      "path": "jre/temurin-25/lib/modules",
+      "bytes": 99447348,
+      "sha256": "22362b6124246bfa8eab3644bf52983bce9eb59cffa7ad6a3f2f27f15023b892"
+    },
+    {
+      "path": "jre/temurin-25/lib/psfont.properties.ja",
+      "bytes": 3793,
+      "sha256": "5a4bd51b969bf187ff86d94f4a71fdfbfa602762975fa3c73d264b4575f7c78f"
+    },
+    {
+      "path": "jre/temurin-25/lib/psfontj2d.properties",
+      "bytes": 11402,
+      "sha256": "cfb2f55fc4a22368567273c38f1afe3fc627ad56710a1d922ada68015710e53f"
+    },
+    {
+      "path": "jre/temurin-25/lib/security/blocked.certs",
+      "bytes": 2488,
+      "sha256": "96572f243f31c2ef81a6e627542e596f6a9295cff3c7ae095c1b595cb1457ded"
+    },
+    {
+      "path": "jre/temurin-25/lib/security/cacerts",
+      "bytes": 153428,
+      "sha256": "98d34a90fca2688ef5674862d2a484e09e5ca25d2f07c5d654aa28f1581f3419"
+    },
+    {
+      "path": "jre/temurin-25/lib/security/public_suffix_list.dat",
+      "bytes": 227396,
+      "sha256": "16b42002aa6f83a7763c4cdbd399ecf738460377d447e362884495545afd60a3"
+    },
+    {
+      "path": "jre/temurin-25/lib/server/classes.jsa",
+      "bytes": 14503936,
+      "sha256": "b241e1ed82054f58610e43b7d4d03b0d4ed2975a6b6343ca3a3934a0988304bc"
+    },
+    {
+      "path": "jre/temurin-25/lib/server/classes_coh.jsa",
+      "bytes": 15212544,
+      "sha256": "45533cf1e8e6410cb4293e81acfd07e0aefebc41b00e1a29111ebdd12a57b679"
+    },
+    {
+      "path": "jre/temurin-25/lib/server/classes_nocoops.jsa",
+      "bytes": 14868480,
+      "sha256": "180965152d50950b97b324a52ec5b9a782f1f712ecb147ccfa1c66a01bb91e5b"
+    },
+    {
+      "path": "jre/temurin-25/lib/server/classes_nocoops_coh.jsa",
+      "bytes": 15527936,
+      "sha256": "41f4eb1e23d877108567b5257ed5ffb126d3b5b170d45844ee7cd33a9415a5d0"
+    },
+    {
+      "path": "jre/temurin-25/lib/server/libjsig.so",
+      "bytes": 17328,
+      "sha256": "07114e5e0f46abb606d56a8a84a1dbd35270f21fd4e5a056b88a5c77223f47df"
+    },
+    {
+      "path": "jre/temurin-25/lib/server/libjvm.so",
+      "bytes": 29876336,
+      "sha256": "1c0b634b98bdb6906c295127d6c5c13b8813bfe90dddf31d7c3dd524ca2a7005"
+    },
+    {
+      "path": "jre/temurin-25/lib/tzdb.dat",
+      "bytes": 102956,
+      "sha256": "5906b44e25a8a730131d7ba1beb5d15af27043f6536f1a169ca8a5d8b8bed8f8"
+    }
+  ]
+}

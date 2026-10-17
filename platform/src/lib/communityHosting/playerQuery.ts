@@ -48,6 +48,7 @@ export const QUERY_BY_GAME: Record<string, string> = {
   // TCP games without a query protocol: the agent counts established
   // connections on the room's port (only while it is listening).
   freeciv: "agent-local",
+  terraria: "agent-local",
   "battle-for-wesnoth": "agent-local",
   triplea: "agent-local",
   hedgewars: "agent-local",

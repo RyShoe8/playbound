@@ -11,6 +11,33 @@ spec.loader.exec_module(module)
 
 
 class BindPolicyTests(unittest.TestCase):
+    def test_future_profiles_allow_only_fixed_auxiliary_protocols_and_ports(self):
+        for profile,(first,last,stride,auxiliary) in module.AUXILIARY_PROFILES.items():
+            for allocation in {first,last}:
+                rows=list(struct.iter_unpack('<BBhi',module.instructions(allocation,auxiliary_profile=profile)))
+                def evaluate(port,protocol):
+                    registers={1:0};position=0
+                    while position<len(rows):
+                        code,register,offset,value=rows[position];destination=register&15
+                        if code==0x61:registers[destination]={36:protocol,24:socket.htons(port)}[offset]
+                        elif code==0x15 and registers[destination]==value:position+=offset
+                        elif code==0x55 and registers[destination]!=value:position+=offset
+                        elif code==0xb7:registers[destination]=value
+                        elif code==0x95:return registers[0]
+                        position+=1
+                    self.fail('Unterminated bind program')
+                for protocol in (socket.IPPROTO_TCP,socket.IPPROTO_UDP):
+                    for port in {0,allocation,allocation-1,allocation+1,allocation+2,allocation+3,allocation+1000,allocation+1001,60000}:
+                        expected=port==allocation or any(port==allocation+delta and protocol==kind for delta,kind in auxiliary)
+                        self.assertEqual(evaluate(port,protocol),int(expected),(profile,allocation,port,protocol))
+            for invalid in (first-1,last+1):
+                with self.assertRaises(ValueError):module.instructions(invalid,auxiliary_profile=profile)
+            if stride>1:
+                with self.assertRaises(ValueError):module.instructions(first+1,auxiliary_profile=profile)
+        for value in ('unknown',{},True):
+            with self.assertRaises(ValueError):module.instructions(14004,auxiliary_profile=value)
+        with self.assertRaises(ValueError):module.instructions(5010,flightgear_status=True,auxiliary_profile='veloren')
+
     def test_stk_secondary_port_is_udp_only_and_never_an_arbitrary_rule(self):
         rows = list(struct.iter_unpack('<BBhi',module.instructions(2777,True)))
         def evaluate(port,protocol):

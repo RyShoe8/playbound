@@ -25,6 +25,13 @@ const WORLD_SOURCES = {
   assaultcube: (folder) => ["assaultcube-servers", folder],
   xonotic: (folder) => ["xonotic-servers", folder],
   hypersomnia: (folder) => ["hypersomnia", folder],
+  unvanquished: (folder) => ["unvanquished", folder],
+  "space-station-14": (folder) => ["space-station-14-servers", folder],
+  veloren: (folder) => ["veloren-servers", folder],
+  triplea: (folder) => ["triplea-servers", folder],
+  openra: (folder) => ["openra-servers", folder],
+  openhv: (folder) => ["openhv-servers", folder],
+  "earth-2140-trilogy": (folder) => ["earth-2140-servers", folder],
   freedoom: (folder) => ["freedoom-servers", folder],
   "wolfenstein-enemy-territory": (folder) => ["et", folder.slice(-16)],
   "medal-of-honor-allied-assault": (folder) => ["openmohaa", "pb-"+folder.slice(-8)],
@@ -44,6 +51,8 @@ const WORLD_SOURCES = {
   necesse: (folder) => ["necesse-servers", folder, "saves"],
   "dont-starve-together": (folder) => ["dont-starve-together-servers", folder, "PlayBound", "Cluster_1", "Master", "save"],
   barotrauma: (folder) => ["barotrauma-servers", folder, "runtime", "Data", "Multiplayer"],
+  trackmania: (folder) => ["trackmania-servers", folder, "runtime", "UserData"],
+  unturned: (folder) => ["unturned-servers", folder],
 };
 
 /** Games whose customer servers keep world data worth a restore point. */
