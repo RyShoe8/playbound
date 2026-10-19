@@ -1,0 +1,40 @@
+name: Enroll RVGL in Basic hosting
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "platform/scripts/enable-rvgl-hosting.ts"
+      - ".github/workflows/enroll-rvgl-hosting.yml"
+
+jobs:
+  enroll:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+      - name: Check Mongo connection configuration
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is missing; RVGL hosting enrollment cannot run."
+            exit 1
+          fi
+      - run: npm ci
+      - name: Review exact Basic tier change
+        run: npx tsx scripts/enable-rvgl-hosting.ts
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Add RVGL only if absent
+        run: npx tsx scripts/enable-rvgl-hosting.ts --apply
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}

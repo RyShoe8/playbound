@@ -84,12 +84,11 @@ test("Core Keeper handoff stays blocked after isolated lifecycle acceptance", ()
   assert.match(value.reason, /UID-aware controls/);
 });
 
-test("RVGL identity remains blocked after isolated lifecycle acceptance", () => {
+test("RVGL identity is available for explicit operator rollout after fresh lifecycle acceptance", () => {
   const value = hostingReadiness("re-volt-rvgl");
   assert.equal(value.identityProfile,"re-volt-rvgl-unix-v1");
-  assert.equal(value.isolation,"blocked");
+  assert.equal(value.isolation,"operator_rollout");
   assert.equal(value.executableContentEnabled,false);
+  assert.match(value.reason,/Fresh private-UID provisioning/);
   assert.match(value.reason,/human Join/);
-  assert.match(value.reason,/UID-aware lobby capture\/navigation passed in staging/);
-  assert.match(value.reason,/customer control acceptance remain unverified/);
 });

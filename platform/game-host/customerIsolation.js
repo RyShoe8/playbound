@@ -33,9 +33,18 @@ function unlinkedAncestors(filename) {
 }
 
 /** Runs before recipes write any generated configuration, not just at spawn. */
+function freshRvglIdentityCandidate(id, home) {
+  if (!/^[a-f0-9]{24}$/.test(id || "") || home !== "/var/lib/playbound-host") return false;
+  const exists = (filename) => { try { fs.lstatSync(filename); return true; } catch (error) { if (error.code === "ENOENT") return false; throw error; } };
+  return !exists(path.join(home, "rvgl-servers", `pb-${id}`)) &&
+    !exists(path.join("/var/lib/playbound-customer-runtime", id));
+}
+
 export function validateCustomerPreparation({ gameSlug, customerOwned, communityServerId: id, home, identityProfile }) {
   if (customerOwned && (supportsCustomerIdentity(gameSlug) && !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) && identityProfile) {
-    if (identityProfile !== `${gameSlug}-unix-v1` || identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("Customer identity migration is not ready");
+    if (identityProfile !== `${gameSlug}-unix-v1` ||
+        (identityMigrationMetadata(id,home)?.identityProfile !== identityProfile &&
+         !(gameSlug === "re-volt-rvgl" && freshRvglIdentityCandidate(id, home)))) throw new Error("Customer identity migration is not ready");
     return;
   }
   if (!customerOwned || !CUSTOMER_ISOLATION_GAMES.includes(gameSlug)) return;
@@ -271,7 +280,7 @@ export function rvglIdentityConfiguration(args, port) {
 function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, home, resourceLimits, identityProfile, settings, startupPort, serverName, rconPassword }) {
   if (gameSlug === "re-volt-rvgl") {
     if (binary !== "/usr/bin/xvfb-run" || home !== "/var/lib/playbound-host" || identityProfile !== "re-volt-rvgl-unix-v1" ||
-        identityMigrationMetadata(id,home)?.identityProfile !== identityProfile) throw new Error("RVGL identity migration is not ready");
+        (identityMigrationMetadata(id,home)?.identityProfile !== identityProfile && !freshRvglIdentityCandidate(id,home))) throw new Error("RVGL identity migration is not ready");
     const configuration = rvglIdentityConfiguration(args,startupPort);
     if (settings && Object.keys(settings).length) throw new Error("RVGL identity settings are not verified");
     return {profile:"re-volt-rvgl-bwrap-v1",resourceLimits,identityProfile,

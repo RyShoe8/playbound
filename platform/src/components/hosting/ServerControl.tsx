@@ -7,6 +7,7 @@ import { Copy, RotateCw, TriangleAlert } from "lucide-react";
 import { SettingControl } from "@/components/friends/PartyServerSettings";
 import { ServerFiles } from "./ServerFiles";
 import { ServerLogs } from "./ServerLogs";
+import { RvglLobby } from "./RvglLobby";
 import { MAINTENANCE_DAYS } from "@/lib/dedicatedHosting/maintenancePolicy";
 import type { ServerSettingDefinition, ServerSettingValue, ServerSettingValues } from "@/lib/serverControl/settings";
 import type { ServerControlCapabilities, ServerRuntimeState } from "@/lib/serverControl/adapter";
@@ -171,6 +172,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
     may("server:configure") || may("server:delete") ? "Settings" : null,
     control.definitions.some((d) => d.feature === "bots") && may("server:configure") ? "Bots" : null,
     control.maps ? "Maps" : null,
+    server.gameSlug === "re-volt-rvgl" ? "Lobby" : null,
     control.capabilities.players ? "Players" : null,
     control.capabilities.console && may("server:console") ? "Console" : null,
     may("server:read_logs") ? "Logs" : null,
@@ -247,7 +249,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
       {notice ? <p className="rounded-lg border border-border bg-secondary/50 p-3 text-sm" role="status">{notice}</p> : null}
 
       <div id="server-tab-panel" role="tabpanel" aria-labelledby={`server-tab-${tab}`}>
-      {tab === "Overview" ? <><Overview server={server} control={control} loadedAt={loadedAt} /><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{tabs.filter((name) => name !== "Overview").map((name) => <button key={name} type="button" className="rounded-xl border border-border bg-card p-4 text-left hover:bg-secondary" onClick={() => chooseTab(name)}><strong className="block">{name}</strong><span className="text-sm text-muted-foreground">{({ Settings: "Name, visibility, and game rules", Files: "Saved worlds, downloads, and file history", Maps: "Starting map and rotation", Bots: "Fill empty slots with AI players", Players: "See and moderate connected players", Console: "Run advanced game commands", Backups: "Protect your setup and saved world", Access: "Share management with your team", Maintenance: "Schedule configuration backups or empty-server restarts", Activity: "See who changed what" } as Record<string, string>)[name]}</span></button>)}</div></> : null}
+      {tab === "Overview" ? <><Overview server={server} control={control} loadedAt={loadedAt} /><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{tabs.filter((name) => name !== "Overview").map((name) => <button key={name} type="button" className="rounded-xl border border-border bg-card p-4 text-left hover:bg-secondary" onClick={() => chooseTab(name)}><strong className="block">{name}</strong><span className="text-sm text-muted-foreground">{({ Settings: "Name, visibility, and game rules", Files: "Saved worlds, downloads, and file history", Maps: "Starting map and rotation", Lobby: "Choose tracks and start a Re-Volt race", Bots: "Fill empty slots with AI players", Players: "See and moderate connected players", Console: "Run advanced game commands", Backups: "Protect your setup and saved world", Access: "Share management with your team", Maintenance: "Schedule configuration backups or empty-server restarts", Activity: "See who changed what" } as Record<string, string>)[name]}</span></button>)}</div></> : null}
       {tab === "Settings" || tab === "Bots" ? (
         <SettingsTab
           key={`${serverId}|${tab}`}
@@ -261,6 +263,7 @@ export function ServerControl({ serverId }: { serverId: string }) {
         />
       ) : null}
       {tab === "Maps" ? <MapsTab base={base} canChange={may("server:change_map")} run={run} /> : null}
+      {tab === "Lobby" ? <RvglLobby base={base} running={running} canControl={may("server:configure")} /> : null}
       {tab === "Players" ? <PlayersTab base={base} running={running} canKick={may("server:kick_players")} canBan={may("server:ban_players")} run={run} /> : null}
       {tab === "Console" ? <ConsoleTab base={base} running={running} rimworld={server.gameSlug === "rimworld" || server.gameSlug === "rimworld-together"} /> : null}
       {tab === "Logs" ? <ServerLogs key={base} base={base} /> : null}

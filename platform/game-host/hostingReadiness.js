@@ -57,8 +57,8 @@ export function hostingReadiness(key) {
   if (key==="battlefield-1942-anthology") { isolation="blocked"; reason="Local pinned static i386 candidate with private typed settings/map overlay and disabled legacy discovery implemented; engine direct-syscall compatibility, startup, controls, recovery and restore acceptance remain required."; }
   let contentReason="Plugin and Workshop installation remains disabled until this game's tenant boundary and its content source/compatibility/rollback path pass acceptance.";
   if (key === "re-volt-rvgl") {
-    isolation = "blocked";
-    reason = "Isolated root-managed lobby start, UDP bind, same-process agent-restart adoption, stop and migration rollback passed on the VPS. UID-aware lobby capture/navigation passed in staging; human Join and customer control acceptance remain unverified, so enrollment stays unavailable. RVGL has no world-data backup support.";
+    isolation = "operator_rollout";
+    reason = "Fresh private-UID provisioning, root-managed lobby start, live capture/navigation, same-process agent restart and stop passed on the VPS. Enrollment requires an explicit tier selection; human Join and a complete race remain unverified. RVGL has no world-data backup support or enforced lobby player cap.";
   }
   if (key === "core-keeper") {
     isolation = "blocked";

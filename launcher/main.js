@@ -13731,6 +13731,7 @@ async function overlayHostedServer() {
     gameTitle: `${match.name} · ${match.gameTitle || match.gameSlug}`,
     memberCount: typeof match.players === "number" ? match.players : null,
     hosted: true,
+    rvglLobby: match.gameSlug === "re-volt-rvgl",
   };
 }
 
@@ -13849,14 +13850,22 @@ ipcMain.handle("hosted-server-console", async (_event, target, command) => {
 });
 
 ipcMain.handle("get-rvgl-lobby", async (_event, partyId) => {
-  if (!/^[a-f0-9]{24}$/i.test(String(partyId || ""))) return { error: "Invalid party" };
-  try { return await launcherJson(`/api/parties/${partyId}/rvgl-lobby`); }
+  const id = String(partyId || "");
+  const path = /^hosted:[a-f0-9]{24}$/i.test(id)
+    ? `/api/hosting/servers/${id.slice(7)}/rvgl-lobby`
+    : /^[a-f0-9]{24}$/i.test(id) ? `/api/parties/${id}/rvgl-lobby` : null;
+  if (!path) return { error: "Invalid lobby target" };
+  try { return await launcherJson(path); }
   catch (err) { return { error: err.message }; }
 });
 
 ipcMain.handle("send-rvgl-lobby-input", async (_event, partyId, input) => {
-  if (!/^[a-f0-9]{24}$/i.test(String(partyId || ""))) return { error: "Invalid party" };
-  try { return await launcherJson(`/api/parties/${partyId}/rvgl-lobby`, { method: "POST", body: input }); }
+  const id = String(partyId || "");
+  const path = /^hosted:[a-f0-9]{24}$/i.test(id)
+    ? `/api/hosting/servers/${id.slice(7)}/rvgl-lobby`
+    : /^[a-f0-9]{24}$/i.test(id) ? `/api/parties/${id}/rvgl-lobby` : null;
+  if (!path) return { error: "Invalid lobby target" };
+  try { return await launcherJson(path, { method: "POST", body: input }); }
   catch (err) { return { error: err.message }; }
 });
 

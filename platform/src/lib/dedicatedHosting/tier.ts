@@ -31,7 +31,7 @@ export const BASIC_DEFAULTS = {
     { slots: 32, priceCents: 3999, order: 5 },
   ],
   // Launch catalog. OpenRA editions are added per edition profile in admin.
-  games: ["assaultcube", "bombsquad", "openra", "openttd", "xonotic", "hedgewars", "mindustry", "supertuxkart", "warzone-2100"]
+  games: ["assaultcube", "bombsquad", "openra", "openttd", "xonotic", "hedgewars", "mindustry", "supertuxkart", "warzone-2100", "re-volt-rvgl"]
     .map((slug) => ({ profileKey: `${slug}:base`, supportedRegions: ["us-central"] })),
 };
 

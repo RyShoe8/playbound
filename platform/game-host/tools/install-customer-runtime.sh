@@ -42,6 +42,8 @@ install -o root -g root -m 755 "$source_dir/customer-native-engine.py" /usr/loca
 python3 -m py_compile "$source_dir/customer-data-migration.py"
 python3 -m py_compile "$source_dir/customer-network-check.py"
 install -o root -g root -m 755 "$source_dir/customer-runtime.py" /usr/local/libexec/playbound-customer-runtime
+python3 -m py_compile "$source_dir/customer-fresh-rvgl.py"
+install -o root -g root -m 644 "$source_dir/customer-fresh-rvgl.py" /usr/local/libexec/playbound-customer-fresh-rvgl
 python3 -m py_compile "$source_dir/customer-rvgl-lobby.py"
 install -o root -g root -m 755 "$source_dir/customer-rvgl-lobby.py" /usr/local/libexec/playbound-customer-rvgl-lobby
 # Operator-only checkpoint preparation: intentionally absent from sudoers.

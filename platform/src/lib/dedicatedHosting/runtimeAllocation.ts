@@ -3,7 +3,7 @@ import { getTier } from "./tier";
 import { unitEnvelope } from "./resourceEnvelope";
 import type { CustomerResourceLimits } from "@/lib/gameHost/client";
 
-const SCOPED_RECIPES = new Set(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti"]);
+const SCOPED_RECIPES = new Set(["teeworlds", "bzflag", "hedgewars", "openttd", "luanti", "re-volt-rvgl"]);
 
 /** Use the same plan envelope inventory reserves, never customer-editable settings. */
 export async function customerRuntimeAllocation(server: { dedicatedSubscriptionId?: unknown; allocatedSlots: number }, recipe: string): Promise<CustomerResourceLimits | undefined> {

@@ -262,7 +262,9 @@ export async function launchRoom(server: {
   for (const [k, v] of Object.entries(server.settings || {})) {
     if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") settings[k] = v;
   }
-  settings.maxPlayers = server.allocatedSlots;
+  // RVGL's host client owns the lobby limit. The isolated runtime accepts no
+  // unverified settings; purchased slots still set its resource envelope.
+  if (recipeSlug !== "re-volt-rvgl") settings.maxPlayers = server.allocatedSlots;
   let resourceLimits;
   try { resourceLimits = await customerRuntimeAllocation(server, recipeSlug); }
   catch (error) { return { status: "failed" as const, error: error instanceof Error ? error.message : "Invalid resource allocation" }; }
@@ -274,6 +276,7 @@ export async function launchRoom(server: {
     name: server.name,
     settings,
     customerOwned: true,
+    ...(recipeSlug === "re-volt-rvgl" ? { identityProfile: "re-volt-rvgl-unix-v1" as const } : {}),
     ...(resourceLimits ? { resourceLimits } : {}),
   });
 }

@@ -160,6 +160,17 @@ test("Re-Volt leader sees the VPS host lobby in the existing Server tab", async 
   assert.ok(reads >= 1);
 });
 
+test("Re-Volt paid host sees the same lobby controls in the Server tab", async () => {
+  let reads = 0;
+  const overlay = await renderOverlay(
+    { party: { id: "hosted:0123456789abcdef01234567", gameSlug: "re-volt-rvgl", rvglLobby: true }, controls: null },
+    { supported: false, reason: "No declarative server settings" },
+    { getRvglLobby: async () => { reads += 1; return { image: "aGVsbG8=" }; } }
+  );
+  assert.match(overlay.root.innerHTML, /Control the PlayBound VPS lobby/);
+  assert.ok(reads >= 1);
+});
+
 test("Controls tab shows active control mapping for selected method when specialized controls is inactive", async () => {
   const overlay = await renderOverlay({
     party: null,

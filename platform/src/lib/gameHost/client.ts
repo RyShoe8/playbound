@@ -51,7 +51,7 @@ export type GameHostRoom = {
   resources?: { available: boolean; rssBytes?: number; cpuCores?: number | null; sampleIntervalMs?: number; scope?: string; collectedAt?: string };
   resourceScope?: string | null;
   resourceLimits?: CustomerResourceLimits | null;
-  identityProfile?: "teeworlds-unix-v1" | null;
+  identityProfile?: "teeworlds-unix-v1" | "re-volt-rvgl-unix-v1" | null;
   networkProfile?: "public-game-v1" | null;
   host: string;
   port: number;
@@ -146,7 +146,7 @@ export async function requestManagedHostRoom(opts: {
   customerOwned?: boolean;
   resourceLimits?: CustomerResourceLimits;
   /** Internal staged handoff; normal customer creation does not opt in. */
-  identityProfile?: "teeworlds-unix-v1";
+  identityProfile?: "teeworlds-unix-v1" | "re-volt-rvgl-unix-v1";
 }): Promise<ManagedHostStatus | { status: "failed"; error: string }> {
   try {
     const res = await hostFetch("/managed", { method: "POST", body: JSON.stringify(opts) });

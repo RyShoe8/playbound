@@ -3174,9 +3174,9 @@ server, catalog or database record changed. Evidence is saved at
 
 The world-backup endpoint rejected this game with “This game has no world-data
 backups”; the accepted rollback is the migration rollback, not a world snapshot.
-Player counts are accepted from live product verification. Human Join and
-customer control acceptance remain unverified for this isolated profile.
-Customer enrollment therefore remains blocked.
+Player counts are accepted from live product verification. At this stage,
+customer control acceptance remained unverified for this isolated profile and
+enrollment stayed blocked. The fresh rollout below supersedes that gate.
 
 The shared-display RVGL lobby route refuses an identity-owned room before
 reading its shared Xauthority file or sending input. Existing community rooms
@@ -3191,7 +3191,36 @@ accepted a bounded Tab navigation action and rejected a mismatched process
 identity. A staging agent restart kept both supervisor and game PIDs; stop and
 migration rollback removed the fixture account, scope and display. These are
 technical control tests, not a human customer's Join or end-to-end race start.
-Keep enrollment blocked until those interactive checks pass.
+At this stage, enrollment stayed blocked pending the fresh-server path below.
+
+### RVGL fresh paid-hosting rollout (2026-10-19)
+
+The owner waived a human Join release gate earlier in this plan. A new paid
+RVGL server now requests the fixed `re-volt-rvgl-unix-v1` identity, uses the
+subscription's resource envelope, and sends no unverified game settings to
+the root supervisor. The first root launch creates an empty private UID home
+only when neither private nor legacy data exists; any existing or partial tree
+fails closed for operator review. This does not migrate or overwrite a legacy
+server. The web management area has a Live Re-Volt lobby tab with a room-bound,
+permission-checked capture/navigation route, so its owner can set a track and
+start a race.
+
+The VPS fresh-start fixture passed as UID 40000 on UDP 2318. Its journal
+identified a fresh origin, the scoped lobby route captured a JPEG and accepted
+a navigation action, and staging-agent restart preserved the same supervisor
+and game processes. Managed stop and fixture cleanup removed its server data,
+display policy and test agent. This establishes operator rollout readiness;
+it does not claim a human Join or complete-race result, and it does not grant
+executable mod installation, world backups or an enforced RVGL lobby cap.
+
+Paid RVGL hosts also receive the same lobby controls in the launcher’s
+Ctrl+P Server tab when their game is running. The saved Basic tier is enrolled
+by a one-time, exact-key GitHub job: it first prints a dry run and then only
+appends `re-volt-rvgl:base` if the published catalog entry and Basic tier
+exist. An existing tier game entry is left untouched for admin review. Basic
+selections inherit into Pro and Extreme. This job does not edit prices or
+other game choices. Its result must be checked in the GitHub run and on the
+live hosting page before customer availability is claimed.
 
 ### ANEURISM public bundle publication (2026-10-19)
 
