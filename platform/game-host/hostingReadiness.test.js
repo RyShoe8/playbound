@@ -75,12 +75,13 @@ test("unimplemented legacy/display/special supervisors have explicit limitations
   assert.match(bombsquad.reason,/transport startup failed/);
 });
 
-test("Core Keeper handoff stays blocked pending full root lifecycle acceptance", () => {
+test("Core Keeper handoff stays blocked after isolated lifecycle acceptance", () => {
   const value = hostingReadiness("core-keeper");
   assert.equal(value.identityProfile, "core-keeper-unix-v1");
   assert.equal(value.isolation, "blocked");
   assert.equal(value.executableContentEnabled, false);
-  assert.match(value.reason, /agent-restart adoption/);
+  assert.match(value.reason, /Human Join/);
+  assert.match(value.reason, /occupied-server behavior/);
 });
 
 test("RVGL identity remains blocked pending lifecycle and query acceptance", () => {

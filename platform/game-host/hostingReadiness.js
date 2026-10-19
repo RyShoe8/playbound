@@ -15,7 +15,6 @@ const PENDING_BOUNDARIES = Object.freeze({
   "goldeneye-source": "The installed server uses Wine/Xvfb. A private Wine prefix, isolated display/Unix sockets and reviewed Windows engine boundary are not implemented; customer enrollment remains unavailable.",
   "deus-ex": "HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable.",
   "aneurism-iv": "The existing network namespace supervisor still launches under the shared service identity. A private UID/filesystem handoff that preserves Steam identity, credentials and saves is not implemented.",
-  "re-volt-rvgl": "The Xvfb/private-profile staging lobby starts, binds its port and stops cleanly. Root identity launch integration, player query, recovery and UID-aware lobby controls remain pending; customer enrollment remains unavailable.",
 });
 
 export function hostingReadiness(key) {
@@ -63,7 +62,7 @@ export function hostingReadiness(key) {
   }
   if (key === "core-keeper") {
     isolation = "blocked";
-    reason = "Xvfb/private-display staging passed. Typed agent/root identity handoff and fixed-alias snapshots are implemented; root-managed lifecycle, agent-restart adoption, saved-world restore and UID-aware controls still require acceptance. Customer enrollment remains unavailable.";
+    reason = "Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. Human Join, occupied-server behavior and UID-aware controls remain unverified; customer enrollment remains unavailable.";
   }
   if (key==="luanti") contentReason="Executable mods remain disabled: the pinned LuaJIT engine predates GHSA-g596-mf82-w8c3's fix. Engine mitigation/upgrade and content acceptance are required.";
   return {isolation,identityProfile:profile||null,reason,executableContentEnabled:false,contentReason};

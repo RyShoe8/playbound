@@ -3127,3 +3127,14 @@ edition even though both installations were ready. Recipe resolution now derives
 the edition-specific runtime before starting, and readiness requires the edition's
 own server files. The profile row itself is not bulk-rewritten.
 
+The repository check for commit `77c22018` passed. The installed ANEURISM
+namespace helper was one revision behind the reviewed source: its credential
+reader lacked the newer nonblocking, single-link and changed-file checks. Its
+previous binary and sudo rule were backed up under
+`/opt/playbound-host/rollback/aniv-20261019`; all ten Linux helper tests passed
+against the staged source before the scoped installer replaced the helper and
+validated its sudo rule. The game-host service stayed active without a restart.
+No customer room, catalog or database record was changed. Core Keeper admin
+readiness now records the accepted isolated lifecycle while remaining blocked
+pending human Join, occupied-load behavior and UID-aware controls.
+
