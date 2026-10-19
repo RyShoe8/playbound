@@ -23,6 +23,16 @@ export function isSameProcess(pid, identity) {
   return Boolean(identity && processIdentity(pid) === identity);
 }
 
+export function missingManagedRuntimeReason(savedIdentity, currentIdentity) {
+  const boot = (identity) => typeof identity === "string" && /^[0-9a-f-]{36}:[0-9]+$/.test(identity)
+    ? identity.slice(0, 36) : null;
+  const savedBoot = boot(savedIdentity);
+  const currentBoot = boot(currentIdentity);
+  return savedBoot && currentBoot && savedBoot !== currentBoot
+    ? "Managed runtime is unavailable after the VPS reboot"
+    : "Managed runtime was no longer running when the game-host agent restarted";
+}
+
 /** A recovered managed room has no ChildProcess exit event to clear it. */
 export function recoveredManagedRoomExited(room, sameProcess = isSameProcess) {
   return Boolean(room.communityServerId && !room.child && !sameProcess(room.pid, room.processIdentity));

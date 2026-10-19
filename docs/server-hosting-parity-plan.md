@@ -3138,3 +3138,9 @@ No customer room, catalog or database record was changed. Core Keeper admin
 readiness now records the accepted isolated lifecycle while remaining blocked
 pending human Join, occupied-load behavior and UID-aware controls.
 
+Recovery now compares the saved process's Linux boot identity with the current
+boot. A missing runtime from an earlier boot is reported as unavailable after a
+VPS reboot; a missing runtime from the current boot retains the agent-restart
+message. This changes the diagnosis shown in ops, not the conservative failed
+job state or automatic reconcile behavior.
+

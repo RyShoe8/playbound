@@ -41,7 +41,7 @@ import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
 import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
-import { createManagedRegistry, createManagedJobs, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
+import { createManagedRegistry, createManagedJobs, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited, missingManagedRuntimeReason } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound, startupReadyTimeout } from "./portReadiness.js";
 import { queryRoomOccupancy } from "./playerQueries.js";
@@ -832,7 +832,7 @@ async function recoverManagedRooms() {
     const failure = Boolean(saved.identityProfile) && !(await identityRuntimeHealthy({ ...saved, processIdentity: saved.identity }))
       ? "Customer identity runtime could not be verified after agent restart"
       : !isSameProcess(saved.pid, saved.identity)
-      ? "Managed runtime was no longer running when the game-host agent restarted"
+      ? missingManagedRuntimeReason(saved.identity, processIdentity(process.pid))
       // The verified supervisor owns a namespace, not a host game port.
       // Preserve it during startup or temporary Steam outages as well.
       : saved.gameSlug === "aneurism-iv" ? null

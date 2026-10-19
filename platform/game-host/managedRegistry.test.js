@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createManagedRegistry, createManagedJobs, isSameProcess, processIdentity, rehydrateManagedRoom, recoveredManagedRoomExited } from "./managedRegistry.js";
+import { createManagedRegistry, createManagedJobs, isSameProcess, processIdentity, rehydrateManagedRoom, recoveredManagedRoomExited, missingManagedRuntimeReason } from "./managedRegistry.js";
 
 test("stop and failure evidence survives restart without saving room credentials", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-jobs-"));
@@ -52,6 +52,14 @@ test("recovery requires the same Linux process, not just a reused PID", () => {
   assert.ok(identity);
   assert.equal(isSameProcess(process.pid, identity), true);
   assert.equal(isSameProcess(process.pid, "wrong:1"), false);
+});
+
+test("missing runtime reports a VPS reboot separately from an agent restart", () => {
+  const first = "11111111-1111-1111-1111-111111111111:123";
+  const second = "22222222-2222-2222-2222-222222222222:456";
+  assert.match(missingManagedRuntimeReason(first, second), /VPS reboot/);
+  assert.match(missingManagedRuntimeReason(first, first), /agent restarted/);
+  assert.match(missingManagedRuntimeReason("invalid", second), /agent restarted/);
 });
 
 test("a recovered room retains process identity for safe stop", () => {
