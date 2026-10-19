@@ -3144,3 +3144,28 @@ VPS reboot; a missing runtime from the current boot retains the agent-restart
 message. This changes the diagnosis shown in ops, not the conservative failed
 job state or automatic reconcile behavior.
 
+### RVGL isolated handoff acceptance (2026-10-19)
+
+The installed RVGL assets matched all 2,549 reviewed file hashes. The source
+extraction had 2,486 distinct pinned files with unsafe group-write bits, so the
+publisher correctly refused it. Their original modes were recorded in the
+private staging directory; only those pinned static files had group/other write
+bits removed. The strict root publisher then created the immutable
+`playbound-isolated-rvgl-data-v1` bundle (272,275,563 bytes) and reported zero
+changed processes.
+
+A separate staging agent on loopback and a fixture identity started the actual
+RVGL engine through the root-managed private display/UID path. It bound UDP
+2318 as UID 40000. Repeating start preserved the supervisor; restarting the
+staging agent preserved both supervisor and game PIDs and process metrics.
+Managed stop closed the port. The fixture migration rollback preserved its
+before/after private-data markers and removed the staging runtime, agent and
+AppArmor label. The production game-host service stayed active, and no customer
+server, catalog or database record changed. Evidence is saved at
+`/var/lib/playbound-host/state/native-identity-acceptance/re-volt-rvgl.json`.
+
+The world-backup endpoint rejected this game with “This game has no world-data
+backups”; the accepted rollback is the migration rollback, not a world snapshot.
+Player occupancy, UID-aware lobby settings/controls and human Join are still
+unverified. Customer enrollment therefore remains blocked.
+
