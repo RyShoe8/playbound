@@ -8,6 +8,7 @@
  * two lists identical.
  */
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import { worldBackupOnHost, type WorldBackupInfo } from "@/lib/gameHost/client";
 import { authorizeServer, recordActivity, type Fail } from "./access";
 import { retentionFor } from "./backups";
@@ -27,9 +28,9 @@ export function hasWorldBackups(recipeSlug: string): boolean {
   return (WORLD_BACKUP_GAMES as readonly string[]).includes(recipeSlug);
 }
 
-async function recipeFor(server: { profileKey: string; gameSlug: string }): Promise<string> {
+async function recipeFor(server: { profileKey: string; gameSlug: string; editionSlug?: string | null }): Promise<string> {
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
-  return profile?.recipeSlug || server.gameSlug;
+  return profileRecipeSlug({ gameSlug: server.gameSlug, editionSlug: server.editionSlug, recipeSlug: profile?.recipeSlug });
 }
 
 /** A server that is running, starting, or wanted running must not have its world swapped underneath it. */

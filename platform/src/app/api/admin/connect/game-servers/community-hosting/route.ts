@@ -10,6 +10,7 @@ import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms } from 
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import { communityRuntimeReservation, getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
 import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
 import { managedQueryKind, queryManagedOccupancy, type ManagedOccupancy } from "@/lib/communityHosting/playerQuery";
@@ -38,7 +39,7 @@ export async function GET() {
   ]);
   const asOf = new Date();
   const population = await populationPeriods(config?.node?.regionKey || "us-central", asOf);
-  const profileByKey = new Map(profiles.map((profile) => [profile.key, profile]));
+  const profileByKey = new Map(profiles.map((profile) => [profile.key, { ...profile, recipeSlug: profileRecipeSlug(profile) }]));
   const serverById = new Map(servers.map((server) => [String(server._id), server]));
   const liveCounts = new Map<string, ManagedOccupancy | null>();
   if (agent.ok) {
@@ -116,7 +117,7 @@ export async function GET() {
   const editionNames = Object.fromEntries([...allEditionsMap.values()].map((e) => [`${e.gameSlug}:${e.slug}`, e.name]));
 
   // Index existing profiles by unique key
-  const existingByKey = new Map(profiles.map((p) => [p.key, p]));
+  const existingByKey = profileByKey;
   const finalProfilesMap = new Map<string, unknown>();
 
   for (const slug of gameSlugs) {

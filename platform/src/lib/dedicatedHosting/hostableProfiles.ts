@@ -46,6 +46,7 @@ export function readyPublishedHostableCatalog(
   const allowed = new Set(eligibleGames.map((game) => game.slug));
   const storedKeys = new Set(stored.map((profile) => profile.key));
   const eligibleEditions = editions.filter((edition) => allowed.has(edition.gameSlug) &&
+    readySlugs.has(getPartyHostableGame(edition.gameSlug, edition.slug)?.slug || edition.gameSlug) &&
     (edition.gameSlug !== "deus-ex-goty-edition" || Boolean(getPartyHostableGame(edition.gameSlug, edition.slug))) &&
     !edition.isDefault && edition.slug !== "official" && edition.slug !== "base" &&
     (edition.features?.includes("Dedicated Servers") || storedKeys.has(`${edition.gameSlug}:${edition.slug}`) || (edition.gameSlug === "rimworld" && edition.slug === "rimworld-together") || (edition.gameSlug === "deus-ex-goty-edition" && edition.slug === "playbound-hx-coop")));

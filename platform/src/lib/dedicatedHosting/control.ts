@@ -11,6 +11,7 @@
  */
 import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import { createManagedVpsAdapter } from "@/lib/serverControl/managedVps";
 import { consoleCommandProblem, kickCommand } from "@/lib/serverControl/rcon";
 import { getServerSettingProfile, type ServerSettingValues } from "@/lib/serverControl/settings";
@@ -37,21 +38,22 @@ async function adapterFor(server: {
   name: string; allocatedSlots: number; dedicatedSubscriptionId?: unknown; settings?: Record<string, unknown> | null;
 }) {
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
+  const recipeSlug = profileRecipeSlug({ gameSlug: server.gameSlug, editionSlug: server.editionSlug, recipeSlug: profile?.recipeSlug });
   const saved = stripLocked(server, server.settings || {}) as ServerSettingValues;
   return { ...createManagedVpsAdapter({
     id: String(server._id),
     gameSlug: server.gameSlug,
-    recipeSlug: profile?.recipeSlug || server.gameSlug,
+    recipeSlug,
     editionSlug: server.editionSlug || null,
     mod: server.mod || null,
     name: server.name,
     customerOwned: true,
-    resourceLimits: () => customerRuntimeAllocation(server, profile?.recipeSlug || server.gameSlug),
+    resourceLimits: () => customerRuntimeAllocation(server, recipeSlug),
     settings: { ...saved, maxPlayers: server.allocatedSlots },
     onChanged: async (values) => {
       await CommunityServer.updateOne({ _id: server._id }, { $set: { settings: stripLocked(server, values) } });
     },
-  }), files: hasWorldBackups(profile?.recipeSlug || server.gameSlug) };
+  }), files: hasWorldBackups(recipeSlug) };
 }
 
 /** Everything the Server Control page renders, for the caller's role. */

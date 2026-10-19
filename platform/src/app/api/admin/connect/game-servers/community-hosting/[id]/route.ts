@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import { createManagedVpsAdapter } from "@/lib/serverControl/managedVps";
 
 type Context = { params: Promise<{ id: string }> };
@@ -24,7 +25,7 @@ export async function POST(req: Request, context: Context) {
     return NextResponse.json({ error: "Player count is unknown or players are connected; explicit force is required" }, { status: 409 });
   }
   const adapter = createManagedVpsAdapter({
-    id, gameSlug: server.gameSlug, recipeSlug: profile.recipeSlug,
+    id, gameSlug: server.gameSlug, recipeSlug: profileRecipeSlug(profile),
     editionSlug: server.editionSlug || null, mod: server.mod || null,
     name: server.name, settings: server.settings || {},
     onChanged: async (values) => { await CommunityServer.updateOne({ _id: id }, { $set: { settings: values } }); },

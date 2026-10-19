@@ -12,6 +12,7 @@
 import dbConnect from "@/lib/db";
 import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import DedicatedCapacityHold from "@/lib/models/DedicatedCapacityHold";
 import { listManagedHostRooms, sendRoomCommand, stopManagedHostRoom } from "@/lib/gameHost/client";
@@ -106,7 +107,7 @@ export async function reconcileDedicatedServers(now = new Date()) {
 
     if (room) {
       const profile = profileByKey.get(server.profileKey);
-      const capEnforced = slotCapEnforced(profile?.recipeSlug || server.gameSlug);
+      const capEnforced = slotCapEnforced(profileRecipeSlug({ gameSlug: server.gameSlug, editionSlug: server.editionSlug, recipeSlug: profile?.recipeSlug }));
       const queryKind = managedQueryKind(server.gameSlug, profile);
       const occupancy = queryKind
         ? await queryManagedOccupancy({ queryKind, host: room.host, port: room.port, communityServerId: id }).catch(() => null)

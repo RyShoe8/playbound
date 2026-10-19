@@ -11,6 +11,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms, requestManagedHostRoom, stopManagedHostRoom } from "@/lib/gameHost/client";
 import { readyPublishedHostableCatalog } from "@/lib/dedicatedHosting/hostableProfiles";
+import { profileRecipeSlug } from "./profileRecipe";
 import { canRetireEmptyServer, canScaleDownEmptyServer, paidScaleDownRank, placementDecision, runningReservationEnvelope, type ResourceEnvelope } from "./capacity";
 import { managedQueryKind, QUERY_BY_GAME, queryManagedOccupancy, expectedRegistryMod } from "./playerQuery";
 import { recordResourceSample } from "./samples";
@@ -345,7 +346,8 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
     const eligible = readyPublishedHostableCatalog(catalogGames, catalogEditions, rawProfiles, readySlugs);
     const eligibleKeys = new Set([...eligible.games.map((game) => `${game.slug}:base`),
       ...eligible.editions.map((edition) => `${edition.gameSlug}:${edition.slug}`)]);
-    const profiles = rawProfiles.filter((profile) => eligibleKeys.has(profile.key));
+    const profiles = rawProfiles.filter((profile) => eligibleKeys.has(profile.key))
+      .map((profile) => ({ ...profile, recipeSlug: profileRecipeSlug(profile) }));
     const profileByKey = new Map(profiles.map((p) => [p.key, p]));
     await syncReservations(now, config.node.regionKey, profiles);
     const active = await CommunityServer.find({

@@ -3095,3 +3095,35 @@ session. Fixture state was left in place for the repeat: fixture server
 remove everything. Core Keeper acceptance, RVGL acceptance and the three remaining root
 families are still pending.
 
+### Core Keeper isolated handoff acceptance (2026-10-19)
+
+The separate resource-placement installer refreshed only
+`playbound-customer-resources` and its fixed sudo rule from the reviewed source;
+the previous helper and rule were saved under
+`/opt/playbound-host/rollback/resources-20261019`. The production agent was not
+restarted and remained active. With the existing staging identity, Core Keeper
+started in its root-managed scope as UID 40000, bound the fixture port and answered
+the native query with zero humans, four slots and zero bots. Repeated start was
+idempotent. A staging-agent restart retained both the same supervisor and game
+PIDs, player query and process metrics. External stop acknowledged a fully stopped
+runtime. A live world snapshot was correctly rejected; after stop, a snapshot
+succeeded. Restoring it removed a later fixture marker, and the actual engine
+started again from restored data and answered the same query. Another staging-agent
+restart preserved the restarted engine PID. `ck-finish.py` rolled the fixture data
+back and removed the staging agent, private runtime, fixture data and AppArmor
+label. The production agent stayed active throughout; no customer server, catalog
+or database record was changed. Evidence is saved at
+`/var/lib/playbound-host/state/native-identity-acceptance/core-keeper.json`.
+This accepts the isolated Core Keeper start/recovery/stop/snapshot path, not a
+human client Join, occupied-load behavior or general customer enrollment.
+
+The simultaneous `Managed runtime was no longer running when the game-host agent
+restarted` reports on October 18 were caused by a full VPS reboot. The previous
+boot ended at 00:03:40 CEST on October 19 and the new boot began at 00:26:33;
+all ten reported processes belonged to the prior boot. They are not evidence that
+an ordinary agent restart killed those games. The separate Open Fortress failure
+was a stale community profile selecting the TF2 recipe for the Open Fortress
+edition even though both installations were ready. Recipe resolution now derives
+the edition-specific runtime before starting, and readiness requires the edition's
+own server files. The profile row itself is not bulk-rewritten.
+

@@ -12,6 +12,7 @@ import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import CommunityServer from "@/lib/models/CommunityServer";
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import DedicatedSubscription from "@/lib/models/DedicatedSubscription";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
@@ -96,7 +97,7 @@ export async function offeredGames(tier: HostingTier, regionKey: string, purchas
       gameTitle: gameNames.get(slug) || getHostableGame(slug)?.title || slug.replace(/-/g, " "),
       editionTitle: editionNames.get(`${slug}:${profile?.editionSlug ?? edition}`) || (edition === "base" ? null : edition?.replace(/-/g, " ")),
       editionSlug: profile?.editionSlug ?? (edition === "base" ? null : edition),
-      capEnforced: slotCapEnforced(profile?.recipeSlug || slug),
+      capEnforced: slotCapEnforced(profileRecipeSlug({ gameSlug: slug, editionSlug: profile?.editionSlug ?? (edition === "base" ? null : edition), recipeSlug: profile?.recipeSlug })),
       sizes: allowedSlotSizes(tier, g, purchasedSlots, gameCaps.get(slug)).filter(n => n >= 2),
       blocked: profile?.verification === "blocked",
     };
@@ -256,17 +257,18 @@ export async function launchRoom(server: {
     return { status: "failed" as const, error: `This game supports at most ${catalogGame.maxPlayers} players. Stop this server and reduce its slots.` };
   }
   const profile = await CommunityServerProfile.findOne({ key: server.profileKey }).select({ recipeSlug: 1 }).lean();
+  const recipeSlug = profileRecipeSlug({ gameSlug: server.gameSlug, editionSlug: server.editionSlug, recipeSlug: profile?.recipeSlug });
   const settings: Record<string, string | number | boolean> = {};
   for (const [k, v] of Object.entries(server.settings || {})) {
     if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") settings[k] = v;
   }
   settings.maxPlayers = server.allocatedSlots;
   let resourceLimits;
-  try { resourceLimits = await customerRuntimeAllocation(server, profile?.recipeSlug || server.gameSlug); }
+  try { resourceLimits = await customerRuntimeAllocation(server, recipeSlug); }
   catch (error) { return { status: "failed" as const, error: error instanceof Error ? error.message : "Invalid resource allocation" }; }
   return requestManagedHostRoom({
     communityServerId: String(server._id),
-    gameSlug: profile?.recipeSlug || server.gameSlug,
+    gameSlug: recipeSlug,
     editionSlug: server.editionSlug || null,
     mod: server.mod || null,
     name: server.name,

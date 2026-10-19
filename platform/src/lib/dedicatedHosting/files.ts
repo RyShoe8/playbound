@@ -1,4 +1,5 @@
 import CommunityServerProfile from "@/lib/models/CommunityServerProfile";
+import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import { filesOnHost } from "@/lib/gameHost/client";
 import { authorizeServer, recordActivity, type Fail } from "./access";
 import { hasWorldBackups, isStoppedForRestore } from "./worldBackups";
@@ -12,7 +13,7 @@ export async function manageFiles(userId: string, serverId: string, input: unkno
   if ("error" in auth) return auth;
   if (write && body.action !== "upload-cancel" && !isStoppedForRestore(auth.server)) return { error: "Stop the server before changing its files.", status: 409 } satisfies Fail;
   const profile = await CommunityServerProfile.findOne({ key: auth.server.profileKey }).select({ recipeSlug: 1 }).lean();
-  const recipe = profile?.recipeSlug || auth.server.gameSlug;
+  const recipe = profileRecipeSlug({ gameSlug: auth.server.gameSlug, editionSlug: auth.server.editionSlug, recipeSlug: profile?.recipeSlug });
   if (!hasWorldBackups(recipe)) return { error: "This game has no isolated saved-data folder.", status: 400 } satisfies Fail;
   const path = typeof body.path === "string" ? body.path : "";
   if (path.length > 500 || (body.contentBase64 != null && (typeof body.contentBase64 !== "string" || body.contentBase64.length > 4 * 1024 ** 2))) return { error: "File request is too large. Send large saves in chunks.", status: 400 } satisfies Fail;

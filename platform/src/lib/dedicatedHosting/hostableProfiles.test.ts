@@ -98,4 +98,12 @@ describe("ready published hosting catalog", () => {
     expect(result.games.map((game) => game.slug)).toEqual(["openra"]);
     expect(result.editions.map((edition) => edition.slug)).toEqual(["combined-arms"]);
   });
+
+  it("does not enroll Open Fortress solely because TF2's different server is ready", () => {
+    const games = [{ slug: "team-fortress-2", title: "Team Fortress 2", status: "published" }];
+    const editions = [{ gameSlug: "team-fortress-2", slug: "open-fortress", features: ["Dedicated Servers"] }];
+    const stored = [{ key: "team-fortress-2:open-fortress", gameSlug: "team-fortress-2", editionSlug: "open-fortress" }];
+    expect(readyPublishedHostableCatalog(games, editions, stored, new Set(["team-fortress-2"])).editions).toEqual([]);
+    expect(readyPublishedHostableCatalog(games, editions, stored, new Set(["team-fortress-2", "open-fortress"])).editions).toEqual(editions);
+  });
 });
