@@ -16,8 +16,8 @@ DENIED = (
 )
 
 
-def sealed_filter(legacy_x86=False, private_display=False):
-    if type(private_display) is not bool:
+def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False):
+    if type(private_display) is not bool or type(seqpacket_pairs) is not bool or (seqpacket_pairs and (private_display or legacy_x86)):
         raise ValueError('Invalid private display policy')
     if private_display:
         uid = os.getuid()
@@ -85,7 +85,7 @@ def sealed_filter(legacy_x86=False, private_display=False):
         if pair < 0 or library.seccomp_rule_add_array(context,0x00050000|errno.EPERM,pair,1,ctypes.byref(non_unix)) != 0:
             raise ValueError('Private stream IPC boundary is unavailable')
         for kind in range(16):
-            if kind == 1 or (private_display and kind == 2): continue  # streams; guarded same-label datagram pairs
+            if kind == 1 or (private_display and kind == 2) or (seqpacket_pairs and kind == 5): continue  # streams; guarded same-label datagram pairs; anonymous connected seqpacket pairs for the NaCl loader
             arguments=(Argument*2)(family,Argument(arg=1,op=7,a=15,b=kind))  # MASKED_EQ
             if library.seccomp_rule_add_array(context,0x00050000|errno.EPERM,pair,2,arguments) != 0:
                 raise ValueError('Private stream IPC type boundary is unavailable')

@@ -13,6 +13,8 @@ class ContractTests(unittest.TestCase):
         args=m.arguments(m.settings(json.dumps(value),1222),1222)
         self.assertEqual(args[0],'/game-data/Robust.Server')
         self.assertIn('status.bind=*:1222',args)
+        self.assertIn('net.port=1222',args)
+        self.assertNotIn('--port',args)
         self.assertIn('/server/data',args)
         self.assertIn('/server/server_config.toml',args)
         self.assertIn('hub.advertise=false',args)

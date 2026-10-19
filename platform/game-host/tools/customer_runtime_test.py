@@ -321,13 +321,18 @@ class RuntimeBoundaries(unittest.TestCase):
         value={'name':'Fixture','maxPlayers':8}
         with patch.object(module,'trusted_module',return_value=contract):
             self.assertEqual(json.loads(module.config_bytes(json.dumps(value),27220)),{'configuration':value,'port':27220})
-        command=module.command(Path('/fixture/data'),7,27220,2048,None,value,asset_directory=9)
+        with patch.object(module.os,'listdir',return_value=['DedicatedServer','Content','BarotraumaCore.dll','linux64']):command=module.command(Path('/fixture/data'),7,27220,2048,None,value,asset_directory=9)
+        index=command.index(str(Path('/fixture/data/runtime')));self.assertEqual(command[index-1:index+2],['--bind',str(Path('/fixture/data/runtime')),'/game-data'])
+        self.assertIn('/game-data/linux64',command)
         self.assertEqual(command[-3:],['/usr/bin/python3','-I','/barotrauma-bootstrap.py'])
         self.assertIn('/proc/self/fd/9/Content',command)
-        self.assertIn('/server/runtime/Content',command)
+        self.assertIn('/game-data/Content',command)
         self.assertIn('/server/.steam/sdk64/steamclient.so',command)
         self.assertEqual(command[command.index('--chdir')+1],'/server/runtime')
         self.assertNotIn('/opt/playbound-host/games/barotrauma',command)
+        self.assertEqual(command[command.index('DOTNET_GCHeapHardLimit')+1],'20000000')
+        self.assertEqual(command[command.index('DOTNET_GCRegionRange')+1],'40000000')
+        self.assertEqual(command[command.index('/usr/bin/prlimit')+1],'--as='+str(4*1024**3))
         with self.assertRaises(ValueError):module.request(['run-native',ID,'42',IDENTITY,'barotrauma','27221','750','1024'])
 
     def test_veloren_namespace_keeps_assets_and_userdata_separate(self):
@@ -755,7 +760,7 @@ class RuntimeBoundaries(unittest.TestCase):
             resources = SimpleNamespace(verify_caller=Mock())
             child = Mock(pid=52, returncode=0)
             child.poll.return_value = 0
-            with patch.object(module, 'migration_network_profile', return_value=None), patch.object(module, 'journal_game', return_value='teeworlds'), patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine_for=Mock(return_value=(None, "/usr/games/teeworlds-server")), sealed_filter=Mock(side_effect=lambda:os.memfd_create("filter-fixture",os.MFD_CLOEXEC)), quiescent=Mock(), install=Mock(), remove=Mock(), apply_current=Mock(return_value={"8":[1],"9":[2]}))), patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
+            with patch.object(module, 'migration_network_profile', return_value=None), patch.object(module, 'journal_game', return_value='teeworlds'), patch.object(module, 'trusted_module', return_value=SimpleNamespace(sealed_engine_for=Mock(return_value=(None, "/usr/games/teeworlds-server")), sealed_filter=Mock(side_effect=lambda **kwargs:os.memfd_create("filter-fixture",os.MFD_CLOEXEC)), quiescent=Mock(), install=Mock(), remove=Mock(), apply_current=Mock(return_value={"8":[1],"9":[2]}))), patch.object(module, 'migration_ready', return_value=True), patch.object(module, 'verify_scope', return_value=Path('/fixture.scope')), patch.object(module, 'verify_supervisor_scope'), patch.object(module, 'workspace', return_value=root), patch.object(module.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1001)), patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100755, st_uid=0)), patch.object(module.subprocess, 'Popen', return_value=child) as spawn, patch.object(module, 'binding_write') as binding, patch.object(module, 'game_identity', return_value=IDENTITY):
                 self.assertEqual(module.run_runtime(identities, resources, ID, 42, IDENTITY, (8322, 750, 1536), CONFIG), 0)
                 options = spawn.call_args.kwargs
                 self.assertEqual((options['user'], options['group'], options['extra_groups']), (40000, 40000, []))

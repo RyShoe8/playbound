@@ -98,6 +98,8 @@ def walk(source_fd, owner, destination=None, depth=0, prefix='', budget=None):
             raise ValueError('Too many data entries')
         relative = prefix + name
         info = os.stat(name, dir_fd=source_fd, follow_symlinks=False)
+        if GAME == 'rimworld-together' and relative == 'playbound-console.fifo' and stat.S_ISFIFO(info.st_mode) and info.st_uid == owner:
+            continue  # transient console pipe; the bootstrap recreates it on every start
         target = fixed_runtime_link(relative, source_fd, name, info, owner)
         if target is not None:
             if destination is not None:

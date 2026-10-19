@@ -129,24 +129,27 @@ class PublicationTests(unittest.TestCase):
 
     def test_necesse_pins_server_java_and_libraries_but_excludes_customer_data(self):
         rows=[]
-        for name in ('Server.jar','jre/bin/java','jre/lib/modules','lib/dependency.jar'):
+        for name in ('Server.jar','jre/bin/java','jre/lib/modules','jre/conf/security/java.security','lib/dependency.jar'):
             file=self.source/name;file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(self.data)
             rows.append({'path':name,'bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()})
         module.promote(self.source,self.destination,{'files':rows},game='necesse')
         self.assertEqual((self.destination/'jre/bin/java').stat().st_mode&0o777,0o555)
         self.assertEqual((self.destination/'Server.jar').stat().st_mode&0o777,0o444)
-        for name in ('saves/world.zip','mods/plugin.jar','jre/bin/other','lib/../escape.jar'):
+        # The JVM cannot initialise without its pinned security configuration.
+        self.assertEqual((self.destination/'jre/conf/security/java.security').stat().st_mode&0o777,0o444)
+        for name in ('saves/world.zip','mods/plugin.jar','jre/bin/other','jre/confx/evil','lib/../escape.jar'):
             with self.assertRaises(ValueError):module.promote(self.source,self.root/'bad',{'files':[dict(rows[0],path=name)]},game='necesse')
 
     def test_triplea_bundle_never_admits_maps_or_other_java_versions(self):
         rows=[]
-        for name in ('jre/temurin-25/bin/java','jre/temurin-25/lib/jspawnhelper','jre/temurin-25/lib/modules','games/triplea/bin/game-headless.jar'):
+        for name in ('jre/temurin-25/bin/java','jre/temurin-25/lib/jspawnhelper','jre/temurin-25/lib/modules','jre/temurin-25/conf/security/java.security','games/triplea/bin/game-headless.jar'):
             file=self.source/name;file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(self.data)
             rows.append({'path':name,'bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()})
         module.promote(self.source,self.destination,{'files':rows},game='triplea')
         self.assertEqual((self.destination/'jre/temurin-25/bin/java').stat().st_mode&0o777,0o555)
         self.assertEqual((self.destination/'games/triplea/bin/game-headless.jar').stat().st_mode&0o777,0o444)
-        for name in ('jre/temurin-21/bin/java','games/triplea/downloadedMaps/custom.zip','games/triplea/bin/../../escape.jar'):
+        self.assertEqual((self.destination/'jre/temurin-25/conf/security/java.security').stat().st_mode&0o777,0o444)
+        for name in ('jre/temurin-21/bin/java','jre/temurin-25/confx/evil','games/triplea/downloadedMaps/custom.zip','games/triplea/bin/../../escape.jar'):
             with self.assertRaises(ValueError):module.promote(self.source,self.root/'bad',{'files':[dict(rows[0],path=name)]},game='triplea')
 
     def test_dotnet_publications_keep_configs_private_and_only_engines_executable(self):

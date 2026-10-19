@@ -121,6 +121,34 @@ print('kernel-filter-passed')
                                 timeout=10, check=True)
         self.assertEqual(result.stdout.strip(), 'kernel-filter-passed')
 
+    def test_seqpacket_pairs_are_opt_in_and_limited_to_anonymous_pairs_in_real_kernel(self):
+        for kwargs in ({'private_display':True},{'legacy_x86':True}):
+            with self.assertRaises(ValueError):module.sealed_filter(seqpacket_pairs=True,**kwargs)
+        with self.assertRaises(ValueError):module.sealed_filter(seqpacket_pairs=1)
+        descriptor = module.sealed_filter(seqpacket_pairs=True)
+        self.addCleanup(os.close, descriptor)
+        code = '''import ctypes, errno, os, socket, sys
+raw=os.read(int(sys.argv[1]),32768)
+class Instruction(ctypes.Structure):
+ _fields_=[('code',ctypes.c_ushort),('jt',ctypes.c_ubyte),('jf',ctypes.c_ubyte),('k',ctypes.c_uint)]
+class Program(ctypes.Structure):
+ _fields_=[('length',ctypes.c_ushort),('filter',ctypes.POINTER(Instruction))]
+instructions=(Instruction*(len(raw)//8)).from_buffer_copy(raw)
+program=Program(len(instructions),instructions)
+libc=ctypes.CDLL(None,use_errno=True)
+assert libc.prctl(38,1,0,0,0)==0
+assert libc.syscall(317,1,0,ctypes.byref(program))==0
+left,right=socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)
+left.send(b'loader');assert right.recv(32)==b'loader'
+for call in (lambda: socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET),lambda: socket.socketpair(socket.AF_UNIX,socket.SOCK_DGRAM)):
+ try: call()
+ except OSError as error: assert error.errno==errno.EPERM
+ else: raise AssertionError('unreviewed Unix socket was allowed')
+print('seqpacket-filter-passed')
+'''
+        result = subprocess.run(['/usr/bin/python3', '-I', '-c', code, str(descriptor)], pass_fds=(descriptor,), capture_output=True, text=True, timeout=10, check=True)
+        self.assertEqual(result.stdout.strip(), 'seqpacket-filter-passed')
+
     def test_filter_is_bounded_sealed_and_cannot_be_modified(self):
         descriptor = module.sealed_filter()
         try:
@@ -187,7 +215,7 @@ print(json.dumps({'filterApplied':True,'dangerousCallsDenied':True,'privateWrite
                 descriptor = module.sealed_filter()
                 try:
                     command = runtime.command(data, config, runtime.NATIVE_GAMES[game][1], 1024,
-                                              native_settings={'maxPlayers':4,'scoreLimit':3,'name':'Private fixture','mode':3,'difficulty':1,'skill':3,'map':'random/mainland'}, seccomp_fd=descriptor,
+                                              native_settings={'maxPlayers':4,'scoreLimit':3,'name':'Private fixture','mode':3,'difficulty':1,'skill':3,'botFill':0,'map':'random/mainland'}, seccomp_fd=descriptor,
                                               assets=[(config,'/game-data/packages/maps/official/fixture.cgz')] if game=='assaultcube' else [(config,'/game-data/game.so')] if game=='medal-of-honor-allied-assault' else [(config,'/game-data/zandronum.pk3')] if game=='freedoom' else ())
                     delimiter = len(command) - 1 - command[::-1].index('--')
                     result = subprocess.run([*command[:delimiter+1], '/usr/bin/python3', '-I', '-c', code],

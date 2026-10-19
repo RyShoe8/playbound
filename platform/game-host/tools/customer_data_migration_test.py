@@ -107,6 +107,27 @@ class DataCheckpoint(unittest.TestCase):
             self.scan()
         self.assertEqual(outside.read_text(), 'must not copy')
 
+    def test_rimworld_console_pipe_is_transient_and_other_games_still_reject_it(self):
+        pipe = self.source / 'playbound-console.fifo'
+        os.mkfifo(pipe, 0o600)
+        (self.source / 'Assets').mkdir(mode=0o700)
+        with self.assertRaises(ValueError):
+            self.scan()
+        previous = module.GAME
+        module.select_game('rimworld-together')
+        try:
+            destination = self.base / 'copy'
+            destination.mkdir(mode=0o700)
+            self.scan(destination)
+            self.assertFalse((destination / 'playbound-console.fifo').exists())
+            self.assertTrue((destination / 'Assets').is_dir())
+            nested = self.source / 'Assets' / 'playbound-console.fifo'
+            os.mkfifo(nested, 0o600)
+            with self.assertRaises(ValueError):
+                self.scan()
+        finally:
+            module.select_game(previous)
+
     def test_intermediate_directory_symlinks_rejected(self):
         (self.base / 'link').symlink_to(self.source, target_is_directory=True)
         with self.assertRaises(OSError):

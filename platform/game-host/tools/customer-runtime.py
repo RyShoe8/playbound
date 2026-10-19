@@ -391,6 +391,18 @@ def identity_database(uid,gid):
         os.close(descriptor);raise
 
 
+DOTNET_GC_GAMES=('barotrauma','space-station-14','rimworld-together','openra','openhv','earth-2140-trilogy')
+
+def barotrauma_binds(asset_directory,data):
+    # The game derives its base directory from its own location and writes there, so /game-data becomes the private runtime directory with the read-only bundle overlaid entry by entry.
+    result=['--bind',str(data/'runtime'),'/game-data']
+    for name in sorted(os.listdir(asset_directory)):
+        if name in ('serversettings.xml',):continue
+        if not re.fullmatch(r'[A-Za-z0-9_+.-]{1,100}',name):raise ValueError('Unsafe Barotrauma asset entry')
+        result+=['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/'+name,'/game-data/'+name]
+    return result
+
+
 def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccomp_fd=None, dns_fd=None, assets=(), asset_directory=None, identity_fd=None, python_directory=None, dependency_directory=None, identity_files=()):
     if GAME == 're-volt-rvgl' and (asset_directory is None or seccomp_fd is not None):
         raise ValueError('Pinned RVGL assets and private display handoff required')
@@ -465,7 +477,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *[part for descriptor, name in identity_files for part in ('--bind','/proc/self/fd/'+str(descriptor),'/game-data/'+name)],
             *(['--ro-bind','/usr/local/libexec/playbound-customer-rvgl','/rvgl-bootstrap.py','--ro-bind','/usr/local/libexec/playbound-customer-display','/display-helper.py'] if GAME=='re-volt-rvgl' else []),
             '--proc', '/proc', '--dev', '/dev', '--size', '1073741824' if GAME in ('openra','openhv','earth-2140-trilogy') and settings['family']!='openra' else '268435456' if GAME in ('hypersomnia','rimworld-together') else '67108864', '--tmpfs', '/tmp', '--bind', str(data), '/server', '--ro-bind-data', str(fd), '/server/baseoa/playbound.cfg' if GAME == 'openarena' else '/server/data/server.cfg' if GAME == 'xonotic' else '/server/legacy/playbound.cfg' if GAME == 'wolfenstein-enemy-territory' else '/server/main/playbound.cfg' if GAME=='medal-of-honor-allied-assault' else '/server/autohost/playbound.json' if GAME=='warzone-2100' else '/server/user/conf.d/50-playbound.json' if GAME=='hypersomnia' else '/server/server.cfg',
-            *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/Content','/server/runtime/Content','--ro-bind','/proc/self/fd/'+str(asset_directory)+'/hintmanager.xml','/server/runtime/hintmanager.xml','--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='barotrauma' else []),
+            *([*barotrauma_binds(asset_directory,data),'--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='barotrauma' else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory),'/runtime','--bind',str(data/'private-cfg'),'/runtime/'+('tf' if GAME=='team-fortress-2' else 'cstrike' if GAME=='counter-strike-source' else 'game/csgo')+'/cfg','--bind',str(data/'private-logs'),'/runtime/'+('tf' if GAME=='team-fortress-2' else 'cstrike' if GAME=='counter-strike-source' else 'game/csgo')+'/logs'] if GAME in ('team-fortress-2','counter-strike-2','counter-strike-source') else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='team-fortress-2' else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/Packs','/server/runtime/Packs'] if GAME=='trackmania' else []),
@@ -493,6 +505,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *(['--setenv','DOTNET_ROOT','/usr/lib/dotnet','--setenv','DOTNET_EnableDiagnostics','0'] if GAME=='space-station-14' else []),
             *(['--setenv','DOTNET_EnableDiagnostics','0','--setenv','DOTNET_BUNDLE_EXTRACT_BASE_DIR','/tmp/dotnet'] if GAME=='rimworld-together' else []),
             *(['--setenv','DOTNET_EnableDiagnostics','0'] if GAME in ('openra','openhv','earth-2140-trilogy') else []),
+            *(['--setenv','DOTNET_GCHeapHardLimit',format(memory*1024**2//4,'x'),'--setenv','DOTNET_GCRegionRange',format(memory*1024**2//2,'x')] if GAME in DOTNET_GC_GAMES else []),
             *(['--setenv','MONO_IOMAP','all','--setenv','LD_LIBRARY_PATH','/game-data/lib64'] if GAME=='terraria' else []),
             *(['--setenv','LD_LIBRARY_PATH','/game-data/lib:/game-data/lib/x86_64-linux-gnu','--setenv','FREECIV_DATA_PATH','/game-data/share/freeciv'] if GAME=='freeciv' else []),
             *(['--setenv', 'PLAYBOUND_STK_DISCOVERY_PORT', str(port+1)] if GAME == 'supertuxkart' else []),
@@ -760,10 +773,14 @@ def migration_network_profile(server_id, uid):
 
 def run_runtime(identities, resources, server_id, pid, identity, extra, text):
     port, cpu, memory = extra
-    if journal_game(server_id) != GAME: raise ValueError('Runtime game differs from activated data')
     config = config_bytes(text, port)
     resources.verify_caller(pid, pwd.getpwnam('playbound').pw_uid)
     scope = verify_scope(resources, server_id, pid, identity, cpu, memory)
+    if GAME == 're-volt-rvgl':
+        fresh = trusted_module('pb_fresh_rvgl', 'playbound-customer-fresh-rvgl')
+        if fresh.fresh_candidate(server_id):
+            fresh.initialize(server_id, sys.modules[__name__], identities)
+    if journal_game(server_id) != GAME: raise ValueError('Runtime game differs from activated data')
     account = identities.ensure_identity(server_id)
     if not migration_ready(server_id, account['uid']): raise ValueError('Customer data migration is required')
     root = workspace(server_id, account['uid'])
@@ -882,7 +899,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
                 display_entry_fd = os.open('/usr/local/libexec/playbound-customer-display-entry', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
                 display_source_fd = os.open('/usr/local/libexec/playbound-customer-seccomp', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
             else:
-                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter()
+                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter(seqpacket_pairs=GAME=='unvanquished')
             inherited = tuple(descriptor for descriptor in (fd,engine_fd,seccomp_fd,dns_fd,display_entry_fd,display_source_fd) if descriptor is not None)
             inherited += tuple(descriptor for descriptor, _ in identity_files)
             inherited += tuple(descriptor for descriptor,_ in assets)

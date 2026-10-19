@@ -18,7 +18,7 @@ def settings(text,port):
 
 def arguments(value,port):
     settings(json.dumps(value),port)
-    return ['/game-data/Robust.Server','--port',str(port),'--data-dir','/server/data','--config-file','/server/server_config.toml',
+    return ['/game-data/Robust.Server','--cvar','net.port='+str(port),'--data-dir','/server/data','--config-file','/server/server_config.toml',
             '--cvar','log.path=/server/data/logs','--cvar','game.hostname='+value['name'],
             '--cvar','status.bind=*:'+str(port),'--cvar','game.soft_max_players='+str(value['softMaxPlayers']),
             '--cvar','game.lobbyenabled='+str(value['lobbyEnabled']).lower(),'--cvar','hub.advertise=false']
