@@ -42,6 +42,8 @@ install -o root -g root -m 755 "$source_dir/customer-native-engine.py" /usr/loca
 python3 -m py_compile "$source_dir/customer-data-migration.py"
 python3 -m py_compile "$source_dir/customer-network-check.py"
 install -o root -g root -m 755 "$source_dir/customer-runtime.py" /usr/local/libexec/playbound-customer-runtime
+python3 -m py_compile "$source_dir/customer-rvgl-lobby.py"
+install -o root -g root -m 755 "$source_dir/customer-rvgl-lobby.py" /usr/local/libexec/playbound-customer-rvgl-lobby
 # Operator-only checkpoint preparation: intentionally absent from sudoers.
 install -o root -g root -m 755 "$source_dir/customer-data-migration.py" /usr/local/libexec/playbound-customer-data-migration
 install -o root -g root -m 755 "$source_dir/customer-network-check.py" /usr/local/libexec/playbound-customer-network-check
@@ -64,6 +66,9 @@ printf '%s\n' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime stop *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime status *' > "$rule"
 printf '%s\n' 'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-runtime migration *' >> "$rule"
+printf '%s\n' \
+  'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-rvgl-lobby capture *' \
+  'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-rvgl-lobby input *' >> "$rule"
 printf '%s\n' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-world-backups list *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-world-backups create *' \

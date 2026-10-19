@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 const DISPLAY_ROOT = "/var/lib/playbound-host/rvgl-displays";
+const PRIVATE_HELPER = "/usr/local/libexec/playbound-customer-rvgl-lobby";
 const KEYS = new Set(["Up", "Down", "Left", "Right", "Return", "Escape", "BackSpace", "Tab", "space"]);
 
 export function sharedRvglLobbyAvailable(room) {
@@ -48,4 +49,33 @@ export async function sendRvglLobbyInput(port, rawInput) {
   if (!windowId || windowId === "0") throw new Error("RVGL lobby window is not visible");
   await run("xdotool", ["windowfocus", windowId], options);
   await run("xdotool", input.type === "click" ? ["click", "1"] : ["key", "--clearmodifiers", input.key], options);
+}
+
+export function privateRvglLobbyAvailable(room) {
+  return room?.gameSlug === "re-volt-rvgl" && room.identityProfile === "re-volt-rvgl-unix-v1"
+    && /^[a-f0-9]{24}$/.test(room.communityServerId || "")
+    && Number.isInteger(room.pid) && room.pid > 1
+    && /^[a-f0-9-]{36}:[0-9]+$/.test(room.processIdentity || "");
+}
+
+export async function privateRvglLobby(room, action, rawInput, spawnFile = execFile) {
+  if (!privateRvglLobbyAvailable(room) || !["capture", "input"].includes(action)) {
+    throw new Error("Invalid private RVGL room");
+  }
+  const input = action === "input" ? JSON.stringify(validateRvglInput(rawInput)) : null;
+  const result = await new Promise((resolve, reject) => {
+    const child = spawnFile("/usr/bin/sudo", ["-n", PRIVATE_HELPER, action,
+      room.communityServerId, String(room.pid), room.processIdentity], {
+      timeout: 8500, maxBuffer: 3 * 1024 * 1024,
+      env: { PATH: "/usr/bin:/bin", LANG: "C.UTF-8" },
+    }, (error, stdout) => error ? reject(error) : resolve(stdout));
+    if (input !== null) child.stdin.end(input);
+    else child.stdin.end();
+  });
+  const value = JSON.parse(result);
+  if (action === "capture" && (typeof value.image !== "string" || value.image.length > 3 * 1024 * 1024)) {
+    throw new Error("Private RVGL capture was invalid");
+  }
+  if (action === "input" && value.ok !== true) throw new Error("Private RVGL input failed");
+  return value;
 }

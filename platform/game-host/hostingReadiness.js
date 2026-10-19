@@ -58,7 +58,7 @@ export function hostingReadiness(key) {
   let contentReason="Plugin and Workshop installation remains disabled until this game's tenant boundary and its content source/compatibility/rollback path pass acceptance.";
   if (key === "re-volt-rvgl") {
     isolation = "blocked";
-    reason = "Isolated root-managed lobby start, UDP bind, same-process agent-restart adoption, stop and migration rollback passed on the VPS. UID-aware lobby controls and human Join remain unverified; customer enrollment stays unavailable. RVGL has no world-data backup support.";
+    reason = "Isolated root-managed lobby start, UDP bind, same-process agent-restart adoption, stop and migration rollback passed on the VPS. UID-aware lobby capture/navigation passed in staging; human Join and customer control acceptance remain unverified, so enrollment stays unavailable. RVGL has no world-data backup support.";
   }
   if (key === "core-keeper") {
     isolation = "blocked";

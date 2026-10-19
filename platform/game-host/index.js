@@ -58,7 +58,7 @@ import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATIO
 import { customerResourceLimits } from "./customerResourceLimits.js";
 import { spawnCustomerRuntime, resourceScope, stopIdentityRuntime, identityRuntimeHealthy } from "./customerRuntime.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
-import { captureRvglLobby, sendRvglLobbyInput, sharedRvglLobbyAvailable } from "./rvglDisplay.js";
+import { captureRvglLobby, sendRvglLobbyInput, sharedRvglLobbyAvailable, privateRvglLobby, privateRvglLobbyAvailable } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
 const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour, requestTes3mpCommand } = require(
@@ -1807,16 +1807,19 @@ const server = http.createServer(async (req, res) => {
         json(res, 404, { error: "RVGL lobby is not running" });
         return;
       }
-      if (!sharedRvglLobbyAvailable(room)) {
-        json(res, 409, { error: "Private RVGL lobby controls are not yet available" });
+      if (!sharedRvglLobbyAvailable(room) && !privateRvglLobbyAvailable(room)) {
+        json(res, 409, { error: "RVGL lobby controls are unavailable for this room" });
         return;
       }
       res.setHeader("cache-control", "no-store");
       try {
         if (req.method === "GET") {
-          json(res, 200, { image: await captureRvglLobby(room.port) });
+          json(res, 200, privateRvglLobbyAvailable(room)
+            ? await privateRvglLobby(room, "capture") : { image: await captureRvglLobby(room.port) });
         } else {
-          await sendRvglLobbyInput(room.port, await readBody(req));
+          const input = await readBody(req);
+          if (privateRvglLobbyAvailable(room)) await privateRvglLobby(room, "input", input);
+          else await sendRvglLobbyInput(room.port, input);
           room.lastActivityAt = Date.now();
           json(res, 200, { ok: true });
         }

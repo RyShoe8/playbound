@@ -3174,15 +3174,24 @@ server, catalog or database record changed. Evidence is saved at
 
 The world-backup endpoint rejected this game with “This game has no world-data
 backups”; the accepted rollback is the migration rollback, not a world snapshot.
-Player counts are accepted from live product verification. UID-aware lobby
-settings/controls and human Join are still unverified for this isolated profile.
+Player counts are accepted from live product verification. Human Join and
+customer control acceptance remain unverified for this isolated profile.
 Customer enrollment therefore remains blocked.
 
-The shared-display RVGL lobby route now refuses an identity-owned room before
+The shared-display RVGL lobby route refuses an identity-owned room before
 reading its shared Xauthority file or sending input. Existing community rooms
-retain the shared-display path. Private customer lobby controls need a scoped,
-identity-verified transport; the isolated lifecycle test alone does not make
-the old shared control path safe for that room.
+retain the shared-display path. A separate root-reviewed private transport now
+verifies the game, supervisor process identity, live cgroup/UID binding and
+private Xauthority before running fixed capture/navigation commands as that
+UID under its enforced AppArmor label. The room route selects it only for the
+matching managed private identity; no caller path or shell command is accepted.
+
+The isolated staging fixture returned a 33,312-byte JPEG through the route,
+accepted a bounded Tab navigation action and rejected a mismatched process
+identity. A staging agent restart kept both supervisor and game PIDs; stop and
+migration rollback removed the fixture account, scope and display. These are
+technical control tests, not a human customer's Join or end-to-end race start.
+Keep enrollment blocked until those interactive checks pass.
 
 ### ANEURISM public bundle publication (2026-10-19)
 

@@ -90,5 +90,6 @@ test("RVGL identity remains blocked after isolated lifecycle acceptance", () => 
   assert.equal(value.isolation,"blocked");
   assert.equal(value.executableContentEnabled,false);
   assert.match(value.reason,/human Join/);
-  assert.match(value.reason,/UID-aware lobby controls/);
+  assert.match(value.reason,/UID-aware lobby capture\/navigation passed in staging/);
+  assert.match(value.reason,/customer control acceptance remain unverified/);
 });
