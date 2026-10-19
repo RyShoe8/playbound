@@ -3241,3 +3241,13 @@ denies a socket form the engine needs (cause not yet identified). The bundle
 
 Published and left in place: factorio, necesse and unvanquished bundles (read-only, unused). The
 release gate matrix should be regenerated after the next evidence change.
+
+**Barotrauma is blocked by .NET address-space limits.** The published bundle
+(`playbound-isolated-barotrauma-data-v1`, 1,049 files, 267,411,090 bytes) starts in its namespace but
+CoreCLR repeats `GC heap initialization failed with error 0x8007000E` (out of memory) and the
+process is killed (137). The root runtime caps address space at twice the memory envelope; .NET
+reserves far more virtual space by default. The sandbox sets only `DOTNET_EnableDiagnostics=0`
+for the .NET families, so a `DOTNET_GCHeapHardLimit` (or a larger address-space ceiling for these
+profiles) is needed. Space Station 14, RimWorld Together and the OpenRA family use the same
+runtime and will very likely fail the same way. This needs a change to the root runtime helper,
+which has uncommitted edits from other work in progress, so it was recorded rather than patched.
