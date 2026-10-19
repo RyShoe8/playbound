@@ -3169,3 +3169,16 @@ backups”; the accepted rollback is the migration rollback, not a world snapsho
 Player occupancy, UID-aware lobby settings/controls and human Join are still
 unverified. Customer enrollment therefore remains blocked.
 
+### ANEURISM public bundle publication (2026-10-19)
+
+All 44 reviewed public server files still matched the pinned hashes and had
+safe source modes. The strict root publisher created
+`playbound-isolated-aniv-data-v1` (880,816,429 bytes) and reported zero changed
+processes. This only establishes a read-only engine/data source for a future
+isolated runtime. The active ANEURISM supervisor still reads server data and
+Steam credentials owned by the shared `playbound` account and launches the
+game under that account. Its namespace and token locks must remain intact while
+the migration-authorized per-customer UID, private filesystem, resource scope,
+recovery and native occupancy paths are implemented and accepted. Customer
+enrollment remains blocked; no database, catalog or customer server was changed.
+
