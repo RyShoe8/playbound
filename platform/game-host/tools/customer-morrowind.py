@@ -91,6 +91,12 @@ def prepare(root, public, admin_hook, value, port):
             if relative == Path('.') and name == 'customScripts.lua':
                 content += b'\nrequire("custom/playboundAdmin")\n'
             write(target/name, content)
+    library = public/'server/lib/lua'
+    for source in sorted(library.iterdir()):
+        info = source.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_size > 1024**2:
+            raise ValueError('Invalid published TES3MP library')
+        write(directory(root, 'server/lib/lua')/source.name, source.read_bytes())
     # This hook is supplied only by the root-installed repository dependency.
     hook = admin_hook.read_bytes()
     if not 1 <= len(hook) <= 262144:

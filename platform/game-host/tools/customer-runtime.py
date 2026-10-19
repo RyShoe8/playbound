@@ -497,7 +497,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *(['--setenv','LD_LIBRARY_PATH','/game-data/game/bin/linuxsteamrt64:/game-data/game/csgo/bin/linuxsteamrt64'] if GAME=='counter-strike-2' else []),
             *(['--setenv','LD_LIBRARY_PATH','/game-data:/game-data/linux64'] if GAME=='unturned' else []),
             *(['--setenv','LD_LIBRARY_PATH','/python/lib','--setenv','PYTHONDONTWRITEBYTECODE','1','--setenv','BA_DEVICE_NAME',settings['name']] if GAME=='bombsquad' else []),
-            *(['--setenv','LD_LIBRARY_PATH','/game-data/lib'] if GAME=='morrowind' else []),
+            *(['--setenv','LD_LIBRARY_PATH','/game-data/lib','--setenv','XDG_CONFIG_HOME','/server/.config'] if GAME=='morrowind' else []),
             *(['--setenv','DOTNET_EnableDiagnostics','0','--setenv','LD_LIBRARY_PATH','/game-data:/game-data/linux64'] if GAME=='barotrauma' else []),
             *(['--setenv','VELOREN_USERDATA','/server/userdata','--setenv','VELOREN_ASSETS','/game-data/assets','--setenv','SDL_VIDEODRIVER','dummy','--setenv','SDL_AUDIODRIVER','dummy'] if GAME=='veloren' else []),
             *(['--setenv','JAVA_HOME','/game-data/jre'] if GAME=='necesse' else []),
@@ -899,7 +899,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
                 display_entry_fd = os.open('/usr/local/libexec/playbound-customer-display-entry', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
                 display_source_fd = os.open('/usr/local/libexec/playbound-customer-seccomp', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
             else:
-                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter(seqpacket_pairs=GAME=='unvanquished')
+                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter(seqpacket_pairs=True) if GAME=='unvanquished' else syscalls.sealed_filter()
             inherited = tuple(descriptor for descriptor in (fd,engine_fd,seccomp_fd,dns_fd,display_entry_fd,display_source_fd) if descriptor is not None)
             inherited += tuple(descriptor for descriptor, _ in identity_files)
             inherited += tuple(descriptor for descriptor,_ in assets)

@@ -19,6 +19,8 @@ class MorrowindPrivateWorld(unittest.TestCase):
         self.root.mkdir(mode=0o700)
         self.public = base/'public'
         (self.public/'server/scripts').mkdir(parents=True)
+        (self.public/'server/lib/lua').mkdir(parents=True)
+        (self.public/'server/lib/lua/utils.lua').write_text('return {}\n')
         (self.public/'server/data').mkdir()
         (self.public/'server/scripts/config.lua').write_text('config.gameMode = "Default"\nconfig.other = true\n')
         (self.public/'server/scripts/customScripts.lua').write_text('-- official scripts\n')
@@ -39,6 +41,7 @@ class MorrowindPrivateWorld(unittest.TestCase):
         module.prepare(self.root, self.public, self.hook, self.value, 25566)
         for name in files:
             self.assertEqual((self.root/name).read_text(), 'retained')
+        self.assertEqual((self.root/'server/lib/lua/utils.lua').read_text(), 'return {}\n')
         self.assertIn('config.gameMode = "Cooperative"', (self.root/'server/scripts/config.lua').read_text())
         self.assertIn('custom/playboundAdmin', (self.root/'server/scripts/customScripts.lua').read_text())
         self.assertIn('port = 25566', (self.root/'.config/openmw/tes3mp-server.cfg').read_text())
