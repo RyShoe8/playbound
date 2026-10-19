@@ -6,7 +6,7 @@ evidence or an explicit surfaced limitation; this table shows which do. Regenera
 each acceptance instead of editing it by hand.
 
 Targets: 52. Isolation: operator_rollout 23, pending 3, blocked 26. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 24, none 27, recorded blocker 1. World backups: yes 37, no 15.
+Acceptance evidence: accepted 25, none 26, recorded blocker 1. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -30,7 +30,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Deus Ex GOTY (HX) (`deus-ex`) | automatic | none | pending | none | no | HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable. |
 | Don't Starve Together (`dont-starve-together`) | automatic | implemented | blocked | none | yes | Local pinned 64-bit native candidate with private cluster and fenced Steam ports implemented; startup, controls, recovery and restore acceptance remain required. |
 | Earth 2140 Trilogy (OpenE2140) (`earth-2140-trilogy`) | automatic | implemented | blocked | none | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
-| Factorio (stable headless) (`factorio`) | automatic | implemented | blocked | none | yes | Local identity candidate implemented; fenced world creation, restart recovery and backup acceptance are still required. Do not enroll customers yet. |
+| Factorio (stable headless) (`factorio`) | automatic | implemented | blocked | accepted | yes | Local identity candidate implemented; fenced world creation, restart recovery and backup acceptance are still required. Do not enroll customers yet. |
 | FlightGear (reviewed fgms relay) (`flightgear`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Freeciv (matching reviewed engine, library and rulesets) (`freeciv`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and root-promoted paired engine/libraries/rulesets. Native query, same-process agent recovery, stop and data rollback passed. Executable ruleset/plugin installation remains disabled. |
 | Freedoom + Zandronum (reviewed dedicated engine) (`freedoom`) | automatic | implemented | operator_rollout | accepted | yes | Only the explicit Zandronum edition with the pinned Freedoom 2 IWAD is supported by this identity profile. Requires offline enrollment and a root-promoted engine/assets. Native query, restart and rollback passed; base/ot… |
@@ -81,7 +81,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 - **Deus Ex GOTY (HX)** — pending, evidence: none
 - **Don't Starve Together** — blocked, evidence: none
 - **Earth 2140 Trilogy (OpenE2140)** — blocked, evidence: none
-- **Factorio (stable headless)** — blocked, evidence: none
+- **Factorio (stable headless)** — blocked, evidence: accepted
 - **GoldenEye: Source (SDK + mod)** — pending, evidence: none
 - **Morrowind (reviewed TES3MP engine)** — blocked, evidence: none
 - **Necesse** — blocked, evidence: none

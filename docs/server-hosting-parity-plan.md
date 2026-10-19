@@ -3206,3 +3206,38 @@ the migration-authorized per-customer UID, private filesystem, resource scope,
 recovery paths are implemented and accepted. Customer
 enrollment remains blocked; no database, catalog or customer server was changed.
 
+### Factorio accepted; Necesse and Unvanquished defects found (2026-10-19)
+
+A generic native-family acceptance harness (`fam-run.sh` publish/setup/start/check/stop/world/
+finish, kept with the VPS staging scripts) published each reviewed public bundle with its strict
+root publisher and ran one isolated fixture per family on a private staging agent. Production
+agent and customers were untouched; each fixture was rolled back or removed.
+
+**Factorio passed.** Bundle `playbound-isolated-factorio-data-v1` (3,580 files, 291,145,199
+bytes). The first world was created inside the reserved-UID/cgroup/network fence, the engine
+ran as UID 40000, repeated start was idempotent, a staging-agent restart kept the same
+supervisor and game PIDs and process metrics, stop was acknowledged, a snapshot succeeded after
+stop, and migration rollback preserved both old and new data. Evidence:
+`native-identity-acceptance/factorio.json`. Finding: map generation for the installed Space Age
+build fails with `Resource temporarily unavailable` under the default 1 GiB envelope (2 GiB
+address-space ceiling) and succeeds at 2048 MiB. Factorio's identity-profile resource default
+should be raised to 2048 MiB before enrollment. Factorio has no local player query, so
+occupancy is not verified.
+
+**Necesse is blocked by a pin defect.** The published bundle (119 files, 244,839,284 bytes)
+omits `jre/conf/**`, so the bundled JVM cannot read `java.security` inside the sandbox
+("Error loading java.security file", then a crash). The reviewed profile and both path
+allowlists (`install-xonotic-customer-assets.py`, `customer-xonotic-assets.py`) only admit
+`jre/bin/java` and `jre/lib`. The proposed fix is to allow `jre/conf` in the Necesse pattern and
+add the 15 `jre/conf` files (110,505 bytes, hashed from the installed JRE) to
+`customerNecesseAssets.json`, then reinstall the verifier helper and republish the unused
+bundle. It widens a root verifier's allowlist, so it was drafted and not applied; TripleA pins
+only `jre/temurin-25/bin` and `lib`, so it very likely has the same defect.
+
+**Unvanquished is blocked at socket creation.** The engine starts in its namespace and logs
+`Could not create socket: Operation not permitted` on every attempt; the guarded syscall filter
+denies a socket form the engine needs (cause not yet identified). The bundle
+`playbound-isolated-unvanquished-data-v1` (37 files, 531,428,926 bytes) is published and unused.
+
+Published and left in place: factorio, necesse and unvanquished bundles (read-only, unused). The
+release gate matrix should be regenerated after the next evidence change.
