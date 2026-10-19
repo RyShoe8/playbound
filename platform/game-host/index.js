@@ -58,7 +58,7 @@ import { customerIsolationLaunch, validateCustomerPreparation, CUSTOMER_ISOLATIO
 import { customerResourceLimits } from "./customerResourceLimits.js";
 import { spawnCustomerRuntime, resourceScope, stopIdentityRuntime, identityRuntimeHealthy } from "./customerRuntime.js";
 import { readCapturedLogFile, managedLogFiles, retainManagedLogs, logSecretValues, redactLogLine } from "./managedLogs.js";
-import { captureRvglLobby, sendRvglLobbyInput } from "./rvglDisplay.js";
+import { captureRvglLobby, sendRvglLobbyInput, sharedRvglLobbyAvailable } from "./rvglDisplay.js";
 
 const require = createRequire(import.meta.url);
 const { injectPlayboundAdmin, listTes3mpAccounts, claimTes3mpAdmin, requestTes3mpSetHour, requestTes3mpCommand } = require(
@@ -1805,6 +1805,10 @@ const server = http.createServer(async (req, res) => {
       if (!room || room.gameSlug !== "re-volt-rvgl" || !room.pid ||
           !isSameProcess(room.pid, room.processIdentity)) {
         json(res, 404, { error: "RVGL lobby is not running" });
+        return;
+      }
+      if (!sharedRvglLobbyAvailable(room)) {
+        json(res, 409, { error: "Private RVGL lobby controls are not yet available" });
         return;
       }
       res.setHeader("cache-control", "no-store");

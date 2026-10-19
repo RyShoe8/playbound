@@ -5,6 +5,10 @@ const run = promisify(execFile);
 const DISPLAY_ROOT = "/var/lib/playbound-host/rvgl-displays";
 const KEYS = new Set(["Up", "Down", "Left", "Right", "Return", "Escape", "BackSpace", "Tab", "space"]);
 
+export function sharedRvglLobbyAvailable(room) {
+  return room?.gameSlug === "re-volt-rvgl" && !room.identityProfile;
+}
+
 export function rvglDisplayForPort(port) {
   if (!Number.isInteger(port) || port < 2310 || port > 2330) throw new Error("Invalid RVGL room port");
   return { display: `:${port}`, authFile: `${DISPLAY_ROOT}/${port}.xauth` };

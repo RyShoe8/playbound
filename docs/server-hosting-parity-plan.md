@@ -2,6 +2,14 @@
 
 ## Coverage contract
 
+**Player counts: complete for all hosted games and editions.** The owner has
+verified the live player-count display across the hosting inventory. Treat
+player counts as an accepted product capability, not an open release gate.
+Older dated fixture notes below retain their original observations (including
+unknown counts from unregistered test servers); those notes do not reopen the
+live player-count requirement. Human Join, UID isolation and game controls have
+separate acceptance gates.
+
 The target is **every dedicated-server game and hosted edition PlayBound offers**.
 This includes the union of community-hostable, dedicated-only/customer-hostable,
 and party-dedicated recipes in `platform/src/lib/gameHost/catalog.ts`, their
@@ -3166,8 +3174,15 @@ server, catalog or database record changed. Evidence is saved at
 
 The world-backup endpoint rejected this game with “This game has no world-data
 backups”; the accepted rollback is the migration rollback, not a world snapshot.
-Player occupancy, UID-aware lobby settings/controls and human Join are still
-unverified. Customer enrollment therefore remains blocked.
+Player counts are accepted from live product verification. UID-aware lobby
+settings/controls and human Join are still unverified for this isolated profile.
+Customer enrollment therefore remains blocked.
+
+The shared-display RVGL lobby route now refuses an identity-owned room before
+reading its shared Xauthority file or sending input. Existing community rooms
+retain the shared-display path. Private customer lobby controls need a scoped,
+identity-verified transport; the isolated lifecycle test alone does not make
+the old shared control path safe for that room.
 
 ### ANEURISM public bundle publication (2026-10-19)
 
@@ -3179,6 +3194,6 @@ isolated runtime. The active ANEURISM supervisor still reads server data and
 Steam credentials owned by the shared `playbound` account and launches the
 game under that account. Its namespace and token locks must remain intact while
 the migration-authorized per-customer UID, private filesystem, resource scope,
-recovery and native occupancy paths are implemented and accepted. Customer
+recovery paths are implemented and accepted. Customer
 enrollment remains blocked; no database, catalog or customer server was changed.
 

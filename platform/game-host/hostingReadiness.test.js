@@ -18,7 +18,7 @@ test("isolated engine implementations cannot claim automatic enrollment or safe 
   assert.equal(hostingReadiness("flightgear").isolation,"operator_rollout");
   assert.equal(hostingReadiness("supertuxkart").isolation,"operator_rollout");
   assert.equal(hostingReadiness("hurry-curry").identityProfile,"hurry-curry-unix-v1");
-  assert.match(hostingReadiness("hurry-curry").reason,/unknown/);
+  assert.match(hostingReadiness("hurry-curry").reason,/UID-aware controls/);
   assert.match(hostingReadiness("luanti").contentReason,/GHSA/);
   assert.equal(hostingReadiness("counter-strike-2").isolation,"blocked");
 });
@@ -81,7 +81,7 @@ test("Core Keeper handoff stays blocked after isolated lifecycle acceptance", ()
   assert.equal(value.isolation, "blocked");
   assert.equal(value.executableContentEnabled, false);
   assert.match(value.reason, /Human Join/);
-  assert.match(value.reason, /occupied-server behavior/);
+  assert.match(value.reason, /UID-aware controls/);
 });
 
 test("RVGL identity remains blocked after isolated lifecycle acceptance", () => {
@@ -89,6 +89,6 @@ test("RVGL identity remains blocked after isolated lifecycle acceptance", () => 
   assert.equal(value.identityProfile,"re-volt-rvgl-unix-v1");
   assert.equal(value.isolation,"blocked");
   assert.equal(value.executableContentEnabled,false);
-  assert.match(value.reason,/Player occupancy/);
+  assert.match(value.reason,/human Join/);
   assert.match(value.reason,/UID-aware lobby controls/);
 });

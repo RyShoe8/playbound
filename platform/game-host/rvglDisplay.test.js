@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rvglDisplayForPort, validateRvglInput } from "./rvglDisplay.js";
+import { rvglDisplayForPort, validateRvglInput, sharedRvglLobbyAvailable } from "./rvglDisplay.js";
+
+test("shared RVGL display controls cannot target a private identity", () => {
+  assert.equal(sharedRvglLobbyAvailable({ gameSlug: "re-volt-rvgl", identityProfile: null }), true);
+  assert.equal(sharedRvglLobbyAvailable({ gameSlug: "re-volt-rvgl", identityProfile: "re-volt-rvgl-unix-v1" }), false);
+  assert.equal(sharedRvglLobbyAvailable({ gameSlug: "core-keeper", identityProfile: null }), false);
+});
 
 test("RVGL display is tied to its allocated room port", () => {
   assert.deepEqual(rvglDisplayForPort(2310), {
