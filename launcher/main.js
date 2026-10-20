@@ -125,6 +125,7 @@ const { createHostService } = require("./services/couch/hostService");
 const { ensureVigem, probeProvider } = require("./services/couch/ensureVigem");
 const openMwConfig = require("./services/openMwConfig");
 const daggerfallData = require("./services/daggerfallData");
+const daggerfallBaseFirst = require("./services/daggerfallBaseFirst");
 const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
 const { CATALOG_LIVE_STATS_TTL_MS, CATALOG_TTL_MS, DEFAULT_API_BASE, DEFAULT_EDITION_SLUG, DEFAULT_GAMES_DIR, INSTALLED_SLUG_ALIASES, PROTOCOL, UPDATER_FEED_URL, apiFetch, assertDownloadUrl, assertOpenExternalUrl, catalogEntryFromEdition, cloudSaves, collectHardwareProfile, configureYoutubeEmbedIdentity, editionInstallDir, ensureGameInstallRecord, ensureUnixExecutable, exeOnDisk, expandWinPath, extract7z, extractDmg, extractLinkHandoff, extractPkg, extractZip, fetchCatalogLiveStats, fetchControlProfile, fetchLauncherEditions, findExecutable, findInstallerInDir, findNamedPortableExe, findYSoccerOnlineJar, gamesRoot, getApiBase, getAvailableDiskSpace, getRemoteDeviceId, getRemoteDeviceName, httpStatusFromInstallError, installErrorCode, installQueue, isAllowedApiBase, launcherApiHeaders, launcherJson, listEditionEntries, listFixedDriveRoots, liveStatsDisk, loadCachedCatalog, loadCachedCatalogFile, loadSettings, loadState, normalizeFsPath, normalizeProcessImageName, parseDeepLink, pathUnderRoot, playableExePath, probeServerLatency, promoteStagingDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, registerCatalogEntryHosts, registerDownloadHostFromUrl, rememberLocatedRoot, repairUnixExtractedBinaries, reportInstall, resolveDownload, resolveEditionForInstall, resolveEventMedia, resolveMediaUrl, resolveModDownload, runLibrarySync, safeOpenExternal, saveCatalogCache, saveData, saveLiveStatsDiskCache, saveSettings, saveState, sevenZipBinary, shouldSkipScanDir, shouldSyncHardwareProfile, steamAppIdForEntry, stripRegQuotes, syncGameInstallSummary, uninstallExeCache, unpackNestedArchives, unwrapSingleRootDirectory, verifyChecksumMd5, verifyChecksumSha256, writeJarLauncher } = require("./services/main/core");
@@ -4366,10 +4367,83 @@ async function installSharedMrBoom(editionSlug) {
  */
 let installQueueTail = Promise.resolve();
 
+/** Editions the player already said "install this one only" for, until the launcher restarts. */
+const daggerfallBaseDeclined = new Set();
+
+/**
+ * Daggerfall Online and Daggerfall Unity run on Daggerfall's own game files and do
+ * not bring them. Installing either on a PC with no copy of the game gave a program
+ * that opened and asked for a folder. When no copy is found, offer the two-step
+ * install: the free base game first, then the edition, both through the normal queue
+ * so the second simply waits for the first.
+ *
+ * @returns {Promise<"proceed" | "cancel">}
+ */
+async function offerDaggerfallBaseFirst(slug, editionSlug) {
+  if (!daggerfallBaseFirst.needsBaseFiles(slug, editionSlug)) return "proceed";
+  if (daggerfallBaseDeclined.has(editionSlug)) return "proceed";
+  try {
+    const roots = [path.join(gamesRoot(), "Daggerfall Game Files")];
+    const raw = loadState().daggerfall;
+    if (raw && typeof raw === "object") {
+      for (const edition of listEditionEntries(raw)) {
+        if (edition.editionSlug === daggerfallBaseFirst.BASE_EDITION && edition.dir) roots.push(edition.dir);
+      }
+    }
+    // A Steam or GOG copy counts too; only Daggerfall's own folders are searched.
+    for (const common of steamCommonDirs()) {
+      try {
+        for (const entry of fs.readdirSync(common, { withFileTypes: true })) {
+          if (entry.isDirectory() && /daggerfall/i.test(entry.name) && !/unity|online/i.test(entry.name)) {
+            roots.push(path.join(common, entry.name));
+          }
+        }
+      } catch {
+        /* an unreadable library is simply not searched */
+      }
+    }
+    if (daggerfallBaseFirst.baseFilesPresent({ fs, path, roots, missingArena2: daggerfallData.missingArena2 })) {
+      return "proceed";
+    }
+  } catch (err) {
+    // If the check itself breaks, do not block the install on it.
+    console.warn("[daggerfall] base-files check skipped:", err?.message || err);
+    return "proceed";
+  }
+  if (!win || win.isDestroyed()) return "proceed";
+  const name = daggerfallBaseFirst.editionTitle(editionSlug);
+  const { response } = await dialog.showMessageBox(win, {
+    type: "question",
+    title: `${name} needs Daggerfall's game files`,
+    message: `${name} needs the original Daggerfall game files, and none were found on this PC.`,
+    detail:
+      `PlayBound can install the free Daggerfall base game first (Bethesda's own freeware release), then ${name}. ` +
+      "The second install starts by itself when the first finishes.",
+    buttons: [`Install the base game, then ${name}`, `Install ${name} only`, "Cancel"],
+    defaultId: 0,
+    cancelId: 2,
+    noLink: true,
+  });
+  if (response === 2) return "cancel";
+  if (response === 1) {
+    daggerfallBaseDeclined.add(editionSlug);
+    return "proceed";
+  }
+  // Queue the base game first; the edition queues behind it below.
+  void installGame(slug, null, daggerfallBaseFirst.BASE_EDITION).catch((err) => {
+    console.warn("[daggerfall] base game install did not complete:", err?.message || err);
+  });
+  return "proceed";
+}
+
 async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   const key = installJobKey(slug, editionSlug);
   const existing = gameInstallJobs.get(key);
   if (existing) return existing;
+
+  if ((await offerDaggerfallBaseFirst(slug, editionSlug)) === "cancel") {
+    return { status: "cancelled", note: "Install cancelled — Daggerfall's game files are needed first." };
+  }
 
   const entry =
     catalogEntry(slug) ||
@@ -4569,7 +4643,32 @@ function cancelInstallQueueItem(slug, editionSlug) {
   if (!task) {
     task = installQueue.find((t) => t.slug === slug);
   }
-  if (!task) return { ok: false, error: "Install not found in queue" };
+  if (!task) {
+    /*
+     * The row the player is looking at can outlive the task behind it: the install
+     * already finished, failed or was cancelled, or an update to the queue never
+     * reached the window. Refusing with an error left the row stuck and the player
+     * with nothing to click. Treat it as cancelled: stop anything still watching
+     * for this game, clear a pending record, and resend the real queue so the
+     * window drops the stale row.
+     */
+    try {
+      stopExeScan(slug);
+      abortInstallerPoll(slug);
+      const state = loadState();
+      const record = state[slug];
+      if (record && typeof record === "object" && record.pending) {
+        delete record.pending;
+        delete record.scanning;
+        saveState(state);
+      }
+    } catch (err) {
+      console.warn("cancel cleanup for a missing queue item failed:", err?.message || err);
+    }
+    broadcastInstallQueue();
+    sendProgress({ phase: "cancelled", slug, message: "Install cancelled." });
+    return { ok: true, alreadyGone: true };
+  }
 
   task.cancelled = true;
   task.status = "cancelled";
@@ -5808,8 +5907,22 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
 async function maybePrepareDaggerfallOnline() {
   try {
     const dataRoot = path.join(gamesRoot(), "Daggerfall Game Files");
-    const arena2 = path.join(dataRoot, "ARENA2");
-    await ensureDaggerfallFreewareData(arena2);
+    let arena2 = path.join(dataRoot, "ARENA2");
+    // The base game, when the player installed it first, already has complete data:
+    // use that copy instead of downloading Bethesda's release a second time.
+    let installedBase = null;
+    try {
+      const raw = loadState().daggerfall;
+      for (const edition of raw && typeof raw === "object" ? listEditionEntries(raw) : []) {
+        if (edition.editionSlug !== daggerfallBaseFirst.BASE_EDITION || !edition.dir) continue;
+        installedBase = daggerfallBaseFirst.findCompleteArena2(fs, path, edition.dir, daggerfallData.missingArena2);
+        if (installedBase) break;
+      }
+    } catch {
+      installedBase = null;
+    }
+    if (installedBase) arena2 = installedBase;
+    else await ensureDaggerfallFreewareData(arena2);
 
     const configDir = path.join(app.getPath("appData"), "Daggerfall JavaScript");
     const configFile = path.join(configDir, "config.json");
