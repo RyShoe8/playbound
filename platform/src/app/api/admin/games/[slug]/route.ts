@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
+import { isNewGameAssignment, notifyGameAssigned, resolveGameOwnerUserId } from "@/lib/gameOwnerAssignment";
 import { developersBySlug } from "@/lib/data";
 import { ensureDeveloperExists } from "@/lib/developers";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
@@ -53,6 +54,14 @@ export async function PATCH(
 
     await dbConnect();
 
+    // Resolve before any catalog writes, including the Game of the Week flag.
+    // A username/email is useful in this field but cannot be stored in an
+    // ObjectId column; a missing account must not become a server error.
+    const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId);
+    if (body.ownerUserId && !ownerUserId) {
+      return NextResponse.json({ error: "No user with that username, email, or ID" }, { status: 422 });
+    }
+
     const isRename = body.slug !== slug;
 
     if (isRename) {
@@ -84,7 +93,7 @@ export async function PATCH(
     }
 
     const previous = await CatalogGame.findOne({ slug })
-      .select("published publishedAt status communityLinks")
+      .select("published publishedAt status communityLinks ownerUserId")
       .lean();
     const wasPublished = (previous as { status?: string } | null)?.status === "published";
     let publishedAt = (previous as { publishedAt?: Date | null })?.publishedAt;
@@ -108,7 +117,7 @@ export async function PATCH(
           serverLobbyAuth: body.serverLobbyAuth || null,
           submissionId: body.submissionId || null,
           managedBy: body.managedBy || "admin",
-          ownerUserId: body.ownerUserId || null,
+          ownerUserId,
           adminUpdatedAt: new Date(),
         },
         // Retain the old slug so its indexed URLs keep resolving.
@@ -130,11 +139,15 @@ export async function PATCH(
         developerName,
         submissionId: body.submissionId || null,
         managedBy: body.managedBy || "admin",
-        ownerUserId: body.ownerUserId || null,
+        ownerUserId,
         adminUpdatedAt: new Date(),
       });
       doc = created;
     }
+
+    const assignmentEmailSent = isNewGameAssignment(previous?.ownerUserId, ownerUserId)
+      ? await notifyGameAssigned(ownerUserId!, doc.title, doc.slug)
+      : null;
 
     // Slugs are foreign keys by value, so the rename has to be carried across
     // libraries, reviews, guides, discussions, mods and events by hand.
@@ -165,6 +178,7 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       slug: doc.slug,
+      ...(assignmentEmailSent !== null ? { assignmentEmailSent } : {}),
       ...(isRename ? { renamedFrom: slug, renamed, renameWarning } : {}),
     });
   } catch (err) {

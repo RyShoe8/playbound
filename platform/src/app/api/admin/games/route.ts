@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
+import { notifyGameAssigned, resolveGameOwnerUserId } from "@/lib/gameOwnerAssignment";
 import { developersBySlug } from "@/lib/data";
 import { ensureDeveloperExists } from "@/lib/developers";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
@@ -51,6 +52,11 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
+    const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId);
+    if (body.ownerUserId && !ownerUserId) {
+      return NextResponse.json({ error: "No user with that username, email, or ID" }, { status: 422 });
+    }
+
     const exists = await CatalogGame.findOne({ slug: body.slug }).lean();
     if (exists) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
@@ -82,9 +88,10 @@ export async function POST(req: Request) {
       serverLobbyAuth: body.serverLobbyAuth || null,
       submissionId: body.submissionId || null,
       managedBy: body.managedBy || "admin",
-      ownerUserId: body.ownerUserId || null,
+      ownerUserId,
       adminUpdatedAt: new Date(),
     });
+    const assignmentEmailSent = ownerUserId ? await notifyGameAssigned(ownerUserId, doc.title, doc.slug) : null;
 
     const isPublished = doc.status === "published" || Boolean(doc.published);
     if (isPublished && !hasPlayboundDiscordChannel(doc)) {
@@ -103,7 +110,7 @@ export async function POST(req: Request) {
 
     revalidateTag("catalog", { expire: 0 });
     revalidateTag("developers", { expire: 0 });
-    return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
+    return NextResponse.json({ success: true, slug: doc.slug, ...(assignmentEmailSent !== null ? { assignmentEmailSent } : {}) }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: firstZodErrorMessage(err) }, { status: 400 });
