@@ -30,7 +30,7 @@ def promote(source, destination, manifest, game='xonotic'):
     if game=='core-keeper':pattern=r'(?:CoreKeeperServer|UnityPlayer\.so|steamclient\.so|libsteamwebrtc\.so|libdecor-0\.so\.0|libdecor-cairo\.so|(?:CoreKeeperServer_Data|linux64|localization)/(?:[A-Za-z0-9_+.,@ ()-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,120})'
     if game=='battlefield-1942-anthology':pattern=r'(?:bf1942_lnxded\.static|mods/bf1942/(?!settings/)(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
     if game=='open-fortress':pattern=r'(?:open_fortress/materials/(?:[A-Za-z0-9_+.,@ ()!&~{-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&~{-]{1,120}|srcds_linux|sdk-build\.json|(?:bin|hl2|platform|open_fortress|defaults)/(?:[A-Za-z0-9_+.,@ ()!&-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&-]{1,120})'
-    if game=='trackmania':pattern=r'(?:TrackmaniaServer|Packs/[A-Za-z0-9_+.-]{1,100}\.(?:pak|Gbx))'
+    if game=='trackmania':pattern=r'(?:TrackmaniaServer|Packs/[A-Za-z0-9_+.-]{1,100}\.(?:pak|Gbx)|UserData/Maps/(?:Campaigns/Training|MatchSettings)/[A-Za-z0-9_ .-]{1,100}|UserData/Config/dedicated_cfg\.default\.txt)'
     if game=='morrowind':pattern=r'(?:tes3mp-server\.x86_64|tes3mp-server-default\.cfg|lib/libboost_[A-Za-z0-9_]+\.so\.1\.67\.0|server/data/requiredDataFiles\.json|(?:resources|server/scripts|server/lib/lua)/(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
     if game=='barotrauma':pattern=r'(?:DedicatedServer|[A-Za-z0-9_+.-]{1,100}\.(?:dll|so|pdb|exe|dylib|deps\.json|runtimeconfig\.json)|[A-Za-z0-9_+.-]{1,100}_LICENSE|hintmanager\.xml|Facepunch\.Steamworks\.Posix64\.xml|Icon\.ico|changelog\.txt|daedalic_privacypolicy\.txt|(?:Content|linux64)/(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
     if game=='veloren':pattern=r'(?:veloren-server-cli|assets/(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
@@ -42,7 +42,7 @@ def promote(source, destination, manifest, game='xonotic'):
     if game=='factorio':pattern=r'(?:bin/x64/factorio|data/(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,15}[A-Za-z0-9_+.,@ -]{1,100})'
     if game=='terraria':pattern=r'(?:[A-Za-z0-9_+.,@ -]{1,100}/){0,3}[A-Za-z0-9_+.,@ -]{1,100}'
     rows = manifest.get('files')
-    if not isinstance(rows,list) or not 1 <= len(rows) <= (32768 if game=='open-fortress' else 16384 if game in ('veloren','dont-starve-together','unturned') else 128 if game in ('battlefield-1942-anthology','aneurism-iv') else 16 if game=='trackmania' else 512 if game=='morrowind' else 256 if game in ('triplea','necesse') else 4096 if game in ('space-station-14','barotrauma','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 1 if game=='rimworld-together' else 4096 if game=='openra' else 1 if game in OPENRA_BINARIES else 128 if game=='unvanquished' else 4096 if game=='factorio' else 2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 64 if game=='terraria' else 16):
+    if not isinstance(rows,list) or not 1 <= len(rows) <= (32768 if game=='open-fortress' else 16384 if game in ('veloren','dont-starve-together','unturned') else 128 if game in ('battlefield-1942-anthology','aneurism-iv') else 64 if game=='trackmania' else 512 if game=='morrowind' else 256 if game in ('triplea','necesse') else 4096 if game in ('space-station-14','barotrauma','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 1 if game=='rimworld-together' else 4096 if game=='openra' else 1 if game in OPENRA_BINARIES else 128 if game=='unvanquished' else 4096 if game=='factorio' else 2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 64 if game=='terraria' else 16):
         raise ValueError('Invalid Xonotic asset inventory')
     seen,total = set(),0
     for row in rows:
@@ -76,7 +76,7 @@ def promote(source, destination, manifest, game='xonotic'):
         for row in rows:
             # Flatten this single reviewed upstream alias from its pinned target.
             # Never follow a source symlink or accept a caller-selected mapping.
-            source_name = 'lib/lib64/libunistring.so.2' if game=='re-volt-rvgl' and row['path']=='lib/libunistring.so.2' else row['path']
+            source_name = 'lib/lib64/libunistring.so.2' if game=='re-volt-rvgl' and row['path']=='lib/libunistring.so.2' else '/opt/playbound-host/games/trackmania/'+row['path'] if game=='trackmania' and row['path'].startswith('UserData/') else row['path']
             with os.fdopen(open_file(source/source_name),'rb') as original:
                 before=os.fstat(original.fileno())
                 if not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or before.st_mode&0o7022 or before.st_size!=row['bytes']:

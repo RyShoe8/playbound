@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -42,6 +43,27 @@ class TrackmaniaPrivateSettings(unittest.TestCase):
         self.assertEqual(self.match.read_bytes(), original)
         self.assertEqual((self.root/'xmlrpc-passwords.json').read_bytes(), passwords)
         self.assertEqual(file.stat().st_mode & 0o777, 0o600)
+
+    def test_first_start_seeds_pinned_maps_once_and_never_overwrites(self):
+        self.match.unlink()
+        seed = self.root/'bundle'/'UserData/Maps'; config = self.root/'bundle'/'UserData/Config'; config.mkdir(parents=True); (config/'dedicated_cfg.default.txt').write_text('<dedicated><server_options><name>stock</name></server_options></dedicated>')
+        (seed/'MatchSettings').mkdir(parents=True)
+        (seed/'Campaigns/Training').mkdir(parents=True)
+        (seed/'MatchSettings/example.txt').write_text('<playlist><map><file>Campaigns/Training/a.Map.Gbx</file></map></playlist>')
+        (seed/'Campaigns/Training/a.Map.Gbx').write_bytes(b'map')
+        original = module.Path
+        module.seed(seed.parent, self.root/'runtime/UserData')
+        self.assertEqual((self.root/'runtime/UserData/Maps/Campaigns/Training/a.Map.Gbx').read_bytes(), b'map')
+        self.assertIn(b'stock', (self.root/'runtime/UserData/Config/dedicated_cfg.default.txt').read_bytes())
+        self.assertEqual((self.root/'runtime/UserData/Maps/MatchSettings/example.txt').stat().st_mode & 0o777, 0o600)
+        self.match.write_text('customised')
+        self.match.chmod(0o600)
+        module.seed(seed.parent, self.root/'runtime/UserData')
+        self.assertEqual(self.match.read_text(), 'customised')
+        (seed/'link').symlink_to('/etc/passwd')
+        self.match.unlink()
+        with self.assertRaises(ValueError):
+            module.seed(seed.parent, self.root/'runtime/UserData')
 
     def test_linked_credentials_and_xml_entities_are_refused(self):
         module.prepare(self.root, self.value, 23520)

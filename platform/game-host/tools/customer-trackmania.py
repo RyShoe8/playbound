@@ -57,6 +57,23 @@ def write_private(file, content):
             os.unlink(temporary)
 
 
+def seed(source, target):
+    """First start only: copy the pinned public training maps and match settings from the sealed bundle."""
+    if not source.is_dir() or (target/'Maps/MatchSettings/example.txt').exists():
+        return
+    for path in sorted(source.rglob('*')):
+        relative = path.relative_to(source)
+        info = path.lstat()
+        if stat.S_ISDIR(info.st_mode):
+            (target/relative).mkdir(mode=0o700, parents=True, exist_ok=True)
+        elif stat.S_ISREG(info.st_mode) and info.st_size <= 16 * 1024**2:
+            (target/relative).parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            if not (target/relative).exists():
+                write_private(target/relative, path.read_bytes())
+        else:
+            raise ValueError('Invalid published Trackmania map data')
+
+
 def prepare(root, value, port):
     settings(json.dumps(value), port)
     account = json.loads(read_private(root/'dedicated-account.json', 4096))
@@ -78,11 +95,18 @@ def prepare(root, value, port):
         write_private(passwords_file, json.dumps(passwords).encode())
     if not isinstance(passwords, dict) or set(passwords) != {'SuperAdmin', 'Admin', 'User'} or any(not isinstance(secret, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,128}', secret) for secret in passwords.values()):
         raise ValueError('Invalid private Trackmania RPC credentials')
+    seed(Path('/game-data/UserData'), root/'runtime/UserData')
     file = root/'runtime/UserData/Config/dedicated_cfg.txt'
     try:
         content = read_private(file)
     except FileNotFoundError:
-        document = ET.Element('dedicated')
+        try:
+            template = read_private(root/'runtime/UserData/Config/dedicated_cfg.default.txt', 65536)
+            if b'<!DOCTYPE' in template or b'<!ENTITY' in template or b'\x00' in template:
+                raise ValueError('Unsupported Trackmania XML declaration')
+            document = ET.fromstring(template)
+        except FileNotFoundError:
+            document = ET.Element('dedicated')
     else:
         if b'<!' in content or b'\x00' in content:
             raise ValueError('Unsupported Trackmania XML declaration')
@@ -111,7 +135,8 @@ def prepare(root, value, port):
     fields(section('system_config'), {'server_port': port, 'client_port': port,
            'xmlrpc_port': port+1, 'xmlrpc_allowremote': 'false', 'bind_ip_address': '0.0.0.0',
            'use_nat_upnp': 'false', 'allow_spectator_relays': 'false'})
-    write_private(file, ET.tostring(document, encoding='utf-8', xml_declaration=True))
+    write_private(file, b'<?xml version="1.0" encoding="utf-8" ?>\n' + ET.tostring(document, encoding='utf-8'))
+    
     match = root/'runtime/UserData/Maps/MatchSettings/example.txt'
     # Custom maps/settings must already exist; no implicit public download.
     if not read_private(match, 1024**2).strip():
@@ -119,11 +144,11 @@ def prepare(root, value, port):
 
 
 if __name__ == '__main__':
-    if not 40000 <= os.getuid() <= 40255 or not Path('/game-data/TrackmaniaServer').is_file():
+    if not 40000 <= os.getuid() <= 40255 or not Path('/server/runtime/package/TrackmaniaServer').is_file():
         raise SystemExit('Reserved runtime namespace required')
     payload = json.loads(Path('/server/server.cfg').read_text())
     value = settings(json.dumps(payload['configuration']), payload['port'])
     prepare(Path('/server'), value, payload['port'])
     os.chdir('/server/runtime')
-    os.execv('/game-data/TrackmaniaServer', ['/game-data/TrackmaniaServer',
+    os.execv('/server/runtime/package/TrackmaniaServer', ['/server/runtime/package/TrackmaniaServer',
              '/dedicated_cfg=dedicated_cfg.txt', '/game_settings=MatchSettings/example.txt', '/nodaemon'])

@@ -104,6 +104,7 @@ def prepare(root, public, admin_hook, value, port):
     write(root/'server/scripts/custom/playboundAdmin.lua', hook)
     write(root/'server/data/requiredDataFiles.json',
           (public/'server/data/requiredDataFiles.json').read_bytes(), preserve=True)
+    write(root/'server/data/banlist.json', b'{"playerNames":[],"ipAddresses":[]}\n', preserve=True)
     text = ('[General]\nlocalAddress = 0.0.0.0\nport = '+str(port)+
             '\nmaximumPlayers = '+str(value['maxPlayers'])+'\nhostname = '+value['name']+
             '\nlogLevel = 1\npassword = '+value['password']+

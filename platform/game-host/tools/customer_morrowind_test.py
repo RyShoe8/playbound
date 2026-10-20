@@ -42,6 +42,7 @@ class MorrowindPrivateWorld(unittest.TestCase):
         for name in files:
             self.assertEqual((self.root/name).read_text(), 'retained')
         self.assertEqual((self.root/'server/lib/lua/utils.lua').read_text(), 'return {}\n')
+        self.assertEqual(json.loads((self.root/'server/data/banlist.json').read_text()), {'playerNames': [], 'ipAddresses': []})
         self.assertIn('config.gameMode = "Cooperative"', (self.root/'server/scripts/config.lua').read_text())
         self.assertIn('custom/playboundAdmin', (self.root/'server/scripts/customScripts.lua').read_text())
         self.assertIn('port = 25566', (self.root/'.config/openmw/tes3mp-server.cfg').read_text())

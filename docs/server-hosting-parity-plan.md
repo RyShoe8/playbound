@@ -3280,3 +3280,37 @@ for the .NET families, so a `DOTNET_GCHeapHardLimit` (or a larger address-space 
 profiles) is needed. Space Station 14, RimWorld Together and the OpenRA family use the same
 runtime and will very likely fail the same way. This needs a change to the root runtime helper,
 which has uncommitted edits from other work in progress, so it was recorded rather than patched.
+
+### Barotrauma, Space Station 14, RimWorld, Necesse, TripleA, Morrowind and Trackmania accepted (2026-10-19)
+
+Fixture acceptance (private UID, same-process agent restart, stop, migration
+rollback) now passes on the VPS for Necesse, TripleA, Barotrauma, Space
+Station 14, RimWorld Together, Morrowind and Trackmania. Defects fixed on the
+way:
+
+- Necesse/TripleA: `jre/conf` files pinned; bundle row cap raised to 256.
+- .NET games: `DOTNET_GCHeapHardLimit`/`DOTNET_GCRegionRange` derive from the
+  memory envelope; default envelope 2048 MiB (4096 MiB for Space Station 14,
+  which also needs 512 tasks and `--cvar net.port`, since `--port` is ignored).
+- Barotrauma: the game writes beside its own assembly, so `/game-data` is the
+  private runtime directory with the sealed bundle overlaid entry by entry.
+- RimWorld: the transient console fifo is skipped by data migration.
+- Morrowind: Lua libraries (`server/lib/lua`) pinned and copied, `banlist.json`
+  seeded, `XDG_CONFIG_HOME` pointed at the written config, and a reviewed
+  per-UID firewall rule (`pb-self-udp-v1`) lets the server send to its own
+  allocated UDP port only (RakNet start-up self-test). Everything else local
+  stays dropped.
+- Trackmania: the sealed bundle now carries the public training maps and the
+  stock `dedicated_cfg.default.txt`; the engine runs from a tmpfs package
+  directory whose `UserData`/`Logs`/`CommonData` links point at the private
+  directories (never migrated). Each server needs its own customer-supplied
+  Nadeo dedicated-server account; the fixture used the admin test room's.
+
+Surfaced limitations (not accepted):
+
+- Unvanquished: the engine creates `AF_UNIX` stream sockets at start-up, which
+  the shared-network-namespace profile denies by design (it would expose host
+  abstract sockets). An opt-in anonymous `SOCK_SEQPACKET` pair is available in
+  the seccomp profile but is not sufficient alone.
+- Unturned and Don't Starve Together need customer-supplied Steam/Klei tokens;
+  startup is verified up to the missing token only.

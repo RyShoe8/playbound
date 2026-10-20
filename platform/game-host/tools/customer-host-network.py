@@ -21,12 +21,18 @@ def table_name(uid, probe=False):
     return ('pb_customer_probe_' if probe else 'pb_customer_guard_') + str(uid)
 
 
-def policy(uid, probe=False):
+def policy(uid, probe=False, self_udp_port=None):
     table = table_name(uid, probe)
+    if self_udp_port is not None and (type(self_udp_port) is not int or not 1024 <= self_udp_port <= 65535):
+        raise ValueError('Invalid self-addressed UDP allocation')
+    # TES3MP/RakNet self-tests by sending to its own bound UDP port. Only that
+    # exact allocated port may reach a local address; everything else stays dropped.
+    exception = '' if self_udp_port is None else f'  meta skuid {uid} udp dport {self_udp_port} fib daddr type local counter accept comment "pb-self-udp-v1"\n'
     return ('table inet ' + table + ' {\n'
             ' chain output {\n'
             '  type filter hook output priority 50; policy accept;\n'
             f'  meta skuid {uid} ct direction reply counter return comment "pb-replies-v1"\n'
+            + exception +
             f'  meta skuid {uid} fib daddr type local counter drop comment "pb-host-v1"\n'
             f'  meta skuid {uid} ip daddr {{ ' + ', '.join(PRIVATE4) + ' } counter drop comment "pb-private4-v1"\n'
             f'  meta skuid {uid} ip6 daddr {{ ' + ', '.join(PRIVATE6) + ' } counter drop comment "pb-private6-v1"\n'
@@ -45,6 +51,20 @@ def verify_document(document, uid, probe=False):
     raw = document.get('nftables',[])
     if any(not isinstance(row,dict) or len(row) != 1 for row in raw): raise ValueError('Unknown network table document')
     rows = [row for row in raw if 'metainfo' not in row]
+    match = lambda left,right: {'match':{'op':'==','left':left,'right':right}}
+    if len(rows) == 7:
+        # Reviewed optional rule: own allocated UDP port to a local address, directly after the reply rule.
+        rule = rows[3].get('rule',{})
+        expr = rule.get('expr',[])
+        if set(rule) != {'family','table','chain','handle','comment','expr'} or rule['family'] != 'inet' or rule['table'] != table or rule['chain'] != 'output' or rule['comment'] != 'pb-self-udp-v1' or len(expr) != 5:
+            raise ValueError('Self-addressed UDP rule changed')
+        port = expr[1].get('match',{}).get('right') if isinstance(expr[1],dict) else None
+        if type(port) is not int or not 1024 <= port <= 65535 or expr[0] != match({'meta':{'key':'skuid'}},uid) or \
+           expr[1] != match({'payload':{'protocol':'udp','field':'dport'}},port) or \
+           expr[2] != match({'fib':{'result':'type','flags':['daddr']}},'local') or \
+           set(expr[3]) != {'counter'} or set(expr[3]['counter']) != {'packets','bytes'} or expr[4] != {'accept':None}:
+            raise ValueError('Self-addressed UDP selector changed')
+        rows = rows[:3] + rows[4:]
     if len(rows) != 6 or set(rows[0].get('table',{})) != {'family','name','handle'} or rows[0]['table']['family'] != 'inet' or rows[0]['table']['name'] != table:
         raise ValueError('Customer network table changed')
     chain = rows[1].get('chain',{})
@@ -87,15 +107,26 @@ def verify(uid, probe=False):
     return verify_document(json.loads(result), uid, probe)
 
 
-def install(uid, probe=False):
+def self_udp_port(uid, probe=False):
+    document = json.loads(execute(['--json','list','table','inet',table_name(uid,probe)]))
+    verify_document(document, uid, probe)
+    for row in document['nftables']:
+        rule = row.get('rule',{})
+        if rule.get('comment') == 'pb-self-udp-v1': return rule['expr'][1]['match']['right']
+    return None
+
+
+def install(uid, probe=False, self_udp=None):
     # Reattach only to the exact kernel rule structure; never replace or flush
     # an unknown table, chain, destination range or verdict.
     table = table_name(uid, probe)
     tables = json.loads(execute(['--json','list','tables']))
     if any(row.get('table',{}).get('name') == table for row in tables.get('nftables',[])):
+        if self_udp_port(uid,probe) != self_udp:
+            raise ValueError('Existing customer network guard differs from the reviewed self-addressed UDP allocation')
         verify(uid,probe)
         return {'uid':uid,'table':table,'guardInstalled':True,'reattached':True}
-    text = policy(uid, probe)
+    text = policy(uid, probe, self_udp)
     execute(['--check','--file','-'], text)
     execute(['--file','-'], text)
     verify(uid,probe)

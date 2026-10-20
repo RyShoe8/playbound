@@ -480,7 +480,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *([*barotrauma_binds(asset_directory,data),'--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='barotrauma' else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory),'/runtime','--bind',str(data/'private-cfg'),'/runtime/'+('tf' if GAME=='team-fortress-2' else 'cstrike' if GAME=='counter-strike-source' else 'game/csgo')+'/cfg','--bind',str(data/'private-logs'),'/runtime/'+('tf' if GAME=='team-fortress-2' else 'cstrike' if GAME=='counter-strike-source' else 'game/csgo')+'/logs'] if GAME in ('team-fortress-2','counter-strike-2','counter-strike-source') else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='team-fortress-2' else []),
-            *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/Packs','/server/runtime/Packs'] if GAME=='trackmania' else []),
+            *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/Packs','/server/runtime/Packs','--tmpfs','/server/runtime/package','--ro-bind','/proc/self/fd/'+str(asset_directory)+'/Packs','/server/runtime/package/Packs','--ro-bind','/proc/self/fd/'+str(asset_directory)+'/TrackmaniaServer','/server/runtime/package/TrackmaniaServer','--symlink','../UserData','/server/runtime/package/UserData','--symlink','../Logs','/server/runtime/package/Logs','--symlink','../CommonData','/server/runtime/package/CommonData'] if GAME=='trackmania' else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory),'/runtime','--bind',str(data),'/runtime/Servers/PlayBound','--bind',str(data),'/game-data/Servers/PlayBound','--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='unturned' else []),
             *(trusted_module('pb_rvgl','playbound-customer-rvgl').mounts(asset_directory) if GAME=='re-volt-rvgl' else []),
             *(trusted_module('pb_openfortress','playbound-customer-openfortress').mounts(asset_directory) if GAME=='open-fortress' else []),
@@ -821,7 +821,8 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
                     directory(root/'data'/name,uid=account['uid'],mode=0o700)
             if GAME=='trackmania':
                 trusted_module('pb_trackmania','playbound-customer-trackmania')
-                directory(root/'data'/'runtime',uid=account['uid'],mode=0o700)
+                for name in ('runtime','runtime/Packs'):
+                    directory(root/'data'/name,uid=account['uid'],mode=0o700)
             if GAME=='unturned':
                 trusted_module('pb_unturned','playbound-customer-unturned')
                 for name in ('.steam','.steam/sdk64'):
@@ -875,7 +876,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             migration = trusted_module('pb_migration', 'playbound-customer-data-migration')
             migration.quiescent(account['uid'])
             host_guard = trusted_module('pb_host_guard', 'playbound-customer-host-network')
-            host_guard.install(account['uid'])
+            host_guard.install(account['uid'], self_udp=port if GAME == 'morrowind' else None)
             guard_installed = True
             binder = trusted_module('pb_bind', 'playbound-customer-bind-policy')
             bind_programs = binder.apply_current(port,stk_discovery=True) if GAME == 'supertuxkart' else binder.apply_current(port,flightgear_status=True) if GAME == 'flightgear' else binder.apply_current(port,assaultcube_query=True) if GAME == 'assaultcube' else binder.apply_current(port,auxiliary_profile=GAME) if GAME in ('veloren','barotrauma','dont-starve-together','team-fortress-2','trackmania','unturned','counter-strike-source','open-fortress','core-keeper') else binder.apply_current(port)

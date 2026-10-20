@@ -6,7 +6,7 @@ evidence or an explicit surfaced limitation; this table shows which do. Regenera
 each acceptance instead of editing it by hand.
 
 Targets: 52. Isolation: operator_rollout 23, pending 3, blocked 26. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 30, none 21, recorded blocker 1. World backups: yes 37, no 15.
+Acceptance evidence: accepted 32, none 19, recorded blocker 1. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -40,7 +40,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Hypersomnia (`hypersomnia`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and a root-promoted sealed headless AppImage. Bounded extraction, port fence, same-process recovery, stop and data rollback passed. Human Join remains unverified for the isolated profile. |
 | Luanti (reviewed Minetest native server) (`luanti`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Mindustry (`mindustry`) | automatic | implemented | operator_rollout | accepted | yes | Identity handoff, native query and restart recovery passed. Requires explicit offline enrollment and a reviewed root JAR pin after updates; live console/control transport is not yet UID-aware. |
-| Morrowind (reviewed TES3MP engine) (`morrowind`) | automatic | implemented | blocked | none | yes | Local pinned TES3MP candidate with private saves and reviewed admin hook implemented; startup, UID-aware player/admin transports, recovery and restore acceptance remain required. |
+| Morrowind (reviewed TES3MP engine) (`morrowind`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (Lua libraries pinned, config path fixed, own-port UDP self-test allowed by a reviewed firewall rule). Fenced world restore and cu… |
 | Necesse (`necesse`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS. Fenced world restore and customer control acceptance are still required before enrollment. |
 | Open Fortress (SDK + mod) (`open-fortress`) | automatic | implemented | blocked | none | no | Local paired i386 SDK/mod candidate with separate read-only TF2 dependency, private defaults/cache/config and fixed library aliases implemented; engine networking, RCON, startup/recovery and protected restore acceptance … |
 | OpenArena (reviewed ioquake3 dedicated engine) (`openarena`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
@@ -57,7 +57,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Teeworlds (reviewed Ubuntu native server) (`teeworlds`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Terraria (reviewed 1.4.5.8 Linux server) (`terraria`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment and a root-published matching native loader, assembly and libraries. Private world creation/reload, connection-based occupancy, same-process recovery, scoped graceful stop and snapshot restore… |
 | OpenRA · Tiberian Dawn HD (`tiberian-dawn-hd`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
-| Trackmania (paired dedicated engine and Packs) (`trackmania`) | automatic | implemented | blocked | none | yes | Local pinned native/Packs candidate with private maps, account and XMLRPC settings implemented; startup, private control transport, recovery and restore acceptance remain required. |
+| Trackmania (paired dedicated engine and Packs) (`trackmania`) | automatic | implemented | blocked | accepted | yes | Isolated start with a Nadeo dedicated-server account, map load, same-process agent restart, stop and migration rollback passed on the VPS. Each server still needs its own customer-supplied dedicated-server account; prote… |
 | TripleA (reviewed Java 25 headless server) (`triplea`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS. Maps, protected restore and customer control acceptance are still required before enrollment. |
 | Unturned (`unturned`) | automatic | implemented | blocked | none | yes | Local pinned Unity candidate with namespace-only private Servers binding and private GSLT implemented; startup, Unity data-path behavior, console, recovery and restore acceptance remain required. |
 | Unvanquished (engine and game packages) (`unvanquished`) | automatic | implemented | blocked | none | yes | Local identity candidate needs NaCl sandbox startup, recovery and snapshot acceptance before customer enrollment. |
@@ -83,7 +83,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 - **Earth 2140 Trilogy (OpenE2140)** — blocked, evidence: none
 - **Factorio (stable headless)** — blocked, evidence: accepted
 - **GoldenEye: Source (SDK + mod)** — pending, evidence: none
-- **Morrowind (reviewed TES3MP engine)** — blocked, evidence: none
+- **Morrowind (reviewed TES3MP engine)** — blocked, evidence: accepted
 - **Necesse** — blocked, evidence: accepted
 - **Open Fortress (SDK + mod)** — blocked, evidence: none
 - **OpenHV** — blocked, evidence: none
@@ -93,7 +93,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 - **Space Station 14 (paired Robust engine and content)** — blocked, evidence: accepted
 - **Team Fortress 2** — blocked, evidence: none
 - **OpenRA · Tiberian Dawn HD** — blocked, evidence: none
-- **Trackmania (paired dedicated engine and Packs)** — blocked, evidence: none
+- **Trackmania (paired dedicated engine and Packs)** — blocked, evidence: accepted
 - **TripleA (reviewed Java 25 headless server)** — blocked, evidence: accepted
 - **Unturned** — blocked, evidence: none
 - **Unvanquished (engine and game packages)** — blocked, evidence: none

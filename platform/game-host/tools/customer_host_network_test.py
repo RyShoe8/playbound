@@ -56,5 +56,47 @@ class HostNetworkTests(unittest.TestCase):
                 module.policy(value)
 
 
+def with_self_udp(port=25580):
+    document = fixture()
+    rows = document['nftables']
+    rule = copy.deepcopy(rows[2])
+    rule['rule']['comment'] = 'pb-self-udp-v1'
+    rule['rule']['handle'] = 99
+    match = lambda left, right: {'match': {'op': '==', 'left': left, 'right': right}}
+    rule['rule']['expr'] = [match({'meta': {'key': 'skuid'}}, 40000),
+        match({'payload': {'protocol': 'udp', 'field': 'dport'}}, port),
+        match({'fib': {'result': 'type', 'flags': ['daddr']}}, 'local'),
+        {'counter': {'packets': 0, 'bytes': 0}}, {'accept': None}]
+    rows.insert(3, rule)
+    return document
+
+
+class SelfUdpTests(unittest.TestCase):
+    def test_policy_text_adds_only_the_exact_port_rule(self):
+        self.assertNotIn('pb-self-udp-v1', module.policy(40000))
+        text = module.policy(40000, False, 25580)
+        self.assertIn('udp dport 25580 fib daddr type local counter accept comment "pb-self-udp-v1"', text)
+        self.assertLess(text.index('pb-replies-v1'), text.index('pb-self-udp-v1'))
+        self.assertLess(text.index('pb-self-udp-v1'), text.index('pb-host-v1'))
+        for value in (True, '25580', 80, 70000):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                module.policy(40000, False, value)
+
+    def test_exact_self_udp_document_verifies_and_mutations_do_not(self):
+        self.assertTrue(module.verify_document(with_self_udp(), 40000))
+        mutations = [lambda rows: rows[3]['rule']['expr'][1]['match'].update(right=80),
+                     lambda rows: rows[3]['rule']['expr'][1]['match']['left']['payload'].update(protocol='tcp'),
+                     lambda rows: rows[3]['rule']['expr'][2]['match'].update(right='unicast'),
+                     lambda rows: rows[3]['rule']['expr'].__setitem__(4, {'return': None}),
+                     lambda rows: rows[3]['rule']['expr'][0]['match'].update(right=40001),
+                     lambda rows: rows[3]['rule'].update(comment='pb-other'),
+                     lambda rows: rows[3]['rule']['expr'].pop(2)]
+        for mutate in mutations:
+            document = with_self_udp()
+            mutate(document['nftables'])
+            with self.subTest(mutation=mutate), self.assertRaises(ValueError):
+                module.verify_document(document, 40000)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -24,6 +24,141 @@
       "path": "TrackmaniaServer",
       "bytes": 30113288,
       "sha256": "3b6107824feea402bd32c888e994dcd6df4a10afc8676a2647ac9560ccf0d779"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 01.Map.Gbx",
+      "bytes": 291420,
+      "sha256": "fde0222b404296f8d25bd869f63d51818b8a095976e747b7417ade46c6b5e38d"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 02.Map.Gbx",
+      "bytes": 283916,
+      "sha256": "aef7dc45693c76cec1f3001d3ef8c3229ecc5b885356fd286f561a0d1f6c13da"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 03.Map.Gbx",
+      "bytes": 271655,
+      "sha256": "3ded8a6e11e0afbeda00d7f4ca11059e084e5661bd78dac958e1e77781384aba"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 04.Map.Gbx",
+      "bytes": 303295,
+      "sha256": "35ea520f52321a04817f5d4e5b0b23d0360125c1385aa8e24073638e8da34134"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 05.Map.Gbx",
+      "bytes": 389178,
+      "sha256": "1387ffdc5607ecfaf216c405ff69381ba64ab97790498b4bb0b0575ae7ab6c6f"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 06.Map.Gbx",
+      "bytes": 293818,
+      "sha256": "0b828e5e145a2917e27cdfa290fe4c6890c176b6e14d4ffb0dce91c04a1b4d13"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 07.Map.Gbx",
+      "bytes": 331685,
+      "sha256": "52990c060eb39bbb24a44e3c10b205332d99c104f5c1b3d93935672751a6c6cb"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 08.Map.Gbx",
+      "bytes": 374574,
+      "sha256": "89db336adbe0c179081b1e511ac45f29345141e2765bb14f477860386e240236"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 09.Map.Gbx",
+      "bytes": 357342,
+      "sha256": "126c8c7028f9c5b924ebf0b990ef508c154a2eb7ec09bf7722fda44cae6aee81"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 10.Map.Gbx",
+      "bytes": 366282,
+      "sha256": "9d95fd90d56020c0d212831c7cb1e9e34bae78f72f29d69c765fbada8b0711f8"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 11.Map.Gbx",
+      "bytes": 351961,
+      "sha256": "2797703d84e1f033665125acff5a3e6846c85ccf51cdc16bef228a9abd6053f8"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 12.Map.Gbx",
+      "bytes": 303360,
+      "sha256": "d1250a081378fd121677e65ee5b74f57fdf77d473bb6b366c484a17585d3d6f9"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 13.Map.Gbx",
+      "bytes": 329219,
+      "sha256": "02410d7c6fbc3d0e197b422e99f5087635e43d9f5d15ebf93923d4d93cf51844"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 14.Map.Gbx",
+      "bytes": 306135,
+      "sha256": "bb925836af1679fca62842b7503e52ae3cd8aadab268077b7fe80b58c3448a3a"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 15.Map.Gbx",
+      "bytes": 341782,
+      "sha256": "6afd995a9e89ae55f4d70fbf41c242cb8365dc1667c24a091f6fb2af6ebefba9"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 16.Map.Gbx",
+      "bytes": 346107,
+      "sha256": "fd786f574a4c1f87d0635d17850158afb2f8fb55f530ef6b9809cee9e97ce994"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 17.Map.Gbx",
+      "bytes": 349108,
+      "sha256": "0087654a170172c042923bd0297df602feb46253e5171bfc174d3c1adcd3ea16"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 18.Map.Gbx",
+      "bytes": 364115,
+      "sha256": "f40e65e422cc40b8a46d393bbab7f6fb3b8b7681168f8689c63982ddc80237ed"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 19.Map.Gbx",
+      "bytes": 351110,
+      "sha256": "40087a9d7de98a132692bd15876f3c3e8ebd6b077512e4e3fc7db82a2b6a5d19"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 20.Map.Gbx",
+      "bytes": 390578,
+      "sha256": "a35f0dc5d9f22cf55c6a5271092eee6b304e83fc9037a01537fca32e296a4ca1"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 21.Map.Gbx",
+      "bytes": 372698,
+      "sha256": "24b9dbc556930a09f09ec73fbc54c1675269f288ee7885bcc4c294422c4450a5"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 22.Map.Gbx",
+      "bytes": 378916,
+      "sha256": "f6153f8644a518d840aaa79c7c28ef8e13d24bb5d9360362fb9ef45ad880031c"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 23.Map.Gbx",
+      "bytes": 370542,
+      "sha256": "01dbbe5eed6c8d950af32f859601770026d1de8a33b4788225e6a5b2fb78299d"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 24.Map.Gbx",
+      "bytes": 374511,
+      "sha256": "9a6a90992569a917803b2e5f849f84c77b914715112cafa30abd3a4252484e6e"
+    },
+    {
+      "path": "UserData/Maps/Campaigns/Training/Training - 25.Map.Gbx",
+      "bytes": 379614,
+      "sha256": "bb407bd63583116ce341e9a55306e1ccf408ffdf472f81e1eff2110ec0d4653c"
+    },
+    {
+      "path": "UserData/Maps/MatchSettings/example.txt",
+      "bytes": 1860,
+      "sha256": "47e2e12da4ee28606c94450d5db5aa819d14c14157bb25c261121f14ae2b9bc5"
+    },
+    {
+      "path": "UserData/Config/dedicated_cfg.default.txt",
+      "bytes": 5040,
+      "sha256": "e77f65a2a64e282834039e4b6108af141040402032df0e1edb9a330b9065dbd6"
     }
   ]
 }
