@@ -63,6 +63,8 @@ const mongo = new MongoClient(MONGODB_URI);
 let games;
 let editions;
 let backfillRunning = false;
+/** When Discord says this host may talk to it again (epoch ms), or 0 when it is not blocking us. */
+let discordBlockedUntil = 0;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1648,7 +1650,12 @@ function requireSecret(req, res) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, backfillRunning, ready: Boolean(games) && client.isReady() }));
+    res.end(JSON.stringify({
+        ok: true,
+        backfillRunning,
+        ready: Boolean(games) && client.isReady(),
+        discordBlockedUntil: discordBlockedUntil > Date.now() ? new Date(discordBlockedUntil).toISOString() : null,
+      }));
     return;
   }
 
@@ -1665,6 +1672,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health/discord") {
     const started = Date.now();
     let rest = "ok";
+    if (discordBlockedUntil > Date.now()) {
+      // Do not spend a request on a host Discord is already limiting.
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: false, rest: "blocked", blockedUntil: new Date(discordBlockedUntil).toISOString(), gatewayReady: false }));
+      return;
+    }
     try {
       await Promise.race([
         client.guilds.fetch(GUILD_ID),
@@ -1689,9 +1702,16 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Everything below needs Mongo and Discord. Say so plainly while startup is still running.
-  if (!games && req.url !== "/health/discord") {
-    res.writeHead(503, { "content-type": "application/json", "retry-after": "10" });
-    res.end(JSON.stringify({ error: "Bot is still starting" }));
+  if (!games || !client.isReady()) {
+    const blocked = discordBlockedUntil > Date.now();
+    res.writeHead(503, { "content-type": "application/json", "retry-after": blocked ? "600" : "10" });
+    res.end(
+      JSON.stringify({
+        error: blocked
+          ? `Discord is rate limiting this host until ${new Date(discordBlockedUntil).toISOString()}`
+          : "Bot is still starting",
+      })
+    );
     return;
   }
 
@@ -2477,6 +2497,8 @@ client.rest.on("rateLimited", (info) =>
  * any rate-limit or block, and how many logins are left in the current window.
  */
 async function probeDiscord() {
+  /** Seconds Cloudflare has told this host to wait, from the larger of the two probes. */
+  let blockedForSeconds = 0;
   const probe = async (label, url, headers) => {
     const began = Date.now();
     try {
@@ -2499,6 +2521,12 @@ async function probeDiscord() {
         if (!res.ok) detail = ` body=${body.replace(/\s+/g, " ").slice(0, 160)}`;
       }
       stage(`probe ${label}: HTTP ${res.status} in ${Date.now() - began}ms ${interesting}${detail}`);
+      // A 429 whose body is HTML comes from Cloudflare in front of Discord: the whole
+      // host is being limited, not one route, and retrying only prolongs the wait.
+      if (res.status === 429) {
+        const wait = Number(res.headers.get("retry-after"));
+        if (Number.isFinite(wait) && wait > blockedForSeconds) blockedForSeconds = wait;
+      }
     } catch (err) {
       stage(`probe ${label}: FAILED after ${Date.now() - began}ms (${err?.name === "TimeoutError" ? "no answer within 10s" : err?.message || err})`);
     }
@@ -2507,6 +2535,34 @@ async function probeDiscord() {
   await probe("discord.com/api/v10/gateway/bot", "https://discord.com/api/v10/gateway/bot", {
     authorization: `Bot ${TOKEN}`,
   });
+  return blockedForSeconds;
+}
+
+/**
+ * Sit out a rate limit instead of restarting into it.
+ *
+ * Exiting made the host restart the process every couple of minutes, and each
+ * restart asked Discord twice more (and, once past the block, ran the full channel
+ * backfill again). Waiting in-process keeps the web port open and the logs quiet,
+ * and asks again only when the block is due to end.
+ */
+async function waitForDiscord() {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const seconds = await probeDiscord();
+    if (!(seconds > 0)) {
+      discordBlockedUntil = 0;
+      return;
+    }
+    discordBlockedUntil = Date.now() + seconds * 1000;
+    stage(`Discord is rate limiting this host for ${Math.round(seconds / 60)} more minutes (until ${new Date(discordBlockedUntil).toISOString()}); waiting, not retrying`);
+    // Sleep in chunks so the log shows it is alive, then ask again just after the stated end.
+    const until = discordBlockedUntil + 10_000 + Math.floor(Math.random() * 20_000);
+    while (Date.now() < until) {
+      await new Promise((resolve) => setTimeout(resolve, Math.min(10 * 60_000, until - Date.now())));
+      if (Date.now() < until) stage(`still waiting for Discord's rate limit (${Math.round((until - Date.now()) / 60000)} min left)`);
+    }
+  }
+  throw new Error("Discord kept rate limiting this host; giving up so the host restarts it");
 }
 
 server.listen(PORT, () => stage(`Webhook listening on :${PORT} (finishing startup)`));
@@ -2517,7 +2573,7 @@ try {
   games = mongo.db().collection("cataloggames");
   editions = mongo.db().collection("editions");
   stage("MongoDB connected");
-  await probeDiscord();
+  await waitForDiscord();
   stage("logging in to Discord");
   // discord.js narrates its own login (gateway fetch, websocket connect, identify)
   // through "debug"; until the bot is ready that is exactly what a stuck login needs.
