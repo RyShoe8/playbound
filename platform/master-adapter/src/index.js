@@ -5,6 +5,15 @@ import { sendJson } from "./jsonResponse.js";
 const PORT = Number(process.env.PORT || 8787);
 const ADAPTER_KEY = process.env.MASTER_ADAPTER_KEY || "";
 const REFRESH_MS = Number(process.env.REFRESH_MS || 40_000);
+/**
+ * Polling is the adapter's biggest outbound cost: every cycle sends a query to the
+ * master and then to each listed server, for every game, whether or not anyone is
+ * looking. A game nobody has asked for lately is polled this slowly instead, and a
+ * request for a stale entry refreshes it in the background (the next request sees
+ * it fresh). Set IDLE_REFRESH_MS=0 to restore always-on polling.
+ */
+const ACTIVE_WINDOW_MS = Number(process.env.ACTIVE_WINDOW_MS || 10 * 60_000);
+const IDLE_REFRESH_MS = Number(process.env.IDLE_REFRESH_MS ?? 15 * 60_000);
 
 /**
  * @typedef {{
@@ -20,6 +29,12 @@ const REFRESH_MS = Number(process.env.REFRESH_MS || 40_000);
 const cache = new Map();
 /** @type {Map<string, number>} */
 const lastPollAt = new Map();
+/** When each game's list was last asked for, to tell active games from idle ones. */
+/** @type {Map<string, number>} */
+const lastRequestedAt = new Map();
+/** Polls actually run per game since start, reported by /health to measure savings. */
+/** @type {Map<string, number>} */
+const pollCounts = new Map();
 /** In-flight authenticated polls keyed by slug (serialize concurrent CMS logins). */
 /** @type {Map<string, Promise<CacheEntry>>} */
 const livePollInflight = new Map();
@@ -244,6 +259,15 @@ async function pollLiveCached(game, liveCreds) {
  * @param {import('./poll.js').GameMasterConfig} game
  */
 function refreshIntervalFor(game) {
+  const base = Number(game.refreshMs) > 0 ? Number(game.refreshMs) : REFRESH_MS;
+  if (!(IDLE_REFRESH_MS > 0)) return base;
+  const asked = lastRequestedAt.get(game.slug) || 0;
+  const active = Date.now() - asked < ACTIVE_WINDOW_MS;
+  return active ? base : Math.max(base, IDLE_REFRESH_MS);
+}
+
+/** The cadence for a game that is being looked at right now. */
+function activeIntervalFor(game) {
   return Number(game.refreshMs) > 0 ? Number(game.refreshMs) : REFRESH_MS;
 }
 
@@ -251,9 +275,22 @@ function refreshIntervalFor(game) {
  * @param {import('./poll.js').GameMasterConfig | { slug: string, refreshMs?: number, kind?: string }} game
  * @param {boolean} [force]
  */
-async function refreshGame(game, force = false) {
+/** Games with a poll running, so overlapping triggers cannot send the queries twice. */
+const refreshing = new Set();
+
+async function refreshGame(game, force = false, demand = false) {
+  if (refreshing.has(game.slug)) return;
+  refreshing.add(game.slug);
+  try {
+    await refreshGameOnce(game, force, demand);
+  } finally {
+    refreshing.delete(game.slug);
+  }
+}
+
+async function refreshGameOnce(game, force, demand) {
   const now = Date.now();
-  const interval = refreshIntervalFor(game);
+  const interval = demand ? activeIntervalFor(game) : refreshIntervalFor(game);
   const last = lastPollAt.get(game.slug) || 0;
   if (!force && now - last < interval - 500) return;
 
@@ -272,6 +309,7 @@ async function refreshGame(game, force = false) {
   }
 
   try {
+    pollCounts.set(game.slug, (pollCounts.get(game.slug) || 0) + 1);
     const servers = await pollGame(game, envCreds);
     const authenticated = Boolean(envCreds) && !isLobbyPointerList(servers);
 
@@ -339,6 +377,8 @@ const server = http.createServer(async (req, res) => {
         games: GAMES.map((g) => g.slug),
         cached: [...cache.keys()],
         responseBytes,
+        polls: Object.fromEntries(pollCounts),
+        pollPolicy: { activeWindowMs: ACTIVE_WINDOW_MS, idleRefreshMs: IDLE_REFRESH_MS, activeRefreshMs: REFRESH_MS },
       }, {}, countResponse);
     return;
   }
@@ -355,6 +395,10 @@ const server = http.createServer(async (req, res) => {
       sendJson(req, res, 404, { error: "Unknown slug", servers: [] }, {}, countResponse);
       return;
     }
+    lastRequestedAt.set(slug, Date.now());
+    // Someone is looking at a list that was only being kept warm slowly: refresh it
+    // in the background now and serve what we have.
+    if (!acceptsLiveCreds(game.kind)) void refreshGame(game, false, true).catch(() => undefined);
 
     const lobbyUser = decodeLobbyHeader(req.headers["x-playbound-lobby-user"]);
     const lobbyPass = decodeLobbyHeader(req.headers["x-playbound-lobby-pass"]);
