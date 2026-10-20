@@ -1,6 +1,7 @@
 "use client";
 
 import { useLauncherOs } from "@/hooks/useLauncherOs";
+import { useLauncherKnown } from "@/components/LauncherKnownContext";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -74,6 +75,7 @@ export function PlayCta({
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const [showDownloadChoice, setShowDownloadChoice] = useState(false);
   const os = useLauncherOs();
+  const launcherKnown = useLauncherKnown();
   const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
   const paid = directPurchaseRequired(game.access);
   const installLabel = isInstalled ? "Play" : paid ? "Install" : "Get It Free";
@@ -174,7 +176,7 @@ export function PlayCta({
     setStatus("trying");
     openPlayboundDeepLink(deepLink, {
       downloadUrl,
-      autoDownload: !isInstalled,
+      autoDownload: !isInstalled && !launcherKnown,
       onResult: (result) => {
         if (result === "download") {
           setStatus("downloaded");

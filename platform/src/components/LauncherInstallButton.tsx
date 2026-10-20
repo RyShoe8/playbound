@@ -1,5 +1,6 @@
 "use client";
 
+import { useLauncherKnown } from "@/components/LauncherKnownContext";
 import { useLauncherOs } from "@/hooks/useLauncherOs";
 
 import { useState } from "react";
@@ -34,6 +35,7 @@ export function LauncherInstallButton({
   const device = useDevice();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const os = useLauncherOs();
+  const launcherKnown = useLauncherKnown();
   const { track } = useTelemetry();
   const deepLink = kind === "install-mod" ? launcherInstallModUrl(slug) : launcherInstallUrl(slug);
 
@@ -53,7 +55,7 @@ export function LauncherInstallButton({
     setStatus("trying");
     openPlayboundDeepLink(deepLink, {
       downloadUrl,
-      autoDownload: true,
+      autoDownload: !launcherKnown,
       onResult: (result) => {
         if (result === "download") {
           setStatus("downloaded");

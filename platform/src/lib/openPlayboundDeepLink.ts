@@ -10,6 +10,7 @@ import {
   detectLauncherOsFromUa,
   type LauncherOs,
 } from "@/lib/launcherDownload";
+import { rememberLauncherKnown } from "@/lib/launcherKnown";
 
 const PLAYBOUND_HANDOFF_MS = 2000;
 
@@ -160,6 +161,7 @@ export function openPlayboundDeepLink(
       opts.onResult?.("download");
       return;
     }
+    if (result === "launched") rememberLauncherKnown();
     opts?.onResult?.(result);
   };
 

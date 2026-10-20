@@ -71,6 +71,8 @@ export default async function LibraryPage() {
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
   /** Editions added to the library without being installed, per game. */
   const savedEditionsByGame: Record<string, string[]> = {};
+  /** Launcher-synced rows prove this account runs the launcher. */
+  let launcherKnown = false;
   /** Cross-platform-ineligible titles still owned only on other devices. */
   let hiddenElsewhereCount = 0;
 
@@ -96,6 +98,7 @@ export default async function LibraryPage() {
         .lean(),
     ]);
 
+    launcherKnown = rows.some((r) => r.source === "launcher");
     for (const r of rows) {
       const saved = Array.isArray(r.savedEditions) ? r.savedEditions.map(String) : [];
       if (!saved.length) continue;
@@ -255,6 +258,7 @@ export default async function LibraryPage() {
           modsByBase={modsByBase}
           editionsByGame={editionsByGame}
           savedEditionsByGame={savedEditionsByGame}
+          launcherKnown={launcherKnown}
         />
       )}
     </div>

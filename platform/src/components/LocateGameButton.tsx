@@ -1,6 +1,7 @@
 "use client";
 
 import { useLauncherOs } from "@/hooks/useLauncherOs";
+import { useLauncherKnown } from "@/components/LauncherKnownContext";
 
 import { useState } from "react";
 import { FolderSearch, Loader2, Download } from "lucide-react";
@@ -39,6 +40,7 @@ export function LocateGameButton({
   const device = useDevice();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const os = useLauncherOs();
+  const launcherKnown = useLauncherKnown();
   const { track } = useTelemetry();
 
 
@@ -61,7 +63,7 @@ export function LocateGameButton({
     setStatus("trying");
     openPlayboundDeepLink(deepLink, {
       downloadUrl,
-      autoDownload: true,
+      autoDownload: !launcherKnown,
       onResult: (result) => {
         if (result === "download") {
           setStatus("downloaded");

@@ -18,6 +18,7 @@ import { supportsController } from "@/lib/controller/support";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { LauncherKnownProvider, useLauncherKnown } from "@/components/LauncherKnownContext";
 import { useLauncherOs } from "@/hooks/useLauncherOs";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
 import { openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
@@ -412,12 +413,15 @@ function UninstallFromPcButton({
 
 function LibraryLauncherAction({ href, label, className }: { href: string; label: "Play" | "Install"; className: string }) {
   const os = useLauncherOs();
+  const launcherKnown = useLauncherKnown();
   const [opening, setOpening] = useState(false);
   return <button type="button" className={className} disabled={opening} onClick={() => {
     setOpening(true);
     openPlayboundDeepLink(href, {
       downloadUrl: launcherDownloadUrlForOs(os),
-      autoDownload: true,
+      // A missed hand-off is not proof the launcher is absent when the account
+      // already syncs from one; downloading Setup then is just noise.
+      autoDownload: !launcherKnown,
       onResult: () => window.setTimeout(() => setOpening(false), 1500),
     });
   }}>
@@ -924,6 +928,7 @@ export function LibraryGrid({
   modsByBase,
   editionsByGame = {},
   savedEditionsByGame = {},
+  launcherKnown = false,
 }: {
   games: Game[];
   entries: LibraryEntryMeta[];
@@ -931,6 +936,8 @@ export function LibraryGrid({
   modsByBase: Record<string, LibraryModItem[]>;
   editionsByGame?: Record<string, LibraryEditionItem[]>;
   savedEditionsByGame?: Record<string, string[]>;
+  /** True when the account has launcher-synced library data. */
+  launcherKnown?: boolean;
 }) {
   const { mode, device, setMode } = useCompatibilityFilter();
   const showLauncherActions = shouldOfferLauncher(device.type);
@@ -1013,6 +1020,7 @@ export function LibraryGrid({
 
 
   return (
+    <LauncherKnownProvider value={launcherKnown}>
     <div className="space-y-4">
       {emptyFiltered ? (
         <div className="rounded-xl border border-border bg-card px-4 py-8 text-center">
@@ -1070,5 +1078,6 @@ export function LibraryGrid({
         </>
       )}
     </div>
+    </LauncherKnownProvider>
   );
 }

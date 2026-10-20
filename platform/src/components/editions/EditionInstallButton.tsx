@@ -1,6 +1,7 @@
 "use client";
 
 import { useLauncherOs } from "@/hooks/useLauncherOs";
+import { useLauncherKnown } from "@/components/LauncherKnownContext";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -38,6 +39,7 @@ export function EditionInstallButton({
 }) {
   const device = useDevice();
   const os = useLauncherOs();
+  const launcherKnown = useLauncherKnown();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
 
 
@@ -99,7 +101,7 @@ export function EditionInstallButton({
           setStatus("trying");
           openPlayboundDeepLink(action.href ?? "", {
             downloadUrl,
-            autoDownload: true,
+            autoDownload: !launcherKnown,
             onResult: (result) => {
               if (result === "download") {
                 setStatus("downloaded");
