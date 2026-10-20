@@ -3337,3 +3337,19 @@ Open:
   not accepted (Source servers also need a Steam login token).
 - Combined Arms, Crystallized Nexus, Romanov's Vengeance and Tiberian Dawn HD
   have no identity profile yet.
+
+### Team Fortress 2 accepted; 32-bit engines blocked by the i386 filter (2026-10-20)
+
+Team Fortress 2 passes fixture acceptance (pinned 14 GiB bundle published after
+three runtime-generated, group-writable files in the source tree were
+corrected; A2S query answers; same game process after agent restart).
+
+Counter-Strike: Source starts and loads its server library inside the
+namespace, then stops with `NET_OpenSocket: socket failed: Operation not
+permitted`. Battlefield 1942 exits silently at the same point. Both are 32-bit
+engines that create sockets through the i386 `socketcall` multiplexer, which
+the legacy profile denies on purpose because its arguments (the address
+family) cannot be inspected. Open Fortress additionally fails inside its
+`memy` loader looking for `server.so`. Resolving these needs a reviewed
+change: a per-customer network namespace, or a different filter strategy for
+i386 engines. They are surfaced limitations until then.
