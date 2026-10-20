@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { gamesFor, getGame } from "@/lib/catalog";
+import { getEditionBySlug } from "@/lib/editions";
 import type { LibraryEntryDTO } from "@/lib/library";
 import { trackServerEvent } from "@/lib/telemetry/server/trackServerEvent";
 import { libraryDeleteAllPlatforms, platformFromRequest } from "@/lib/libraryPlatform";
@@ -112,6 +113,16 @@ const addSchema = z.object({
    * certain, so it is recorded as a weaker signal than a launcher install.
    */
   source: z.enum(["store_redirect", "browser", "manual"]).optional().default("manual"),
+  /**
+   * Add one edition of the game to the library without installing it. Recorded
+   * in `savedEditions`, which launcher sync never rewrites.
+   */
+  editionSlug: z
+    .string()
+    .min(1)
+    .max(80)
+    .regex(/^[a-z0-9][a-z0-9-]*$/i)
+    .optional(),
 });
 
 /** Manually claim a catalog game as owned, or save for later on another device. */
@@ -122,7 +133,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { slug, intent, source } = addSchema.parse(await req.json());
+    const { slug, intent, source, editionSlug } = addSchema.parse(await req.json());
     // Allow claiming testing/CMS drafts the user can already open (admins/testers).
     const game = await getGame(slug, { includeUnpublished: true });
     if (!game) {
@@ -131,6 +142,40 @@ export async function POST(req: Request) {
 
     await dbConnect();
     const now = new Date();
+
+    if (editionSlug) {
+      // Only a real edition of this game can be added; hidden ones resolve by
+      // direct reference but are not offered, so they are refused here too.
+      const edition = await getEditionBySlug(game, editionSlug);
+      if (!edition) {
+        return NextResponse.json({ error: "Unknown edition" }, { status: 404 });
+      }
+      const editionPlatform = game.browserPlayable ? "web" : platformFromRequest(req);
+      const row = await LibraryEntry.findOneAndUpdate(
+        { userId: session.user.id, gameSlug: slug, platform: editionPlatform },
+        {
+          $addToSet: { savedEditions: editionSlug },
+          $set: { updatedAt: now },
+          // A game with an edition in the library is in the library; a new row
+          // is "saved", never claimed as installed.
+          $setOnInsert: {
+            userId: session.user.id,
+            gameSlug: slug,
+            platform: editionPlatform,
+            source,
+            saved: true,
+            installed: false,
+            addedAt: now,
+          },
+        },
+        { upsert: true, returnDocument: "after" }
+      ).lean();
+      revalidateLibraryPages(slug);
+      return NextResponse.json(
+        { entry: docToDto(row!), editionSlug, savedEditions: row?.savedEditions ?? [] },
+        { status: 201 }
+      );
+    }
     const saving = intent === "save";
 
     /**
@@ -219,6 +264,20 @@ export async function DELETE(req: Request) {
 
   try {
     await dbConnect();
+
+    // Removing one saved edition leaves the game, and every other edition, alone.
+    const editionSlug = url.searchParams.get("editionSlug")?.trim();
+    if (editionSlug) {
+      if (!/^[a-z0-9][a-z0-9-]*$/i.test(editionSlug) || editionSlug.length > 80) {
+        return NextResponse.json({ error: "Invalid edition" }, { status: 400 });
+      }
+      const res = await LibraryEntry.updateMany(
+        { userId: session.user.id, gameSlug: slug },
+        { $pull: { savedEditions: editionSlug }, $set: { updatedAt: new Date() } }
+      );
+      revalidateLibraryPages(slug);
+      return NextResponse.json({ success: true, updated: res.modifiedCount > 0 });
+    }
 
     // Scoped to the device making the request: removing a game from your phone
     // must not also remove the desktop copy you still have installed.

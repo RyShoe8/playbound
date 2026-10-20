@@ -69,6 +69,8 @@ export default async function LibraryPage() {
     ownedElsewhere: boolean;
   }[] = [];
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
+  /** Editions added to the library without being installed, per game. */
+  const savedEditionsByGame: Record<string, string[]> = {};
   /** Cross-platform-ineligible titles still owned only on other devices. */
   let hiddenElsewhereCount = 0;
 
@@ -93,6 +95,13 @@ export default async function LibraryPage() {
         .sort({ updatedAt: -1 })
         .lean(),
     ]);
+
+    for (const r of rows) {
+      const saved = Array.isArray(r.savedEditions) ? r.savedEditions.map(String) : [];
+      if (!saved.length) continue;
+      const key = String(r.gameSlug);
+      savedEditionsByGame[key] = [...new Set([...(savedEditionsByGame[key] || []), ...saved])];
+    }
 
     const candidateSlugs = [...new Set(rows.map((r) => String(r.gameSlug)))];
     const catalogGames = await gamesFor(candidateSlugs, { includeUnpublished: true });
@@ -245,6 +254,7 @@ export default async function LibraryPage() {
           orphans={libraryOrphans}
           modsByBase={modsByBase}
           editionsByGame={editionsByGame}
+          savedEditionsByGame={savedEditionsByGame}
         />
       )}
     </div>

@@ -52,6 +52,14 @@ const LibraryEntrySchema = new Schema({
    * back to `editionSlug` rather than treating empty as "nothing installed".
    */
   installedEditions: { type: [String], default: [] },
+  /**
+   * Editions the player added to their library without installing them.
+   *
+   * Kept apart from `installedEditions` on purpose: launcher sync treats that
+   * array as the authoritative list of what is on the device and rewrites it,
+   * so an edition merely saved there would be dropped on the next sync.
+   */
+  savedEditions: { type: [String], default: [] },
   installedAt: { type: Date },
   addedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -79,6 +87,7 @@ export type LibraryEntryDoc = {
   version?: string;
   editionSlug?: string | null;
   installedEditions?: string[];
+  savedEditions?: string[];
   installedAt?: Date;
   addedAt: Date;
   updatedAt: Date;

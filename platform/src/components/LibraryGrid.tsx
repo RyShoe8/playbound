@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Download, ExternalLink, FolderOpen, Play, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, ChevronDown, Download, ExternalLink, FolderOpen, LibraryBig, Play, Trash2, UserPlus, Users } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import {
   launcherInstallUrl,
@@ -637,19 +637,86 @@ function MobileOwnedElsewhereInstall({ game }: { game: Game }) {
   );
 }
 
+/**
+ * Add one edition to the library without installing it, or take it back out.
+ *
+ * Distinct from Install: this records intent ("I want this edition") and never
+ * starts the launcher. The state is optimistic and rolls back if the request
+ * fails, mirroring the game-level button.
+ */
+function AddEditionToLibraryButton({
+  slug,
+  editionSlug,
+  editionName,
+  initiallySaved,
+  className,
+}: {
+  slug: string;
+  editionSlug: string;
+  editionName: string;
+  initiallySaved: boolean;
+  className?: string;
+}) {
+  const router = useRouter();
+  const [saved, setSaved] = useState(initiallySaved);
+  const [busy, setBusy] = useState(false);
+
+  async function toggle() {
+    if (busy) return;
+    setBusy(true);
+    const next = !saved;
+    setSaved(next);
+    try {
+      const res = next
+        ? await fetch("/api/library", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ slug, editionSlug, intent: "save" }),
+          })
+        : await fetch(
+            `/api/library?slug=${encodeURIComponent(slug)}&editionSlug=${encodeURIComponent(editionSlug)}`,
+            { method: "DELETE" }
+          );
+      if (!res.ok) setSaved(!next);
+      else router.refresh();
+    } catch {
+      setSaved(!next);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => void toggle()}
+      aria-pressed={saved}
+      title={saved ? `Remove ${editionName} from your library` : `Add ${editionName} to your library`}
+      className={cn(className, "disabled:opacity-60")}
+    >
+      {saved ? <Check className="size-3" /> : <LibraryBig className="size-3" />}
+      {saved ? "In Library" : "Add to Library"}
+    </button>
+  );
+}
+
 function DesktopLibraryRow({
   game,
   meta,
   mods,
   showLauncherActions,
   editions = [],
+  savedEditions = [],
 }: {
   game: Game;
   meta?: LibraryEntryMeta;
   mods: LibraryModItem[];
   showLauncherActions: boolean;
   editions?: LibraryEditionItem[];
+  savedEditions?: string[];
 }) {
+  const savedEditionsSet = new Set(savedEditions);
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
   const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
@@ -749,7 +816,16 @@ function DesktopLibraryRow({
                           </a>
                         </>
                       ) : (
-                        <LibraryLauncherAction href={launcherInstallUrl(game.slug, ed.slug)} label="Install" className="inline-flex min-h-7 items-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-bold text-primary-foreground hover:brightness-110" />
+                        <>
+                          <LibraryLauncherAction href={launcherInstallUrl(game.slug, ed.slug)} label="Install" className="inline-flex min-h-7 items-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-bold text-primary-foreground hover:brightness-110" />
+                          <AddEditionToLibraryButton
+                            slug={game.slug}
+                            editionSlug={ed.slug}
+                            editionName={ed.name}
+                            initiallySaved={savedEditionsSet.has(ed.slug)}
+                            className="inline-flex min-h-7 items-center gap-1 rounded-full bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+                          />
+                        </>
                       )}
                       {isEdParty ? (
                         <LibraryStartPartyButton
@@ -847,12 +923,14 @@ export function LibraryGrid({
   orphans,
   modsByBase,
   editionsByGame = {},
+  savedEditionsByGame = {},
 }: {
   games: Game[];
   entries: LibraryEntryMeta[];
   orphans: LibraryOrphan[];
   modsByBase: Record<string, LibraryModItem[]>;
   editionsByGame?: Record<string, LibraryEditionItem[]>;
+  savedEditionsByGame?: Record<string, string[]>;
 }) {
   const { mode, device, setMode } = useCompatibilityFilter();
   const showLauncherActions = shouldOfferLauncher(device.type);
@@ -886,6 +964,7 @@ export function LibraryGrid({
           mods={modsByBase[game.slug] || []}
           showLauncherActions={showLauncherActions}
           editions={editionsByGame[game.slug] || []}
+          savedEditions={savedEditionsByGame[game.slug] || []}
         />
       ),
     })),
