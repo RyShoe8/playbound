@@ -130,7 +130,7 @@ function str(value: unknown, fallback = ""): string {
   return value == null ? fallback : String(value);
 }
 
-function toEdition(doc: LeanEdition): Edition {
+export function toEdition(doc: LeanEdition): Edition {
   const branding = (doc.branding as Record<string, unknown>) ?? {};
   const links = (doc.links as Record<string, unknown>) ?? {};
   const requirements = doc.requirements as Record<string, unknown> | null;
@@ -204,7 +204,20 @@ function toEdition(doc: LeanEdition): Edition {
         installConfig.external_installer?.url
     );
     const editionRecipe = launcherInstallBySlug[editionSlugStr];
-    if (!hasOwnInstall && editionRecipe?.enabled && editionRecipe.url) {
+    /*
+     * A stored Steam hand-off (external_installer / steam) only says where to
+     * install from. The launcher needs the edition's own app id and executable
+     * names to recognise the finished install; without them it fell back to the
+     * parent game's, so Alien Swarm: Reactive Drop kept reading "not installed".
+     * Add them whenever the edition has no richer recipe of its own.
+     */
+    const needsDetectionFields = Boolean(
+      editionRecipe?.enabled &&
+        editionRecipe.kind === "external" &&
+        !installConfig.playbound_installer?.kind &&
+        !installConfig.official_download?.url
+    );
+    if ((!hasOwnInstall || needsDetectionFields) && editionRecipe?.enabled && editionRecipe.url) {
       if (editionRecipe.kind === "external") {
         /*
          * A bare hand-off URL is not enough. Without the edition's Steam app id
@@ -217,7 +230,7 @@ function toEdition(doc: LeanEdition): Edition {
           ...installConfig,
           playbound_installer: {
             kind: "external",
-            url: editionRecipe.url,
+            url: installConfig.external_installer?.url || editionRecipe.url,
             steamAppId: editionRecipe.steamAppId ?? null,
             exeHint: editionRecipe.exeHint ?? null,
             knownExePaths: editionRecipe.knownExePaths ?? [],

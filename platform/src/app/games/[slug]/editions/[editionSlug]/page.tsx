@@ -51,6 +51,7 @@ import { JsonLd, graph, breadcrumbSchema, faqSchema } from "@/components/JsonLd"
 import { absoluteUrl } from "@/lib/site";
 import { retiredEditionRedirect } from "@/lib/editionRedirects";
 import { TelemetryOnce } from "@/components/TelemetryOnce";
+import { EditionLibraryButton } from "@/components/EditionLibraryButton";
 import {
   EditionInstallButton,
   EditionInstallSteps,
@@ -192,7 +193,7 @@ export default async function EditionPage({
 
   const ugcScope = editionScopedUgcFilter(edition.slug);
 
-  const [discussionCount, reviewCount, isInstalled] = await Promise.all([
+  const [discussionCount, reviewCount, isInstalled, isSavedEdition] = await Promise.all([
     safeQuery(
       () =>
         DiscussionTopic.countDocuments({
@@ -221,6 +222,20 @@ export default async function EditionPage({
             }).lean();
             return Boolean(entry);
           },
+          false
+        )
+      : Promise.resolve(false),
+    // Added to the library without being installed (savedEditions).
+    session?.user?.id
+      ? safeQuery(
+          async () =>
+            Boolean(
+              await LibraryEntry.findOne({
+                userId: session.user.id,
+                gameSlug: game.slug,
+                savedEditions: edition.slug,
+              }).lean()
+            ),
           false
         )
       : Promise.resolve(false),
@@ -343,6 +358,14 @@ export default async function EditionPage({
               <>
                 <EditionInstallButton action={action} telemetryProps={telemetryProps} size="lg" />
                 <LocateGameButton slug={game.slug} size="lg" />
+                <EditionLibraryButton
+                  slug={game.slug}
+                  editionSlug={edition.slug}
+                  editionName={edition.name}
+                  initiallySaved={isSavedEdition}
+                  signedIn={Boolean(session?.user)}
+                  size="lg"
+                />
                 {secondary.map((alt) => (
                   <EditionInstallButton
                     key={alt.method}

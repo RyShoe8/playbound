@@ -10,3 +10,11 @@ describe("Alien Swarm: Reactive Drop install recipe", () => {
     expect(recipe.knownExePaths?.some((p) => p.endsWith("\\Alien Swarm Reactive Drop\\reactivedrop.exe"))).toBe(true);
   });
 });
+
+describe("Alien Swarm parent entry", () => {
+  it("also knows Reactive Drop's executable, since Locate and the scan use the game's entry", () => {
+    const parent = launcherInstallBySlug["alien-swarm"];
+    expect(parent.knownExePaths?.some((p) => p.endsWith("\\Alien Swarm Reactive Drop\\reactivedrop.exe"))).toBe(true);
+    expect(parent.knownExePaths?.some((p) => p.endsWith("\\alien swarm\\swarm.exe"))).toBe(true);
+  });
+});

@@ -308,6 +308,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     knownExePaths: [
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\alien swarm\\swarm.exe",
       "%PROGRAMFILES%\\Steam\\steamapps\\common\\alien swarm\\swarm.exe",
+      // Reactive Drop is this game's default edition and ships its own executable.
+      // Locate and the install scan work from the game's entry, so without these an
+      // existing Reactive Drop install was never found. Each is re-resolved under
+      // every Steam library, not just the default one.
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\reactivedrop.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\reactivedrop.exe",
     ],
     note: "Free on Steam — Steam handles the download and the install. Multiplayer connects via Source engine +connect {host}:{port}.",
   },
