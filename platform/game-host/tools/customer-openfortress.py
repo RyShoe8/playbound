@@ -33,9 +33,17 @@ def mounts(descriptor):
         if name in MUTABLE or name in ('modelsounds.cache', 'bin', 'maps', 'gameinfo.txt') or re.fullmatch(r'console.*\.log', name):
             continue
         bind('open_fortress/'+name, 'open_fortress/'+name)
+    # The mod's module introspection looks for a loaded file named server.so, while the
+    # dedicated engine asks for server_srv.so. A symlink (as the unconfined runtime used)
+    # makes the mapping resolve to server.so; it lives in a tmpfs so no link is ever
+    # written into, or migrated with, the customer's data.
+    # 0700 so the bootstrap's private-directory check accepts the mount point.
+    result.extend(['--perms', '0700', '--tmpfs', '/server/runtime/open_fortress/bin'])
     for name in sorted(os.listdir(mod/'bin')):
-        bind('open_fortress/bin/'+('server.so' if name == 'server_srv.so' else name),
-             'open_fortress/bin/'+name)
+        if name == 'server_srv.so':
+            continue
+        bind('open_fortress/bin/'+name, 'open_fortress/bin/'+name)
+    result.extend(['--symlink', 'server.so', '/server/runtime/open_fortress/bin/server_srv.so'])
     for name in sorted(os.listdir(mod/'maps')):
         if name != 'graphs':
             bind('open_fortress/maps/'+name, 'open_fortress/maps/'+name)

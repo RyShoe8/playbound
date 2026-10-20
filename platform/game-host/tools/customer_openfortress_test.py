@@ -53,9 +53,16 @@ class OpenFortressPrivateLayout(unittest.TestCase):
         descriptor = os.open(self.public, os.O_RDONLY | os.O_DIRECTORY)
         self.addCleanup(os.close, descriptor)
         mounts = module.mounts(descriptor)
-        bindings = dict((mounts[i+2], mounts[i+1]) for i in range(0, len(mounts), 3))
+        bindings = {mounts[i+2]: mounts[i+1] for i in range(len(mounts)-2) if mounts[i] == '--ro-bind'}
         self.assertTrue(bindings['/server/runtime/bin/engine.so'].endswith('/bin/engine_srv.so'))
-        self.assertTrue(bindings['/server/runtime/open_fortress/bin/server_srv.so'].endswith('/bin/server.so'))
+        # The dedicated engine's server_srv.so is a symlink to server.so inside a tmpfs.
+        self.assertNotIn('/server/runtime/open_fortress/bin/server_srv.so', bindings)
+        self.assertTrue(bindings['/server/runtime/open_fortress/bin/server.so'].endswith('/bin/server.so'))
+        tmpfs = mounts.index('--tmpfs')
+        self.assertEqual(mounts[tmpfs+1], '/server/runtime/open_fortress/bin')
+        link = mounts.index('--symlink')
+        self.assertEqual(mounts[link:link+3], ['--symlink', 'server.so', '/server/runtime/open_fortress/bin/server_srv.so'])
+        self.assertLess(tmpfs, mounts.index('/server/runtime/open_fortress/bin/server.so'))
         self.assertNotIn('/server/runtime/open_fortress/maps/graphs', bindings)
         self.assertNotIn('/server/runtime/open_fortress/cfg', bindings)
         self.assertNotIn('/opt/playbound-host', ' '.join(mounts))

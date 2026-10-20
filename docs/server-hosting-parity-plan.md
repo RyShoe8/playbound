@@ -3375,3 +3375,14 @@ now reaches its mod loader but aborts because `memy` cannot find the aliased
 `server.so`; that remains open. The profile for the test UID was loaded only
 for the runs and removed afterwards. Production enrollment of any of these
 still needs the per-UID profile loaded by the enrollment flow.
+
+### Open Fortress: server library mapping fixed, silent exit remains (2026-10-20)
+
+The `memy` loader looks for a mapped module named `server.so`, but the bind
+mount presented the mod library as `server_srv.so`. The runtime now mounts a
+private 0700 tmpfs over `open_fortress/bin`, binds the real libraries there and
+adds `server_srv.so` as a symlink to `server.so`, so the mapping resolves to the
+expected name and no link is written into customer data. With that, the engine
+no longer reports the `memy` error, but it exits silently after its crash
+handler initialises and never binds. It stays a surfaced limitation until the
+exit is traced inside the namespace.
