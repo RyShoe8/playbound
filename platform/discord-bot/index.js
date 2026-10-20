@@ -1652,6 +1652,42 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  /*
+   * What /health cannot say: whether Discord is actually reachable from here.
+   *
+   * A process can be deployed, running and answering /health while every Discord
+   * call hangs — a dropped gateway, or the host's shared IP rate-limited at
+   * Discord's edge — and the symptom upstream is only "provisioning timed out".
+   * This times one real REST round trip and reports the gateway state, so the
+   * two cases can be told apart without opening the host's dashboard. Public and
+   * read-only: it exposes no ids, names or secrets.
+   */
+  if (req.method === "GET" && req.url === "/health/discord") {
+    const started = Date.now();
+    let rest = "ok";
+    try {
+      await Promise.race([
+        client.guilds.fetch(GUILD_ID),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000)),
+      ]);
+    } catch (err) {
+      rest = err?.message === "timeout" ? "timeout" : "error";
+    }
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(
+      JSON.stringify({
+        ok: rest === "ok" && client.isReady(),
+        gatewayReady: client.isReady(),
+        gatewayPingMs: client.ws?.ping ?? null,
+        rest,
+        restMs: Date.now() - started,
+        backfillRunning,
+        reconcileRunning,
+      })
+    );
+    return;
+  }
+
   // One permanent room for Dedicated support. An invite targets this channel,
   // so Discord opens the conversation rather than dropping visitors in #general.
   if (req.method === "POST" && req.url === "/hosting-support") {
@@ -1691,7 +1727,9 @@ const server = http.createServer(async (req, res) => {
         res.end("slug required");
         return;
       }
+      const provisionStarted = Date.now();
       const result = await provisionChannel(slug);
+      console.log(`[provision] ${slug} finished in ${Date.now() - provisionStarted}ms (created=${Boolean(result.created)})`);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
         JSON.stringify({

@@ -7,6 +7,14 @@ import CatalogGame from "@/lib/models/CatalogGame";
  * Asks the Discord worker to provision (or refresh) the PlayBound channel for a game.
  * Requires DISCORD_BOT_WEBHOOK_URL + BOT_WEBHOOK_SECRET on the Next deployment.
  */
+export const maxDuration = 120;
+
+/**
+ * The bot worker can be asleep, and waking it takes longer than a short timeout.
+ * Wait up to 40s, and once more after a timeout (the retry finds it awake).
+ */
+const ATTEMPT_MS = 40_000;
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -33,18 +41,32 @@ export async function POST(
     );
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+  const provision = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ATTEMPT_MS);
+    try {
+      return await fetch(webhook.replace(/\/$/, "") + "/provision", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${secret}`,
+        },
+        body: JSON.stringify({ slug }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    const res = await fetch(webhook.replace(/\/$/, "") + "/provision", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: `Bearer ${secret}`,
-      },
-      body: JSON.stringify({ slug }),
-      signal: controller.signal,
-    });
+    let res: Response;
+    try {
+      res = await provision();
+    } catch (first) {
+      if (!(first instanceof Error && first.name === "AbortError")) throw first;
+      res = await provision();
+    }
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       return NextResponse.json(
@@ -66,7 +88,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Discord bot worker timed out after 15s. Check that your Render bot service is deployed and running.",
+            "Discord bot worker did not answer after two 40s attempts. Check that your Render bot service is deployed and running.",
         },
         { status: 504 }
       );
@@ -80,7 +102,5 @@ export async function POST(
       },
       { status: 502 }
     );
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
