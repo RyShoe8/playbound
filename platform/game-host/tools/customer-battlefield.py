@@ -59,6 +59,23 @@ def write_private(file, text):
             os.unlink(temporary)
 
 
+def seed(source, target):
+    """First start only: the engine's stock settings (profile, controls, defaults) from the sealed bundle."""
+    if not source.is_dir() or (target/'serversettings.con').exists():
+        return
+    (target/'adminsettings.con').touch(mode=0o600, exist_ok=True)
+    for path in sorted(source.rglob('*')):
+        relative = path.relative_to(source)
+        info = path.lstat()
+        if stat.S_ISDIR(info.st_mode):
+            (target/relative).mkdir(mode=0o700, parents=True, exist_ok=True)
+        elif stat.S_ISREG(info.st_mode) and info.st_size <= 65536:
+            (target/relative).parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            write_private(target/relative, path.read_text())
+        else:
+            raise ValueError('Invalid published Battlefield settings')
+
+
 def prepare(root, value, port):
     settings(json.dumps(value), port)
     for name in ('settings', 'logs'):
@@ -67,6 +84,7 @@ def prepare(root, value, port):
         info = directory.lstat()
         if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
             raise ValueError('Unsafe Battlefield overlay directory')
+    seed(Path('/game-data/settings-seed'), root/'settings')
     values = {
         'game.serverName': '"'+value['name']+'"',
         'game.serverDedicated': '1', 'game.serverInternet': '0',

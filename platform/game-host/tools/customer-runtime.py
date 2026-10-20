@@ -475,7 +475,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *(['--ro-bind','/usr/local/libexec/playbound-customer-trackmania','/trackmania-bootstrap.py'] if GAME=='trackmania' else []),
             *(['--ro-bind','/usr/local/libexec/playbound-customer-unturned','/unturned-bootstrap.py'] if GAME=='unturned' else []),
             *(['--ro-bind','/usr/local/libexec/playbound-customer-openfortress','/openfortress-bootstrap.py','--ro-bind','/usr/local/libexec/playbound-customer-source','/source-contract.py','--ro-bind','/proc/self/fd/'+str(dependency_directory),'/tf2'] if GAME=='open-fortress' else []),
-            *(['--ro-bind','/usr/local/libexec/playbound-customer-battlefield','/battlefield-bootstrap.py'] if GAME=='battlefield-1942-anthology' else []),
+            *(['--ro-bind','/usr/local/libexec/playbound-customer-battlefield','/battlefield-bootstrap.py','--bind',str(data/'settings'),'/game-data/mods/bf1942/settings'] if GAME=='battlefield-1942-anthology' else []),
             *(['--ro-bind','/usr/local/libexec/playbound-customer-bombsquad','/bombsquad-bootstrap.py','--ro-bind','/proc/self/fd/'+str(python_directory)+'/lib','/python/lib'] if GAME=='bombsquad' else []),
             *(['--ro-bind','/usr/local/libexec/playbound-customer-morrowind','/morrowind-bootstrap.py','--ro-bind','/usr/local/libexec/playbound-customer-morrowind-admin.lua','/morrowind-admin.lua'] if GAME=='morrowind' else []),
             *(['--ro-bind','/usr/local/libexec/playbound-customer-barotrauma','/barotrauma-bootstrap.py'] if GAME=='barotrauma' else []),
@@ -838,7 +838,10 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
                 trusted_module('pb_openfortress','playbound-customer-openfortress')
                 for name in ('runtime','runtime/bin','runtime/open_fortress','runtime/open_fortress/bin','runtime/open_fortress/maps','runtime/open_fortress/maps/graphs','.steam/sdk32'):
                     directory(root/'data'/name,uid=account['uid'],mode=0o700)
-            if GAME=='battlefield-1942-anthology':trusted_module('pb_battlefield','playbound-customer-battlefield')
+            if GAME=='battlefield-1942-anthology':
+                trusted_module('pb_battlefield','playbound-customer-battlefield')
+                for name in ('settings','logs'):
+                    directory(root/'data'/name,uid=account['uid'],mode=0o700)
             if GAME=='bombsquad':trusted_module('pb_bombsquad','playbound-customer-bombsquad')
             if GAME=='morrowind':
                 trusted_module('pb_morrowind','playbound-customer-morrowind')

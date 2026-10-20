@@ -6,7 +6,7 @@ evidence or an explicit surfaced limitation; this table shows which do. Regenera
 each acceptance instead of editing it by hand.
 
 Targets: 52. Isolation: operator_rollout 23, pending 3, blocked 26. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 32, none 19, recorded blocker 1. World backups: yes 37, no 15.
+Acceptance evidence: accepted 35, none 16, recorded blocker 1. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -29,7 +29,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | OpenRA · Crystallized Nexus (`crystallized-nexus`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
 | Deus Ex GOTY (HX) (`deus-ex`) | automatic | none | pending | none | no | HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable. |
 | Don't Starve Together (`dont-starve-together`) | automatic | implemented | blocked | none | yes | Local pinned 64-bit native candidate with private cluster and fenced Steam ports implemented; startup, controls, recovery and restore acceptance remain required. |
-| Earth 2140 Trilogy (OpenE2140) (`earth-2140-trilogy`) | automatic | implemented | blocked | none | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| Earth 2140 Trilogy (OpenE2140) (`earth-2140-trilogy`) | automatic | implemented | blocked | accepted | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
 | Factorio (stable headless) (`factorio`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (2 GiB envelope). Fenced world creation/restore and customer control acceptance are still required before enrollment. |
 | FlightGear (reviewed fgms relay) (`flightgear`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Freeciv (matching reviewed engine, library and rulesets) (`freeciv`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and root-promoted paired engine/libraries/rulesets. Native query, same-process agent recovery, stop and data rollback passed. Executable ruleset/plugin installation remains disabled. |
@@ -44,9 +44,9 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Necesse (`necesse`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS. Fenced world restore and customer control acceptance are still required before enrollment. |
 | Open Fortress (SDK + mod) (`open-fortress`) | automatic | implemented | blocked | none | no | Local paired i386 SDK/mod candidate with separate read-only TF2 dependency, private defaults/cache/config and fixed library aliases implemented; engine networking, RCON, startup/recovery and protected restore acceptance … |
 | OpenArena (reviewed ioquake3 dedicated engine) (`openarena`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
-| OpenHV (`openhv`) | automatic | implemented | blocked | none | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| OpenHV (`openhv`) | automatic | implemented | blocked | accepted | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
 | Medal of Honor: Allied Assault (OpenMoHAA) (`openmohaa`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment, a root-promoted dedicated engine, pinned base-game assets and the original eight-character save suffix. Native query, restart and rollback passed. New isolated engine/assets need operator rev… |
-| OpenRA (Red Alert, Tiberian Dawn, Dune 2000) (`openra`) | automatic | implemented | blocked | none | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| OpenRA (Red Alert, Tiberian Dawn, Dune 2000) (`openra`) | automatic | implemented | blocked | accepted | yes | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
 | OpenTTD (reviewed Ubuntu native server) (`openttd`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | RVGL (reviewed Linux engine) (`re-volt-rvgl`) | automatic | implemented | operator_rollout | accepted | no | Fresh private-UID provisioning, root-managed lobby start, live capture/navigation, same-process agent restart and stop passed on the VPS. Enrollment requires an explicit tier selection; human Join and a complete race rem… |
 | RimWorld Together (reviewed PlayBound source build) (`rimworld-together`) | manual (declared) | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS with .NET GC limits. UID-aware controls, protected restore and customer control acceptance are still required before enrollment. |
@@ -80,14 +80,14 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 - **OpenRA · Crystallized Nexus** — blocked, evidence: none
 - **Deus Ex GOTY (HX)** — pending, evidence: none
 - **Don't Starve Together** — blocked, evidence: none
-- **Earth 2140 Trilogy (OpenE2140)** — blocked, evidence: none
+- **Earth 2140 Trilogy (OpenE2140)** — blocked, evidence: accepted
 - **Factorio (stable headless)** — blocked, evidence: accepted
 - **GoldenEye: Source (SDK + mod)** — pending, evidence: none
 - **Morrowind (reviewed TES3MP engine)** — blocked, evidence: accepted
 - **Necesse** — blocked, evidence: accepted
 - **Open Fortress (SDK + mod)** — blocked, evidence: none
-- **OpenHV** — blocked, evidence: none
-- **OpenRA (Red Alert, Tiberian Dawn, Dune 2000)** — blocked, evidence: none
+- **OpenHV** — blocked, evidence: accepted
+- **OpenRA (Red Alert, Tiberian Dawn, Dune 2000)** — blocked, evidence: accepted
 - **RimWorld Together (reviewed PlayBound source build)** — blocked, evidence: accepted
 - **OpenRA · Romanov's Vengeance (RA2)** — blocked, evidence: none
 - **Space Station 14 (paired Robust engine and content)** — blocked, evidence: accepted

@@ -3314,3 +3314,26 @@ Surfaced limitations (not accepted):
   the seccomp profile but is not sufficient alone.
 - Unturned and Don't Starve Together need customer-supplied Steam/Klei tokens;
   startup is verified up to the missing token only.
+
+### OpenRA family accepted; Battlefield 1942 and Veloren open (2026-10-20)
+
+Fixture acceptance passes on the VPS for OpenRA, OpenHV and Earth 2140. The
+.NET servers need a 1 GiB GC heap in a power-of-two region range, a 4096 MiB
+envelope, 512 tasks and a 3x address-space allowance (CoreCLR fails to start at
+2x). The harness now records acceptance only when the post-restart check shows
+the same game process.
+
+Open:
+
+- Battlefield 1942: the sealed bundle now carries an executable `bf1942_lnxded`
+  alias, the empty `mods/bf1942/settings` mount point and a pinned stock
+  settings seed, and the private settings directory is mounted over it. The
+  engine then logs its CPU probe in the namespace and exits 0 before binding;
+  the same binary runs normally outside it. The i386 syscall filter is the
+  suspect and is not yet traced.
+- Veloren: its range is the single port 14004, which the live production
+  server holds, so a fixture cannot run beside it.
+- Open Fortress, Counter-Strike: Source, Counter-Strike 2 and Team Fortress 2:
+  not accepted (Source servers also need a Steam login token).
+- Combined Arms, Crystallized Nexus, Romanov's Vengeance and Tiberian Dawn HD
+  have no identity profile yet.

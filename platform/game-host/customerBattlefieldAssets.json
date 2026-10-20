@@ -264,6 +264,161 @@
       "path": "bf1942_lnxded",
       "bytes": 15218900,
       "sha256": "6b90d1cc7bf6036b882d57b245e413e19663fa1c4eecc0639a1115000ff02b7c"
+    },
+    {
+      "path": "settings-seed/aliasedcommands.con",
+      "bytes": 3029,
+      "sha256": "59ea67b4f4e0357b52a9069e2b6117a592662b5e08c280e6ecb98a888709f4a7"
+    },
+    {
+      "path": "settings-seed/controls.con",
+      "bytes": 179,
+      "sha256": "d9e67854e107d7faaf0ee0946d6ec044ade581be78476d68b4525210d81e43cb"
+    },
+    {
+      "path": "settings-seed/default.con",
+      "bytes": 668,
+      "sha256": "3db73d7598282d5f54a92e3b16d5243a4d06470d35ec775868436ae04dc60ed2"
+    },
+    {
+      "path": "settings-seed/default/controls.con",
+      "bytes": 179,
+      "sha256": "d9e67854e107d7faaf0ee0946d6ec044ade581be78476d68b4525210d81e43cb"
+    },
+    {
+      "path": "settings-seed/default/controls/air.con",
+      "bytes": 3597,
+      "sha256": "7d7736991bc0d2f720c2fb40745f101ae40372b487f5a011fadd24a38d0a6500"
+    },
+    {
+      "path": "settings-seed/default/controls/common.con",
+      "bytes": 5138,
+      "sha256": "b0f3bdc6e1e168e86cf48bb506aca2defb2054c2dae4db741ba8197441300d39"
+    },
+    {
+      "path": "settings-seed/default/controls/infantry.con",
+      "bytes": 3949,
+      "sha256": "5336f14ba8e44ef0e9a92e15fe94eba683678812c6a94c0cea0cffb08d2c75eb"
+    },
+    {
+      "path": "settings-seed/default/controls/land.con",
+      "bytes": 3468,
+      "sha256": "a052c473b5f123d0dcbca8f63ef9969a1952b7e17159f54dc48c4f6e9d3bd9dd"
+    },
+    {
+      "path": "settings-seed/default/generaloptions.con",
+      "bytes": 58,
+      "sha256": "b45e0021cfa75412e94b2c1efc588ca6b942f4a02155067e909dcded75e04ff6"
+    },
+    {
+      "path": "settings-seed/default/generaloptionshigh.con",
+      "bytes": 415,
+      "sha256": "3da29a106c9b06f85bff47ef90cd38acf7a7ce4ba50f475c7f36719903f6538b"
+    },
+    {
+      "path": "settings-seed/default/generaloptionslow.con",
+      "bytes": 413,
+      "sha256": "7fe9e501004e8e084f2907ba2fcf5a8993ab587b9d34c405c556cb8c16e9c3ef"
+    },
+    {
+      "path": "settings-seed/default/generaloptionsmedium.con",
+      "bytes": 415,
+      "sha256": "85a89decc30a6756af4e560e58a30f34d9cb0079cc3a441a7f2c23ab2e53c436"
+    },
+    {
+      "path": "settings-seed/default/profile.con",
+      "bytes": 43,
+      "sha256": "07cc6e9dfe1978a4a5287937a8eb4fe70dd7ec178f5e4c0e2df397f994cc57a2"
+    },
+    {
+      "path": "settings-seed/default/singleplayersettings.con",
+      "bytes": 321,
+      "sha256": "72c1ddbb3a986f8767972febabc69638c2d6df89003161901338ad7a321726d6"
+    },
+    {
+      "path": "settings-seed/default/sound.con",
+      "bytes": 49,
+      "sha256": "8bf668acbb8728e168aa3d85075dedb178256e9d30e4242b2cadab67fd970355"
+    },
+    {
+      "path": "settings-seed/default/soundhigh.con",
+      "bytes": 442,
+      "sha256": "fe086b00459cad446b1706353f67ffd4d1abcf29165881ac3852679c757558ec"
+    },
+    {
+      "path": "settings-seed/default/soundlow.con",
+      "bytes": 442,
+      "sha256": "ce96f6adc6d5fc20b3b45ed9f70dc77dc619df4bd567fe3c729bcf8d1f240f9b"
+    },
+    {
+      "path": "settings-seed/default/soundmedium.con",
+      "bytes": 442,
+      "sha256": "dd3969cf341a2c7aaf72e6a6fd2a1477373d9ad123af8b37980ef33f2d8bd5e8"
+    },
+    {
+      "path": "settings-seed/default/video.con",
+      "bytes": 49,
+      "sha256": "0ab088510d828a14aaeb59af7b6dfc514b5b315c8cf2081e117128c50030edef"
+    },
+    {
+      "path": "settings-seed/default/videocustom.con",
+      "bytes": 287,
+      "sha256": "172e8cf74d2dcd456fd99f1acfa46bac90b2983c936eb853abdff9e2151c5f8a"
+    },
+    {
+      "path": "settings-seed/default/videohigh.con",
+      "bytes": 308,
+      "sha256": "a5976e9c49671d817c9ffa81f76ab4d02c5929bdcbab57a8149586a8da7f4d91"
+    },
+    {
+      "path": "settings-seed/default/videolow.con",
+      "bytes": 306,
+      "sha256": "28cc6ef7e4a955963bbe84867b46a3dd35cb33069484436a436d783f1753fbb0"
+    },
+    {
+      "path": "settings-seed/default/videomedium.con",
+      "bytes": 308,
+      "sha256": "acfb5c49f6e0bc8cd394e6ebdea310ec1ad6be57f5eb0078fb7d0c0ede57e6d1"
+    },
+    {
+      "path": "settings-seed/generaloptions.con",
+      "bytes": 56,
+      "sha256": "7d419aad4a4d2aacafdfc08cd2cf5c8831f1284bb06e932b9c1f8d5132304c73"
+    },
+    {
+      "path": "settings-seed/maplist.con",
+      "bytes": 77,
+      "sha256": "2c9faf684e46be2e5daac54bc8d5bc8a4e6eb64e5a7b1b112651bfe76f6b3423"
+    },
+    {
+      "path": "settings-seed/pbclient.con",
+      "bytes": 24,
+      "sha256": "462ce7b11e1554c447c6b0940d26b3f74a26f758f2ddcc62f4752f5caec22db0"
+    },
+    {
+      "path": "settings-seed/profile.con",
+      "bytes": 43,
+      "sha256": "07cc6e9dfe1978a4a5287937a8eb4fe70dd7ec178f5e4c0e2df397f994cc57a2"
+    },
+    {
+      "path": "settings-seed/serversettings.con",
+      "bytes": 1390,
+      "sha256": "371206215cbfbac0ee53e20b72b6568f28e44b30b4438e9612d5812fa225f44d"
+    },
+    {
+      "path": "settings-seed/sound.con",
+      "bytes": 49,
+      "sha256": "8bf668acbb8728e168aa3d85075dedb178256e9d30e4242b2cadab67fd970355"
+    },
+    {
+      "path": "settings-seed/video.con",
+      "bytes": 49,
+      "sha256": "0ab088510d828a14aaeb59af7b6dfc514b5b315c8cf2081e117128c50030edef"
+    },
+    {
+      "path": "settings-seed/videodefault.con",
+      "bytes": 183,
+      "sha256": "a57a1ecd5fc77c3c54de0956c3b8bcbcf9ac03aaeb58e4d8059aafa68d886650"
     }
   ]
 }
