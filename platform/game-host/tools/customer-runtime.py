@@ -391,6 +391,13 @@ def identity_database(uid,gid):
         os.close(descriptor);raise
 
 
+def dotnet_gc(memory, game):
+    # The reserved region range must be a power of two.
+    heap = memory * 1024 ** 2 // 4
+    region = 1 << (heap * 2 - 1).bit_length()
+    return format(heap, 'x'), format(min(region, 1 << ((memory * 1024 ** 2).bit_length() - 1)), 'x')
+
+
 DOTNET_GC_GAMES=('barotrauma','space-station-14','rimworld-together','openra','openhv','earth-2140-trilogy')
 
 def barotrauma_binds(asset_directory,data):
@@ -453,7 +460,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
     if GAME == 'battle-for-wesnoth': game_args = ['-c','/server/server.cfg','-p',str(port)]
     if GAME == 'openttd': game_args = ['-D','0.0.0.0:'+str(port),'-c','/server/server.cfg']
     if GAME == 'luanti': game_args = ['--port',str(port),'--world','/server/world','--gameid','minetest','--config','/server/server.cfg','--logfile','/server/minetest.log']
-    return ['/usr/bin/prlimit', '--as=' + str(max(16 * 1024 ** 3 if GAME == 'core-keeper' else 1024 ** 3, memory * 2 * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
+    return ['/usr/bin/prlimit', '--as=' + str(max(16 * 1024 ** 3 if GAME == 'core-keeper' else 1024 ** 3, memory * (3 if GAME in ('openra','openhv','earth-2140-trilogy') else 2) * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
             *(['--seccomp', str(seccomp_fd)] if seccomp_fd is not None else []),
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
@@ -505,7 +512,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *(['--setenv','DOTNET_ROOT','/usr/lib/dotnet','--setenv','DOTNET_EnableDiagnostics','0'] if GAME=='space-station-14' else []),
             *(['--setenv','DOTNET_EnableDiagnostics','0','--setenv','DOTNET_BUNDLE_EXTRACT_BASE_DIR','/tmp/dotnet'] if GAME=='rimworld-together' else []),
             *(['--setenv','DOTNET_EnableDiagnostics','0'] if GAME in ('openra','openhv','earth-2140-trilogy') else []),
-            *(['--setenv','DOTNET_GCHeapHardLimit',format(memory*1024**2//4,'x'),'--setenv','DOTNET_GCRegionRange',format(memory*1024**2//2,'x')] if GAME in DOTNET_GC_GAMES else []),
+            *(['--setenv','DOTNET_GCHeapHardLimit',dotnet_gc(memory,GAME)[0],'--setenv','DOTNET_GCRegionRange',dotnet_gc(memory,GAME)[1]] if GAME in DOTNET_GC_GAMES else []),
             *(['--setenv','MONO_IOMAP','all','--setenv','LD_LIBRARY_PATH','/game-data/lib64'] if GAME=='terraria' else []),
             *(['--setenv','LD_LIBRARY_PATH','/game-data/lib:/game-data/lib/x86_64-linux-gnu','--setenv','FREECIV_DATA_PATH','/game-data/share/freeciv'] if GAME=='freeciv' else []),
             *(['--setenv', 'PLAYBOUND_STK_DISCOVERY_PORT', str(port+1)] if GAME == 'supertuxkart' else []),

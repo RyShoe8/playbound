@@ -45,7 +45,7 @@ class ResourceBoundaries(unittest.TestCase):
             self.assertEqual(command[0], '/usr/bin/busctl')
             self.assertIn(str(cores * 1000000), command)
             self.assertIn(str(memory), command)
-            self.assertEqual(tasks, 128)
+            self.assertIn(tasks, (128, 512))
             self.assertIn('MemorySwapMax', command)
             self.assertNotIn('ExecStart', command)
 

@@ -349,6 +349,16 @@ class RuntimeBoundaries(unittest.TestCase):
         self.assertIn('/game-data/assets',command)
         self.assertNotIn('/opt/playbound-host/games/veloren/userdata',command)
 
+    def test_dotnet_gc_limits_scale_with_the_envelope_and_regions_are_powers_of_two(self):
+        self.assertEqual(module.dotnet_gc(2048,'barotrauma'),('20000000','40000000'))
+        self.assertEqual(module.dotnet_gc(4096,'space-station-14'),('40000000','80000000'))
+        self.assertEqual(module.dotnet_gc(4096,'openra'),('40000000','80000000'))
+        for memory in (1500,3000,6144,8192):
+            for game in ('barotrauma','openra'):
+                heap,region=(int(value,16) for value in module.dotnet_gc(memory,game))
+                self.assertEqual(region&(region-1),0)
+                self.assertLessEqual(region,memory*1024**2)
+
     def test_necesse_uses_its_paired_java_and_private_world_path(self):
         module.select_game('necesse')
         self.assertEqual(module.config_bytes('{"maxPlayers":8}',14160),b'{"maxPlayers":8}')

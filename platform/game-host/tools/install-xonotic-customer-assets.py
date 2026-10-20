@@ -28,7 +28,7 @@ def promote(source, destination, manifest, game='xonotic'):
     if game=='re-volt-rvgl':pattern=r'(?:rvgl\.64|gamecontrollerdb\.txt|(?:cars|cups|gallery|gfx|icons|levels|lib|licenses|models|packs|redbook|shaders|strings|wavs)/(?:[A-Za-z0-9_+.,@ ()-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,120})'
     if game=='aneurism-iv':pattern=r'(?:GameAssembly\.so|UnityPlayer\.so|aniv_server\.x86_64|libsteamwebrtc\.so|steam_appid\.txt|steamclient\.so|(?:aniv_server_Data|linux64)/(?:[A-Za-z0-9_+.,@ ()-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,120})'
     if game=='core-keeper':pattern=r'(?:CoreKeeperServer|UnityPlayer\.so|steamclient\.so|libsteamwebrtc\.so|libdecor-0\.so\.0|libdecor-cairo\.so|(?:CoreKeeperServer_Data|linux64|localization)/(?:[A-Za-z0-9_+.,@ ()-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,120})'
-    if game=='battlefield-1942-anthology':pattern=r'(?:bf1942_lnxded\.static|mods/bf1942/(?!settings/)(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
+    if game=='battlefield-1942-anthology':pattern=r'(?:bf1942_lnxded\.static|bf1942_lnxded|mods/bf1942/(?!settings/)(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
     if game=='open-fortress':pattern=r'(?:open_fortress/materials/(?:[A-Za-z0-9_+.,@ ()!&~{-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&~{-]{1,120}|srcds_linux|sdk-build\.json|(?:bin|hl2|platform|open_fortress|defaults)/(?:[A-Za-z0-9_+.,@ ()!&-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&-]{1,120})'
     if game=='trackmania':pattern=r'(?:TrackmaniaServer|Packs/[A-Za-z0-9_+.-]{1,100}\.(?:pak|Gbx)|UserData/Maps/(?:Campaigns/Training|MatchSettings)/[A-Za-z0-9_ .-]{1,100}|UserData/Config/dedicated_cfg\.default\.txt)'
     if game=='morrowind':pattern=r'(?:tes3mp-server\.x86_64|tes3mp-server-default\.cfg|lib/libboost_[A-Za-z0-9_]+\.so\.1\.67\.0|server/data/requiredDataFiles\.json|(?:resources|server/scripts|server/lib/lua)/(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
@@ -76,7 +76,7 @@ def promote(source, destination, manifest, game='xonotic'):
         for row in rows:
             # Flatten this single reviewed upstream alias from its pinned target.
             # Never follow a source symlink or accept a caller-selected mapping.
-            source_name = 'lib/lib64/libunistring.so.2' if game=='re-volt-rvgl' and row['path']=='lib/libunistring.so.2' else '/opt/playbound-host/games/trackmania/'+row['path'] if game=='trackmania' and row['path'].startswith('UserData/') else row['path']
+            source_name = 'lib/lib64/libunistring.so.2' if game=='re-volt-rvgl' and row['path']=='lib/libunistring.so.2' else 'bf1942_lnxded.static' if game=='battlefield-1942-anthology' and row['path']=='bf1942_lnxded' else '/opt/playbound-host/games/trackmania/'+row['path'] if game=='trackmania' and row['path'].startswith('UserData/') else row['path']
             with os.fdopen(open_file(source/source_name),'rb') as original:
                 before=os.fstat(original.fileno())
                 if not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or before.st_mode&0o7022 or before.st_size!=row['bytes']:

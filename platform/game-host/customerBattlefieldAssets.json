@@ -259,6 +259,11 @@
       "path": "mods/bf1942/lexiconall.dat",
       "bytes": 1981590,
       "sha256": "78f580ed09e496fd69053bcaf2d9ec50b80dc94d3ac19f27f6dffb4dcd9d2842"
+    },
+    {
+      "path": "bf1942_lnxded",
+      "bytes": 15218900,
+      "sha256": "6b90d1cc7bf6036b882d57b245e413e19663fa1c4eecc0639a1115000ff02b7c"
     }
   ]
 }
