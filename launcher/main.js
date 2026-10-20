@@ -7017,62 +7017,6 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     },
     fs.existsSync
   );
-  if (process.platform === "win32" && slug === "shattered-pixel-dungeon" && edSlug === "official" && info.dir) {
-    const nativeLauncher = findExecutable(info.dir, "Shattered Pixel Dungeon.exe");
-    if (
-      nativeLauncher &&
-      path.basename(nativeLauncher).toLowerCase() === "shattered pixel dungeon.exe" &&
-      launchPath !== nativeLauncher
-    ) {
-      persistEditionExe(slug, edSlug, launchPath, nativeLauncher);
-      launchPath = nativeLauncher;
-    }
-  }
-  const joiningHostedYs =
-    slug === "ysoccer" &&
-    (Boolean(join?.host && join?.port) || args.some((a) => /--connect/i.test(a)));
-  if (joiningHostedYs) {
-    const onlineJar = findYSoccerOnlineJar(info.dir);
-    if (!onlineJar) {
-      const message =
-        "YSoccer needs the PlayBound online build to join a party. Remove YSoccer from your library and install again from the party or game page.";
-      void telemetry.launchFailed({
-        ...launchInfo(),
-        code: "YSOCCER_OFFLINE_BUILD",
-        message,
-        phase: "resolve-install",
-      });
-      const offlineErr = new Error(message);
-      offlineErr.__launchFailedReported = true;
-      throw offlineErr;
-    }
-    if (launchPath !== onlineJar) {
-      persistEditionExe(slug, edSlug, launchPath, onlineJar);
-      launchPath = onlineJar;
-      info = { ...info, exe: onlineJar };
-    }
-  }
-  // Repair copies installed before YSoccer's native launcher was preferred.
-  // Keep the online jar when joining a dedicated server — portable ysoccer.exe
-  // ignores --connect and breaks PlayBound party hosting.
-  else if (slug === "ysoccer" && /\.jar$/i.test(launchPath)) {
-    const nativeLauncher = findNamedPortableExe(info.dir, "ysoccer.exe");
-    if (nativeLauncher) {
-      launchPath = nativeLauncher;
-      try {
-        const st = loadState();
-        const installed = ensureGameInstallRecord(st[slug]);
-        if (installed.editions?.[edSlug]) installed.editions[edSlug].exe = nativeLauncher;
-        installed.exe = nativeLauncher;
-        installed.dir = info.dir;
-        syncGameInstallSummary(installed);
-        st[slug] = installed;
-        saveState(st);
-      } catch {
-        /* The current launch is still valid if the optional local repair fails. */
-      }
-    }
-  }
   if (launchPath !== info.exe && /\.jar$/i.test(launchPath)) {
     try {
       const st = loadState();
@@ -7088,18 +7032,24 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
-  /*
-   * Unvanquished ships a Qt updater (UnvanquishedUpdater.exe) that downloads
-   * the game engine (daemon.exe). If the engine binary exists in the install
-   * folder, prefer launching daemon.exe directly. If only the updater exists,
-   * pass `-connect <host:port>` instead of idTech's `+connect <host:port>` so
-   * the updater's CLI parser does not error with "too many command line arguments".
-   */
   // Engine-binary and argument fixes live in services/launchFixes/exeResolution.js.
   ({ launchPath, args, info } = launchFixes.resolveLaunch(
     slug,
     { launchPath, args, info, edSlug, join },
-    { findNamedPortableExe, findExecutable, persistEditionExe, firstRunnableOnPlatform, ensureUnixExecutable }
+    {
+      findNamedPortableExe,
+      findExecutable,
+      persistEditionExe,
+      firstRunnableOnPlatform,
+      ensureUnixExecutable,
+      findYSoccerOnlineJar,
+      loadState,
+      saveState,
+      ensureGameInstallRecord,
+      syncGameInstallSummary,
+      reportLaunchFailed: (code, message, phase) =>
+        void telemetry.launchFailed({ ...launchInfo(), code, message, phase }),
+    }
   ));
 
   /*

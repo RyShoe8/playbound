@@ -114,9 +114,32 @@ test("Unvanquished: updater with no engine found gets -connect for a join", () =
   assert.deepEqual(out.args, ["-connect", "1.2.3.4:27960"]);
 });
 
-test("a throwing resolver keeps the original launch", () => {
+test("a resolver error stops the launch, as the inline code did", () => {
   const state = { launchPath: "C:/x/xonotic.exe", args: [], info: { dir: "C:/x" }, edSlug: "official", join: null };
   const h = { ...helpers(), findNamedPortableExe: () => { throw new Error("boom"); } };
-  assert.equal(resolveLaunch("xonotic", state, h), state);
+  assert.throws(() => resolveLaunch("xonotic", state, h), /boom/);
   assert.ok(hasLaunchResolver("zandronum"));
+});
+
+test("YSoccer: joining without the online build stops the launch and reports it", () => {
+  const reported = [];
+  const h = { ...helpers(), findYSoccerOnlineJar: () => null, reportLaunchFailed: (...a) => reported.push(a) };
+  assert.throws(
+    () => resolveLaunch("ysoccer", { launchPath: "C:/y/ysoccer.exe", args: [], info: { dir: "C:/y" }, edSlug: "official", join: { host: "h", port: 1 } }, h),
+    (err) => err.__launchFailedReported === true
+  );
+  assert.equal(reported[0][0], "YSOCCER_OFFLINE_BUILD");
+});
+
+test("YSoccer: joining uses the online jar", () => {
+  const h = { ...helpers(), findYSoccerOnlineJar: () => "C:/y/online.jar", reportLaunchFailed: () => {} };
+  const out = resolveLaunch("ysoccer", { launchPath: "C:/y/ysoccer.exe", args: [], info: { dir: "C:/y" }, edSlug: "official", join: { host: "h", port: 1 } }, h);
+  assert.equal(out.launchPath, "C:/y/online.jar");
+});
+
+test("Shattered Pixel Dungeon: native launcher on Windows only", () => {
+  const h = { ...helpers(), findExecutable: () => "C:/s/Shattered Pixel Dungeon.exe" };
+  const state = { launchPath: "C:/s/game.jar", args: [], info: { dir: "C:/s" }, edSlug: "official", join: null };
+  assert.equal(resolveLaunch("shattered-pixel-dungeon", state, { ...h, platform: "win32" }).launchPath, "C:/s/Shattered Pixel Dungeon.exe");
+  assert.equal(resolveLaunch("shattered-pixel-dungeon", state, { ...h, platform: "linux" }).launchPath, "C:/s/game.jar");
 });

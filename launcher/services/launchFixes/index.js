@@ -15,8 +15,16 @@
  * - `prepare(ctx)` runs right before the process starts, may touch the
  *   game's own files, and may return `{ env }` to merge into the launch
  *   environment.
- * Neither may fail a launch: errors are logged and the launch continues
- * with what it had.
+ * `prepare` errors are logged and the launch continues — those blocks were
+ * always best-effort. `resolve` errors propagate, exactly as the inline
+ * code they replaced did: a launch path that cannot be resolved should stop
+ * the launch, not start the wrong binary.
+ *
+ * Still inline in playGameInner, on purpose: Dune Legacy (PAK download),
+ * MrBoom (shared RetroArch runtime), Morrowind TES3MP (local dedicated
+ * server), Volleyball Legends (Roblox handoff that skips the spawn) and
+ * GoldenEye: Source (Steam handoff). Each is wired into launcher services
+ * that a registry module would have to be handed wholesale.
  *
  * @typedef {object} LaunchFixContext
  * @property {string} slug
@@ -53,19 +61,14 @@ for (const fix of RESOLVERS) {
 }
 
 /**
- * Run the slug's launch-path resolver, if any. Always returns a state with
- * launchPath, args and info — the input unchanged when there is no resolver
- * or it throws.
+ * Run the slug's launch-path resolver, if any. Returns the state with
+ * launchPath, args and info (unchanged when there is no resolver). Errors
+ * propagate to the launch, as they did inline.
  */
 function resolveLaunch(slug, state, helpers) {
   const fix = resolverBySlug.get(slug);
   if (!fix) return state;
-  try {
-    return fix.resolve({ ...state, slug }, helpers) || state;
-  } catch (err) {
-    console.warn(`[launch-fix] ${slug} resolve skipped:`, err?.message || err);
-    return state;
-  }
+  return fix.resolve({ ...state, slug }, { platform: process.platform, ...helpers }) || state;
 }
 
 /** Run the slug's fix, if any. Returns env vars to merge, or null. */

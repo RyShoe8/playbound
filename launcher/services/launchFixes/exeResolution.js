@@ -14,6 +14,13 @@ const path = require("path");
  *           firstRunnableOnPlatform: Function, ensureUnixExecutable: Function }} h
  */
 
+/*
+ * Unvanquished ships a Qt updater (UnvanquishedUpdater.exe) that downloads
+ * the game engine (daemon.exe). If the engine binary exists in the install
+ * folder, prefer launching daemon.exe directly. If only the updater exists,
+ * pass `-connect <host:port>` instead of idTech's `+connect <host:port>` so
+ * the updater's CLI parser does not error with "too many command line arguments".
+ */
 const unvanquished = {
   slugs: ["unvanquished"],
   resolve(state, h) {
@@ -145,4 +152,73 @@ const freedoomZandronum = {
   },
 };
 
-module.exports = [unvanquished, xonotic, freedoomZandronum];
+/* Shattered Pixel Dungeon: prefer the native Windows launcher over the jar. */
+const shatteredPixelDungeon = {
+  slugs: ["shattered-pixel-dungeon"],
+  resolve(state, h) {
+    let { launchPath } = state;
+    const { info, edSlug, slug } = state;
+    if (h.platform !== "win32" || edSlug !== "official" || !info.dir) return state;
+    const nativeLauncher = h.findExecutable(info.dir, "Shattered Pixel Dungeon.exe");
+    if (
+      nativeLauncher &&
+      path.basename(nativeLauncher).toLowerCase() === "shattered pixel dungeon.exe" &&
+      launchPath !== nativeLauncher
+    ) {
+      h.persistEditionExe(slug, edSlug, launchPath, nativeLauncher);
+      launchPath = nativeLauncher;
+    }
+    return { ...state, launchPath };
+  },
+};
+
+/*
+ * YSoccer. Joining a hosted match needs the PlayBound online jar — the
+ * portable ysoccer.exe ignores --connect — so a join without it fails the
+ * launch with a clear message. Otherwise, copies installed before the native
+ * launcher was preferred are repaired to launch ysoccer.exe.
+ */
+const ysoccer = {
+  slugs: ["ysoccer"],
+  resolve(state, h) {
+    let { launchPath, info } = state;
+    const { args, join, edSlug, slug } = state;
+    const joiningHostedYs = Boolean(join?.host && join?.port) || args.some((a) => /--connect/i.test(a));
+    if (joiningHostedYs) {
+      const onlineJar = h.findYSoccerOnlineJar(info.dir);
+      if (!onlineJar) {
+        const message =
+          "YSoccer needs the PlayBound online build to join a party. Remove YSoccer from your library and install again from the party or game page.";
+        h.reportLaunchFailed("YSOCCER_OFFLINE_BUILD", message, "resolve-install");
+        const offlineErr = new Error(message);
+        offlineErr.__launchFailedReported = true;
+        throw offlineErr;
+      }
+      if (launchPath !== onlineJar) {
+        h.persistEditionExe(slug, edSlug, launchPath, onlineJar);
+        launchPath = onlineJar;
+        info = { ...info, exe: onlineJar };
+      }
+    } else if (/\.jar$/i.test(launchPath)) {
+      const nativeLauncher = h.findNamedPortableExe(info.dir, "ysoccer.exe");
+      if (nativeLauncher) {
+        launchPath = nativeLauncher;
+        try {
+          const st = h.loadState();
+          const installed = h.ensureGameInstallRecord(st[slug]);
+          if (installed.editions?.[edSlug]) installed.editions[edSlug].exe = nativeLauncher;
+          installed.exe = nativeLauncher;
+          installed.dir = info.dir;
+          h.syncGameInstallSummary(installed);
+          st[slug] = installed;
+          h.saveState(st);
+        } catch {
+          /* The current launch is still valid if the optional local repair fails. */
+        }
+      }
+    }
+    return { ...state, launchPath, info };
+  },
+};
+
+module.exports = [unvanquished, xonotic, freedoomZandronum, shatteredPixelDungeon, ysoccer];
