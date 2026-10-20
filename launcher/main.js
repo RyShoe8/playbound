@@ -11171,7 +11171,22 @@ ipcMain.handle("tournament-action", async (_event, eventId, action, payload) => 
 });
 require("./services/workspaceApi").registerWorkspaceApi({ ipcMain, apiFetch, getApiBase, launcherApiHeaders });
 
-const loadHomeFeed = require("./services/homeFeed").createHomeFeedClient({ apiFetch, getApiBase });
+// The last good homepage feed is kept on disk, so a slow network on launch shows
+// yesterday's page at once instead of an empty one.
+const homeFeedCacheFile = () => path.join(app.getPath("userData"), "home-feed-cache.json");
+const loadHomeFeed = require("./services/homeFeed").createHomeFeedClient({
+  apiFetch,
+  getApiBase,
+  store: {
+    read: () => JSON.parse(fs.readFileSync(homeFeedCacheFile(), "utf8")),
+    write: (value) => {
+      const file = homeFeedCacheFile();
+      const temporary = `${file}.${process.pid}.tmp`;
+      fs.writeFileSync(temporary, JSON.stringify(value));
+      fs.renameSync(temporary, file);
+    },
+  },
+});
 ipcMain.handle("get-home-feed", () => loadHomeFeed());
 
 ipcMain.handle("get-free-offers", () =>

@@ -88,43 +88,56 @@ async function loadHome() {
     paintFeature(selected.released[0]);
     document.getElementById('home-popular-grid').innerHTML = '<p class="view-sub">Loading this week’s most popular games…</p>';
   }).catch(() => {});
-  const results = await Promise.allSettled([
-    catalogRequest,
-    cacheInvoke('siteHome', 300000, async () => {
-      const feed = await window.playbound.getHomeFeed?.();
-      if (!feed || !Array.isArray(feed.released)) throw new Error('Homepage feed unavailable');
-      return feed;
+  const stillHere = () => current === generation && views.home.querySelector('.site-home-layout');
+  // Each section paints the moment its own data arrives. They used to wait on one
+  // Promise.allSettled, so the slowest request (events, offers, friends, or the
+  // editorial feed with its retry) held back every other section.
+  const feedRequest = cacheInvoke('siteHome', 300000, async () => {
+    const feed = await window.playbound.getHomeFeed?.();
+    if (!feed || !Array.isArray(feed.released)) throw new Error('Homepage feed unavailable');
+    return feed;
+  });
+  const eventsRequest = cacheInvoke('events', CACHE_TTL.events, () => window.playbound.getEvents?.());
+  const offersRequest = cacheInvoke('freeOffers', CACHE_TTL.freeOffers, () => window.playbound.getFreeOffers?.());
+  const friendsRequest = Promise.resolve().then(() => window.playbound.getFriends?.());
+  const settled = request => Promise.resolve(request).then(value => value ?? null, () => null);
+  const catalogReady = settled(catalogRequest).then(raw => filterCatalogGames(Array.isArray(raw) ? raw : raw?.games || []));
+  const paint = (id, cards, feedFailed = false) => {
+    const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards);
+    if (!cards.length) {
+      const message = document.createElement('p'); message.className = 'view-sub';
+      message.textContent = feedFailed ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
+      if (feedFailed) {
+        const retry = document.createElement('button'); retry.className = 'btn-secondary btn-sm'; retry.textContent = 'Try again';
+        retry.addEventListener('click', () => { cacheInvalidate('siteHome'); void loadHome(); }); grid.append(retry);
+      }
+    }
+  };
+  const sections = [
+    settled(offersRequest).then(offers => { if (stillHere()) paint('home-free', diversifyOffers(offers?.offers || [], 8).map(createFreeOfferCard)); }),
+    settled(friendsRequest).then(friends => { if (stillHere()) paintPeople(friends || {}); }),
+    Promise.all([catalogReady, settled(eventsRequest)]).then(([catalog, events]) => { if (stillHere()) paintNight(events?.events || [], catalog); }),
+    Promise.all([catalogReady, settled(feedRequest)]).then(([catalog, feed]) => {
+      if (!stillHere()) return;
+      if (!feed) cacheInvalidate('siteHome');
+      const selected = homepageSelections(catalog, feed);
+      paintFeature(selected.released[0]);
+      document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';
+      const failed = !feed;
+      paint('home-popular', feed ? selected.popular.map(game => createGameCard(game)) : [], failed);
+      paint('home-mods', selected.mods.map(mod => createModCard({
+        ...mod,
+        baseGameTitle: catalog.find(game => game.slug === mod.baseGameSlug)?.title || mod.baseGameTitle,
+      })), failed);
+      paint('home-newest', selected.newest.map(game => createGameCard(game)), failed);
+      paint('home-editions', selected.editions.map(({game, edition}) => {
+        const card = createGameCard({...game, title: edition.name || game.title, coverImage: edition.coverImage || game.coverImage, editions: []});
+        card.addEventListener('click', event => { event.stopImmediatePropagation(); api.openEditionDetail?.(game.slug, edition.slug); }, { capture: true }); return card;
+      }), failed);
+      markViewReady(views.home);
     }),
-    cacheInvoke('events', CACHE_TTL.events, () => window.playbound.getEvents?.()),
-    cacheInvoke('freeOffers', CACHE_TTL.freeOffers, () => window.playbound.getFreeOffers?.()),
-    window.playbound.getFriends?.(),
-  ]);
-  if (current !== generation || !views.home.querySelector('.site-home-layout')) return;
-  const value = (index, fallback) => results[index].status === 'fulfilled' ? results[index].value ?? fallback : fallback;
-  const raw = value(0, {}); const catalog = filterCatalogGames(Array.isArray(raw) ? raw : raw.games || []);
-  const feed = value(1, null);
-  if (!feed) cacheInvalidate('siteHome');
-  const selected = homepageSelections(catalog, feed);
-  paintFeature(selected.released[0]);
-  document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';
-  const paint = (id, cards) => { const grid = document.getElementById(`${id}-grid`); grid.replaceChildren(...cards); if (!cards.length) { const message = document.createElement('p'); message.className = 'view-sub'; message.textContent = !feed && ['home-popular', 'home-newest', 'home-mods', 'home-editions'].includes(id) ? 'Could not load this section.' : 'Nothing available right now. Check back soon.'; grid.append(message);
-    if (!feed && ['home-popular', 'home-newest', 'home-mods', 'home-editions'].includes(id)) {
-      const retry = document.createElement('button'); retry.className = 'btn-secondary btn-sm'; retry.textContent = 'Try again';
-      retry.addEventListener('click', () => { cacheInvalidate('siteHome'); void loadHome(); }); grid.append(retry);
-    } } };
-  paint('home-popular', feed ? selected.popular.map(game => createGameCard(game)) : []);
-  paintNight(value(2, {}).events || [], catalog);
-  paint('home-free', diversifyOffers(value(3, {}).offers || [], 8).map(createFreeOfferCard));
-  paint('home-mods', selected.mods.map(mod => createModCard({
-    ...mod,
-    baseGameTitle: catalog.find(game => game.slug === mod.baseGameSlug)?.title || mod.baseGameTitle,
-  })));
-  paint('home-newest', selected.newest.map(game => createGameCard(game)));
-  paint('home-editions', selected.editions.map(({game, edition}) => {
-    const card = createGameCard({...game, title: edition.name || game.title, coverImage: edition.coverImage || game.coverImage, editions: []});
-    card.addEventListener('click', event => { event.stopImmediatePropagation(); api.openEditionDetail?.(game.slug, edition.slug); }, { capture: true }); return card;
-  }));
-  paintPeople(value(4, {})); markViewReady(views.home);
+  ];
+  await Promise.all(sections);
 }
 export function paintHomeGrids() { if (views.home?.querySelector('.site-home-layout')) void loadHome(); }
 export async function renderHomeView() { ensureHomeShell(); await loadHome(); }
