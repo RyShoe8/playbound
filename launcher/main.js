@@ -10292,6 +10292,26 @@ async function openCouchGameViewWindow(rawUrl) {
       }
     });
     couchGameViewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    // This window runs with webSecurity off (LAN ws:// and private ICE), so it
+    // must never leave PlayBound's own origin — a navigation to any other site
+    // would inherit those relaxed rules.
+    const gameViewOrigin = new URL(url).origin;
+    couchGameViewWin.webContents.on("will-navigate", (event, target) => {
+      try {
+        if (new URL(target).origin === gameViewOrigin) return;
+      } catch {
+        /* unparseable — block */
+      }
+      event.preventDefault();
+    });
+    couchGameViewWin.webContents.on("will-redirect", (event, target) => {
+      try {
+        if (new URL(target).origin === gameViewOrigin) return;
+      } catch {
+        /* unparseable — block */
+      }
+      event.preventDefault();
+    });
     // The window has no menu, so Chromium's DevTools shortcuts never fire —
     // which left the viewer side of a stuck stream with no console to read.
     couchGameViewWin.webContents.on("before-input-event", (event, input) => {

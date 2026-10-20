@@ -35,23 +35,24 @@ export function toDiscoverListingGame(game: Game): DiscoverListingGame {
 }
 
 /**
- * A listing game plus the few extra fields the home page's hero and cards
- * read. The home page used to hand full Game records (long descriptions,
- * FAQs, install steps, every control binding) for the whole catalog to
- * client components: ~1.75 MB of RSC payload per visit for data no card
- * shows.
+ * What a game card on the home page, the "more like this" row and the
+ * editions row actually read. Deliberately not a superset of the Discover
+ * listing: hardwareRequirements (the Discover hardware filter's input) and
+ * the description were ~2 KB of each ~3.3 KB record and nothing on these
+ * surfaces reads them, while the home page ships 90+ of these records.
  */
-export type HomeCardGame = DiscoverListingGame &
-  Pick<Game, "tagline" | "description" | "releaseYear" | "androidStoreUrl" | "iosStoreUrl"> & {
+export type HomeCardGame = Omit<DiscoverListingGame, "hardwareRequirements"> &
+  Pick<Game, "tagline" | "releaseYear" | "androidStoreUrl" | "iosStoreUrl"> & {
     launcherInstall?: { kind?: string; url?: string };
   };
 
 export function toHomeCardGame(game: Game): HomeCardGame {
   const install = game.launcherInstall as { kind?: string; url?: string } | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { hardwareRequirements: _hw, ...listing } = toDiscoverListingGame(game);
   return {
-    ...toDiscoverListingGame(game),
+    ...listing,
     tagline: game.tagline,
-    description: typeof game.description === "string" ? game.description.slice(0, 400) : game.description,
     releaseYear: game.releaseYear,
     androidStoreUrl: game.androidStoreUrl,
     iosStoreUrl: game.iosStoreUrl,
