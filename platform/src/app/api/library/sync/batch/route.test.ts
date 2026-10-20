@@ -7,6 +7,7 @@ const userFromLauncherBearer = vi.fn();
 const findOneAndUpdate = vi.fn();
 const updateMany = vi.fn();
 const deleteMany = vi.fn();
+const entryDeleteMany = vi.fn();
 const modFindOneAndUpdate = vi.fn();
 const modUpdateOne = vi.fn();
 const saveEvent = vi.fn();
@@ -32,6 +33,7 @@ vi.mock("@/lib/models/LibraryEntry", () => ({
   default: {
     findOneAndUpdate: (...args: unknown[]) => findOneAndUpdate(...args),
     updateMany: (...args: unknown[]) => updateMany(...args),
+    deleteMany: (...args: unknown[]) => entryDeleteMany(...args),
   },
 }));
 
@@ -64,6 +66,7 @@ describe("POST /api/library/sync/batch catalog resolution", () => {
     findOneAndUpdate.mockResolvedValue(null);
     updateMany.mockResolvedValue({ modifiedCount: 0 });
     deleteMany.mockResolvedValue({ deletedCount: 0 });
+    entryDeleteMany.mockResolvedValue({ deletedCount: 0 });
     modFindOneAndUpdate.mockResolvedValue(null);
     modUpdateOne.mockResolvedValue({ acknowledged: true });
     saveEvent.mockResolvedValue(undefined);
@@ -121,5 +124,24 @@ describe("POST /api/library/sync/batch catalog resolution", () => {
 
     expect((await POST(req())).status).toBe(200);
     expect(saveEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("deletes launcher-owned rows the launcher no longer reports instead of keeping them as saved", async () => {
+    const { POST } = await import("./route");
+    entryDeleteMany.mockResolvedValue({ deletedCount: 1 });
+    const res = await POST(new Request("http://localhost/api/library/sync/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer test" },
+      body: JSON.stringify({ installs: [{ slug: "openra" }], modInstalls: [], prune: true }),
+    }));
+    expect(res.status).toBe(200);
+    const filters = entryDeleteMany.mock.calls.map((call) => JSON.stringify(call[0]));
+    // Rows the launcher created and no longer reports.
+    expect(filters.some((f) => f.includes('"installed":true') && f.includes('"source":"launcher"') && f.includes('"$nin":["openra"]'))).toBe(true);
+    // Ghosts left by the old demotion: launcher-sourced, once installed, not merely saved on the website.
+    expect(filters.some((f) => f.includes('"installed":false') && f.includes('"installedAt"') && f.includes('"source":"launcher"'))).toBe(true);
+    // Player-asserted rows are still only demoted, never deleted.
+    const demote = updateMany.mock.calls.find((call) => call[1]?.$set?.saved === true);
+    expect(demote?.[1].$set).toMatchObject({ installed: false, saved: true });
   });
 });

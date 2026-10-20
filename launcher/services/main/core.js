@@ -387,9 +387,15 @@ async function runLibrarySync() {
     if (!raw || typeof raw !== "object") continue;
     const game = ensureGameInstallRecord(raw);
     const editions = listEditionEntries(game);
-    const listed = Boolean(
-      playableExePath(game) || game.pending || game.dir || editions.length
-    );
+    /*
+     * Exactly what the launcher's own library lists (listInstalledGames): a game
+     * with an executable, an install in progress, or an installed edition. A
+     * leftover `dir` on its own is a record of where a game used to be — after a
+     * folder was deleted or an install abandoned — and syncing it told the
+     * website the game was installed, so removed games kept coming back there
+     * while the launcher, which never listed them, looked correct.
+     */
+    const listed = Boolean(playableExePath(game) || game.pending || editions.length);
     if (!listed) continue;
     const primaryEditionSlug = game.editionSlug || (editions.length > 0 ? editions[0]?.editionSlug : null);
     installs.push({

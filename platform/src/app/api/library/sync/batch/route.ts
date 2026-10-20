@@ -193,10 +193,40 @@ export async function POST(req: Request) {
           { $or: [{ source: "launcher" }, { source: "manual" }, { source: { $exists: false } }] },
         ],
       };
+      /*
+       * A row the launcher itself created and no longer reports is simply gone,
+       * the same as the single-game uninstall, which deletes the row. Demoting it
+       * to "saved" kept every game the player had removed listed on the website
+       * while the launcher, which reads its own state, no longer showed it.
+       * Rows from other sources (a manual claim, a store redirect) are still only
+       * demoted: the player asserted those, the launcher did not.
+       */
+      const launcherOwned = {
+        ...uninstalledFilter,
+        $and: [
+          ...(uninstalledFilter.$and as Record<string, unknown>[]).slice(0, 1),
+          { source: "launcher" },
+        ],
+      };
+      const removed = await LibraryEntry.deleteMany(launcherOwned);
       const gameRes = await LibraryEntry.updateMany(uninstalledFilter, {
         $set: { installed: false, saved: true, updatedAt: now },
       });
-      pruned = gameRes.modifiedCount || 0;
+      /*
+       * Rows an earlier version of this pass already demoted. They carry the
+       * launcher as source and the time they were installed, which a game merely
+       * saved on the website never has, so a deliberate save is left alone.
+       */
+      const ghosts = await LibraryEntry.deleteMany({
+        userId: user._id,
+        installed: false,
+        saved: true,
+        source: "launcher",
+        installedAt: { $exists: true, $ne: null },
+        ...(keepGames.length > 0 ? { gameSlug: { $nin: keepGames } } : {}),
+        $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
+      });
+      pruned = (removed.deletedCount || 0) + (gameRes.modifiedCount || 0) + (ghosts.deletedCount || 0);
 
       if (keepMods.length) {
         const modFilter: Record<string, unknown> = {
