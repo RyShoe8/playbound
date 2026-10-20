@@ -58,10 +58,9 @@ const { steamAppState, steamRuntimeForLaunch } = require("./services/steamPrereq
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
-const openborCfg = require("./services/openborCfg");
+const launchFixes = require("./services/launchFixes");
 const gameControllerConfig = require("./services/gameControllerConfig");
 const deviceControllerStorage = require("./services/deviceControllerStorage");
-const openborPak = require("./services/openborPak");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
@@ -6767,16 +6766,6 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
-  if (slug === "tmnt-rescue-palooza") {
-    try {
-      const root = info.dir || path.dirname(info.exe || "");
-      const result = await openborPak.stripTmntBootAds(root);
-      if (result.changed) console.log("[tmnt] stripped boot ads from", result.pakPath);
-    } catch (err) {
-      console.warn("[tmnt] boot-ad strip skipped:", err?.message || err);
-    }
-  }
-
   if (slug === OPENCIV3_SLUG) {
     try {
       await ensureDefaultDisplaySettings(info.exe || info.dir);
@@ -7568,77 +7557,16 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     launchEnv = { ...(launchEnv || process.env), ...sdlEnv };
   }
 
-  /*
-   * Streets of Rage Remake starts as a tiny window with the first joystick
-   * Windows lists bound, and keeps both in savegame/savegame.sor beside the
-   * game. With no save there yet, start from a play-tested one (fullscreen,
-   * DualSense bound). An existing save is never touched.
-   */
-  if (slug === "streets-of-rage-remake") {
-    try {
-      const saveDir = path.join(path.dirname(info.exe || ""), "savegame");
-      const target = path.join(saveDir, "savegame.sor");
-      const template = [
-        path.join(process.resourcesPath || "", "game-defaults", slug, "savegame.sor"),
-        path.join(__dirname, "resources", "game-defaults", slug, "savegame.sor"),
-      ].find((p) => p && fs.existsSync(p));
-      if (template && !fs.existsSync(target)) {
-        fs.mkdirSync(saveDir, { recursive: true });
-        fs.copyFileSync(template, target);
-        console.log("[sor] seeded default settings");
-      }
-    } catch (err) {
-      console.warn("[sor] default settings skipped:", err?.message || err);
-    }
-  }
-
-  /*
-   * TMNT Rescue-Palooza (OpenBOR): fullscreen on the primary monitor.
-   * DPI-unaware, Windows scales its fullscreen window past a 150% screen; its
-   * own fullscreen option also picks a stretch mode that spans every monitor.
-   * Both verified on a 4K / 150% desktop.
-   */
-  /*
-   * X-Men Arcade Remake (OpenBOR, 352-byte cfg): ships with P1 unbound and
-   * windowed. Bind the play-tested DualSense layout when P1 has no keys at
-   * all, and turn fullscreen on the first launch only.
-   */
-  if (slug === "x-men-arcade-remake") {
-    try {
-      const cfgPath = path.join(path.dirname(info.exe || ""), "Saves", "XMEN_Arcade.cfg");
-      if (fs.existsSync(cfgPath)) {
-        const settings = loadSettings();
-        const firstRun = !settings.openborFullscreenApplied?.[slug];
-        let buf = fs.readFileSync(cfgPath);
-        buf = openborCfg.bindUnboundP1(buf, openborCfg.XMEN_DUALSENSE_P1_KEYS) || buf;
-        buf = openborCfg.applyOpenBorFullscreen(buf, { firstRun }) || buf;
-        if (firstRun) buf = openborCfg.applyXmenDisplayDefaults(buf) || buf;
-        if (!buf.equals(fs.readFileSync(cfgPath))) fs.writeFileSync(cfgPath, buf);
-        if (firstRun) {
-          saveSettings({ ...loadSettings(), openborFullscreenApplied: { ...(settings.openborFullscreenApplied || {}), [slug]: true } });
-        }
-      }
-    } catch (err) {
-      console.warn("[x-men] default settings skipped:", err?.message || err);
-    }
-  }
-
-  if (slug === "tmnt-rescue-palooza" && process.platform === "win32") {
-    launchEnv = { ...(launchEnv || process.env), __COMPAT_LAYER: "HighDpiAware" };
-    try {
-      const cfgPath = gameControllerConfig.configPathFor(slug, info.dir || path.dirname(info.exe || ""));
-      if (cfgPath) {
-        const settings = loadSettings();
-        const firstRun = !settings.openborFullscreenApplied?.[slug];
-        const next = openborCfg.applyOpenBorFullscreen(fs.readFileSync(cfgPath), { firstRun });
-        if (next) fs.writeFileSync(cfgPath, next);
-        if (firstRun) {
-          saveSettings({ ...loadSettings(), openborFullscreenApplied: { ...(settings.openborFullscreenApplied || {}), [slug]: true } });
-        }
-      }
-    } catch (err) {
-      console.warn("[tmnt] fullscreen setup skipped:", err?.message || err);
-    }
+  // Per-game fixes that live in services/launchFixes/ — one module per game.
+  const fixEnv = await launchFixes.prepareLaunch(slug, {
+    info,
+    platform: process.platform,
+    loadSettings,
+    saveSettings,
+    resourceRoots: [process.resourcesPath || "", path.join(__dirname, "resources")].filter(Boolean),
+  });
+  if (fixEnv) {
+    launchEnv = { ...(launchEnv || process.env), ...fixEnv };
   }
 
   // Repair modded editions before launching. Steam restores the original
