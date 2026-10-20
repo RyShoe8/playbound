@@ -74,6 +74,7 @@ function paintPeople(result) {
     button.addEventListener('click', () => api.navigateTo?.('friends')); host.append(button);
   }
 }
+let feedRetried = false;
 async function loadHome() {
   const current = ++generation;
   const username = state.accountState?.connected ? state.accountState.username : null;
@@ -119,7 +120,15 @@ async function loadHome() {
     Promise.all([catalogReady, settled(eventsRequest)]).then(([catalog, events]) => { if (stillHere()) paintNight(events?.events || [], catalog); }),
     Promise.all([catalogReady, settled(feedRequest)]).then(([catalog, feed]) => {
       if (!stillHere()) return;
-      if (!feed) cacheInvalidate('siteHome');
+      if (!feed) {
+        cacheInvalidate('siteHome');
+        // One quiet automatic retry before leaving "Could not load" on screen: the
+        // usual cause is a cold server that answers fine a moment later.
+        if (!feedRetried) {
+          feedRetried = true;
+          window.setTimeout(() => { if (stillHere()) void loadHome(); }, 4000);
+        }
+      } else feedRetried = false;
       const selected = homepageSelections(catalog, feed);
       paintFeature(selected.released[0]);
       document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';

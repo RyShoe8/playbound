@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createHomeFeedClient, ATTEMPT_TIMEOUT_MS } = require('./homeFeed');
+const { createHomeFeedClient, ATTEMPT_TIMEOUTS_MS } = require('./homeFeed');
 const feed = {released:['unturned'], popular:['openra'], editions:[{gameSlug:'openra'}], mods:[{slug:'mod'}]};
 const newer = {...feed, popular:['xonotic']};
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -10,8 +10,9 @@ test('public homepage requests omit credentials, retry failures, and preserve al
   const load = createHomeFeedClient({getApiBase:()=> 'https://playbound.club', apiFetch:async (url, options, timeout) => {
     assert.equal(url, 'https://playbound.club/api/launcher/home');
     assert.equal(options.headers.authorization, undefined);
-    assert.equal(timeout, ATTEMPT_TIMEOUT_MS);
-    assert.ok(timeout <= 15000, 'a stalled attempt must not hold the homepage for half a minute');
+    // A short first attempt, then a patient one: a cold edge can take longer than ten seconds.
+    assert.equal(timeout, ATTEMPT_TIMEOUTS_MS[calls]);
+    assert.ok(ATTEMPT_TIMEOUTS_MS[0] <= 15000 && ATTEMPT_TIMEOUTS_MS[1] >= 30000);
     if (++calls === 1) throw new Error('cold timeout');
     return {ok:true, json:async()=>feed};
   }});

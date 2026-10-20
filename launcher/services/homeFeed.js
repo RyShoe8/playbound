@@ -1,5 +1,8 @@
 /** The homepage is public; account credentials would bypass its CDN cache. */
-const ATTEMPT_TIMEOUT_MS = 12_000;
+// A cold edge can legitimately take well over ten seconds, so a short first attempt
+// must be followed by a patient one rather than giving up and showing an error.
+const ATTEMPT_TIMEOUTS_MS = [15_000, 30_000];
+const ATTEMPT_TIMEOUT_MS = ATTEMPT_TIMEOUTS_MS[0];
 const SHOW_CACHED_AFTER_MS = 1_500;
 const MAX_CACHED_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -40,11 +43,11 @@ function createHomeFeedClient({ apiFetch, getApiBase, store, now = Date.now, sho
 
   async function request() {
     let failure;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < ATTEMPT_TIMEOUTS_MS.length; attempt++) {
       try {
         const response = await apiFetch(`${getApiBase()}/api/launcher/home`, {
           headers: { accept: 'application/json', 'user-agent': 'playbound-launcher' },
-        }, ATTEMPT_TIMEOUT_MS);
+        }, ATTEMPT_TIMEOUTS_MS[attempt]);
         if (!response.ok) throw new Error(`Homepage returned HTTP ${response.status}`);
         const feed = await response.json();
         if (!Array.isArray(feed.released) || !Array.isArray(feed.popular)
@@ -71,4 +74,4 @@ function createHomeFeedClient({ apiFetch, getApiBase, store, now = Date.now, sho
     return Promise.race([fresh, stale]).finally(() => clearTimeout(timer));
   };
 }
-module.exports = { createHomeFeedClient, ATTEMPT_TIMEOUT_MS, SHOW_CACHED_AFTER_MS };
+module.exports = { createHomeFeedClient, ATTEMPT_TIMEOUT_MS, ATTEMPT_TIMEOUTS_MS, SHOW_CACHED_AFTER_MS };
