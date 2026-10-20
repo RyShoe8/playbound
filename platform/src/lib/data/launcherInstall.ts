@@ -315,9 +315,16 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "external",
     url: "steam://install/563560",
+    // The launcher resolves the install through Steam's own app manifest, so a
+    // second-drive library (D:\SteamLibrary) is found as readily as the default.
+    steamAppId: "563560",
+    exeHint: "^reactivedrop\\.exe$",
     connectArgs: ["+connect", "{host}:{port}"],
+    // The shipped executable is reactivedrop.exe. Every entry is re-resolved
+    // under each Steam library, not just the default one.
     knownExePaths: [
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\reactivedrop.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\reactivedrop.exe",
       "%PROGRAMFILES%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\swarm.exe",
       "%PROGRAMFILES%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\AlienSwarmReactiveDrop.exe",
       "%PROGRAMFILES%\\Steam\\steamapps\\common\\Alien Swarm Reactive Drop\\reactivedrop_x64.exe",

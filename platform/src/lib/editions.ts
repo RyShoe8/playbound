@@ -205,11 +205,33 @@ function toEdition(doc: LeanEdition): Edition {
     );
     const editionRecipe = launcherInstallBySlug[editionSlugStr];
     if (!hasOwnInstall && editionRecipe?.enabled && editionRecipe.url) {
-      installMethod = "external_installer";
-      installConfig = {
-        ...installConfig,
-        external_installer: { url: editionRecipe.url, instructions: editionRecipe.note ?? undefined },
-      };
+      if (editionRecipe.kind === "external") {
+        /*
+         * A bare hand-off URL is not enough. Without the edition's Steam app id
+         * and executable names the launcher fell back to the parent game's
+         * (Alien Swarm's swarm.exe), so Reactive Drop installed fine and then
+         * "didn't find the .exe". Carry the detection fields with it.
+         */
+        installMethod = "playbound_installer";
+        installConfig = {
+          ...installConfig,
+          playbound_installer: {
+            kind: "external",
+            url: editionRecipe.url,
+            steamAppId: editionRecipe.steamAppId ?? null,
+            exeHint: editionRecipe.exeHint ?? null,
+            knownExePaths: editionRecipe.knownExePaths ?? [],
+            connectArgs: editionRecipe.connectArgs ?? [],
+            note: editionRecipe.note ?? null,
+          },
+        };
+      } else {
+        installMethod = "external_installer";
+        installConfig = {
+          ...installConfig,
+          external_installer: { url: editionRecipe.url, instructions: editionRecipe.note ?? undefined },
+        };
+      }
     }
 
     return {
