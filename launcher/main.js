@@ -48,7 +48,6 @@ const {
   tdmInstallerPollMaxMs,
 } = require("./services/tdmInstall");
 const { isUnknownHorizonsSlug } = require("./services/unknownHorizonsLaunch");
-const { ensureUnknownHorizonsSafeDisplay } = require("./services/unknownHorizonsSettings");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
@@ -75,8 +74,6 @@ const {
   writeDisplaySettings,
   resolveGameDir,
 } = require("./openciv3Display");
-const { ensureHolocureFullscreen } = require("./holocureDisplay");
-const { ensureOutrunWindowSize } = require("./outrunDisplay");
 const {
   GES_SLUG,
   preflightGoldeneye,
@@ -132,7 +129,7 @@ const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
 const { CATALOG_LIVE_STATS_TTL_MS, CATALOG_TTL_MS, DEFAULT_API_BASE, DEFAULT_EDITION_SLUG, DEFAULT_GAMES_DIR, INSTALLED_SLUG_ALIASES, PROTOCOL, UPDATER_FEED_URL, apiFetch, assertDownloadUrl, assertOpenExternalUrl, catalogEntryFromEdition, cloudSaves, collectHardwareProfile, configureYoutubeEmbedIdentity, editionInstallDir, ensureGameInstallRecord, ensureUnixExecutable, exeOnDisk, expandWinPath, extract7z, extractDmg, extractLinkHandoff, extractPkg, extractZip, fetchCatalogLiveStats, fetchControlProfile, fetchLauncherEditions, findExecutable, findInstallerInDir, findNamedPortableExe, findYSoccerOnlineJar, gamesRoot, getApiBase, getAvailableDiskSpace, getRemoteDeviceId, getRemoteDeviceName, httpStatusFromInstallError, installErrorCode, installQueue, isAllowedApiBase, launcherApiHeaders, launcherJson, listEditionEntries, listFixedDriveRoots, liveStatsDisk, loadCachedCatalog, loadCachedCatalogFile, loadSettings, loadState, normalizeFsPath, normalizeProcessImageName, parseDeepLink, pathUnderRoot, playableExePath, probeServerLatency, promoteStagingDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, registerCatalogEntryHosts, registerDownloadHostFromUrl, rememberLocatedRoot, repairUnixExtractedBinaries, reportInstall, resolveDownload, resolveEditionForInstall, resolveEventMedia, resolveMediaUrl, resolveModDownload, runLibrarySync, safeOpenExternal, saveCatalogCache, saveData, saveLiveStatsDiskCache, saveSettings, saveState, sevenZipBinary, shouldSkipScanDir, shouldSyncHardwareProfile, steamAppIdForEntry, stripRegQuotes, syncGameInstallSummary, uninstallExeCache, unpackNestedArchives, unwrapSingleRootDirectory, verifyChecksumMd5, verifyChecksumSha256, writeJarLauncher } = require("./services/main/core");
 const { ensureSteamRunning, isDiscordUrl, parseDiscordInviteCode, steamAppIdFor, steamBaseDir } = require("./services/main/steam");
-const { SOLARUS_REPAIR_SLUGS, elevationRemembered, findDirContainingFile, flattenWadFiles, flightGearAddonLaunchArgs, isAuriePatched, isBaseGameReady, isExecutableLocked, isFlightGearAircraftMod, listUninstallRegistryDump, looksLikeElevationRefusal, maybePrepareRenegadeX, maybeRepairWolfensteinEtInstall, maybeRepairZeldaMudoraInstall, modUsesUserDataFolder, persistEditionExe, prepareClassicDosInstall, rememberElevation, removeEditionModPatch, resolveInsideGameDir, resolveModTargetDir, runAuriePatcher } = require("./services/main/gameFixes");
+const { SOLARUS_REPAIR_SLUGS, elevationRemembered, findDirContainingFile, flattenWadFiles, flightGearAddonLaunchArgs, isAuriePatched, isBaseGameReady, isExecutableLocked, isFlightGearAircraftMod, listUninstallRegistryDump, looksLikeElevationRefusal, maybeRepairWolfensteinEtInstall, maybeRepairZeldaMudoraInstall, modUsesUserDataFolder, persistEditionExe, prepareClassicDosInstall, rememberElevation, removeEditionModPatch, resolveInsideGameDir, resolveModTargetDir, runAuriePatcher } = require("./services/main/gameFixes");
 const { hintProcessNames, isAnyImageRunning, killGameImageNames, killProcessesUnderDirs, probeImagesRunning, saveContextFor, snapshotSavesAfterPlay } = require("./services/main/processes");
 const { collectGameUninstallDirs, findUninstallerBinary, healFormerGamesDirsFromInstalls, isBaseGameInstallDir, isCatalogKnownInstallDir, isPlayBoundManagedInstallDir, isPlayBoundManagedModDir, isProtectedSaveDirectory, isUnsafeUninstallDir, listModSlugsForBaseGame, playBoundGamesRoots, rememberFormerGamesDir, removeDirWithRetries, removeFileWithRetries, resolveEditionUninstallDir, sameFsPath } = require("./services/main/uninstall");
 const { MANUAL_DOWNLOAD_URL, UPDATE_FAILURE_LIMIT, clearStaleUpdaterCache, clearUpdateFailures, isCacheCorruptionError, manualDownloadMessage, recordUpdateFailure, updateBreakerTripped } = require("./services/main/updater");
@@ -6766,50 +6763,6 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
-  if (slug === OPENCIV3_SLUG) {
-    try {
-      await ensureDefaultDisplaySettings(info.exe || info.dir);
-    } catch (err) {
-      console.warn("[openciv3] display ensure skipped:", err?.message || err);
-    }
-  }
-
-  if (isUnknownHorizonsSlug(slug)) {
-    try {
-      await ensureUnknownHorizonsSafeDisplay();
-    } catch (err) {
-      console.warn("[unknown-horizons] display ensure skipped:", err?.message || err);
-    }
-  }
-
-  if (slug === "outrun") {
-    try {
-      const result = await ensureOutrunWindowSize({
-        dirs: [info.dir, info.exe ? path.dirname(info.exe) : null],
-        workArea: screen.getPrimaryDisplay().workAreaSize,
-      });
-      if (result.changed) console.log(`[outrun] window size set to index ${result.index}`);
-    } catch (err) {
-      console.warn("[outrun] display ensure skipped:", err?.message || err);
-    }
-  }
-
-  if (slug === "holocure") {
-    try {
-      await ensureHolocureFullscreen();
-    } catch (err) {
-      console.warn("[holocure] display ensure skipped:", err?.message || err);
-    }
-  }
-
-  if (slug === "renegade-x") {
-    try {
-      await maybePrepareRenegadeX(info);
-    } catch (err) {
-      console.warn("[renegade-x] prep skipped:", err?.message || err);
-    }
-  }
-
   if (isOpenRaFamily(slug, catalogEntry(slug))) {
     try {
       await prepareOpenRaNetwork({ exePath: info.exe });
@@ -7142,112 +7095,12 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
    * pass `-connect <host:port>` instead of idTech's `+connect <host:port>` so
    * the updater's CLI parser does not error with "too many command line arguments".
    */
-  if (slug === "unvanquished") {
-    const daemonExe =
-      findNamedPortableExe(info.dir, "daemon.exe") ||
-      findNamedPortableExe(info.dir, "daemon64.exe") ||
-      findNamedPortableExe(info.dir, "unvanquished.exe") ||
-      findNamedPortableExe(info.dir, "daemon") ||
-      (info.dir ? findExecutable(info.dir, "daemon") : null);
-
-    if (daemonExe && (/updater/i.test(path.basename(launchPath)) || launchPath !== daemonExe)) {
-      persistEditionExe(slug, edSlug, launchPath, daemonExe);
-      launchPath = daemonExe;
-      info = { ...info, exe: daemonExe };
-    } else if (/updater/i.test(path.basename(launchPath)) && join?.host && join?.port) {
-      const hostPort = `${join.host}:${join.port}`;
-      args = args.filter((a) => a !== "+connect" && a !== hostPort);
-      if (!args.includes("-connect")) {
-        args.push("-connect", hostPort);
-      }
-    }
-  }
-
-  /*
-   * Xonotic ships a starter launcher (xonotic.exe) that detects architecture
-   * and spawns the real engine (xonotic-x86_64-sdl.exe / xonotic-x86_64-gl.exe),
-   * but drops CLI arguments like `+connect`. Target the native DarkPlaces engine
-   * binary directly so join arguments reach the engine.
-   */
-  if (slug === "xonotic") {
-    /*
-     * One zip, every platform's engine in it.
-     *
-     * Xonotic ships the Windows .exe, the Linux ELF and the macOS bundle side
-     * by side, and this list is walked in order until a file exists — so on a
-     * Windows box whose release did not carry one of the .exe names above,
-     * `xonotic-linux64-sdl` was found, written into the install record by
-     * persistEditionExe, and spawned. That is the "Couldn't start
-     * xonotic-linux64-sdl (file missing or not runnable)" a player sees, and
-     * it survives restarts because the wrong answer was saved.
-     *
-     * The names stay ordered by preference; the platform filter decides which
-     * of them this machine is allowed to adopt.
-     */
-    const xonoticExe = firstRunnableOnPlatform([
-      findNamedPortableExe(info.dir, "xonotic-x86_64-sdl.exe"),
-      findNamedPortableExe(info.dir, "xonotic-x86_64-gl.exe"),
-      findNamedPortableExe(info.dir, "xonotic-x86-sdl.exe"),
-      findNamedPortableExe(info.dir, "xonotic-x86-gl.exe"),
-      findNamedPortableExe(info.dir, "xonotic-x86_64.exe"),
-      findNamedPortableExe(info.dir, "xonotic-x64-sdl.exe"),
-      findNamedPortableExe(info.dir, "xonotic-x64-gl.exe"),
-      findNamedPortableExe(info.dir, "xonotic-linux64-sdl"),
-      findNamedPortableExe(info.dir, "xonotic-linux64-glx"),
-      findNamedPortableExe(info.dir, "xonotic-linux64-gl"),
-      info.dir ? findExecutable(info.dir, "xonotic.*sdl|xonotic.*gl|xonotic-x86") : null,
-    ]);
-
-    if (xonoticExe && (path.basename(launchPath).toLowerCase() === "xonotic.exe" || launchPath !== xonoticExe)) {
-      persistEditionExe(slug, edSlug, launchPath, xonoticExe);
-      launchPath = ensureUnixExecutable(xonoticExe);
-      info = { ...info, exe: launchPath };
-    } else if (xonoticExe) {
-      launchPath = ensureUnixExecutable(launchPath);
-    }
-  }
-
-  /*
-   * Freedoom multiplayer party joins require Zandronum rather than GZDoom,
-   * because GZDoom does not support dedicated client/server `+connect`.
-   * If joining a party or Zandronum exists in the install folder, prefer
-   * launching zandronum.exe.
-   */
-  if (slug === "freedoom" || slug === "zandronum") {
-    // Same shape as Xonotic's: the bare name below the .exe is the Linux
-    // build, and adopting it on Windows saves an unrunnable path.
-    const zandronumExe = firstRunnableOnPlatform([
-      findNamedPortableExe(info.dir, "zandronum.exe"),
-      findNamedPortableExe(info.dir, "zandronum"),
-      info.dir ? findExecutable(info.dir, "zandronum") : null,
-    ]);
-
-    if (zandronumExe && (launchPath !== zandronumExe || /gzdoom/i.test(path.basename(launchPath)))) {
-      persistEditionExe(slug, edSlug, launchPath, zandronumExe);
-      launchPath = zandronumExe;
-      info = { ...info, exe: zandronumExe };
-    }
-
-    const ed = String(edSlug || info.editionSlug || "").toLowerCase();
-    const isPhase1 = ed.includes("phase-1") || ed.includes("phase1") || ed === "1";
-    const isFreeDm = ed.includes("freedm") || ed.includes("dm");
-    const iwadName = isPhase1 ? "freedoom1.wad" : isFreeDm ? "freedm.wad" : "freedoom2.wad";
-
-    if (!args.includes("-iwad")) {
-      const iwadCandidate = info.dir
-        ? [
-            path.join(info.dir, iwadName),
-            path.join(path.dirname(launchPath), iwadName),
-            findNamedPortableExe(info.dir, iwadName),
-          ].find((p) => p && fs.existsSync(p))
-        : null;
-      if (iwadCandidate) {
-        args.unshift("-iwad", iwadCandidate);
-      } else {
-        args.unshift("-iwad", iwadName);
-      }
-    }
-  }
+  // Engine-binary and argument fixes live in services/launchFixes/exeResolution.js.
+  ({ launchPath, args, info } = launchFixes.resolveLaunch(
+    slug,
+    { launchPath, args, info, edSlug, join },
+    { findNamedPortableExe, findExecutable, persistEditionExe, firstRunnableOnPlatform, ensureUnixExecutable }
+  ));
 
   /*
    * Volleyball Legends is a Roblox experience. Launching via the `roblox://`
@@ -7564,6 +7417,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     loadSettings,
     saveSettings,
     resourceRoots: [process.resourcesPath || "", path.join(__dirname, "resources")].filter(Boolean),
+    workArea: screen.getPrimaryDisplay().workAreaSize,
   });
   if (fixEnv) {
     launchEnv = { ...(launchEnv || process.env), ...fixEnv };

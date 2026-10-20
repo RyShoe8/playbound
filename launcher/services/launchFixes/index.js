@@ -8,10 +8,15 @@
  * unrelated games collided in review and in parallel edits. Each game's
  * pre-launch fix now lives in its own module here and is registered below.
  *
- * A fix module exports `{ slugs, prepare(ctx) }`. `prepare` runs right
- * before the game process starts, may touch the game's own files, and may
- * return `{ env }` to merge into the launch environment. It must never throw
- * a launch: failures are logged and the game starts anyway.
+ * Two phases, both optional per fix:
+ * - `resolve(state, helpers)` picks the binary and arguments. It runs where
+ *   the launch path is first known and returns the (possibly changed)
+ *   `{ launchPath, args, info }`.
+ * - `prepare(ctx)` runs right before the process starts, may touch the
+ *   game's own files, and may return `{ env }` to merge into the launch
+ *   environment.
+ * Neither may fail a launch: errors are logged and the launch continues
+ * with what it had.
  *
  * @typedef {object} LaunchFixContext
  * @property {string} slug
@@ -20,15 +25,46 @@
  * @property {() => object} loadSettings
  * @property {(next: object) => void} saveSettings
  * @property {string[]} resourceRoots  Where bundled resources live (packaged first).
+ * @property {{ width: number, height: number }} [workArea]  Primary display work area.
  */
 
-const FIXES = [require("./streetsOfRageRemake"), require("./xmenArcadeRemake"), require("./tmntRescuePalooza")];
+const FIXES = [
+  require("./streetsOfRageRemake"),
+  require("./xmenArcadeRemake"),
+  require("./tmntRescuePalooza"),
+  ...require("./displayPrep"),
+];
+const RESOLVERS = [...require("./exeResolution")];
 
 const bySlug = new Map();
 for (const fix of FIXES) {
   for (const slug of fix.slugs) {
     if (bySlug.has(slug)) throw new Error(`Two launch fixes claim ${slug}`);
     bySlug.set(slug, fix);
+  }
+}
+
+const resolverBySlug = new Map();
+for (const fix of RESOLVERS) {
+  for (const slug of fix.slugs) {
+    if (resolverBySlug.has(slug)) throw new Error(`Two launch resolvers claim ${slug}`);
+    resolverBySlug.set(slug, fix);
+  }
+}
+
+/**
+ * Run the slug's launch-path resolver, if any. Always returns a state with
+ * launchPath, args and info — the input unchanged when there is no resolver
+ * or it throws.
+ */
+function resolveLaunch(slug, state, helpers) {
+  const fix = resolverBySlug.get(slug);
+  if (!fix) return state;
+  try {
+    return fix.resolve({ ...state, slug }, helpers) || state;
+  } catch (err) {
+    console.warn(`[launch-fix] ${slug} resolve skipped:`, err?.message || err);
+    return state;
   }
 }
 
@@ -45,4 +81,9 @@ async function prepareLaunch(slug, ctx) {
   }
 }
 
-module.exports = { prepareLaunch, hasLaunchFix: (slug) => bySlug.has(slug) };
+module.exports = {
+  prepareLaunch,
+  resolveLaunch,
+  hasLaunchFix: (slug) => bySlug.has(slug),
+  hasLaunchResolver: (slug) => resolverBySlug.has(slug),
+};

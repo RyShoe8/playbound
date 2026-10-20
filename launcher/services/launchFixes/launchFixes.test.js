@@ -64,3 +64,59 @@ test("X-Men: first launch binds P1, applies fullscreen once, and is marked done"
   assert.equal(out.readInt32LE(352 - 28), 1, "fullscreen");
   assert.equal(store.get().openborFullscreenApplied["x-men-arcade-remake"], true);
 });
+
+test("display-prep games are registered", () => {
+  for (const slug of ["outrun", "holocure", "renegade-x", "openciv3", "unknown-horizons"]) {
+    assert.ok(hasLaunchFix(slug), slug);
+  }
+});
+
+const { resolveLaunch, hasLaunchResolver } = require("./index");
+
+function helpers(found = {}) {
+  const persisted = [];
+  return {
+    persisted,
+    findNamedPortableExe: (_dir, name) => found[name] || null,
+    findExecutable: () => null,
+    persistEditionExe: (...a) => persisted.push(a),
+    firstRunnableOnPlatform: (list) => list.find(Boolean) || null,
+    ensureUnixExecutable: (p) => p,
+  };
+}
+
+test("resolvers: unknown slug passes state through untouched", () => {
+  const state = { launchPath: "a.exe", args: ["-x"], info: {}, edSlug: "official", join: null };
+  assert.equal(resolveLaunch("not-a-game", state, helpers()), state);
+});
+
+test("Xonotic: starter exe is swapped for the engine binary and persisted", () => {
+  const h = helpers({ "xonotic-x86_64-sdl.exe": "C:/x/xonotic-x86_64-sdl.exe" });
+  const out = resolveLaunch("xonotic", { launchPath: "C:/x/xonotic.exe", args: [], info: { dir: "C:/x" }, edSlug: "official", join: null }, h);
+  assert.equal(out.launchPath, "C:/x/xonotic-x86_64-sdl.exe");
+  assert.equal(out.info.exe, "C:/x/xonotic-x86_64-sdl.exe");
+  assert.equal(h.persisted.length, 1);
+});
+
+test("Freedoom: launches Zandronum with the edition's IWAD", () => {
+  const h = helpers({ "zandronum.exe": "C:/f/zandronum.exe" });
+  const out = resolveLaunch("freedoom", { launchPath: "C:/f/gzdoom.exe", args: [], info: { dir: "C:/f" }, edSlug: "phase-1", join: null }, h);
+  assert.equal(out.launchPath, "C:/f/zandronum.exe");
+  assert.deepEqual(out.args.slice(0, 2), ["-iwad", "freedoom1.wad"]);
+});
+
+test("Unvanquished: updater with no engine found gets -connect for a join", () => {
+  const out = resolveLaunch(
+    "unvanquished",
+    { launchPath: "C:/u/updater.exe", args: ["+connect", "1.2.3.4:27960"], info: { dir: null }, edSlug: "official", join: { host: "1.2.3.4", port: 27960 } },
+    helpers()
+  );
+  assert.deepEqual(out.args, ["-connect", "1.2.3.4:27960"]);
+});
+
+test("a throwing resolver keeps the original launch", () => {
+  const state = { launchPath: "C:/x/xonotic.exe", args: [], info: { dir: "C:/x" }, edSlug: "official", join: null };
+  const h = { ...helpers(), findNamedPortableExe: () => { throw new Error("boom"); } };
+  assert.equal(resolveLaunch("xonotic", state, h), state);
+  assert.ok(hasLaunchResolver("zandronum"));
+});
