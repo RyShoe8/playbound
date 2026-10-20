@@ -6,6 +6,15 @@ import { IS_PRODUCTION, SITE_URL } from "@/lib/site";
  */
 
 const TIMEOUT_MS = 12_000;
+/**
+ * The bot runs as a worker that can be spun down when idle, so the first request
+ * after a quiet spell may take longer than twelve seconds just to wake it. That
+ * request was being abandoned — Hydorah was published, the channel call and the
+ * announcement both timed out, and nothing retried either. Calls that must land
+ * (provision, announce) wait longer and try once more after a timeout, which
+ * finds the worker awake.
+ */
+const PATIENT_TIMEOUT_MS = 30_000;
 
 let warnedMissing = false;
 
@@ -24,12 +33,37 @@ function webhookConfig(): { base: string; secret: string } | null {
   return { base, secret };
 }
 
-async function postBot(path: string, body: Record<string, unknown>): Promise<unknown> {
+function isAbort(err: unknown): boolean {
+  return err instanceof Error && (err.name === "AbortError" || /aborted|timeout/i.test(err.message));
+}
+
+async function postBot(
+  path: string,
+  body: Record<string, unknown>,
+  opts: { patient?: boolean } = {}
+): Promise<unknown> {
+  if (opts.patient) {
+    try {
+      return await postBotOnce(path, body, PATIENT_TIMEOUT_MS);
+    } catch (err) {
+      // A timeout is the cold-start signature; any other failure is real.
+      if (!isAbort(err)) throw err;
+      return postBotOnce(path, body, PATIENT_TIMEOUT_MS);
+    }
+  }
+  return postBotOnce(path, body, TIMEOUT_MS);
+}
+
+async function postBotOnce(
+  path: string,
+  body: Record<string, unknown>,
+  timeoutMs: number
+): Promise<unknown> {
   const cfg = webhookConfig();
   if (!cfg) return null;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${cfg.base}${path}`, {
       method: "POST",
@@ -56,7 +90,7 @@ async function postBot(path: string, body: Record<string, unknown>): Promise<unk
 export async function requestDiscordProvision(slug: string): Promise<unknown> {
   if (!slug) return null;
   try {
-    const res = await postBot("/provision", { slug });
+    const res = await postBot("/provision", { slug }, { patient: true });
     if (res) console.log(`[discordProvision] ${slug}: channel provisioned successfully`);
     return res;
   } catch (err) {
@@ -116,13 +150,17 @@ export async function requestNewGameDiscordAnnounce(game: {
     absoluteCatalogMedia(game.coverImage) ||
     absoluteCatalogMedia(game.screenshots?.find((u) => u?.trim()) || null);
   try {
-    await postBot("/announce-game", {
-      slug: game.slug,
-      title: game.title,
-      thatOneThing,
-      url: `${SITE_URL}/games/${encodeURIComponent(game.slug)}`,
-      imageUrl,
-    });
+    await postBot(
+      "/announce-game",
+      {
+        slug: game.slug,
+        title: game.title,
+        thatOneThing,
+        url: `${SITE_URL}/games/${encodeURIComponent(game.slug)}`,
+        imageUrl,
+      },
+      { patient: true }
+    );
   } catch (err) {
     console.error(
       `[discordAnnounce] ${game.slug}:`,
