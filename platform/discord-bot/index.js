@@ -1648,7 +1648,7 @@ function requireSecret(req, res) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, backfillRunning }));
+    res.end(JSON.stringify({ ok: true, backfillRunning, ready: Boolean(games) && client.isReady() }));
     return;
   }
 
@@ -1685,6 +1685,13 @@ const server = http.createServer(async (req, res) => {
         reconcileRunning,
       })
     );
+    return;
+  }
+
+  // Everything below needs Mongo and Discord. Say so plainly while startup is still running.
+  if (!games && req.url !== "/health/discord") {
+    res.writeHead(503, { "content-type": "application/json", "retry-after": "10" });
+    res.end(JSON.stringify({ error: "Bot is still starting" }));
     return;
   }
 
@@ -2434,8 +2441,48 @@ const server = http.createServer(async (req, res) => {
   res.end("Not found");
 });
 
-await mongo.connect();
-games = mongo.db().collection("cataloggames");
-editions = mongo.db().collection("editions");
-await client.login(TOKEN);
-server.listen(PORT, () => console.log(`Webhook listening on :${PORT}`));
+/*
+ * Startup, in the order that makes failures visible.
+ *
+ * The listener used to open only after the Mongo connection and the Discord login
+ * had both finished. If either hung — an Atlas allow-list that does not include the
+ * host, a gateway that never answers — nothing was ever logged and the port never
+ * opened, so the host saw an unhealthy deploy and restarted the process again and
+ * again with no reason on screen. Now the port opens first, every stage is logged
+ * with its timing, each slow step has a deadline, and a failure says what failed.
+ */
+const startedAt = Date.now();
+const stage = (message) => console.log(`[startup +${((Date.now() - startedAt) / 1000).toFixed(1)}s] ${message}`);
+const within = (promise, ms, what) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${what} did not finish within ${ms / 1000}s`)), ms)
+    ),
+  ]);
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason instanceof Error ? reason.stack || reason.message : reason);
+});
+client.on("shardDisconnect", (event, id) => console.warn(`[gateway] shard ${id} disconnected (code ${event?.code})`));
+client.on("shardError", (err, id) => console.warn(`[gateway] shard ${id} error: ${err?.message || err}`));
+client.rest.on("rateLimited", (info) =>
+  console.warn(`[rest] rate limited on ${info?.method} ${info?.route}: retry in ${info?.timeToReset}ms (global=${Boolean(info?.global)})`)
+);
+
+server.listen(PORT, () => stage(`Webhook listening on :${PORT} (finishing startup)`));
+
+try {
+  stage("connecting to MongoDB");
+  await within(mongo.connect(), 30_000, "MongoDB connect");
+  games = mongo.db().collection("cataloggames");
+  editions = mongo.db().collection("editions");
+  stage("MongoDB connected");
+  stage("logging in to Discord");
+  await within(client.login(TOKEN), 60_000, "Discord login");
+  stage("Discord login accepted");
+} catch (err) {
+  console.error(`[startup] FAILED: ${err?.message || err}`);
+  // Give the log line time to flush, then let the host restart with the reason on screen.
+  setTimeout(() => process.exit(1), 2000);
+}
