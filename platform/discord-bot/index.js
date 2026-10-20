@@ -2470,6 +2470,45 @@ client.rest.on("rateLimited", (info) =>
   console.warn(`[rest] rate limited on ${info?.method} ${info?.route}: retry in ${info?.timeToReset}ms (global=${Boolean(info?.global)})`)
 );
 
+/**
+ * Two plain HTTPS requests before logging in, so a login that hangs can be told
+ * apart: the public gateway endpoint answers without a token (is Discord reachable
+ * from this host at all?), and /gateway/bot with the token reports the status,
+ * any rate-limit or block, and how many logins are left in the current window.
+ */
+async function probeDiscord() {
+  const probe = async (label, url, headers) => {
+    const began = Date.now();
+    try {
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
+      const body = await res.text();
+      const interesting = ["retry-after", "x-ratelimit-global", "x-ratelimit-scope", "cf-ray", "server"]
+        .map((name) => (res.headers.get(name) ? `${name}=${res.headers.get(name)}` : null))
+        .filter(Boolean)
+        .join(" ");
+      let detail = "";
+      try {
+        const parsed = JSON.parse(body);
+        if (parsed.session_start_limit) {
+          const s = parsed.session_start_limit;
+          detail = ` session_start_limit remaining=${s.remaining}/${s.total} resets_in_ms=${s.reset_after}`;
+        } else if (!res.ok) {
+          detail = ` body=${body.slice(0, 160)}`;
+        }
+      } catch {
+        if (!res.ok) detail = ` body=${body.replace(/\s+/g, " ").slice(0, 160)}`;
+      }
+      stage(`probe ${label}: HTTP ${res.status} in ${Date.now() - began}ms ${interesting}${detail}`);
+    } catch (err) {
+      stage(`probe ${label}: FAILED after ${Date.now() - began}ms (${err?.name === "TimeoutError" ? "no answer within 10s" : err?.message || err})`);
+    }
+  };
+  await probe("discord.com/api/v10/gateway", "https://discord.com/api/v10/gateway", {});
+  await probe("discord.com/api/v10/gateway/bot", "https://discord.com/api/v10/gateway/bot", {
+    authorization: `Bot ${TOKEN}`,
+  });
+}
+
 server.listen(PORT, () => stage(`Webhook listening on :${PORT} (finishing startup)`));
 
 try {
@@ -2478,7 +2517,14 @@ try {
   games = mongo.db().collection("cataloggames");
   editions = mongo.db().collection("editions");
   stage("MongoDB connected");
+  await probeDiscord();
   stage("logging in to Discord");
+  // discord.js narrates its own login (gateway fetch, websocket connect, identify)
+  // through "debug"; until the bot is ready that is exactly what a stuck login needs.
+  const narrate = (message) => {
+    if (!client.isReady()) console.log(`[discord.js] ${String(message).replace(TOKEN, "[token]").slice(0, 300)}`);
+  };
+  client.on("debug", narrate);
   await within(client.login(TOKEN), 60_000, "Discord login");
   stage("Discord login accepted");
 } catch (err) {
