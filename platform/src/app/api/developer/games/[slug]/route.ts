@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { requireDeveloperOrAdminSession, canEditGame } from "@/lib/developerAccess";
 import { developerGamePayloadSchema } from "@/lib/developerGamePayload";
+import { DEVELOPER_GAME_SELECT, developerGameResponse } from "@/lib/developerGameResponse";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 export async function GET(
@@ -17,7 +18,7 @@ export async function GET(
   const { slug } = await params;
   await dbConnect();
 
-  const game = await CatalogGame.findOne({ slug }).lean();
+  const game = await CatalogGame.findOne({ slug }).select(DEVELOPER_GAME_SELECT).lean();
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
@@ -30,7 +31,7 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ game });
+  return NextResponse.json({ game: developerGameResponse(game) });
 }
 
 export async function PATCH(
@@ -43,7 +44,7 @@ export async function PATCH(
   const { slug } = await params;
   await dbConnect();
 
-  const game = await CatalogGame.findOne({ slug });
+  const game = await CatalogGame.findOne({ slug }).select("ownerUserId developerSlug");
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
@@ -72,13 +73,13 @@ export async function PATCH(
         },
       },
       { returnDocument: "after" }
-    ).lean();
+    ).select(DEVELOPER_GAME_SELECT).lean();
 
     revalidateTag("catalog", { expire: 0 });
     revalidateTag("games", { expire: 0 });
     revalidatePath(`/games/${slug}`);
 
-    return NextResponse.json({ success: true, game: updated });
+    return NextResponse.json({ success: true, game: updated ? developerGameResponse(updated) : null });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: firstZodErrorMessage(err) }, { status: 422 });
