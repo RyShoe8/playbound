@@ -16,10 +16,18 @@ DENIED = (
 )
 
 
-def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False):
-    if type(private_display) is not bool or type(seqpacket_pairs) is not bool or (seqpacket_pairs and (private_display or legacy_x86)):
+def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False, guarded_x86=False):
+    """guarded_x86: a 32-bit engine whose sockets go through the socketcall multiplexer.
+
+    socketcall cannot be argument-filtered, so it is admitted only inside the
+    enforced per-UID AppArmor policy, which limits Unix sockets to same-label
+    peers (host abstract sockets stay unreachable). `ipc` stays denied.
+    """
+    if (type(private_display) is not bool or type(seqpacket_pairs) is not bool or type(guarded_x86) is not bool
+            or (seqpacket_pairs and (private_display or legacy_x86 or guarded_x86))
+            or (guarded_x86 and (private_display or legacy_x86))):
         raise ValueError('Invalid private display policy')
-    if private_display:
+    if private_display or guarded_x86:
         uid = os.getuid()
         if legacy_x86 or not 40000 <= uid <= 40255:
             raise ValueError('Reviewed private display identity required')
@@ -70,7 +78,7 @@ def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False
         syscall=library.seccomp_syscall_resolve_name(b'socket')
         if syscall < 0:
             raise ValueError('Native Unix socket boundary is unavailable')
-        if private_display:
+        if private_display or guarded_x86:
             # Only stream sockets are admitted, and only after entering the
             # accepted per-UID AppArmor peer boundary. No datagram reconnects.
             for kind in range(16):
@@ -89,6 +97,18 @@ def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False
             arguments=(Argument*2)(family,Argument(arg=1,op=7,a=15,b=kind))  # MASKED_EQ
             if library.seccomp_rule_add_array(context,0x00050000|errno.EPERM,pair,2,arguments) != 0:
                 raise ValueError('Private stream IPC type boundary is unavailable')
+        if guarded_x86:
+            # The i386 ABI is added only now, after the native-only socket argument
+            # rules above, so libseccomp does not translate those rules into a
+            # blanket socketcall denial. The AppArmor profile (checked at entry)
+            # is what confines Unix sockets for these engines; ipc stays denied
+            # and the common deny list applies to both ABIs.
+            if library.seccomp_arch_add(context, 0x40000003) != 0:  # SCMP_ARCH_X86
+                raise ValueError('Reviewed i386 ABI is unavailable')
+            for name, error in [('ipc', errno.EPERM), *((name, errno.EPERM) for name in DENIED), ('clone3', errno.ENOSYS)]:
+                syscall = library.seccomp_syscall_resolve_name(name.encode('ascii'))
+                if library.seccomp_rule_add_array(context, 0x00050000 | error, syscall, 0, None) != 0:
+                    raise ValueError('Guarded i386 syscall rule is unavailable')
         descriptor = os.memfd_create('playbound-native-syscalls-v1', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         if library.seccomp_export_bpf(context, descriptor) != 0:
             raise ValueError('Could not export native syscall boundary')

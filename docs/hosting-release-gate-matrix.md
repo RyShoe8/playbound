@@ -6,7 +6,7 @@ evidence or an explicit surfaced limitation; this table shows which do. Regenera
 each acceptance instead of editing it by hand.
 
 Targets: 52. Isolation: operator_rollout 23, pending 3, blocked 26. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 36, none 15, recorded blocker 1. World backups: yes 37, no 15.
+Acceptance evidence: accepted 38, none 13, recorded blocker 1. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -19,13 +19,13 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | AssaultCube (native binaries) (`assaultcube`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Barotrauma (`barotrauma`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (writable runtime overlay, .NET GC limits). Protected restore and customer control acceptance are still required before enrollment… |
 | Battle for Wesnoth (reviewed 1.18 server) (`battle-for-wesnoth`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
-| Battlefield 1942 (reviewed static engine) (`battlefield-1942-anthology`) | manual (declared) | implemented | blocked | none | no | Local pinned static i386 candidate with private typed settings/map overlay and disabled legacy discovery implemented; engine direct-syscall compatibility, startup, controls, recovery and restore acceptance remain require… |
+| Battlefield 1942 (reviewed static engine) (`battlefield-1942-anthology`) | manual (declared) | implemented | blocked | accepted | no | Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), sealed stock settings, same-process agent restart, stop and migration rollback passed on the VPS. Protected restore and customer c… |
 | BombSquad (paired controller and game distribution) (`bombsquad`) | automatic | implemented | blocked | recorded blocker | no | Local paired Python/controller namespace candidate implemented; the previous isolated transport startup failed. Native transport, controller shutdown, recovery and restore acceptance remain required. Do not enroll custom… |
 | BZFlag (reviewed Ubuntu native server) (`bzflag`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | OpenRA · Combined Arms (`combined-arms`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
 | Core Keeper (`core-keeper`) | automatic | implemented | blocked | accepted | yes | Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. Human Join and UID-aware controls remain unverified; customer enrollment remains unavailable… |
 | Counter-Strike 2 (`counter-strike-2`) | automatic | implemented | blocked | none | no | Local native 64-bit Source candidate with pinned depots and private config/log overlays implemented; storage publication, startup, RCON, recovery and restore acceptance remain required. |
-| Counter-Strike: Source (`counter-strike-source`) | automatic | implemented | blocked | none | no | Local pinned i386 Source candidate with direct-syscall checks and denied socketcall/ipc multiplexers implemented; native engine networking, startup, RCON, private configuration, recovery and restore acceptance remain req… |
+| Counter-Strike: Source (`counter-strike-source`) | automatic | implemented | blocked | accepted | no | Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), port bind, same-process agent restart, stop and migration rollback passed on the VPS. RCON, protected restore and customer control… |
 | OpenRA · Crystallized Nexus (`crystallized-nexus`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
 | Deus Ex GOTY (HX) (`deus-ex`) | automatic | none | pending | none | no | HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable. |
 | Don't Starve Together (`dont-starve-together`) | automatic | implemented | blocked | none | yes | Local pinned 64-bit native candidate with private cluster and fenced Steam ports implemented; startup, controls, recovery and restore acceptance remain required. |
@@ -42,7 +42,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Mindustry (`mindustry`) | automatic | implemented | operator_rollout | accepted | yes | Identity handoff, native query and restart recovery passed. Requires explicit offline enrollment and a reviewed root JAR pin after updates; live console/control transport is not yet UID-aware. |
 | Morrowind (reviewed TES3MP engine) (`morrowind`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (Lua libraries pinned, config path fixed, own-port UDP self-test allowed by a reviewed firewall rule). Fenced world restore and cu… |
 | Necesse (`necesse`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS. Fenced world restore and customer control acceptance are still required before enrollment. |
-| Open Fortress (SDK + mod) (`open-fortress`) | automatic | implemented | blocked | none | no | Local paired i386 SDK/mod candidate with separate read-only TF2 dependency, private defaults/cache/config and fixed library aliases implemented; engine networking, RCON, startup/recovery and protected restore acceptance … |
+| Open Fortress (SDK + mod) (`open-fortress`) | automatic | implemented | blocked | none | no | Starts inside the per-UID AppArmor profile but its memy mod loader cannot find server.so in the namespace and the engine aborts. Needs a mapping fix for the aliased server library before acceptance. |
 | OpenArena (reviewed ioquake3 dedicated engine) (`openarena`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | OpenHV (`openhv`) | automatic | implemented | blocked | accepted | yes | Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (4 GiB envelope, 12 GiB address space). Protected restore and customer control acceptance are still required before enrollment. |
 | Medal of Honor: Allied Assault (OpenMoHAA) (`openmohaa`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment, a root-promoted dedicated engine, pinned base-game assets and the original eight-character save suffix. Native query, restart and rollback passed. New isolated engine/assets need operator rev… |
@@ -71,12 +71,12 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 
 - **ANEURISM IV** — pending, evidence: none
 - **Barotrauma** — blocked, evidence: accepted
-- **Battlefield 1942 (reviewed static engine)** — blocked, evidence: none
+- **Battlefield 1942 (reviewed static engine)** — blocked, evidence: accepted
 - **BombSquad (paired controller and game distribution)** — blocked, evidence: recorded blocker
 - **OpenRA · Combined Arms** — blocked, evidence: none
 - **Core Keeper** — blocked, evidence: accepted
 - **Counter-Strike 2** — blocked, evidence: none
-- **Counter-Strike: Source** — blocked, evidence: none
+- **Counter-Strike: Source** — blocked, evidence: accepted
 - **OpenRA · Crystallized Nexus** — blocked, evidence: none
 - **Deus Ex GOTY (HX)** — pending, evidence: none
 - **Don't Starve Together** — blocked, evidence: none

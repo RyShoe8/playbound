@@ -51,7 +51,7 @@ def load_syscalls(descriptor):
     return module
 
 
-def enter(source_descriptor, namespace_arguments):
+def enter(source_descriptor, namespace_arguments, guarded_x86=False):
     verify_identity()  # Never import or execute a helper before this guard.
     if (not isinstance(namespace_arguments, list) or not namespace_arguments
             or any(not isinstance(arg, str) or '\x00' in arg for arg in namespace_arguments)
@@ -62,7 +62,8 @@ def enter(source_descriptor, namespace_arguments):
     source = load_syscalls(source_descriptor)
     descriptor = None
     try:
-        descriptor = source.sealed_filter(private_display=True)
+        # 32-bit engines get the guarded i386 profile; display games keep theirs.
+        descriptor = source.sealed_filter(guarded_x86=True) if guarded_x86 else source.sealed_filter(private_display=True)
         seals = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
         if fcntl.fcntl(descriptor, fcntl.F_GET_SEALS) & seals != seals:
             raise ValueError('Unsealed private-display syscall filter')
@@ -79,7 +80,10 @@ if __name__ == '__main__':
     try:
         if len(sys.argv) < 4 or not sys.argv[1].isascii() or not sys.argv[1].isdigit():
             raise ValueError('Invalid internal handoff')
-        enter(int(sys.argv[1]), sys.argv[2:])
+        if sys.argv[2] == '--guarded-x86':
+            enter(int(sys.argv[1]), sys.argv[3:], guarded_x86=True)
+        else:
+            enter(int(sys.argv[1]), sys.argv[2:])
     except Exception:
         # No raw argv, paths, configuration or game output in an error response.
         print('Private-display runtime handoff refused', file=sys.stderr)

@@ -133,6 +133,19 @@ class PrivateDisplayEntry(unittest.TestCase):
                 finally:
                     os.close(fd)
 
+    def test_guarded_flag_selects_the_i386_filter(self):
+        fd = os.memfd_create('display-entry-guarded', os.MFD_ALLOW_SEALING)
+        os.write(fd, b'12345678')
+        fcntl.fcntl(fd, fcntl.F_ADD_SEALS, fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL)
+        source = Mock()
+        source.sealed_filter.return_value = fd
+        args = ['--unshare-user', '--', '/fixed-bootstrap']
+        with patch.object(module, 'verify_identity'), patch.object(module, 'load_syscalls', return_value=source), \
+             patch.object(module.os, 'set_inheritable'), patch.object(module.os, 'execv', side_effect=OSError('exec failed')):
+            with self.assertRaises(OSError):
+                module.enter(1000, args, guarded_x86=True)
+        source.sealed_filter.assert_called_once_with(guarded_x86=True)
+
     def test_only_sealed_filter_is_execed_and_closed_on_exec_failure(self):
         fd = os.memfd_create('display-entry-test', os.MFD_ALLOW_SEALING)
         os.write(fd, b'12345678')

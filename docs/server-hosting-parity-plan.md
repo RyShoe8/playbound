@@ -3353,3 +3353,25 @@ family) cannot be inspected. Open Fortress additionally fails inside its
 `memy` loader looking for `server.so`. Resolving these needs a reviewed
 change: a per-customer network namespace, or a different filter strategy for
 i386 engines. They are surfaced limitations until then.
+
+### 32-bit engines run behind the per-UID AppArmor profile (2026-10-20)
+
+The i386 `socketcall` multiplexer cannot be argument-filtered, so the legacy
+profile denied it and 32-bit Source/BF1942 engines could not open a socket. A
+new `guarded_x86` seccomp mode now admits `socketcall` only when the process is
+already inside the enforced per-UID AppArmor profile (checked at construction),
+whose Unix-socket rules allow only same-label peers, so host abstract sockets
+stay unreachable. `ipc`, the common deny list and `clone3` stay denied for both
+ABIs; the stream-only native `socket`/`socketpair` argument rules are installed
+before the i386 ABI is added so libseccomp does not collapse them into a
+blanket socketcall denial. The display-entry helper takes `--guarded-x86`;
+`GUARDED_X86_GAMES` (Counter-Strike: Source, Open Fortress, Battlefield 1942)
+now launch through the same aa-exec handoff as the display games. The profile
+also grants the sealed `/runtime` bundle path used by Source-engine games.
+
+Acceptance: Counter-Strike: Source and Battlefield 1942 pass (isolated start,
+port bind, same-process agent restart, stop, migration rollback). Open Fortress
+now reaches its mod loader but aborts because `memy` cannot find the aliased
+`server.so`; that remains open. The profile for the test UID was loaded only
+for the runs and removed afterwards. Production enrollment of any of these
+still needs the per-UID profile loaded by the enrollment flow.

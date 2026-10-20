@@ -41,6 +41,34 @@ class NativeSyscalls(unittest.TestCase):
         with patch.object(module.os, 'getuid', return_value=40000):
             with self.assertRaises(ValueError):module.sealed_filter(legacy_x86=True, private_display=True)
 
+    def test_guarded_i386_mode_requires_the_enforced_label_and_is_exclusive(self):
+        for kwargs in ({'private_display': True}, {'legacy_x86': True}, {'seqpacket_pairs': True}):
+            with patch.object(module.os, 'getuid', return_value=40000), self.assertRaises(ValueError):
+                module.sealed_filter(guarded_x86=True, **kwargs)
+        with self.assertRaises(ValueError):
+            module.sealed_filter(guarded_x86=1)
+        with patch.object(module.os, 'getuid', return_value=1000), self.assertRaises(ValueError):
+            module.sealed_filter(guarded_x86=True)
+        for label in ('unconfined', 'playbound-customer-ipc-40001 (enforce)', 'playbound-customer-ipc-40000 (complain)'):
+            with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value=label):
+                with self.subTest(label=label), self.assertRaises(ValueError):
+                    module.sealed_filter(guarded_x86=True)
+
+    def test_guarded_i386_filter_is_sealed_and_larger_than_the_native_one(self):
+        with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value='playbound-customer-ipc-40000 (enforce)'):
+            guarded = module.sealed_filter(guarded_x86=True)
+            legacy_size = None
+        try:
+            expected = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+            self.assertEqual(fcntl.fcntl(guarded, fcntl.F_GET_SEALS), expected)
+            native = module.sealed_filter()
+            try:
+                self.assertGreater(os.fstat(guarded).st_size, os.fstat(native).st_size)
+            finally:
+                os.close(native)
+        finally:
+            os.close(guarded)
+
     def test_display_filter_is_sealed_after_label_guard(self):
         with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value='playbound-customer-ipc-40000 (enforce)'):
             descriptor = module.sealed_filter(private_display=True)

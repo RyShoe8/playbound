@@ -524,7 +524,12 @@ def verify_supervisor_scope(scope):
         raise ValueError('Supervisor did not inherit the fenced scope')
 
 
-def private_display_handoff(arguments, uid, entry_fd, source_fd):
+# 32-bit engines that open sockets through the socketcall multiplexer. They run inside
+# the enforced per-UID AppArmor profile, which keeps Unix sockets to same-label peers.
+GUARDED_X86_GAMES = ('counter-strike-source', 'open-fortress', 'battlefield-1942-anthology')
+
+
+def private_display_handoff(arguments, uid, entry_fd, source_fd, guarded_x86=False):
     """Internal root-built command; identity is dropped by Popen before exec."""
     policy = trusted_module('pb_display_policy', 'playbound-customer-display-policy')
     label = policy.verify_enforced(uid)
@@ -536,6 +541,7 @@ def private_display_handoff(arguments, uid, entry_fd, source_fd):
         raise ValueError('Display filter must be constructed after identity drop')
     return ['/usr/bin/aa-exec', '-p', label, '--', *arguments[:position],
             '/usr/bin/python3', '-I', '/proc/self/fd/'+str(entry_fd), str(source_fd),
+            *(['--guarded-x86'] if guarded_x86 else []),
             *arguments[position+1:]]
 
 
@@ -906,7 +912,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             if GAME=='bombsquad':python_directory=trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game='bombsquad-python')
             if GAME in ('hurry-curry','assaultcube','freedoom'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets(game=GAME)
             syscalls = trusted_module('pb_syscalls', 'playbound-customer-seccomp')
-            if GAME in ('core-keeper','re-volt-rvgl'):
+            if GAME in ('core-keeper','re-volt-rvgl') or GAME in GUARDED_X86_GAMES:
                 display_entry_fd = os.open('/usr/local/libexec/playbound-customer-display-entry', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
                 display_source_fd = os.open('/usr/local/libexec/playbound-customer-seccomp', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
             else:
@@ -921,8 +927,8 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             arguments = command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None, seccomp_fd, dns_fd, assets, asset_directory, identity_fd, python_directory, dependency_directory, identity_files)
             delimiter = arguments.index('--',arguments.index('/usr/bin/bwrap'))
             expected_command = arguments[delimiter+1:]
-            if GAME in ('core-keeper','re-volt-rvgl'):
-                arguments = private_display_handoff(arguments, account['uid'], display_entry_fd, display_source_fd)
+            if GAME in ('core-keeper','re-volt-rvgl') or GAME in GUARDED_X86_GAMES:
+                arguments = private_display_handoff(arguments, account['uid'], display_entry_fd, display_source_fd, guarded_x86=GAME in GUARDED_X86_GAMES)
             child = subprocess.Popen(arguments, user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.PIPE if GAME in ('terraria','rimworld-together') else subprocess.DEVNULL, pass_fds=inherited)
             wrapper_identity = game_identity(child.pid)
             control = {}
