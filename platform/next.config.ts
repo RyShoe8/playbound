@@ -120,9 +120,14 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       {
         source: "/sitemap.xml",
-        // Cache public XML at the edge while retaining request-time generation
-        // and tagged catalog invalidation. Changes reach the edge within 5 min.
-        headers: [{ key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=300" }],
+        // The index is static text; let the edge keep it for an hour.
+        headers: [{ key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" }],
+      },
+      {
+        source: "/sitemaps/:section",
+        // Sections are assembled from tagged caches. Serve a stale copy while
+        // the edge refreshes it so crawlers never wait on a rebuild.
+        headers: [{ key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=3600" }],
       },
       // The launcher reads these cross-origin from a desktop app.
       {

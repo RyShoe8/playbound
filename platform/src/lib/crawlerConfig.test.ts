@@ -12,9 +12,14 @@ describe("crawler delivery", () => {
     expect(configured.test("Mozilla/5.0 Chrome/130.0")).toBe(false);
   });
 
-  it("limits sitemap edge freshness to five minutes", async () => {
+  it("serves a static sitemap index and refreshes sitemap sections at the edge within five minutes", async () => {
     const rules = await config.headers!();
-    const sitemap = rules.find((rule) => rule.source === "/sitemap.xml");
-    expect(sitemap?.headers).toContainEqual({ key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=300" });
+    const index = rules.find((rule) => rule.source === "/sitemap.xml");
+    expect(index?.headers.map((header) => header.key)).toContain("Vercel-CDN-Cache-Control");
+    const section = rules.find((rule) => rule.source === "/sitemaps/:section");
+    expect(section?.headers).toContainEqual({
+      key: "Vercel-CDN-Cache-Control",
+      value: "public, s-maxage=300, stale-while-revalidate=3600",
+    });
   });
 });
