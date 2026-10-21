@@ -9,6 +9,12 @@ name: Apply catalog wave
 
 on:
   workflow_dispatch:
+    inputs:
+      media_only:
+        description: "Apply only the reviewed broken-store-media URL replacements"
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
     paths:
@@ -32,7 +38,7 @@ jobs:
   apply:
     # The Dedicated-draft commit uses the isolated job below. A global wave
     # here would also rewrite unrelated catalog rows on the same push.
-    if: ${{ !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') && !contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') && !contains(github.event.head_commit.message, '[catalog-scope:four-games]') }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.media_only == true) && !contains(github.event.head_commit.message, '[catalog-scope:store-media]') && !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') && !contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') && !contains(github.event.head_commit.message, '[catalog-scope:four-games]') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -91,6 +97,34 @@ jobs:
       - name: Patch Combined Arms, VoxeLibre, and DREAM download fields
         if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run patch:named-mods -- openra-combined-arms luanti-voxelibre dfu-dream
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+  apply-media-only:
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.media_only == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:store-media]')) }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is not configured; no catalog rows were changed."
+            exit 1
+          fi
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Validate media replacements without writes
+        run: npm run insert:catalog-wave -- --media-repairs-only --dry-run
+      - name: Apply only named image and video replacements
+        run: npm run insert:catalog-wave -- --media-repairs-only
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
 

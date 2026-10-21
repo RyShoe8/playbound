@@ -1,0 +1,85 @@
+{
+  "deus-ex-goty-edition/gmdx": {
+    "source": "https://www.moddb.com/mods/gmdx",
+    "heroImage": {
+      "from": "https://images.gog-statics.com/3473122595a0d334cc38f9edbe80668e2d8e162ac0f34ce69b0165a254fd6fed.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/deus-ex-goty-edition-gmdx/store-media-repair-hero.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/3473122595a0d334cc38f9edbe80668e2d8e162ac0f34ce69b0165a254fd6fed.jpg",
+        "https://images.gog-statics.com/f61b46fe3e44110795b7f20dbf65dde762f3929dc6c10dfdc9846adb18bcff95_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c67033fda8d0c316e0e147135f7ad38a74471d9ce4ae937fa747ed269a5968ad_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3b1003a8508b634c0c84c8a53d63c732fce4af5a5dc5d4cc828b39c7578485ad_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/b6cc13ffbe8e9f0c1d1f58419d31903d47ce19e5e3c66b44e6bb30563a79d878_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3a504c47cbf76170d7a5a62071f9202cd74bd7cd9500645bc595ed6ca1ec7877_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/4d061fc5683a389fb260dad07de013ab28d52e39cb1da8bf86d4ee96e080528c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/14d6fdc0d70a755535f5aa446de2d2220701909507245b3285b380c9795e4ea9_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1bbc44bd66fc0c9e698196aeea25fe4222f405759919f53931458ed1a6a9f48a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1eff6362f3225cb48f63110104ae37cc5213ecbed39f3ee8060488239ef6b5b2_product_card_v2_mobile_slider_639.jpg",
+        "https://items.gog.com/gmdx/image.png"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/deus-ex-goty-edition-gmdx/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/deus-ex-goty-edition-gmdx/store-media-repair-shot-2.webp"
+      ]
+    }
+  },
+  "quake-ii-enhanced/quake-ii-rtx": {
+    "source": "https://store.steampowered.com/app/1089130/Quake_II_RTX/",
+    "heroImage": {
+      "from": "https://images.gog-statics.com/c36ed20220e95cb260b5ecf8e68c94ad0135040092dbea1ca38f4c9b6ae3aafc.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-hero.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/c36ed20220e95cb260b5ecf8e68c94ad0135040092dbea1ca38f4c9b6ae3aafc.jpg",
+        "https://images.gog-statics.com/5a35907e115577bcee8d174db58723045e70ff69af6c345ea4f6a383254f8c60_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8d64f893984087af050bd573036c0b166ccf8f2cfc7497fcb08cb72fe356c5a0_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/f7e151539cde74da9ac1cc679e6b6ef62dfb4b4ce98bfe5142ceef86b326ce16_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e63dd4b431d0399699f7bcaed5f0da7d7a2bceb750587bc2d72f6298c6556529_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3ea63e82717e1701f2aab403fe6124866a93d81796949b7227be0e51f85c777b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/a8eae179ce77df1e9007f0324787998344c779e10f82ee6d46a77c14ed7cf3a7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/adb76c042bb98ed2cb6719b839c4fa492dd81e974a6d9dcd626424eb7355c640_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/0db979fc336f9fd99b1ff4d6ac09d3fa974d5907d4a40496712e848854818f67_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/quake-ii-enhanced-quake-ii-rtx/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "morrowind/tamriel-rebuilt": {
+    "source": "https://www.tamriel-rebuilt.org/galleries/screenshots",
+    "heroImage": {
+      "from": "https://images.gog-statics.com/78dbcc768b713e5758950610c31599f234a375f84e9867ff1d839db4ae67cf03.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/morrowind-tamriel-rebuilt/store-media-repair-hero.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/78dbcc768b713e5758950610c31599f234a375f84e9867ff1d839db4ae67cf03_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/2a3d28a5c7590be9a8c15f21a1e296dfb852e6eea70eb0a7734e720a854b8873_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/984c705c9d634f72bb0912d3d7f3c65dec42d94b26fe3f1ced430156b7d3bc55_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/788f58d192c09563908824b7a63e91f20414c609d525ab3ea25eae6a7673bcc9_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8177c8feb63ddd213c43dffd50d5deb6a635889adc083526106120d8e5473517_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8f84cf8e1d2c3530a33634aee2248008004943e386c4e451f3c713c3d7045396_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e5e50561947b5519b83d22a2b2523767a3804507449771b11fd8ebb2e5e44f49_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/242418b18926aed86f1ce79e179c47f4ea851ce640fecec4b12a797411fb61d8_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8504c4befabafd01ae37d888ccd4006bf4290e31282209649dfd1314f83195fb_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/a3943bb61162122ab6a2700add9be6b3500ffbc3c80ec5a4ce2945a5d04cb65f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/fe1f18dd81c7ab93388635e272f70e8161791d1e035efff0cf2caac6ba7a27cc_product_card_v2_mobile_slider_639.jpg",
+        "https://items.gog.com/tamriel_rebuilt_game/future_expansions_2026-08-d01a9.png"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/morrowind-tamriel-rebuilt/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/editions/morrowind-tamriel-rebuilt/store-media-repair-shot-2.webp"
+      ]
+    }
+  }
+}

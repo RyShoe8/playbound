@@ -1,0 +1,596 @@
+{
+  "baseball-stars-2": {
+    "source": "https://store.steampowered.com/app/366230/",
+    "coverImage": {
+      "from": "https://images-2.gog-statics.com/b4c1e1224ca2a562a0f57296b84f07eb6bf3dc6e1dd449a4ad8a317a1ac8a6ef_glx_logo_2x.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images-3.gog-statics.com/a2e578644f4bc4a0174af840b99bbf9850801255fbb62ee3ec25e65c743ebe50_ggvgl_2x.jpg",
+        "https://images-1.gog-statics.com/6533ea13fd89d7a0da89055b1b02117d2f7845089abbc085ca971e73e865fcfc_ggvgl_2x.jpg",
+        "https://images-2.gog-statics.com/19ab5c0a959db27faeda08cf6af5bd8043ac00e8882a7d8d784b71ed772566da_ggvgl_2x.jpg",
+        "https://images-2.gog-statics.com/dfb1a48dbaff3ac4819bed04bcc1a63e6347fb8ff84648ccd6564efeb3088747_ggvgl_2x.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-stars-2/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "deus-ex-goty-edition": {
+    "source": "https://store.steampowered.com/app/6910/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/79429e097ac499290497415f13c0a1747a07659fc7b53f8cc07f1b0afd569333.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/deus-ex-goty-edition/store-media-repair-cover.webp"
+    }
+  },
+  "dungeon-keeper-gold": {
+    "source": "https://store.steampowered.com/app/1996630/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/59d47094960f0ba6b8712a046a2022ba23c8047bc4c75fda94d6c8b2304e4794.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/5f17c8ef5fdec53880ca691e7f5dda12856cb56e7fb2c69742f93e4832690782_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1a9ea88e04e17c6a09eb45d0536c5f67602f9be6c02862a5b4d4264c7a7acbb4_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d5d37409e51636a20ac87096aaf607149c28701bf7d7c910de2227fe2b7992f9_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3c47bf0cd271353d6a572cabeab1f07625cc1c4e8aa41656b3dff6efa752e429_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/aac166b0c71fda84cf9335e7ad3f0622650c0ef56a30a66a35f5b4961890fc95_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/079c9734dd1c05f76c9dded4680f4e51058730970dd74873d8de48727562f0a7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1a09ef5145382925df35d35f079dcf4a1584d982093810352a90031753f52f6b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/50eca227ef5af58b2f9af9cc309ad674c32079e7c9399bc65e81c3cc033d71b7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c99e8703af5780a1b3abf314decd6feb0279b0e6dea55c9f254c82286bd20252_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/15a13108755d1f1e2475d4c37a72b6a712e78f55caa911a614d9888f80f5638f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/eb47102aefc044e1d015819af73ce3838b41bbcaba57d60fe4c9d256c15559c5_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/25cb73cc759459aa9c5a1d7c6f2aadeae4a04cc5c3ff41e3602143cf06e26e80_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/dungeon-keeper-gold/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "factorio": {
+    "source": "https://store.steampowered.com/app/427520/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/fd1f632099404d13bb4a9c2ce3f1284e92058e00078b28baf5e6858887e5c505.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/0407241017ddc6fb00ad9665d23d834ccd680cd7267a318739b6b40d2465d9c0_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/9213cb947efad08fa704044919555e778707159beb645b6e79e65b1782757ef3_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/736692bf90b505db914ea7f1a8f3d40001cce573db376f2cbae6df059c6b9244_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/37369933b72f374d5bce879dae115353bcf2a1518f0909570f9017f504ffc96f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/a9469fd1829c0b18991693a0dae2d0434388ad477b12d4605eb56237cceb3137_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/4d6290375debc9bca97e1d6a8df44f7be43f85ab31fc5bc53f466fbe57914b21_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/f5a92d92238ddb9d5fac728869bdf75e059e70fdef6dfbcced583fc9c116b792_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/167da67062a213c669c99f63a4569329992221c7038fbec8d6c7511024973351_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/b7df04101e2a4229819fb3b8b2b20930856b39b6704c82285227c475d1eb04e3_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c298b959756f5118fe15849f600033d6e4d82bf3863155ad8e2215f2ca6a08f7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8e6f3cf161529bd057e61b704b10f477f00bb95153a00d04ca32ceb5069853bb_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/739bfd88cc9f2dfa03e47efcdf1e4aeb6dda4ab0e62ff969671c40ccb23281f1_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/0258250976da58092f5e9b189fd027d21ea06f33dbc4f28b2f79caffec34e99d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/225d2cef3b4bcbd7e964ba891e7a8af39bfc7f429c75b79ac84c97018a109faf_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/cb3a8d7496381843d133124abf76dadca95ec941427ce3be350e2d08534224e1_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/factorio/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "quake-ii-enhanced": {
+    "source": "https://store.steampowered.com/app/2320/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/35e12e2660933acbb28a78388d18e5dae5380209db8206a08167797ecd3535c2.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/35e12e2660933acbb28a78388d18e5dae5380209db8206a08167797ecd3535c2.jpg",
+        "https://images.gog-statics.com/ff9375376c547876d9a3257d87913a3784bde630ac09daaf46c62738f521e3ff_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/378019c93fb4198e8dee331cf7c6597ad7890447427371a9acba978b16f57560_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8a3f0400e1e4ec8fd4885b5a69ec6a1a97b4596b4608e8ae6485b64117876306_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/4966c693046c0b092fabfe0aca3d1b738e7320e9c3f2e2d2618acd5623fcd0cf_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/5807ab9f7b6503bd254f8949a627e7b501c56ed2690e2c83f5baa9ffc80c6225_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/cb6867fcd372b29602a0cc39ca91cd626cb1e325018406fe4dd213bf4b26dc3d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ddd31259969c5d3e30c3a3d4d97f74657c3a9d7570c54b9e35103808e32adafd_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/fe97c567ee2bd59085f6b043b1b607ad4241c471c5e851242f6e1094db7903db_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/56adfbe65d2c55fdf4e026795b463a5d5f65372af4c16cafd681872d800912ff_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e6bdc9ab33723834a438df68ab160d0852021531ed3a25cc59875ee46d3bcb94_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/b827ca9634385e2a4585cd32877bc00e8e975205618f86404b826224fe89438b_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/quake-ii-enhanced/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "relic-hunters-zero-remix": {
+    "source": "https://store.steampowered.com/app/382490/",
+    "coverImage": {
+      "from": "https://images-4.gog-statics.com/4c14784a3f6870a451010389c6a54ec88d01083fa425b8b41b37dfdda9c5d86a_glx_logo_2x.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images-4.gog-statics.com/d3a7b61f16c5ae7bc340bcd8cbe78465a0a536b46683f01f61ee0ac83cb1cd2f_ggvgl_2x.jpg",
+        "https://images-1.gog-statics.com/a26c17d5db2390adf8308093639839799ee1f42c412cfd44116824f26bbb0ff5_ggvgl_2x.jpg",
+        "https://images-1.gog-statics.com/d528e1c8841f3d9129ee3564c49c846008d3138bf7189555123199411b548ef9_ggvgl_2x.jpg",
+        "https://images-1.gog-statics.com/d0923ddb15bf90f1058878fce81d05cab395eabb46e0dd9462782a47be619eed_ggvgl_2x.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/relic-hunters-zero-remix/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "rimworld": {
+    "source": "https://store.steampowered.com/app/294100/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/7ec3664b4bb3746797e252fd71ad48abea130abf847bf30d0b9eaf25a915da2d.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/f55be518e8d02e9b5b5ae6e4e9644e8e465eb71b9f18254f4eaec32c18d8daf3_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/6243aeeebad29f2ae58e505b17f38ad0798b447ca45ae15b5e4302a77d2e512f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/9f6a865087a7e55f8ec40a0af96572c3437b9fa415a5c2b8563ffe4383b6246c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/4e70c7d47cb68489a11463a3d502efa479517c46a4bddfb6c619f73a6447fb58_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/732b4124301d4aaf41a31adc2fca6682251409bae07c14e2481c87bd0284044c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/556a5abdbc17ce0b6f7f0c712a1ae7c01507a529accd22d72a4a781c4477f237_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e158ef92fa4dffd3fcab4acded372e67853eff2893551e83f7993b25c9bc8123_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/28b503976d137b88b56fa839d3becec89d61968160dd8eea616ec59045d0c82d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1b0d4b86168e2491263f44cfdab774f4ddad09400b086db188c7e3d7c2b02987_product_card_v2_mobile_slider_639.jpg",
+        "https://img.youtube.com/vi/tZLllZTfsMo/hqdefault.jpg"
+      ],
+      "to": [
+        "https://img.youtube.com/vi/tZLllZTfsMo/hqdefault.jpg",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rimworld/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "rollercoaster-tycoon": {
+    "source": "https://store.steampowered.com/app/285310/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/e3a43206b1f6d4d20f0a7a3f1fbd791da17c743f931ca9416064783d8ac2ff60.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rollercoaster-tycoon/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/8ef837398aeb9c84ee85a200589fa6b3f7a74cd7516706958df608ca8b993006_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/7026b649d6877bda7ba786db942119876df10cc9b600ccf6ce4c46aa9e74d706_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/637ab21870d4269f0214e15298621517f29b5d32e5a63392b4c324c3b5105047_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/70dd8e2c8a5f5c0eeff566fbaf7a1eef0e1a7e2fa5eda51638c49481da5a9529_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ecb9db7d0dc190eff635c907b05638aad30e0eb73e6a4cf18336e0a87126ee15_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ffd97c601c9ac28f5a4136eb8eb3afb969d110f12d177c09edb0cbf14f67aaeb_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/05c3cd80f2e007564d480c76babf8131ad8b386043306deada9fd72aa1b3d7af_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/33184a12112aea5cb236810bdf249a07a0f5347e675ce9d58d0030f74dc25835_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e68d0922c36ac5e11c44fa2b2bfbcc3169ee1aea82aa774196e46380f53f07fb_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/280a3935b48accf1ad2b4c3769aa3c6aea9018dfef60cdfbc634329268c3c636_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1c34c9a5459ea038eee1aa0150fbf2e896e9286b499885973cdd5f0017f2716d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/80fbbd2cdfcc267ae0d2e2263bc93cefe9dd9e6afaa23bb529da1d4bb57a04c1_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/f2f62451cc2672c2f7b74cd8ac1d639961a9e242d19cfcf1d6335184cae50084_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/53f331dd50787cca0e12b5d5951b62215db5ea0950d3afc931dcdbd4b040e41c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/22afdf0321b71fb2f0e9bf427397946d9c7d1a94ba0f7edf3af53193124ad719_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rollercoaster-tycoon/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rollercoaster-tycoon/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rollercoaster-tycoon/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rollercoaster-tycoon/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/rollercoaster-tycoon/store-media-repair-shot-5.webp"
+      ]
+    }
+  },
+  "shadow-warrior-classic-complete": {
+    "source": "https://store.steampowered.com/app/238070/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/68242319701d590dce72be3f0e2fe7fd716c98e958e69dda7ea9f9c8eb6e09f2.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/shadow-warrior-classic-complete/store-media-repair-cover.webp"
+    }
+  },
+  "star-wars-knights-of-the-old-republic": {
+    "source": "https://store.steampowered.com/app/32370/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/61a5a59b9feb118d2e2b018de69976e6c0e3c10c5fa7c31a7f922c730b89d5a6.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/9e026d6f35cfa176c015b1eab2199dc2d1a60fe23b7e5339292f8588d6b96b0a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/6b830d91bacbc2a9be323a88ea8886a090ef966674a73d9c279eae3c52a4826b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/a7737b4de6a802e48a069a73e05811becb1b8d42a93aba6922b9db9b7fc86f05_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/dae210500f55bba191d6bf019e205deccf1e4996591b7880fbfb88232a35245a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/33547a664eb880fd6722afaedd498e1706afb279d961ed4e161ea55f69fb2405_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/b2b920200836ae4de2deaaeda43cbf0852389e2806df866ad7758c3844f757d9_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3fea4d350419a72ba0ec3907824bf43af4641153b7398d37d5aa67d5ff3982dc_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/317012401b8be8c76c0fe0dba0a93a4c75287941cbefce6791ffa2b44f7b3b13_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/9a6961f80ae09008c02fb0c8413d9dc621b6546a6f2e2d3ab3ceccfae3fcf081_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c3cbd9360fefcc1a8fec522ebaf814243c0afe769f29ba49c7eebfd0ec7006bf_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/40704ad90f332ed4023cc751aba5249631eb00ff0b22b66388fab66fc527c1ad_product_card_v2_mobile_slider_639.jpg",
+        "https://img.youtube.com/vi/I-pfnPQAUgs/hqdefault.jpg"
+      ],
+      "to": [
+        "https://img.youtube.com/vi/I-pfnPQAUgs/hqdefault.jpg",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic/store-media-repair-shot-6.webp"
+      ]
+    }
+  },
+  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": {
+    "source": "https://store.steampowered.com/app/208580/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/a5764bc4f089ed5616cfa22c1426f3f808b58e2d48f6a7b8f61ab774531a2643.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/fd0f9400dd8e1f4fe6bd925a353dbe3aa40155d25c9a42d95f8444b03e3d3882_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d8609a78233c527439125a8189b0553a52451d949839f83b6c608ecb4eb446fa_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d16768e3bb3eb886a3d0eea152aee55fcc3b65c838c2106a29d0dd73b9c84d0b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8322e436e0724667a28a92c733767eceba5a17f340f2856c08ece280c8cd7306_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/48bd1aea058777ef4c039b013e2ab8d706bf6eb66882e0df1b30f47af505e796_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e0f98ed4083488ef5ecc786cf94fe052aa0a354713e5ab965be823363738d328_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/53e445cee38f806562bdf9a50309e2b8659ec7a8a460ac213463b1a522b9b9e7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/5a7c6cf741c6ec97a04729edc42fbb310f4b61a03c820000620e63957ab45a85_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/adad21b3ca418f232b9717aeece76ef73930aea13a826a7f1f79a560c9820370_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8cf2592e412eeb942646af997e5df5daa3e544bdb607bf5936b59d381a44a27d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3cf48d62bf343a80a95a6234370483b0a2de7fe129e9f5a15632c4c399ff3a94_product_card_v2_mobile_slider_639.jpg",
+        "https://img.youtube.com/vi/4DKJhPpllwk/hqdefault.jpg"
+      ],
+      "to": [
+        "https://img.youtube.com/vi/4DKJhPpllwk/hqdefault.jpg",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/star-wars-knights-of-the-old-republic-ii-the-sith-lords/store-media-repair-shot-7.webp"
+      ]
+    }
+  },
+  "stardew-valley": {
+    "source": "https://store.steampowered.com/app/413150/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/27d65260098fedca970a717b09a3e2513d8c2a84d02a81ac508b768c011cb46b.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/3f56b69c38b21a44c8e1b526dd8835a1e391caf121339dcaf7ed0cb5b173e24a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c2b5fafe3295f9c8a34f1df45446236fbeeaea2336846629cd8e194d4b69691a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c5bb7b9124161f779f391fac8df4998c5256b3abc650a46985686a0b7cb83930_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c8cd09b1612be6eb2e25d3b885a2c37f59828f459210d45191fa1584856f408b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d10b987d021738258192a1729e3497f3e2ff17af22d21d3f7a419b7226e4d22e_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/890f7c33be76482c07e1c94064a6bfd416ae9e1e67dbb039e41e86dba517fe07_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ea0be7717a90ec48df9647ebc76e6604410262ad830a78f903faf90f5cd2a098_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e0cfab871efca25b0f937de21ee57915d74c21b31ff79ba6e1265b5c7af6cb54_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c5ea908b0eda37cf1339c9a0b2b8f9a13915d49bcc6910f3b23159218bf03c68_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/981b99dd119b42d24e190f66dfb27f367c1c1a4149d6afdc2752037d998ccdc5_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/02fde1ee12036cfd6f1aabf681efc8086187113635b00ee95359cb2e57173e29_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/43aab88249fde5b1894ed72e528a14032602f348046ca88d828a4f3bb1423085_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/b60e930d668bd4ef9926a8aa79fb2b1ab1619681da6e573ccb1631aa6d8c0f12_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/stardew-valley/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "sudden-strike-2-gold": {
+    "source": "https://store.steampowered.com/app/612520/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/c9123d1f96740dba3e7b5d9c45da4fdb7025c2dbdd9c6aae236d6aa2ee03ecb3.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/8b02e7ac0cee1fc3d77b86f797fd197ef7f79ab9a44cc1604ec7cf0c3f751c39_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e9221ac885bcc6f985db7d185008874472f9512d7f21ab9f9eb2d20e51574d40_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/9adddaf4ba4a1bbce653fe32b186917a7f006677cf720afb71062899767bf33f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/4ab9000b990d26082b8f7bca340ba947434d4f1b3cd9fe729b053b2125ab8ed8_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/160183a0854208902e90587fd9f2d01c515d3fcd59a94eaef2817bc8c30dd1c2_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ab0b00ce90227a9b1950fca833a899d4b503160c447549755df3317e75f18626_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1e45470ff4ef66b4f42fa32798d6da56e253293638511ee93910d954608cfb0e_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c2f40d96b71748c584b2bf65fbd9963087f0ec811f1c28a0be4335b36e3b6ae4_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/bd16a8109e62672e7fcc0e30b508fc40ffe7ff8e1df4efb049603d29c75ebc8d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/fa7bd87fe059faf12867ae315a74544ab58ce902d897883af603d8f9cdd3235c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/5ea38f0431f1824236efe550f947ed8543582402277d5cdaa07d915fc8f0a457_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/afb55d9f4c091df1fc64744ef69f4c29fec9501429b71617fc7a60ab9353067f_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/sudden-strike-2-gold/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "thief-gold": {
+    "source": "https://store.steampowered.com/app/211600/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/ad68a58a4dcc05edbe97edc0370cc4865ba09327cf47a68e47d214c6e4f4a1d4.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/b08d144fa7242f8102c3daaca0b9aed6e81c42edad577037e516075c60826007_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/7794be656cfec9bc3be8199d3ecd77340bb1d10628bbbd69397587c17f65d85f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/9dab350972b8f6b1aeef3538a0bc44c2ec3a0812a2e3f33f83fb8a575b4a5106_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e1a452aebf429a681f69968ce86f501c14b06024ab87b89b743d374ff38a50ec_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/db94b46b88f2917d83c57a1cf1a6e3cd455fe0aee3a9f8d5800876f4a91d0f11_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/27379b7738cfcc7d2e4fa4811d384d62392890e5503db207c65e7bf30b993fd0_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8dc83e0b9c261140a9c21dbca932475269c92877f1f0fa8029933b752c79adac_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/13a05dfcf816b2f4049eb01e8a23eed66e23c947a4ec21ae9d91e643200d4eef_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/19b89e91e0aaf628c09874b444dae9e060996216e33b9696550124e73d69899c_product_card_v2_mobile_slider_639.jpg",
+        "https://img.youtube.com/vi/FV3eiepGgUU/hqdefault.jpg"
+      ],
+      "to": [
+        "https://img.youtube.com/vi/FV3eiepGgUU/hqdefault.jpg",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-gold/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "thief-2-the-metal-age": {
+    "source": "https://store.steampowered.com/app/211740/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/9fee86856dec591d46e81ee8eba47c4945a980ce9730549581eae646330629d5.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/9fee86856dec591d46e81ee8eba47c4945a980ce9730549581eae646330629d5.jpg",
+        "https://images.gog-statics.com/d36f619bf1ff84a910242b1b7a85fea341b082e1edf7d36ef9cca574e0f00ff7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/2acff13dc2c4dd9861a0b87e21acf181c1976a112eb4b5732bfd30c9981dd11c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d2acfe78c0282d48b2f9efb85418dcdeeda555ed0d11e04a89cf3b0c663e9da0_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8b4cfaa89eb01d373c4533748f7dfa6d85cbddcad94de4cdaa62c9153ffa1659_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/7e942546bc3f6a450066f02afad8794155b290fcb7bdd14a21ef37176b31ab8a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ad808c95893db6c308586d69e0a9e19296202ccf503afa316eaa8592f01b2059_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/bd84f2ff37301c9594472826b1a48323352efe70aba20c859e55b0ea4577cd96_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/157f6d4151f527e5c368daea206124a82f08777ec9a07ebb41f1568225a104f8_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/thief-2-the-metal-age/store-media-repair-shot-8.webp"
+      ]
+    }
+  },
+  "citadel-remonstered": {
+    "source": "https://www.citadel-universe.com/",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/5f4bcd273836fff17a71097190ad800f3ddd3f221950b7d7f199f715015d3e13.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/citadel-remonstered/store-media-repair-cover.webp"
+    }
+  },
+  "heroes-of-might-and-magic-3-complete": {
+    "source": "https://www.xbox.com/lt-LT/games/store/heroes-of-might-and-magic-3-complete-edition/9P5241RBH1SZ",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/a18a7017bdca7bdd14fb003a46522e320051d3e9c1fb939559a4517d90f86170.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/585207428de200a4e827011f98bc9ebd2403b9a2f0a69d4017a580f754737edf_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d4607cd152c961cd0d3276c98189a8c0d5847aa4ccda138fd48f4155b0783fbb_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c1e08b28b7061f12be5f595b700bc32817c97fdc1fbbc0ecc875348aa7be9a27_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c599402fdf29ce48774d55fa02abd20d54f762ef83dc9b10173a00ac87d08bac_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/39b361351a0cac322a2cc3464e9f0a7bf07aa53050980e3a38061ce620c82737_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/32eb941de3847ada3be5136e9ed7b4178c8f5ade5b70ea32719c502829f5870b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/885d0d03e78213691c1fa6b5496bafccc72ae832bf988c0a29df77f5b36a6417_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/3b08779fffc281958d66f3e498a69a8e2e9a99ef2866004c98f90d5cbc47863f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/877fc127578264724383a3270b7c56ac26740b22d7aecf9588195ab32d91cfa8_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/8956afd4c11b6607ac3443bbfbf0e27481fe369942543814f1db95e007af246b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/a57acb0aeaed488082b245102ec7732200d9336e47be6ff91f7cde1b7464c9d9_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/2832b9ceea99b55f5345be745d67d12566a9b4683b9f6db9aceb8058ebc79f0e_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/79338887fdcafe9df05d9ffc9d240a0b4499ae3cbf8c2a991845d7086345cd47_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/e35a766b0e30811936e12a3439e72d66b6cf8b558c34c561b212f6f59ffa23a1_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/0f63c5f418d434eff3178c652c1e2d6ddcf275f436473f2842ef5fb4994f3322_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-6.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-7.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/heroes-of-might-and-magic-3-complete/store-media-repair-shot-8.webp"
+      ]
+    },
+    "videos": {
+      "from": [
+        "https://items.gog.com/heroes_of_might_and_magic_3_complete_edition/mp4/homm3_map2.mp4",
+        "https://www.youtube.com/watch?v=qWwFTP3hkkQ"
+      ],
+      "to": [
+        "https://www.youtube.com/watch?v=qWwFTP3hkkQ"
+      ]
+    }
+  },
+  "medal-of-honor-allied-assault": {
+    "source": "https://www.ea.com/games/medal-of-honor/medal-of-honor-allied-assault-war-chest",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/5c91eb2e789f75422df7dbd85964dddcd38d90102db901049c48882d1fce26a2.png",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/medal-of-honor-allied-assault/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images-1.gog-statics.com/32d381a9705b2aa015e9213b66f095e2b26ccf5989172a2513de61e1df019856_ggvgl.jpg",
+        "https://images-3.gog-statics.com/786d8495f7452db30d7780921a87987725eb81d1c62650a3bbc129efb5fad6ff_ggvgl.jpg",
+        "https://images-1.gog-statics.com/018771d46078316b46eca55fa0bc250e1d288c9fe6eabfe34460379005aa6573_ggvgl.jpg",
+        "https://images-1.gog-statics.com/b383eb527752119324847a8a31fc7bfe8476b62b839f853261daacc515d40168_ggvgl.jpg",
+        "https://images-2.gog-statics.com/ac0e17047d27f0c46e5f0bdae664678f70b6cf54d6a8271c83e64091e44d7c27_ggvgl.jpg",
+        "https://images-3.gog-statics.com/af2f425c719d39f5553f1acbd89edf8799f4114cb703e19c57e5254cc5280712_ggvgl.jpg",
+        "https://images-4.gog-statics.com/0e25512e6d277e522c02f7c898df06493e612c72c77786252cb46ba739ac21ad_ggvgl.jpg",
+        "https://images-1.gog-statics.com/f882c0116eca7cf3ac02f26a8c40ad886afe7b826ff0e0ec825ff2a8d5e58cbe_ggvgl.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/medal-of-honor-allied-assault/store-media-repair-shot-1.webp"
+      ]
+    }
+  },
+  "soccer-brawl": {
+    "source": "https://www.snk-corp.co.jp/us/games/acaneogeo/soccerbrawl/",
+    "coverImage": {
+      "from": "https://images-3.gog-statics.com/2b244f77ba21a6700ec3d7ba588bedc84b3c417cc32dc00290167249d58f6ac8_glx_logo_2x.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/soccer-brawl/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images-4.gog-statics.com/cbecd3093ea8451c4af5c2257a49e532c4487130c906717bd7224dced93d3b95_ggvgl_2x.jpg",
+        "https://images-4.gog-statics.com/1fb291cb648b8bff859d53b8734177e225e51d9b0b6015109d0e92bec98c6030_ggvgl_2x.jpg",
+        "https://images-2.gog-statics.com/1dc5de474c74a5dca7778aec582271139308d4e70b32de7eec3f344581c03462_ggvgl_2x.jpg",
+        "https://images-1.gog-statics.com/a5b3d6827c02d7ac47c0136e59a4d441eab2b564b46d309bf4fb5fd5061efa98_ggvgl_2x.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/soccer-brawl/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/soccer-brawl/store-media-repair-shot-2.webp"
+      ]
+    }
+  },
+  "super-sidekicks": {
+    "source": "https://www.snk-corp.co.jp/us/games/acaneogeo/s-sidekick/",
+    "coverImage": {
+      "from": "https://images-1.gog-statics.com/7a9766ef643ff1bdca6782f8bef64d8e66a23caf67c3832788625fab6e5f2fe1_glx_logo_2x.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/super-sidekicks/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images-1.gog-statics.com/26ae5cab5588740b565e645a817edaad6845e2d858228598c00936828e17a191_ggvgl_2x.jpg",
+        "https://images-3.gog-statics.com/cfdf504124a117685b58c66a0b763a4962e19d04fb2689d51bf17e05e24e092d_ggvgl_2x.jpg",
+        "https://images-3.gog-statics.com/381e0c2bb003f1e7a6b6c3cccacaa58b1b5211e3f5a5f556014fe41304a7a69c_ggvgl_2x.jpg",
+        "https://images-3.gog-statics.com/633e28e26a2e32ddce9d19d389d48b899b8eb8975460f9969c38fe22a7c346b8_ggvgl_2x.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/super-sidekicks/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/super-sidekicks/store-media-repair-shot-2.webp"
+      ]
+    }
+  },
+  "theme-hospital": {
+    "source": "https://www.ea.com/games/theme/theme-hospital",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/e179e3bc09e944c3d148c439b4d4af579ed24d4b3a7fbd16c1be108c8450a0af.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/theme-hospital/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/e179e3bc09e944c3d148c439b4d4af579ed24d4b3a7fbd16c1be108c8450a0af_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/75fd27a5bdc5c6aab76ee1aa002ea415a11351315de085a856baa9478b02bdb7_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/5d25af31598a11302dd2ba58f79aa7ac16ead8d4e0adae9829ab756f44bc183d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/5fd84288fc604bf5e1e7d961356469b2165af9a0f0d1ed35c0aa06f23a455ba0_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/53e76f850be6381432d3f92607eace9d8d8938a4f5b9bf23253b9dc3819a8449_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/c445c936aed8918efe7dfdca54843ac478294a6a9f54c5424079877741174932_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/f5e53b16ef01fb5b1b002f451469f541d38ce608ababc756f26ab4b04778465d_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/26c9ff4888c809d7dbf7b413552800009e372257b87dbed491fa4a27c3824f2f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/01c6328f8cf74e4ffecf11657c4db5e5104a0ca5e81fccb6611351df7ad5036f_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1253731f776f27515ac569ff24f6f3ae578699e6a42ecd2721a75a9b65f577f4_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/0441dbc03e6ccb0b69fc9b75256539e8cc430e05c3a6f0058550f564626efee1_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/d320803fe313439c85bef8cfaf1d902b74b5f4af18bd915a51dea6ddfddbe7ad_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/theme-hospital/store-media-repair-shot-1.webp"
+      ]
+    }
+  },
+  "tomb-raider-123": {
+    "source": "https://www.tombraider.com/products/games/tomb-raider-1996",
+    "coverImage": {
+      "from": "https://images.gog-statics.com/74a056bd156cb1fdb4d595dc21cc9172869e528a9e8449a3b8f97c96ebc95009.jpg",
+      "to": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-cover.webp"
+    },
+    "screenshots": {
+      "from": [
+        "https://images.gog-statics.com/6eec171ee8e8496561f747e9dff54308bc56beaac6f3d129e04f60c8efe24464_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/6a037d6aa351c64e64a5c59df09fb7835aba072c5eda29d56f542b860d7c125b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/cced6c093e6ebe00d64d78816ff92cbbd8b22684b08f98867408b4895f731214_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1361a7b34b8eb783e49bbf844f7b3239caca25ec67495c736dd3d4590211b2d9_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/ec2a10328a109a29ef8485eed5de461bc348ac87f52e222d1b03af1637ebf08c_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/52ed1acb3281a21a53fcea7eb2bbe17943356da8b6123fd09af8530cbc447020_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/2e4ed77a3fbe5d20f0e3b68cf35c501f51222c9bc92364e3ca3ebfebb58ffd4a_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/592931f64e3d157d9e1ec2e10fbd71efac69409aad63b6560715bb8bda69df4b_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/445039bcd37f8fe96e5137af3695c4962fb122be304899cc876d93f522792520_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/1160586af00c4f29bd07bb5933814e7e933f1d7dfdacddd8bdda2a984fece0d5_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/183ca8b953477ec8d7bdcf1214ccdcf4d7edc23853ac4a8ec4e030d05c10b2ae_product_card_v2_mobile_slider_639.jpg",
+        "https://images.gog-statics.com/faebb4b61e10c8a12ba4629dfae510cb44b79c9b93669770734dcbe16710323b_product_card_v2_mobile_slider_639.jpg"
+      ],
+      "to": [
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-shot-1.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-shot-2.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-shot-3.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-shot-4.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-shot-5.webp",
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/tomb-raider-123/store-media-repair-shot-6.webp"
+      ]
+    }
+  }
+}

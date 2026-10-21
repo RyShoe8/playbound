@@ -14,6 +14,8 @@
  * Allowlists live in `insert-catalog-wave.allowlist.ts`.
  */
 import { loadEnvConfig } from "@next/env";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   ADD_GAME_FEATURES,
   FILL_MISSING_STEAM_LAUNCH,
@@ -30,6 +32,120 @@ import {
 } from "./insert-catalog-wave.allowlist";
 
 loadEnvConfig(process.cwd());
+
+type MediaSwap<T> = { from: T; to: T };
+type GameMediaRepair = {
+  source: string;
+  coverImage?: MediaSwap<string>;
+  screenshots?: MediaSwap<string[]>;
+  videos?: MediaSwap<string[]>;
+};
+type EditionMediaRepair = {
+  source: string;
+  heroImage?: MediaSwap<string>;
+  screenshots?: MediaSwap<string[]>;
+};
+
+/** One scoped wave for broken storefront media. Compare old values exactly. */
+async function applyStoreMediaRepairs(dryRun: boolean) {
+  const games = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/data/storeMediaRepairAssets.json"), "utf8")) as Record<string, GameMediaRepair>;
+  const editions = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/data/storeEditionMediaRepairAssets.json"), "utf8")) as Record<string, EditionMediaRepair>;
+  const blobHost = "mt8u2b96lweefbpb.public.blob.vercel-storage.com";
+  const validateImage = (url: string, key: string) => {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || parsed.hostname !== blobHost || !parsed.pathname.endsWith(".webp")) {
+      throw new Error(`store media repair ${key}: replacement image is not a PlayBound Blob WebP`);
+    }
+  };
+  const validateSwap = (swap: MediaSwap<string[]> | undefined, key: string) => {
+    if (!swap) return;
+    if (!Array.isArray(swap.from) || !Array.isArray(swap.to) || !swap.from.some((url) => /gog-statics\.com|items\.gog\.com/i.test(url))) {
+      throw new Error(`store media repair ${key}: expected broken URL is missing`);
+    }
+    if (swap.to.some((url) => /gog-statics\.com|items\.gog\.com/i.test(url))) {
+      throw new Error(`store media repair ${key}: replacement still contains a broken GOG URL`);
+    }
+  };
+
+  for (const [slug, repair] of Object.entries(games)) {
+    if (!/^[a-z0-9-]+$/.test(slug) || !repair.source.startsWith("https://")) throw new Error(`invalid game media repair ${slug}`);
+    if (repair.coverImage) {
+      if (!/gog-statics\.com/i.test(repair.coverImage.from)) throw new Error(`${slug}: old cover is not GOG hosted`);
+      validateImage(repair.coverImage.to, slug);
+    }
+    validateSwap(repair.screenshots, `${slug} screenshots`);
+    for (const url of repair.screenshots?.to ?? []) if (url.includes(blobHost)) validateImage(url, slug);
+    validateSwap(repair.videos, `${slug} videos`);
+  }
+  for (const [key, repair] of Object.entries(editions)) {
+    if (!/^[a-z0-9-]+\/[a-z0-9-]+$/.test(key) || !repair.source.startsWith("https://")) throw new Error(`invalid edition media repair ${key}`);
+    if (repair.heroImage) {
+      if (!/gog-statics\.com/i.test(repair.heroImage.from)) throw new Error(`${key}: old hero is not GOG hosted`);
+      validateImage(repair.heroImage.to, key);
+    }
+    validateSwap(repair.screenshots, `${key} screenshots`);
+    for (const url of repair.screenshots?.to ?? []) if (url.includes(blobHost)) validateImage(url, key);
+  }
+
+  if (dryRun) {
+    console.log(`store media repair dry run: ${Object.keys(games).length} named games, ${Object.keys(editions).length} named editions; no database writes`);
+    return;
+  }
+
+  const dbConnect = (await import("../src/lib/db")).default;
+  const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
+  const Edition = (await import("../src/lib/models/Edition")).default;
+  await dbConnect();
+  let changed = 0;
+  for (const [slug, repair] of Object.entries(games)) {
+    if (repair.coverImage) {
+      const result = await CatalogGame.updateOne(
+        { slug, coverImage: repair.coverImage.from },
+        { $set: { coverImage: repair.coverImage.to } },
+        { timestamps: false },
+      );
+      changed += result.modifiedCount;
+    }
+    if (repair.screenshots) {
+      const result = await CatalogGame.updateOne(
+        { slug, screenshots: repair.screenshots.from },
+        { $set: { screenshots: repair.screenshots.to } },
+        { timestamps: false },
+      );
+      changed += result.modifiedCount;
+    }
+    if (repair.videos) {
+      const result = await CatalogGame.updateOne(
+        { slug, videos: repair.videos.from },
+        { $set: { videos: repair.videos.to } },
+        { timestamps: false },
+      );
+      changed += result.modifiedCount;
+    }
+    console.log(`store media repair game ${slug}: checked`);
+  }
+  for (const [key, repair] of Object.entries(editions)) {
+    const [gameSlug, slug] = key.split("/");
+    if (repair.heroImage) {
+      const result = await Edition.updateOne(
+        { gameSlug, slug, "branding.heroImage": repair.heroImage.from },
+        { $set: { "branding.heroImage": repair.heroImage.to } },
+        { timestamps: false },
+      );
+      changed += result.modifiedCount;
+    }
+    if (repair.screenshots) {
+      const result = await Edition.updateOne(
+        { gameSlug, slug, "branding.screenshots": repair.screenshots.from },
+        { $set: { "branding.screenshots": repair.screenshots.to } },
+        { timestamps: false },
+      );
+      changed += result.modifiedCount;
+    }
+    console.log(`store media repair edition ${key}: checked`);
+  }
+  console.log(`store media repair: ${changed} image/video field(s) changed`);
+}
 
 function pickFields(
   source: Record<string, unknown>,
@@ -57,6 +173,10 @@ function pickFields(
 }
 
 async function main() {
+  if (process.argv.includes("--media-repairs-only")) {
+    await applyStoreMediaRepairs(process.argv.includes("--dry-run"));
+    process.exit(0);
+  }
   // Optional operational scope for an explicitly named game batch. The
   // scheduled/deploy wave keeps its established behavior when omitted.
   const scopeArg = process.argv.find((arg) => arg.startsWith("--games="));
