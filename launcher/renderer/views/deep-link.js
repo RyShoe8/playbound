@@ -152,6 +152,16 @@ function renderDeepLinkView(ctx) {
         const checkboxes = document.querySelectorAll(".addon-checkbox");
         const addons = Array.from(checkboxes).filter((cb) => cb.checked).map((cb) => cb.value);
         const res = await window.playbound.install(ctx.slug, null, ctx.editionSlug || null, addons);
+        if (res.status === "cancelled") {
+          setStatus(res.note || "Install cancelled.");
+          setProgress(null);
+          const btn = document.getElementById("dl-act-run");
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Retry Install";
+          }
+          return;
+        }
         if (res.status === "installer-opened") {
           try {
             await window.playbound.clearContext();

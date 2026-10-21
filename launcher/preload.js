@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld("playbound", {
   chooseDirectory: (defaultPath) => ipcRenderer.invoke("choose-directory", defaultPath),
   install: (slug, targetDir, editionSlug, addons) =>
     ipcRenderer.invoke("install", slug, targetDir, editionSlug || null, addons),
+  onDaggerfallBaseChoice: (cb) => ipcRenderer.on("daggerfall-base-choice", (_event, data) => cb(data)),
+  replyDaggerfallBaseChoice: (requestId, choice) => ipcRenderer.invoke("daggerfall-base-choice-reply", requestId, choice),
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
   scanLibraryCandidates: () => ipcRenderer.invoke("scan-library-candidates"),

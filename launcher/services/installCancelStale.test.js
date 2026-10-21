@@ -28,6 +28,11 @@ test("cancelling a row whose task is already gone clears it instead of failing",
 test("Daggerfall editions that bring no game files go through the base-game offer", () => {
   const body = functionBody("installGame");
   assert.match(body, /offerDaggerfallBaseFirst\(slug, editionSlug\)/);
+  // Declining the pre-queue offer must clear a renderer status already saying
+  // "Installing…"; no queued task exists to emit its usual terminal event.
+  assert.match(body, /getInstallQueueSnapshot\(\)\.totalCount === 0\)\s*\{\s*sendProgress\(\{ phase: "cancelled"/);
   const offer = functionBody("offerDaggerfallBaseFirst");
   assert.match(offer, /installGame\(slug, null, daggerfallBaseFirst\.BASE_EDITION\)/);
+  assert.match(offer, /requestDaggerfallBaseChoice\(name\)/);
+  assert.doesNotMatch(offer, /dialog\.showMessageBox/);
 });

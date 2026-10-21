@@ -1,6 +1,7 @@
 import { renderHomeView } from "./home.js";
 import { mountSiteShell } from "./siteShell.js";
 import { setSystemIdle } from "./pollGate.js";
+import { promptDaggerfallBaseChoice } from "./daggerfallBaseChoice.js";
 import { enablePlayBoundControlsBridge, disablePlayBoundControlsBridge } from "./gamepadBridge.js";
 import {
   api,
@@ -911,6 +912,12 @@ async function handleContextInstall(ctx) {
       await window.playbound.clearContext();
     } catch {}
 
+    if (res?.status === "cancelled") {
+      setStatus(res.note || "Install cancelled.");
+      setProgress(null);
+      return;
+    }
+
     if (res?.status === "installer-opened") {
       setStatus("Installer opened — waiting for installer to finish…");
       setProgress(null);
@@ -959,6 +966,11 @@ async function boot() {
   });
   wireShell();
   wireMainEvents();
+  window.playbound.onDaggerfallBaseChoice?.(({ requestId, name }) => {
+    void promptDaggerfallBaseChoice(String(name || "this edition"))
+      .then((choice) => window.playbound.replyDaggerfallBaseChoice(requestId, choice))
+      .catch(() => window.playbound.replyDaggerfallBaseChoice(requestId, "cancel"));
+  });
   wireGamepadReporting();
   wireNotifications();
 

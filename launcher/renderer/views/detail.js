@@ -855,7 +855,7 @@ async function renderGameDetailView(slug, opts = {}) {
     .join("");
   const fitHtml =
     bestForItems || notForItems
-      ? `<section class="detail-section">
+      ? `<section class="detail-section detail-about-card">
           <h2 class="detail-section-title">Who it's for</h2>
           <div class="fit-grid">
             ${
@@ -994,18 +994,18 @@ async function renderGameDetailView(slug, opts = {}) {
 
             ${
               featureItems
-                ? `<section class="detail-section detail-features-section"><div class="detail-section-heading"><div><h2 class="detail-section-title">Key Features</h2><p>What makes ${escapeHtml(detail.title)} worth playing.</p></div><span class="detail-section-count">${detail.features.length}</span></div><ul class="feature-list">${featureItems}</ul></section>`
+                ? `<section class="detail-section detail-about-card detail-features-section"><div class="detail-section-heading"><div><h2 class="detail-section-title">Key Features</h2><p>What makes ${escapeHtml(detail.title)} worth playing.</p></div><span class="detail-section-count">${detail.features.length}</span></div><ul class="feature-list">${featureItems}</ul></section>`
                 : ""
             }
 
-            <section class="detail-section" id="detail-hw-compat">
+            <section class="detail-section detail-about-card" id="detail-hw-compat">
               <div class="detail-section-heading"><div><h2 class="detail-section-title">Will this run on your PC?</h2><p>A quick comparison with the gaming PC saved in your settings.</p></div></div>
               <div class="hardware-compat-panel" id="detail-hw-compat-body"><span class="hardware-compat-loading" aria-hidden="true"></span>Checking compatibility with your hardware…</div>
             </section>
 
             ${
               reqGridHtml
-                ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>${reqGridHtml}</section>`
+                ? `<section class="detail-section detail-about-card"><h2 class="detail-section-title">System Requirements</h2>${reqGridHtml}</section>`
                 : ""
             }
 
@@ -1070,7 +1070,7 @@ async function renderGameDetailView(slug, opts = {}) {
 
         ${
           reqGridHtml
-            ? `<section class="detail-section"><h3 class="detail-section-title">System Requirements</h3>${reqGridHtml}</section>`
+            ? `<section class="detail-section detail-about-card"><h3 class="detail-section-title">System Requirements</h3>${reqGridHtml}</section>`
             : ""
         }
 
@@ -1266,6 +1266,10 @@ async function renderGameDetailView(slug, opts = {}) {
       } else if (res.status === "external") {
         setStatus("Opened download page.");
         setProgress(null);
+      } else if (res.status === "cancelled") {
+        setStatus(res.note || "Install cancelled.");
+        setProgress(null);
+        if (btn) btn.disabled = false;
       }
     } catch (err) {
       setStatus(err.message || String(err), true);
@@ -2811,7 +2815,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
 
             ${
               featureItems
-                ? `<section class="detail-section detail-features-section">
+                ? `<section class="detail-section detail-about-card detail-features-section">
                      <div class="detail-section-heading">
                        <div>
                          <h2 class="detail-section-title">What Makes It Different</h2>
@@ -2824,7 +2828,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
                 : ""
             }
 
-            <section class="detail-section">
+            <section class="detail-section detail-about-card">
               <h2 class="detail-section-title">About ${escapeHtml(edition.editionName)}</h2>
               ${(edition.description || edition.shortDescription || "")
                 .split(/\n\n+/)
@@ -2843,7 +2847,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
                 : ""
             }
 
-            <section class="detail-section" id="edition-hw-compat">
+            <section class="detail-section detail-about-card" id="edition-hw-compat">
               <div class="detail-section-heading">
                 <div>
                   <h2 class="detail-section-title">Will this run on your PC?</h2>
@@ -2857,7 +2861,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
 
             ${
               reqGridHtml
-                ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>${reqGridHtml}</section>`
+                ? `<section class="detail-section detail-about-card"><h2 class="detail-section-title">System Requirements</h2>${reqGridHtml}</section>`
                 : ""
             }
 

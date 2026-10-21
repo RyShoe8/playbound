@@ -4369,6 +4369,43 @@ let installQueueTail = Promise.resolve();
 
 /** Editions the player already said "install this one only" for, until the launcher restarts. */
 const daggerfallBaseDeclined = new Set();
+const daggerfallBaseChoices = new Map();
+const pendingDaggerfallChoiceReplies = new Map();
+
+ipcMain.handle("daggerfall-base-choice-reply", (event, requestId, choice) => {
+  const pending = pendingDaggerfallChoiceReplies.get(requestId);
+  if (!pending || event.sender !== pending.sender || !["base-first", "edition-only", "cancel"].includes(choice)) return false;
+  pending.resolve(choice);
+  return true;
+});
+
+function requestDaggerfallBaseChoice(name) {
+  const target = win;
+  if (!target || target.isDestroyed() || target.webContents.isDestroyed()) return Promise.resolve("cancel");
+  return new Promise((resolve) => {
+    const requestId = crypto.randomUUID();
+    let finished = false;
+    const finish = (choice) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      pendingDaggerfallChoiceReplies.delete(requestId);
+      target.removeListener("closed", onClose);
+      resolve(choice);
+    };
+    const onClose = () => finish("cancel");
+    const timeout = setTimeout(() => finish("cancel"), 5 * 60 * 1000);
+    pendingDaggerfallChoiceReplies.set(requestId, { sender: target.webContents, resolve: finish });
+    target.once("closed", onClose);
+    try {
+      target.show();
+      target.focus();
+      target.webContents.send("daggerfall-base-choice", { requestId, name });
+    } catch {
+      finish("cancel");
+    }
+  });
+}
 
 /**
  * Daggerfall Online and Daggerfall Unity run on Daggerfall's own game files and do
@@ -4410,22 +4447,16 @@ async function offerDaggerfallBaseFirst(slug, editionSlug) {
     console.warn("[daggerfall] base-files check skipped:", err?.message || err);
     return "proceed";
   }
-  if (!win || win.isDestroyed()) return "proceed";
   const name = daggerfallBaseFirst.editionTitle(editionSlug);
-  const { response } = await dialog.showMessageBox(win, {
-    type: "question",
-    title: `${name} needs Daggerfall's game files`,
-    message: `${name} needs the original Daggerfall game files, and none were found on this PC.`,
-    detail:
-      `PlayBound can install the free Daggerfall base game first (Bethesda's own freeware release), then ${name}. ` +
-      "The second install starts by itself when the first finishes.",
-    buttons: [`Install the base game, then ${name}`, `Install ${name} only`, "Cancel"],
-    defaultId: 0,
-    cancelId: 2,
-    noLink: true,
-  });
-  if (response === 2) return "cancel";
-  if (response === 1) {
+  let choice = daggerfallBaseChoices.get(editionSlug);
+  if (!choice) {
+    choice = requestDaggerfallBaseChoice(name);
+    daggerfallBaseChoices.set(editionSlug, choice);
+    void choice.finally(() => daggerfallBaseChoices.delete(editionSlug));
+  }
+  const response = await choice;
+  if (response === "cancel") return "cancel";
+  if (response === "edition-only") {
     daggerfallBaseDeclined.add(editionSlug);
     return "proceed";
   }
@@ -4442,8 +4473,16 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   if (existing) return existing;
 
   if ((await offerDaggerfallBaseFirst(slug, editionSlug)) === "cancel") {
+    // The choice happens before a queue task exists, so no normal terminal
+    // progress event will clear an install status started by the renderer.
+    if (getInstallQueueSnapshot().totalCount === 0) {
+      sendProgress({ phase: "cancelled", slug, editionSlug, message: "Install cancelled." });
+    }
     return { status: "cancelled", note: "Install cancelled — Daggerfall's game files are needed first." };
   }
+  // Another click may have reached this point while the user was choosing.
+  const afterChoice = gameInstallJobs.get(key);
+  if (afterChoice) return afterChoice;
 
   const entry =
     catalogEntry(slug) ||
