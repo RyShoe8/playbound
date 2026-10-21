@@ -38,6 +38,14 @@ type SearchParams = Promise<{
   tz?: string;
 }>;
 
+const MOBILE_OUTBOUND_SURFACES = [
+  "mobile_cta",
+  "install_tab_mobile",
+  "library_mobile",
+  "library_mobile_install",
+  "library_install",
+];
+
 async function loadGameplayAnalytics(filters: {
   game?: string;
   from?: string;
@@ -50,13 +58,13 @@ async function loadGameplayAnalytics(filters: {
   const d7 = zonedDaysAgo(7, now, filters.tz);
   const d14 = zonedDaysAgo(14, now, filters.tz);
 
-  // Sessions + mobile store launches (not counted toward avg duration).
+  // Play sessions and mobile outbound clicks are distinct events.
   const recentFilter: Record<string, unknown> = {
     $or: [
       { event: { $in: ["game_started", "game_finished"] } },
       {
-        event: "launch_attempted",
-        "properties.phase": "mobile-store-launch",
+        event: "official_download_clicked",
+        "properties.surface": { $in: MOBILE_OUTBOUND_SURFACES },
       },
     ],
   };
@@ -79,7 +87,7 @@ async function loadGameplayAnalytics(filters: {
     topGamesBySessions,
     dailySessions,
     recentEvents,
-    mobileLaunches7d,
+    mobileOutboundClicks7d,
     sessionsByPlatformRaw,
   ] = await Promise.all([
     // Total game_started events in last 7 days
@@ -220,7 +228,7 @@ async function loadGameplayAnalytics(filters: {
       { $sort: { _id: 1 } },
     ]),
 
-    // Recent events (sessions + mobile store launches)
+    // Recent events (sessions + mobile outbound clicks)
     TelemetryEvent.find(recentFilter)
       .sort({ createdAt: -1 })
       .limit(40)
@@ -228,8 +236,8 @@ async function loadGameplayAnalytics(filters: {
       .lean(),
 
     TelemetryEvent.countDocuments({
-      event: "launch_attempted",
-      "properties.phase": "mobile-store-launch",
+      event: "official_download_clicked",
+      "properties.surface": { $in: MOBILE_OUTBOUND_SURFACES },
       createdAt: { $gte: d7 },
     }),
 
@@ -296,7 +304,7 @@ async function loadGameplayAnalytics(filters: {
 
   return {
     totalSessions7d,
-    mobileLaunches7d,
+    mobileOutboundClicks7d,
     sessionsByPlatform,
     totalPlayTimeMs: playTimeData.totalMs,
     avgSessionMs: playTimeData.avgMs,
@@ -399,9 +407,8 @@ export default async function GameplayAnalyticsPage({
         <h1 className="text-3xl font-extrabold tracking-tight">Gameplay</h1>
         <p className="mt-1 text-muted-foreground">
           Play sessions use <code className="text-xs">game_started</code> /{" "}
-          <code className="text-xs">game_finished</code> (duration averages exclude mobile store
-          opens). Mobile Library Play is counted as{" "}
-          <code className="text-xs">launch_attempted</code> launches, not timed sessions.
+          <code className="text-xs">game_finished</code>. Mobile store and official-site
+          opens are outbound clicks, not confirmed play sessions.
         </p>
       </div>
 
@@ -429,9 +436,9 @@ export default async function GameplayAnalyticsPage({
               )}
             </div>
             <StatTile
-              label="Mobile launches (7d)"
-              value={String(data.mobileLaunches7d)}
-              hint="Store Play opens"
+              label="Mobile outbound clicks (7d)"
+              value={String(data.mobileOutboundClicks7d)}
+              hint="Game, store, and official-site links"
             />
             <StatTile
               label="Total play time (7d)"
@@ -741,15 +748,15 @@ export default async function GameplayAnalyticsPage({
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                 doc.event === "game_started"
                                   ? "bg-play/15 text-play"
-                                  : doc.event === "launch_attempted"
+                                  : doc.event === "official_download_clicked"
                                     ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
                                     : "bg-primary/15 text-primary"
                               }`}
                             >
                               {doc.event === "game_started"
                                 ? "Started"
-                                : doc.event === "launch_attempted"
-                                  ? "Launch"
+                                : doc.event === "official_download_clicked"
+                                  ? "Outbound"
                                   : "Finished"}
                             </span>
                           </td>
@@ -765,7 +772,7 @@ export default async function GameplayAnalyticsPage({
                               : "—"}
                           </td>
                           <td className="px-4 py-2.5 text-muted-foreground">
-                            {(props.platform as string) || "—"}
+                            {(props.platform as string) || (doc.event === "official_download_clicked" ? doc.os : null) || "—"}
                           </td>
                           {/* Username where we can resolve it. An id with no
                               matching user (deleted account) still shows the

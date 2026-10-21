@@ -27,8 +27,7 @@ import { withOutboundUtm } from "@/lib/utm";
  * opens a play session instead (see useGameSession) and the entry is filed
  * under the "web" platform, which every device can see.
  *
- * Store opens also fire `launch_attempted` (phase mobile-store-launch) for
- * analytics — duration/presence are not tracked until a native bridge exists.
+ * Store and official-site opens are outbound clicks, not confirmed launches.
  */
 export function MobileOutboundCta({
   game,
@@ -62,30 +61,22 @@ export function MobileOutboundCta({
   });
 
   function handleClick() {
+    const os = parseMobileOs(
+      typeof navigator !== "undefined" ? navigator.userAgent : ""
+    );
+    const platform = os === "other" ? "mobile" : os;
     // Always record the click itself, unchanged from before.
     void telemetry.track("official_download_clicked", {
       gameSlug: game.slug,
       gameTitle: game.title,
       url: href,
       surface,
+      platform,
     });
 
     if (isPlay) {
       // Browser game: this is a play session, not an install.
       startSession(game.slug, game.title);
-    } else {
-      const os = parseMobileOs(
-        typeof navigator !== "undefined" ? navigator.userAgent : ""
-      );
-      const platform = os === "other" ? "mobile" : os;
-      void telemetry.track("launch_attempted", {
-        gameSlug: game.slug,
-        gameTitle: game.title,
-        platform,
-        source: "website",
-        phase: "mobile-store-launch",
-        surface,
-      });
     }
 
     // Only signed-in users have a library to add to. Anonymous visitors still
@@ -93,10 +84,7 @@ export function MobileOutboundCta({
     if (!isSignedIn || claimed || skipLibraryClaim) return;
     setClaimed(true);
 
-    const os = parseMobileOs(
-      typeof navigator !== "undefined" ? navigator.userAgent : ""
-    );
-    const platform = isPlay ? "web" : os === "other" ? "mobile" : os;
+    const libraryPlatform = isPlay ? "web" : platform;
     const installMethod = isPlay ? "browser" : "mobile_store";
     const source = isPlay ? "browser" : "store_redirect";
 
@@ -107,7 +95,7 @@ export function MobileOutboundCta({
       gameSlug: game.slug,
       gameTitle: game.title,
       installMethod,
-      platform,
+      platform: libraryPlatform,
       source,
       surface,
     });

@@ -112,6 +112,8 @@ export function DiscoverFilters({
   /** Only games with someone in them right now, per the shared live snapshot. */
   const [hasPlayersOnly, setHasPlayersOnly] = useState(false);
   const [hwFilter, setHwFilter] = useState<HwFilter>("");
+  // A synced desktop's hardware rating has no bearing on phone browsing.
+  const activeHwFilter = device.isMobile ? "" : hwFilter;
   const [userHw, setUserHw] = useState<{
     cpuTier?: string;
     gpuTier?: string;
@@ -212,7 +214,7 @@ export function DiscoverFilters({
       list = list.filter((g) => (playingNowBySlug[g.slug] ?? 0) > 0);
     }
 
-    if (hwFilter && userHw) {
+    if (activeHwFilter && userHw) {
       list = list.filter((g) => {
         const r = evaluateCompatibility(
           {
@@ -226,7 +228,7 @@ export function DiscoverFilters({
           },
           g.hardwareRequirements
         );
-        if (hwFilter === "great") return r.verdict === "excellent" || r.verdict === "good";
+        if (activeHwFilter === "great") return r.verdict === "excellent" || r.verdict === "good";
         return r.verdict === "excellent" || r.verdict === "good" || r.verdict === "playable";
       });
     }
@@ -256,7 +258,7 @@ export function DiscoverFilters({
     selectedFeatures,
     multiplayerOnly,
     hasPlayersOnly,
-    hwFilter,
+    activeHwFilter,
     userHw,
     discoveryMode,
     tiers,
@@ -471,12 +473,12 @@ export function DiscoverFilters({
           genre: selectedGenre || undefined,
           sort,
           multiplayerOnly,
-          hwFilter: hwFilter || undefined,
+          hwFilter: activeHwFilter || undefined,
           compatibility: mode,
         },
       });
-      if (hwFilter) {
-        void track("runs_great_filter_used", { filter: hwFilter });
+      if (activeHwFilter) {
+        void track("runs_great_filter_used", { filter: activeHwFilter });
       }
     }, 400);
     return () => window.clearTimeout(handle);
@@ -484,12 +486,12 @@ export function DiscoverFilters({
     selectedGenre,
     sort,
     multiplayerOnly,
-    hwFilter,
+    activeHwFilter,
     track,
     mode,
   ]);
 
-  const animKey = `${mode}|${hwFilter}|${selectedGenre}|${sort}|${baseFiltered.map((g) => g.slug).join(",")}`;
+  const animKey = `${mode}|${activeHwFilter}|${selectedGenre}|${sort}|${baseFiltered.map((g) => g.slug).join(",")}`;
   // Genre rows appear in batches as the reader scrolls; filters still cover
   // the whole catalog because genreSections is computed from every game.
   const { visible: visibleSections, sentinel: sectionSentinel } = useProgressiveList(genreSections, {
@@ -499,15 +501,15 @@ export function DiscoverFilters({
   });
 
   return (
-    <div className="space-y-5">
+    <div className="discover-filters space-y-5">
       {/* ── 1. Genre Quick-Select Buttons (Pills with count below) ──── */}
-      <label className="new-mobile-genre">
-        <span>Genre</span>
-        <select value={selectedGenre} onChange={(event) => handleSelectGenre(event.target.value)}>
+      <div className="new-mobile-genre">
+        <span id="discover-genre-label">Genre</span>
+        <PremiumSelect aria-labelledby="discover-genre-label" value={selectedGenre} onChange={(event) => handleSelectGenre(event.target.value)}>
           <option value="">All genres ({baseFiltered.length})</option>
           {allGenresWithCounts.map(({name,count}) => <option key={name} value={name}>{name} ({count})</option>)}
-        </select>
-      </label>
+        </PremiumSelect>
+      </div>
       <div className="new-desktop-genres -mx-1 flex flex-wrap items-center gap-2 px-1 py-1">
         <button
           type="button"
@@ -654,7 +656,7 @@ export function DiscoverFilters({
             </div>
 
             {/* Performance on my PC Dropdown with separate label */}
-            <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 md:flex">
               <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
                 Performance on my PC:
               </span>

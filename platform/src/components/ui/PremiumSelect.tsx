@@ -161,6 +161,8 @@ export function PremiumSelect({
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={props["aria-label"]}
+        aria-labelledby={props["aria-labelledby"]}
         onClick={() => {
           if (!open) setSearchQuery("");
           setOpen(!open);
@@ -179,7 +181,7 @@ export function PremiumSelect({
         <div
           ref={listboxRef}
           role="listbox"
-          className="fixed z-[9999] flex flex-col max-h-64 overflow-hidden rounded-lg border border-border/60 bg-[#0B0F19]/95 p-1 text-popover-foreground shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95"
+          className="fixed z-[9999] flex flex-col max-h-64 overflow-hidden rounded-lg border border-border/60 bg-popover p-1 text-popover-foreground shadow-2xl animate-in fade-in-0 zoom-in-95"
           style={{
             top: rect.top,
             left: rect.left,
