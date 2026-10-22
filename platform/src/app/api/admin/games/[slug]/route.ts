@@ -7,20 +7,23 @@ import { isNewGameAssignment, notifyGameAssigned, resolveGameOwnerUserId } from 
 import { developersBySlug } from "@/lib/data";
 import { ensureDeveloperExists } from "@/lib/developers";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
-import { withSyncedPublished } from "@/lib/catalogStatus";
+import { normalizeStatus, withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   ensureDerivedGameFields,
   editorialReadiness,
   publishBlockedMessage,
 } from "@/lib/enrich";
-import { requestDiscordProvision, hasPlayboundDiscordChannel, requestNewGameDiscordAnnounce } from "@/lib/discordProvision";
+import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
+import { queueGameAnnouncement, deliverGameAnnouncement } from "@/lib/discordGameAnnouncement";
 import {
   cascadeGameSlugRename,
   staticReferenceWarning,
   type SlugRenameReport,
 } from "@/lib/renameGameSlug";
 import { firstZodErrorMessage } from "@/lib/zodError";
+
+export const maxDuration = 180;
 
 export async function PATCH(
   req: Request,
@@ -95,7 +98,7 @@ export async function PATCH(
     const previous = await CatalogGame.findOne({ slug })
       .select("published publishedAt status communityLinks ownerUserId")
       .lean();
-    const wasPublished = (previous as { status?: string } | null)?.status === "published";
+    const wasPublished = previous ? normalizeStatus(previous) === "published" : false;
     let publishedAt = (previous as { publishedAt?: Date | null })?.publishedAt;
     if (body.status === "published" && (!publishedAt || !wasPublished)) {
       publishedAt = new Date();
@@ -159,18 +162,14 @@ export async function PATCH(
     }
 
     const isPublished = doc.status === "published" || Boolean(doc.published);
+    if (isPublished && !wasPublished) {
+      await queueGameAnnouncement(doc.slug, new Date(doc.publishedAt ?? Date.now()));
+    }
     if (isPublished && !hasPlayboundDiscordChannel(doc)) {
       await requestDiscordProvision(doc.slug);
     }
     if (isPublished && !wasPublished) {
-      await requestNewGameDiscordAnnounce({
-        slug: doc.slug,
-        title: doc.title,
-        thatOneThing: doc.thatOneThing,
-        tagline: doc.tagline,
-        coverImage: doc.coverImage,
-        screenshots: doc.screenshots,
-      });
+      await deliverGameAnnouncement(doc.slug);
     }
 
     revalidateTag("catalog", { expire: 0 });

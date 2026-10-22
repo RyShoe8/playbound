@@ -267,6 +267,12 @@ const CatalogGameSchema = new Schema(
      * published; left alone otherwise, so unpublishing does not erase it.
      */
     publishedAt: { type: Date, default: null },
+    /** Only first-publication transitions are queued; legacy published games stay untouched. */
+    discordAnnouncement: {
+      publishedAt: { type: Date, default: null },
+      sentAt: { type: Date, default: null },
+      lastAttemptAt: { type: Date, default: null },
+    },
     status: {
       type: String,
       enum: ["draft", "watchlist", "testing", "ready", "published"],

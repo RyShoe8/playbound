@@ -6,7 +6,11 @@
     },
     {
       "path": "/api/cron/discord-channels",
-      "schedule": "20 3 * * *"
+      "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/cron/discord-announcements",
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/free-offers",

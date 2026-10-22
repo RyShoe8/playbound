@@ -45,7 +45,11 @@ describe("Discord provisioning against a worker that may be asleep", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     vi.stubGlobal("fetch", fetchMock);
     const { requestNewGameDiscordAnnounce } = await import("./discordProvision");
-    await requestNewGameDiscordAnnounce({ slug: "hydorah", title: "Hydorah", tagline: "A shmup" });
+    await requestNewGameDiscordAnnounce({ slug: "hydorah", title: "Hydorah", tagline: "A shmup", publicationAt: new Date("2026-10-22T12:00:00Z") });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      slug: "hydorah",
+      publicationAt: "2026-10-22T12:00:00.000Z",
+    });
   });
 });

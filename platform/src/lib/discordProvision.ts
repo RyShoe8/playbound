@@ -143,14 +143,15 @@ export async function requestNewGameDiscordAnnounce(game: {
   tagline?: string | null;
   coverImage?: string | null;
   screenshots?: string[] | null;
-}): Promise<void> {
-  if (!IS_PRODUCTION || !game.slug) return;
+  publicationAt?: Date | string | null;
+}): Promise<boolean> {
+  if (!IS_PRODUCTION || !game.slug) return false;
   const thatOneThing = (game.thatOneThing || game.tagline || "").trim().slice(0, 2000);
   const imageUrl =
     absoluteCatalogMedia(game.coverImage) ||
     absoluteCatalogMedia(game.screenshots?.find((u) => u?.trim()) || null);
   try {
-    await postBot(
+    const result = await postBot(
       "/announce-game",
       {
         slug: game.slug,
@@ -158,13 +159,16 @@ export async function requestNewGameDiscordAnnounce(game: {
         thatOneThing,
         url: `${SITE_URL}/games/${encodeURIComponent(game.slug)}`,
         imageUrl,
+        publicationAt: game.publicationAt ? new Date(game.publicationAt).toISOString() : null,
       },
       { patient: true }
     );
+    return Boolean(result);
   } catch (err) {
     console.error(
       `[discordAnnounce] ${game.slug}:`,
       err instanceof Error ? err.message : err
     );
+    return false;
   }
 }

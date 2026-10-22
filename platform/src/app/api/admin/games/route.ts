@@ -15,8 +15,11 @@ import {
   editorialReadiness,
   publishBlockedMessage,
 } from "@/lib/enrich";
-import { requestDiscordProvision, hasPlayboundDiscordChannel, requestNewGameDiscordAnnounce } from "@/lib/discordProvision";
+import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
+import { queueGameAnnouncement, deliverGameAnnouncement } from "@/lib/discordGameAnnouncement";
 import { firstZodErrorMessage } from "@/lib/zodError";
+
+export const maxDuration = 180;
 
 export async function GET() {
   const { error } = await requireAdminViewSession();
@@ -78,6 +81,7 @@ export async function POST(req: Request) {
 
     const doc = await CatalogGame.create({
       ...body,
+      publishedAt: body.status === "published" ? new Date() : null,
       developerSlug,
       developerName,
       steamAppId: body.steamAppId || null,
@@ -94,18 +98,14 @@ export async function POST(req: Request) {
     const assignmentEmailSent = ownerUserId ? await notifyGameAssigned(ownerUserId, doc.title, doc.slug) : null;
 
     const isPublished = doc.status === "published" || Boolean(doc.published);
+    if (isPublished) {
+      await queueGameAnnouncement(doc.slug, new Date(doc.publishedAt ?? Date.now()));
+    }
     if (isPublished && !hasPlayboundDiscordChannel(doc)) {
       await requestDiscordProvision(doc.slug);
     }
     if (isPublished) {
-      await requestNewGameDiscordAnnounce({
-        slug: doc.slug,
-        title: doc.title,
-        thatOneThing: doc.thatOneThing,
-        tagline: doc.tagline,
-        coverImage: doc.coverImage,
-        screenshots: doc.screenshots,
-      });
+      await deliverGameAnnouncement(doc.slug);
     }
 
     revalidateTag("catalog", { expire: 0 });

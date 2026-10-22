@@ -1509,6 +1509,17 @@ async function ensureEventsChannel(guild) {
 }
 
 async function announceNewCatalogGame(payload) {
+  const publication = payload.slug && payload.publicationAt
+    ? new Date(payload.publicationAt)
+    : null;
+  const publicationFilter = publication && !Number.isNaN(publication.getTime())
+    ? { slug: payload.slug, "discordAnnouncement.publishedAt": publication }
+    : null;
+  if (publicationFilter) {
+    const game = await games.findOne(publicationFilter, { projection: { "discordAnnouncement.sentAt": 1 } });
+    if (!game) throw new Error(`Announcement is not queued for ${payload.slug}`);
+    if (game.discordAnnouncement?.sentAt) return;
+  }
   const title = String(payload.title || "New game").slice(0, 256);
   const url = String(payload.url || `${SITE_URL}/games/${payload.slug || ""}`);
   const thatOneThing = String(payload.thatOneThing || payload.description || "")
@@ -1535,7 +1546,15 @@ async function announceNewCatalogGame(payload) {
 
   // Single embed only — no content string (avoids extra unfurls / link surfaces).
   await channel.send({ embeds: [embed] });
+  if (publicationFilter) {
+    await games.updateOne(
+      { ...publicationFilter, "discordAnnouncement.sentAt": null },
+      { $set: { "discordAnnouncement.sentAt": new Date() } }
+    );
+  }
 }
+
+const announcementsInFlight = new Map();
 
 const commands = [
   new SlashCommandBuilder()
@@ -1839,7 +1858,20 @@ const server = http.createServer(async (req, res) => {
         res.end("title or slug required");
         return;
       }
-      await announceNewCatalogGame(payload);
+      const key = payload.slug && payload.publicationAt
+        ? `${payload.slug}:${payload.publicationAt}`
+        : null;
+      if (key && announcementsInFlight.has(key)) {
+        await announcementsInFlight.get(key);
+      } else {
+        const send = announceNewCatalogGame(payload);
+        if (key) announcementsInFlight.set(key, send);
+        try {
+          await send;
+        } finally {
+          if (key) announcementsInFlight.delete(key);
+        }
+      }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ success: true }));
     } catch (err) {
@@ -2532,9 +2564,13 @@ async function probeDiscord() {
     }
   };
   await probe("discord.com/api/v10/gateway", "https://discord.com/api/v10/gateway", {});
-  await probe("discord.com/api/v10/gateway/bot", "https://discord.com/api/v10/gateway/bot", {
-    authorization: `Bot ${TOKEN}`,
-  });
+  // A Cloudflare block on the unauthenticated endpoint applies to this host;
+  // making a second request with the bot token cannot help and may extend it.
+  if (!(blockedForSeconds > 0)) {
+    await probe("discord.com/api/v10/gateway/bot", "https://discord.com/api/v10/gateway/bot", {
+      authorization: `Bot ${TOKEN}`,
+    });
+  }
   return blockedForSeconds;
 }
 

@@ -8,7 +8,7 @@ import {
 export const maxDuration = 300;
 
 /**
- * GET|POST /api/cron/discord-channels — daily, 03:20 UTC.
+ * GET|POST /api/cron/discord-channels — hourly at minute 20.
  *
  * Two passes against the Discord bot, in order:
  *

@@ -65,6 +65,8 @@ the bot's Manage Channels/Create Instant Invite permissions.
 
 When a game is **created already published** or **first published** on production (`VERCEL_ENV=production`), the Next app POSTs `/announce-game` to this worker. The bot posts **one embed** in the server’s `#general` (not franchise `#general` channels under game categories): hero image, `thatOneThing`, and the title linked to the game page — no extra content links.
 
+New publications are queued in the game document before delivery. The site retries pending announcements every 15 minutes; the bot records delivery against that exact publication so a timed-out HTTP response cannot produce a second post. The hourly channel sweep repairs missing channels. For an older publication that missed both actions before this queue existed, use **Repair channel and announcement** in that game's admin editor. Already delivered queued publications are not reposted.
+
 Optional env: `DISCORD_GENERAL_CHANNEL_ID` to pin the exact channel.
 
 The post includes title, description, game page URL, and a screenshot (or cover) embed image.

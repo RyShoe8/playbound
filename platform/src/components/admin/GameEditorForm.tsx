@@ -1634,6 +1634,32 @@ export function GameEditorForm({
               >
                 Provision PlayBound Channel
               </button>
+              {form.status === "published" && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    setError("");
+                    setBusy(true);
+                    try {
+                      const res = await fetch(`/api/admin/games/${initial.slug}/repair-discord`, {
+                        method: "POST",
+                      });
+                      const data = await res.json().catch(() => null);
+                      if (!res.ok || !data?.ok) {
+                        setError(data?.error ?? `Discord repair incomplete: channel ${data?.channel ? "ready" : "failed"}, announcement ${data?.announcement ? "sent" : "pending"}. Retry once the bot is available.`);
+                      }
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Could not reach Discord.");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                  className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+                >
+                  Repair channel and announcement
+                </button>
+              )}
             </div>
           )}
         </AdminCollapsibleSection>

@@ -4,18 +4,20 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { getGame } from "@/lib/catalog";
-import { CATALOG_STATUSES, statusToPublished } from "@/lib/catalogStatus";
+import { CATALOG_STATUSES, normalizeStatus, statusToPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   requestDiscordProvision,
   hasPlayboundDiscordChannel,
-  requestNewGameDiscordAnnounce,
 } from "@/lib/discordProvision";
+import { queueGameAnnouncement, deliverGameAnnouncement } from "@/lib/discordGameAnnouncement";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 const bodySchema = z.object({
   status: z.enum(CATALOG_STATUSES),
 });
+
+export const maxDuration = 180;
 
 /**
  * Lightweight admin endpoint to update a game's catalog status directly.
@@ -36,9 +38,9 @@ export async function PATCH(
     const published = statusToPublished(status);
 
     const previous = await CatalogGame.findOne({ slug })
-      .select("status communityLinks")
+      .select("status published communityLinks")
       .lean();
-    const wasPublished = (previous as { status?: string } | null)?.status === "published";
+    const wasPublished = previous ? normalizeStatus(previous) === "published" : false;
 
     /*
      * Stamp the moment of publication. Without this the admin list had nothing
@@ -74,18 +76,14 @@ export async function PATCH(
       doc = created.toObject();
     }
 
+    if (published && !wasPublished) {
+      await queueGameAnnouncement(doc.slug, new Date(doc.publishedAt ?? Date.now()));
+    }
     if (published && !hasPlayboundDiscordChannel(doc)) {
       await requestDiscordProvision(doc.slug);
     }
     if (published && !wasPublished) {
-      await requestNewGameDiscordAnnounce({
-        slug: doc.slug,
-        title: doc.title,
-        thatOneThing: doc.thatOneThing,
-        tagline: doc.tagline,
-        coverImage: doc.coverImage,
-        screenshots: doc.screenshots,
-      });
+      await deliverGameAnnouncement(doc.slug);
     }
 
     try {
