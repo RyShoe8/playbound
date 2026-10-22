@@ -120,3 +120,19 @@ not have to infer what a number means.
   one is playing campaigns or private/LAN matches.
 - **PlayBound parties:** party membership is not population. Count a member only
   after current presence reports the game as `playing`.
+
+## SRB2 and SRB2Kart public lists
+
+SRB2 uses the official https://ms.srb2.org/list.json browser feed, with a 30-second
+fetch cache and a 10-second timeout. Only listed public games are covered; no
+credentials are required. Human counts come from num_humans; bots are separate.
+Missing counts are unknown, and the aggregate fails rather than converting them
+to zero. The feed does not promise a rate limit; caching avoids per-user polling.
+
+SRB2Kart v1.6 uses the official Kart Krew HTTP master API documented at
+https://ms.kartkrew.org/tools/api/2.2/ and named in the game's v1.6 source
+(src/mserv.c, src/doomdef.h). It lists addresses for SRB2Kart application version
+10, with no population or map metadata. Counts remain unknown. Never substitute
+ms.kartkrew.org/list.json: that is Ring Racers, a different game. The master
+currently returns HTTP 502; propagate the error instead of claiming zero servers.
+Neither provider adds hosted-server recipes or changes customer hosting controls.

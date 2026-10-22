@@ -1,3 +1,4 @@
+import { fetchSrb2Servers, fetchSrb2PlayerCount, fetchSrb2KartServers, fetchSrb2KartPlayerCount } from "./providers/srb2";
 import { getServerLobbyAuth } from "@/lib/catalog";
 import { listJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
@@ -91,6 +92,8 @@ async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
 }
 
 const providers: Record<string, ServerProvider> = {
+  srb2: { slug: "srb2", fetchServers: fetchSrb2Servers, fetchPlayerCount: fetchSrb2PlayerCount },
+  srb2kart: { slug: "srb2kart", fetchServers: fetchSrb2KartServers, fetchPlayerCount: fetchSrb2KartPlayerCount },
   unturned: { slug: "unturned", fetchServers: fetchUnturnedServers, fetchPlayerCount: fetchUnturnedPlayerCount },
   rimworld: { slug: "rimworld", fetchServers: fetchRimworldServers },
   openra: { slug: "openra", fetchServers: fetchOpenRaServers, fetchPlayerCount: fetchOpenRaPlayerCount },

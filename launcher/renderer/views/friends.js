@@ -1393,26 +1393,27 @@ async function initAddFriendsPanel() {
   tabPlayers.onclick = () => setMode("players");
   tabEmail.onclick = () => setMode("email");
 
-  const catalog = await window.playbound.getCatalog().catch(() => []);
-  const gamesList = filterCatalogGames(Array.isArray(catalog) ? catalog : catalog?.games || []);
   const gameSelect = document.getElementById("add-friends-game-select");
   const genreSelect = document.getElementById("add-friends-genre-select");
-  
-  gamesList.forEach(g => {
-    const opt = document.createElement("option");
-    opt.value = g.slug;
-    opt.textContent = g.title;
-    gameSelect.appendChild(opt);
-  });
-  
-  const genres = Array.from(new Set(gamesList.flatMap(g => g.tags || []))).sort();
-  genres.forEach(g => {
-    const opt = document.createElement("option");
-    opt.value = g;
-    opt.textContent = g;
-    genreSelect.appendChild(opt);
-  });
-  
+  // Game suggestions must never gate username/email search event binding.
+  const populateGamePickers = async () => {
+    const catalog = await window.playbound.getCatalog().catch(() => []);
+    if (!gameSelect.isConnected || !genreSelect.isConnected) return;
+    const gamesList = filterCatalogGames(Array.isArray(catalog) ? catalog : catalog?.games || []);
+    for (const game of gamesList) {
+      const opt = document.createElement("option");
+      opt.value = game.slug;
+      opt.textContent = game.title;
+      gameSelect.appendChild(opt);
+    }
+    const genres = [...new Set(gamesList.flatMap((game) => game.tags || []))].sort();
+    for (const genre of genres) {
+      const opt = document.createElement("option");
+      opt.value = genre;
+      opt.textContent = genre;
+      genreSelect.appendChild(opt);
+    }
+  };
   gameSelect.onchange = () => { if (gameSelect.value) genreSelect.value = ""; };
   genreSelect.onchange = () => { if (genreSelect.value) gameSelect.value = ""; };
 
@@ -1482,7 +1483,10 @@ async function initAddFriendsPanel() {
     });
   };
 
-  const doSearch = async (promise) => {
+  let searching = false;
+  const doSearch = async (request) => {
+    if (searching) return;
+    searching = true;
     msg.textContent = "Searching...";
     msg.style.color = "var(--text-muted)";
     msg.style.display = "block";
@@ -1491,16 +1495,19 @@ async function initAddFriendsPanel() {
     document.getElementById("btn-search-players").disabled = true;
     
     try {
-      const res = await promise;
-      if (res.error) throw new Error(res.error);
+      const res = await request();
+      if (!res || res.error) throw new Error(res?.error || "Could not load search results.");
       renderResults(res.users || []);
     } catch (err) {
       msg.textContent = err.message || "Couldn't reach the server.";
       msg.style.color = "var(--danger)";
       msg.style.display = "block";
     } finally {
-      document.getElementById("btn-search-username").disabled = false;
-      document.getElementById("btn-search-players").disabled = false;
+      searching = false;
+      const userButton = document.getElementById("btn-search-username");
+      const playerButton = document.getElementById("btn-search-players");
+      if (userButton) userButton.disabled = false;
+      if (playerButton) playerButton.disabled = false;
     }
   };
 
@@ -1514,7 +1521,7 @@ async function initAddFriendsPanel() {
       resultsDiv.innerHTML = "";
       return;
     }
-    doSearch(window.playbound.searchUsers(q));
+    void doSearch(() => window.playbound.searchUsers(q));
   };
 
   formPlayers.onsubmit = (e) => {
@@ -1529,7 +1536,7 @@ async function initAddFriendsPanel() {
       return;
     }
     const params = g ? { game: g } : { genre: gn };
-    doSearch(window.playbound.discoverPlayers(params));
+    void doSearch(() => window.playbound.discoverPlayers(params));
   };
 
   formEmail.onsubmit = async (e) => {
@@ -1561,6 +1568,7 @@ async function initAddFriendsPanel() {
       btn.disabled = false;
     }
   };
+  void populateGamePickers().catch(() => {});
 }
 
 /* Icons matching the lucide set the website's PartyView uses. */
@@ -1615,11 +1623,11 @@ function buildRequirementsBannerHtml(party, isLeader = false) {
       <div class="party-req-banner party-req-warning">
         <div class="party-req-icon">${ICON.alert}</div>
         <div class="party-req-body">
-          <p class="party-req-title">Virtual Controller Driver (ViGEm) Required</p>
+          <p class="party-req-title">Install controller support (ViGEmBus)</p>
           <p class="party-req-desc">Hosting ${escapeHtml(party.gameTitle || "this game")} online requires the ViGEm driver so remote friends can connect as Player 2, 3, or 4.</p>
         </div>
         <button type="button" id="btn-party-install-vigem" class="party-btn btn-primary party-req-btn">
-          ${ICON.download} Install ViGEm Driver
+          ${ICON.download} Install Controller Driver
         </button>
       </div>
     `;
@@ -3794,7 +3802,7 @@ async function wireRequirementsCheck(slot, party) {
   if (vigemBtn) {
     vigemBtn.addEventListener("click", async () => {
       vigemBtn.disabled = true;
-      vigemBtn.innerHTML = `${ICON.loader} Setting up ViGEm driver (approve Windows prompt)…`;
+      vigemBtn.innerHTML = `${ICON.loader} Installing controller driver so your controllers work — approve Windows…`;
       try {
         const res = await window.playbound.installVigem?.();
         if (res && res.ok) {
@@ -3814,12 +3822,12 @@ async function wireRequirementsCheck(slot, party) {
           }, 2000);
         } else {
           vigemBtn.disabled = false;
-          vigemBtn.innerHTML = `${ICON.download} Retry Install ViGEm`;
+          vigemBtn.innerHTML = `${ICON.download} Retry Controller Driver Install`;
           setStatus(res?.error || "ViGEm setup failed. Please approve the Windows prompt.", true);
         }
       } catch (err) {
         vigemBtn.disabled = false;
-        vigemBtn.innerHTML = `${ICON.download} Retry Install ViGEm`;
+        vigemBtn.innerHTML = `${ICON.download} Retry Controller Driver Install`;
         setStatus(err?.message || "Failed to setup controller driver.", true);
       }
     });

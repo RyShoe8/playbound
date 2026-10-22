@@ -105,7 +105,7 @@ function tryQuietInstall(setupPath) {
 async function ensureVigem(onStatus) {
   const status = typeof onStatus === "function" ? onStatus : () => {};
 
-  status("Checking virtual controller support…");
+  status("Checking whether the controller driver is installed…");
   let probe = await probeProvider();
   if (probe.ok) {
     return { ok: true, installed: false };
@@ -120,15 +120,24 @@ async function ensureVigem(onStatus) {
     };
   }
 
-  status("Installing the virtual controller driver — approve the Windows prompt if it appears…");
+  const { dialog } = require("electron");
+  if (dialog?.showMessageBox) {
+    const answer = await dialog.showMessageBox({
+      type: "info", title: "Install controller support", message: "Install ViGEmBus so your controller can work with PlayBound games",
+      detail: "This one-time driver installation lets PlayBound present your PS5, phone, or remote controller as an Xbox-compatible controller. Windows will ask for permission to install it. Choose Yes to continue.",
+      buttons: ["Install Controller Driver", "Cancel"], defaultId: 0, cancelId: 1, noLink: true,
+    });
+    if (answer.response !== 0) return { ok: false, reason: "Controller driver installation cancelled. Try again and choose Install Controller Driver to enable controller support." };
+  }
+  status("Installing ViGEmBus to enable your controller — choose Yes on the Windows installation prompt…");
   // Prefer elevated silent install (UAC once). Fallback to direct /quiet if already elevated.
   let install = await installBundledSetup(setupPath);
   if (!install.ok) {
-    status("Retrying virtual controller driver installation…");
+    status("Retrying ViGEmBus driver installation to enable your controller…");
     install = tryQuietInstall(setupPath);
   }
 
-  status("Verifying the virtual controller driver…");
+  status("Checking the installed controller driver…");
   // Driver may need a moment after setup exits.
   await new Promise((r) => setTimeout(r, 1500));
   probe = await probeProvider();

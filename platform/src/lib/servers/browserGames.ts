@@ -7,6 +7,8 @@
  */
 
 const DEDICATED_SERVER_GAMES: ReadonlySet<string> = new Set([
+  "srb2",
+  "srb2kart",
   "unturned",
   "rimworld",
   "openra",
