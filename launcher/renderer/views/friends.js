@@ -2297,7 +2297,10 @@ function buildPartyViewHtml(party) {
                   party.maxSize || 8
                 }</span>
               </p>
-              <button type="button" class="copy-server-ip-btn" data-action="copy-party-link" data-party-id="${escapeHtml(party.id)}">Copy party link</button>
+              <div class="party-invite-actions">
+                <button type="button" class="btn-primary btn-sm" data-action="show-party-invites" aria-expanded="false">Invite friends</button>
+                <button type="button" class="copy-server-ip-btn" data-action="copy-party-link" data-party-id="${escapeHtml(party.id)}">Copy party link</button>
+              </div>
             </div>
             <div class="party-header-controls">
               ${hostModeHtml}
@@ -2321,6 +2324,13 @@ function buildPartyViewHtml(party) {
         <div class="party-members">
           <h4 class="party-section-label">Members</h4>
           <ul class="party-member-list">${membersHtml}</ul>
+        </div>
+
+        <div class="party-invite-panel" hidden>
+          <h4 class="party-section-label">Invite your PlayBound friends</h4>
+          <p class="view-sub">They'll get an invite to this party. You can also share the party link above.</p>
+          <div class="party-invite-list"></div>
+          <p class="party-invite-feedback" role="status" aria-live="polite"></p>
         </div>
 
         <div id="party-requirements-container">
@@ -3216,6 +3226,49 @@ async function runPartyAction(partyId, request, fallbackMessage) {
 
 function wirePartyView(slot, party) {
   const partyId = party.id;
+
+  const inviteToggle = slot.querySelector("[data-action='show-party-invites']");
+  const invitePanel = slot.querySelector(".party-invite-panel");
+  if (inviteToggle && invitePanel) {
+    inviteToggle.addEventListener("click", () => {
+      invitePanel.hidden = !invitePanel.hidden;
+      inviteToggle.setAttribute("aria-expanded", String(!invitePanel.hidden));
+      if (invitePanel.hidden) return;
+
+      const memberIds = new Set((party.members || []).map((member) => String(member.userId)));
+      const available = lastGoodFriends.filter((friend) => friend.id && !memberIds.has(String(friend.id)));
+      const list = invitePanel.querySelector(".party-invite-list");
+      list.innerHTML = available.length
+        ? available.map((friend) => `<div class="party-invite-row">
+            <span>${escapeHtml(friend.username || "Friend")}</span>
+            <button type="button" class="btn-secondary btn-sm" data-invite-friend-id="${escapeHtml(String(friend.id))}">Invite</button>
+          </div>`).join("")
+        : `<p class="view-sub">No friends available to invite. Add a friend from the Friends page or share the party link.</p>`;
+
+      list.querySelectorAll("[data-invite-friend-id]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          button.textContent = "Sending…";
+          const feedback = invitePanel.querySelector(".party-invite-feedback");
+          try {
+            const result = await window.playbound.inviteToParty(partyId, [button.dataset.inviteFriendId]);
+            const delivery = result?.results?.[0];
+            if (result?.error || !delivery || delivery.status !== 201) {
+              throw new Error(result?.error || delivery?.error || "Couldn't send the invitation.");
+            }
+            button.textContent = "Invited";
+            feedback.textContent = "Party invite sent.";
+            setStatus("Party invite sent.");
+          } catch (error) {
+            button.disabled = false;
+            button.textContent = "Invite";
+            feedback.textContent = error.message || "Couldn't send the invitation.";
+            setStatus(feedback.textContent, true);
+          }
+        });
+      });
+    });
+  }
 
   const nameInput = slot.querySelector("#party-name-input");
   if (nameInput) {

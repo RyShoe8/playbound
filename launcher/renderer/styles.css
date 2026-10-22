@@ -5705,11 +5705,20 @@ textarea.input-text {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   padding: 16px;
 }
 .party-header-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .party-header-controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.party-invite-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.party-invite-panel:not([hidden]) { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-top: 1px solid var(--border); }
+.party-invite-panel .view-sub { margin: 0; }
+.party-invite-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; }
+.party-invite-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; min-width: 0; }
+.party-invite-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.party-invite-feedback:empty { display: none; }
+.party-invite-feedback { margin: 0; font-size: 13px; color: var(--text-muted); }
 .party-header-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
