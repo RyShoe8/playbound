@@ -1,3 +1,4 @@
+import { bindGamePartyButton } from "../gamePartyAction.js";
 import { createFreeOfferCard, createGameCard, createModCard } from "../cards.js";
 import { mountHeroMedia } from "../heroMedia.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
@@ -1973,29 +1974,10 @@ async function renderGameDetailView(slug, opts = {}) {
     });
   }
 
-  document.getElementById("act-create-party")?.addEventListener("click", async (e) => {
-    const btn = e.currentTarget;
-    btn.disabled = true;
-    btn.textContent = "Creating…";
-    try {
-      const res = await window.playbound.createParty?.({ gameSlug: slug, visibility: "friends", maxSize: 8 });
-      if (res?.error || !res?.party) throw new Error(res?.error || "Couldn't create party.");
-      setStatus(`Party created for ${detail.title || slug}`);
-      if (res.needsDiscordLink) {
-        window.playbound.linkDiscord?.();
-      } else if (res.inPartyVoice || res.moved) {
-        // Already placed in the new channel — an invite would send someone to a
-        // room they are standing in.
-      } else if (res.inviteUrl || res.party?.discord?.inviteUrl) {
-        window.playbound.openDiscordInvite(res.inviteUrl || res.party.discord.inviteUrl);
-      }
-      void api.refreshFriendsData?.();
-    } catch (err) {
-      setStatus(err.message || String(err), true);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Create Party";
-    }
+  bindGamePartyButton(document.getElementById("act-create-party"), {
+    gameSlug: slug, title: detail.title, bridge: window.playbound,
+    navigate: (view) => api.navigateTo(view), report: setStatus,
+    refresh: () => api.refreshFriendsData?.(),
   });
 
   document.getElementById("act-play-remote")?.addEventListener("click", async (e) => {

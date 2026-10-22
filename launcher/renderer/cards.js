@@ -1,3 +1,4 @@
+import { bindGamePartyButton } from "./gamePartyAction.js";
 import {
   accessPriceLabel,
   api,
@@ -5,6 +6,7 @@ import {
   isGameDesktopCompatible,
   prefetchGameDetail,
   prefetchModDetail,
+  setStatus,
   state,
   resizedImageUrl,
 } from "./shared.js";
@@ -193,34 +195,19 @@ export function createGameCard(game, playingNow) {
     const partyButton = document.createElement("button");
     partyButton.type = "button";
     partyButton.className = "catalog-party-button";
-    partyButton.textContent = state._activeParty?.status !== "ended" && state._activeParty ? "View Party" : "Start Party";
-    partyButton.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      if (state._activeParty && state._activeParty.status !== "ended") {
+    if (state.accountState?.connected) {
+      bindGamePartyButton(partyButton, {
+        gameSlug: game.slug, title: game.title, bridge: window.playbound,
+        navigate: (view) => api.navigateTo(view), report: setStatus,
+        refresh: () => api.refreshFriendsData?.(),
+      });
+    } else {
+      partyButton.textContent = "Sign in to create a party";
+      partyButton.addEventListener("click", (event) => {
+        event.stopPropagation();
         api.navigateTo("friends");
-        return;
-      }
-      if (!state.accountState?.connected) {
-        api.navigateTo("friends");
-        return;
-      }
-      partyButton.disabled = true;
-      partyButton.textContent = "Starting…";
-      try {
-        const result = await window.playbound.createParty?.({ gameSlug: game.slug, visibility: "friends", maxSize: 8 });
-        if (result?.error || !result?.party) throw new Error(result?.error || "Couldn't create party.");
-        if (result.needsDiscordLink) window.playbound.linkDiscord?.();
-        else if (!result.inPartyVoice && !result.moved && (result.inviteUrl || result.party?.discord?.inviteUrl)) {
-          window.playbound.openDiscordInvite?.(result.inviteUrl || result.party.discord.inviteUrl);
-        }
-        api.navigateTo("friends");
-      } catch (error) {
-        partyButton.title = error?.message || String(error);
-        partyButton.textContent = "Try Again";
-      } finally {
-        partyButton.disabled = false;
-      }
-    });
+      });
+    }
     card.appendChild(partyButton);
   }
 

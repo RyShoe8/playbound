@@ -25,6 +25,7 @@ const path = require("path");
 const net = require("net");
 const os = require("os");
 const bundledCatalog = require("./catalog");
+const { findInstalledExecutable, windowsDiscoveryRoots } = require("./services/postInstallerDiscovery");
 const { localCoopPlayerCapacity } = require("./services/couch/localCoop");
 const { createTelemetry } = require("./telemetry");
 const { checkWithHandledDownload, safeUpdateError } = require("./services/main/updateDownload");
@@ -640,6 +641,7 @@ let installerPollTimer = null;
 let installerPollSlug = null;
 let installerPollCancel = null;
 let installerPollOnComplete = null;
+let installerPollGeneration = 0;
 /** Delayed full-drive BFS — only after known-path poll grace period */
 let exeScanDelayTimer = null;
 /** @type {{ slug: string, abort: boolean, generation: number } | null} */
@@ -3269,6 +3271,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
 }
 
 function stopInstallerPoll() {
+  installerPollGeneration++;
   installerPollCancel = null;
   installerPollOnComplete = null;
   if (installerPollTimer) {
@@ -3317,6 +3320,31 @@ function abortInstallerPoll(slug) {
   return false;
 }
 
+async function discoverPostInstallerExecutable(entry, isCancelled = () => false) {
+  if (process.platform !== "win32" || entry?.kind === "external") return null;
+  const settings = loadSettings();
+  const drives = await new Promise((resolve) => {
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
+      "Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object -ExpandProperty DeviceID"],
+      { encoding: "utf8", timeout: 8000, windowsHide: true }, (err, stdout) => {
+        const found = err ? [] : String(stdout).split(/\r?\n/).map((line) => line.trim()).filter((line) => /^[A-Z]:$/i.test(line)).map((drive) => drive + "\\");
+        resolve(found.length ? found : [path.parse(app.getPath("home")).root]);
+      });
+  });
+  if (isCancelled()) return null;
+  const locations = windowsDiscoveryRoots({
+    drives, home: app.getPath("home"),
+    gamesDir: settings.gamesDir || DEFAULT_GAMES_DIR,
+  });
+  const exe = await findInstalledExecutable({
+    entry, ...locations, wanted: expectedExeBasenames(entry), isCancelled,
+    readShortcutLink: (file) => shell.readShortcutLink(file),
+  });
+  if (!exe || isCancelled()) return null;
+  rememberLocatedRoot(exe);
+  return isAllowedExecutablePath(exe) ? exe : null;
+}
+
 function startInstallerPoll(slug, entry, version, onComplete) {
   stopInstallerPoll();
   stopExeScan(slug);
@@ -3341,6 +3369,8 @@ function startInstallerPoll(slug, entry, version, onComplete) {
     editionType: entry?.editionType,
   });
 
+  const generation = installerPollGeneration;
+  let discoveryInFlight = false;
   const started = Date.now();
   const maxMs = isDarkModSlug(entry?.slug || slug) ? tdmInstallerPollMaxMs() : 10 * 60 * 1000;
   const title = entry?.title || slug;
@@ -3374,6 +3404,16 @@ function startInstallerPoll(slug, entry, version, onComplete) {
     if (!known && deep) {
       invalidateUninstallCache(entry);
       known = findKnownExecutable(entry);
+    }
+    if (!known && deep && !discoveryInFlight) {
+      discoveryInFlight = true;
+      const cancelled = () => installerPollGeneration !== generation;
+      void discoverPostInstallerExecutable(entry, cancelled).then((exe) => {
+        if (!exe || cancelled()) return;
+        const result = markInstalledFromExe(slug, entry, exe, version || "located");
+        completeInstallerPoll(slug, result);
+      }).catch((err) => console.warn("Post-installer discovery failed:", err?.message || err))
+        .finally(() => { discoveryInFlight = false; });
     }
     if (!known) return false;
     stopExeScan(slug);
@@ -6407,7 +6447,7 @@ async function locateGameExecutable(slug) {
   const entry = (await ensureCatalogEntry(slug)) || catalogEntry(slug);
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
-  const known = findKnownExecutable(entry);
+  const known = findKnownExecutable(entry) || await discoverPostInstallerExecutable(entry);
   if (known) {
     return markInstalledFromExe(slug, entry, known, "located");
   }
