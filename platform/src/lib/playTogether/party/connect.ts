@@ -1,5 +1,6 @@
 /** How a party reaches its game: public servers, the dedicated room and virtual LAN, and provisioning them. */
 import { after } from "next/server";
+import Party from "@/lib/models/Party";
 import { type PartyPayload } from "@/lib/playTogether/types";
 import { provisionPartyHost, reconcilePartyHostAlive } from "@/lib/gameHost/provision";
 import { provisionPartyLan, partyLanNeedsProvision } from "@/lib/virtualLan/provision";
@@ -88,7 +89,13 @@ export function resetPartyConnectState(doc: PartyDoc) {
   };
 }
 
-function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
+export function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
+  // Selecting My computer is itself the request to create a private party
+  // network. Members can become Ready after their launchers have joined it.
+  if (doc.gameSlug && resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted, doc.editionSlug) === "self" &&
+      doc.status !== "ended" && doc.status !== "launching" && doc.status !== "playing") {
+    return true;
+  }
   const { allReady: allReadyUp } = readySummary(doc.members);
   const soloReady = doc.members.length === 1 && Boolean(doc.members[0]?.ready);
   if (!allReadyUp && !soloReady) return false;
@@ -139,7 +146,7 @@ export function provisionPartyConnectInBackground<T extends Record<string, unkno
   if (!due.host && !due.lan) return payloadDoc;
   const partyId = String(doc._id);
   const task = () =>
-    maybeProvisionPartyConnect(doc).catch((err) => {
+    Party.findById(partyId).then((current) => current ? maybeProvisionPartyConnect(current as PartyDoc) : undefined).catch((err) => {
       console.warn(`[party] background provision failed for ${partyId}:`, err instanceof Error ? err.message : err);
     });
   try {

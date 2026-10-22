@@ -160,10 +160,8 @@ export async function setPartyGame(
 /**
  * Change where the party's room runs.
  *
- * Leader-only, and refused once a room already exists: the mode decides
- * whether a dedicated server or an overlay gets provisioned, so switching
- * underneath a live room would leave members connected to something the party
- * no longer describes. Pick before launching, or after the session ends.
+ * Leader-only. A mode switch ends the current party session and releases its
+ * old connection before the new mode is offered to members.
  */
 export async function setPartyHostMode(
   partyId: string,
@@ -179,25 +177,39 @@ export async function setPartyHostMode(
   if (!isValidHostMode(slug, hostMode, doc.editionSlug)) {
     return { error: "That hosting option is not available for this game", status: 400 };
   }
-  if (doc.status === "playing" || doc.status === "launching") {
-    return { error: "Can't change hosting while a room is live", status: 400 };
-  }
-
   if (doc.hostMode !== hostMode) {
-    if (doc.hosted?.roomId) {
-      await releasePartyHost(doc);
-    }
-    if (doc.lan?.groupId) {
-      await releasePartyLan(doc);
-    }
     doc.hostMode = hostMode as PartyHostMode;
     resetPartyConnectState(doc);
-    doc.lastActivity = new Date();
-    await doc.save();
+    const reset = doc.toObject();
+    // Invalidate the old mode and any pending NetBird attempt in one write.
+    // The returned pre-update document contains the latest allocated IDs even
+    // if provisioning completed after this request first read the party.
+    const previous = await Party.findOneAndUpdate(
+      { _id: doc._id, hostMode: { $ne: hostMode } },
+      { $set: {
+        hostMode, status: "forming", "members.$[].ready": false,
+        selfHostReady: false, selfHostReadyAt: null,
+        hosted: reset.hosted, lan: reset.lan, couch: reset.couch,
+        publicServer: reset.publicServer, lastActivity: new Date(),
+      } },
+      { returnDocument: "before" }
+    );
+    if (!previous) return { error: "The party changed. Try choosing the host again.", status: 400 };
+    const cleanup = await Promise.allSettled([
+      previous.hosted?.roomId ? releasePartyHost(previous) : Promise.resolve(),
+      previous.lan?.groupId || previous.lan?.setupKeyId ? releasePartyLan(previous) : Promise.resolve(),
+    ]);
+    for (const result of cleanup) {
+      if (result.status === "rejected") {
+        console.error(`[party] old host cleanup failed after mode switch for ${partyId}:`, result.reason);
+      }
+    }
     trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
   }
 
-  return { party: await partyPayloadForDoc(provisionPartyConnectInBackground(doc, doc.toObject())), status: 200 };
+  const current = await Party.findById(doc._id);
+  if (!current) return { error: "Party not found", status: 404 };
+  return { party: await partyPayloadForDoc(provisionPartyConnectInBackground(current, current.toObject())), status: 200 };
 }
 
 /**

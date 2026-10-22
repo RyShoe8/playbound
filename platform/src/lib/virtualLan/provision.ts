@@ -8,6 +8,7 @@
  */
 
 import type { Document } from "mongoose";
+import Party from "@/lib/models/Party";
 import {
   createPartyNetwork,
   deletePartyNetwork,
@@ -93,10 +94,21 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   if (lan.status === "pending" && !isLanPendingStale(lan)) return false;
   if (!isVirtualLanConfigured()) return false;
 
+  const previousStatus = lan.status || "none";
+  const previousPendingAt = lan.pendingAt || null;
+  const pendingAt = new Date();
+  const claimed = await Party.updateOne(
+    {
+      _id: party._id, hostMode: { $in: ["self", null] }, gameSlug: slug,
+      "lan.status": previousStatus === "none" ? { $in: [null, "none"] } : previousStatus,
+      ...(previousStatus === "pending" ? { "lan.pendingAt": previousPendingAt } : {}),
+    },
+    { $set: { "lan.status": "pending", "lan.pendingAt": pendingAt, "lan.error": null } }
+  );
+  if (!claimed.modifiedCount) return false;
   lan.status = "pending";
-  lan.pendingAt = new Date();
+  lan.pendingAt = pendingAt;
   lan.error = null;
-  await party.save();
 
   const result = await createPartyNetwork({
     partyId: String(party._id),
@@ -105,10 +117,14 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   });
 
   if ("error" in result) {
+    const updated = await Party.updateOne(
+      { _id: party._id, hostMode: { $in: ["self", null] }, gameSlug: slug, "lan.status": "pending", "lan.pendingAt": pendingAt },
+      { $set: { "lan.status": "failed", "lan.error": result.error, "lan.pendingAt": null } }
+    );
+    if (!updated.modifiedCount) return false;
     lan.status = "failed";
     lan.error = result.error;
     lan.pendingAt = null;
-    await party.save();
     const netbirdStatus = /NetBird (\d+)/.exec(result.error)?.[1];
     trackPartyFailure("lan", {
       op: "provision",
@@ -129,6 +145,27 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
     return false;
   }
 
+  // A leader can switch back to Public or Dedicated while NetBird is creating
+  // the segment. Commit only if this is still the same self-host attempt;
+  // otherwise tear down the newly created resources instead of resurrecting it.
+  let committed = false;
+  try {
+    const updated = await Party.updateOne(
+      { _id: party._id, hostMode: { $in: ["self", null] }, gameSlug: slug, "lan.status": "pending", "lan.pendingAt": pendingAt },
+      { $set: {
+        "lan.status": "ready", "lan.groupId": result.groupId,
+        "lan.policyId": result.policyId, "lan.setupKeyId": result.setupKeyId,
+        "lan.setupKey": result.setupKey, "lan.error": null,
+        "lan.pendingAt": null, "lan.provisionedAt": new Date(),
+      } }
+    );
+    committed = Boolean(updated.modifiedCount);
+  } finally {
+    if (!committed) await deletePartyNetwork(result);
+  }
+  if (!committed) {
+    return false;
+  }
   lan.status = "ready";
   lan.groupId = result.groupId;
   lan.policyId = result.policyId;
@@ -136,8 +173,6 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   lan.setupKey = result.setupKey;
   lan.error = null;
   lan.pendingAt = null;
-  lan.provisionedAt = new Date();
-  await party.save();
   trackPartyOk("lan", { op: "provision", ...partyEventProps(party), gameSlug: slug });
   trackPartyEvent("party_lan_ready", {
     ...partyEventProps(party),
@@ -200,7 +235,10 @@ export function lanPayloadFromDoc(
 ) {
   const resolvedMode = hostMode || defaultHostMode(gameSlug);
   const needsOverlay = resolvedMode === "self";
-  const config = needsOverlay ? getVirtualLanConfig(gameSlug) : null;
+  // Host-mode validation already established that this game's client can host.
+  // Even an "official" multiplayer adapter still needs an overlay when the
+  // leader explicitly chooses My computer instead of its public server.
+  const config = needsOverlay ? getVirtualLanConfig(gameSlug) || {} : null;
   // Direct-IP self-hosted games use NetBird for reachability, but guests must
   // still wait for the host's actual game listener. Discovery-only LAN games
   // have no listener to probe and can join once the party is in flight.

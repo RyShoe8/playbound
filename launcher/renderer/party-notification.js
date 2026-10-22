@@ -7,6 +7,7 @@
 
 let currentInvite = null;
 let isDismissing = false;
+let joinRetryNeeded = false;
 
 const card = document.getElementById("card");
 const titleEl = document.getElementById("notif-title");
@@ -31,6 +32,7 @@ function renderInvite(data) {
   if (!data) return;
   currentInvite = data;
   isDismissing = false;
+  joinRetryNeeded = false;
   if (card) card.classList.remove("dismissing");
 
   const meta = data.meta || {};
@@ -99,9 +101,25 @@ btnJoin?.addEventListener("click", async (e) => {
 
   if (partyId && window.playbound?.joinParty) {
     try {
-      await window.playbound.joinParty(partyId);
+      const result = await window.playbound.joinParty(partyId);
+      if (result?.error) {
+        joinRetryNeeded = true;
+        timerFill?.classList.add("paused");
+        void window.playbound.pausePartyNotificationTimer?.();
+        const needsSignIn = /unauthorized|HTTP 401/i.test(result.error);
+        if (detailEl) detailEl.textContent = needsSignIn
+          ? "Sign in to PlayBound, then press Join Party again."
+          : result.error;
+        if (needsSignIn) void window.playbound.signIn?.();
+        return;
+      }
     } catch (err) {
       console.warn("joinParty failed:", err);
+      joinRetryNeeded = true;
+      timerFill?.classList.add("paused");
+      void window.playbound.pausePartyNotificationTimer?.();
+      if (detailEl) detailEl.textContent = err?.message || "Could not join party. Try again.";
+      return;
     }
   } else if (inviteId && window.playbound?.playInviteAction) {
     try {
@@ -167,6 +185,7 @@ card?.addEventListener("mouseenter", () => {
 });
 
 card?.addEventListener("mouseleave", () => {
+  if (joinRetryNeeded) return;
   if (timerFill) timerFill.classList.remove("paused");
   void window.playbound?.resumePartyNotificationTimer?.();
 });

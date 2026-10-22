@@ -88,6 +88,17 @@ function dismissToast(el) {
   setTimeout(() => el.remove(), 200);
 }
 
+function partyJoinFailed(result) {
+  if (!result?.error) return false;
+  if (/unauthorized|HTTP 401/i.test(result.error)) {
+    setStatus("Sign in to PlayBound in the launcher, then accept the party invite again.", true);
+    void window.playbound.signIn?.();
+  } else {
+    setStatus(result.error, true);
+  }
+  return true;
+}
+
 /**
  * Show a floating in-app toast notification card when a new notification arrives.
  */
@@ -161,15 +172,12 @@ function showNotificationToast(n) {
   // Action buttons
   toast.querySelector('[data-action="toast-join-party"]')?.addEventListener("click", async (e) => {
     e.stopPropagation();
-    dismissToast(toast);
     if (partyId && window.playbound?.joinParty) {
       const res = await window.playbound.joinParty(partyId);
-      if (res?.error) {
-        setStatus(res.error, true);
-      } else {
-        setStatus("Joined party!");
-      }
+      if (partyJoinFailed(res)) return;
+      setStatus("Joined party!");
     }
+    dismissToast(toast);
     void markRead(n.id);
     await api.navigateTo?.("friends");
     if (api.refreshFriendsData) void api.refreshFriendsData();
@@ -381,11 +389,8 @@ async function onListClick(e) {
     const partyId = btn.dataset.party || item?.meta?.partyId;
     if (partyId && window.playbound?.joinParty) {
       const res = await window.playbound.joinParty(partyId);
-      if (res?.error) {
-        setStatus(res.error, true);
-      } else {
-        setStatus("Joined party!");
-      }
+      if (partyJoinFailed(res)) return;
+      setStatus("Joined party!");
     }
     if (item && !item.readAt) await markRead(id);
     setPanelOpen(false);
@@ -415,11 +420,8 @@ async function onListClick(e) {
     const partyId = btn.dataset.party || item?.meta?.partyId;
     if (item?.type === "party_invite" && partyId && window.playbound?.joinParty) {
       const res = await window.playbound.joinParty(partyId);
-      if (res?.error) {
-        setStatus(res.error, true);
-      } else {
-        setStatus("Joined party!");
-      }
+      if (partyJoinFailed(res)) return;
+      setStatus("Joined party!");
     }
     if (item && !item.readAt) await markRead(id);
     setPanelOpen(false);

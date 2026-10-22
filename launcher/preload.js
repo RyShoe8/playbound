@@ -179,6 +179,7 @@ contextBridge.exposeInMainWorld("playbound", {
   provisionPartyDiscord: (partyId) => ipcRenderer.invoke("provision-party-discord", partyId),
   // Join the party's overlay segment and point the game's saved-adapter file at it.
   prepareVirtualLan: (opts) => ipcRenderer.invoke("prepare-virtual-lan", opts),
+  releaseVirtualLan: (partyId) => ipcRenderer.invoke("release-virtual-lan", partyId),
   onVirtualLanProgress: (cb) => {
     const listener = (_event, msg) => cb(msg);
     ipcRenderer.on("virtual-lan-progress", listener);

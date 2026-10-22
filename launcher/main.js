@@ -12120,7 +12120,9 @@ ipcMain.handle("join-party", async (_event, partyId, password) => {
 
 ipcMain.handle("leave-party", async (_event, partyId) => {
   try {
-    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/leave`, { method: "POST" });
+    const result = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/leave`, { method: "POST" });
+    if (!result?.error) await releaseVirtualLanParty(partyId);
+    return result;
   } catch (err) {
     return { error: err.message };
   }
@@ -12164,6 +12166,9 @@ ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
       method: "PATCH",
       body: patch,
     });
+    if (!result?.error && patch.hostMode && patch.hostMode !== "self") {
+      await releaseVirtualLanParty(partyId);
+    }
     if (gamePick) void syncInstallsBeforeParty();
     return result;
   } catch (err) {
@@ -12219,7 +12224,9 @@ ipcMain.handle("release-self-host", async (_event, input = {}) => {
 
 ipcMain.handle("end-party", async (_event, partyId) => {
   try {
-    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, { method: "DELETE" });
+    const result = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, { method: "DELETE" });
+    if (!result?.error) await releaseVirtualLanParty(partyId);
+    return result;
   } catch (err) {
     return { error: err.message };
   }
@@ -12401,6 +12408,20 @@ function resolveGameDirForSlug(slug, editionSlug = null) {
  * file leaves the player picking from a dropdown anyway. Each failure returns
  * a reason the party window can show verbatim rather than a bare false.
  */
+let activeVirtualLanPartyId = null;
+
+async function releaseVirtualLanParty(partyId) {
+  if (!partyId || activeVirtualLanPartyId !== String(partyId)) return;
+  activeVirtualLanPartyId = null;
+  virtualLan.stopDiscoveryBridge();
+  await virtualLan.leaveNetwork();
+}
+
+ipcMain.handle("release-virtual-lan", async (_event, partyId) => {
+  await releaseVirtualLanParty(partyId);
+  return { ok: true };
+});
+
 ipcMain.handle("prepare-virtual-lan", async (event, opts) => {
   const { partyId, slug, adapterFile, editionSlug, isLeader } = opts || {};
   const reportProgress = (msg) => {
@@ -12448,6 +12469,7 @@ ipcMain.handle("prepare-virtual-lan", async (event, opts) => {
         downloadUrl: joined.needsInstall ? virtualLan.DOWNLOAD_URL : undefined,
       };
     }
+    activeVirtualLanPartyId = String(partyId);
 
     const adapterName = await virtualLan.waitForAdapter(45_000, reportProgress);
     if (!adapterName) {

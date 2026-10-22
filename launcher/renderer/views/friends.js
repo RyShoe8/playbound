@@ -49,6 +49,53 @@ import {
 let pendingJoin = null;
 /** Guards the poll firing a second join while the first is still going. */
 let joinInFlight = false;
+let autoLanPartyId = null;
+let autoLanConnected = false;
+let autoLanInFlight = null;
+let autoLanLastAttempt = 0;
+
+async function syncVirtualLanConnection(party) {
+  const shouldConnect = party?.id && party.status !== "ended" && party.hostMode === "self" &&
+    party.lan?.enabled && party.lan.status === "ready";
+  if (!shouldConnect) {
+    if (autoLanInFlight) await autoLanInFlight;
+    if (autoLanPartyId) await window.playbound.releaseVirtualLan?.(autoLanPartyId);
+    autoLanPartyId = null;
+    autoLanConnected = false;
+    autoLanLastAttempt = 0;
+    return;
+  }
+  if (autoLanPartyId !== party.id) {
+    if (autoLanInFlight) await autoLanInFlight;
+    if (autoLanPartyId) await window.playbound.releaseVirtualLan?.(autoLanPartyId);
+    autoLanPartyId = party.id;
+    autoLanConnected = false;
+    autoLanLastAttempt = 0;
+  }
+  if (autoLanConnected || autoLanInFlight || Date.now() - autoLanLastAttempt < 30_000 ||
+      !window.playbound.prepareVirtualLan) return;
+  autoLanLastAttempt = Date.now();
+  autoLanInFlight = (async () => {
+    setStatus("Connecting your PC to the party network…");
+    try {
+      // Enrol now. Join Game runs the same preparation again later to write
+      // any game-specific adapter file, once the game is installed.
+      const result = await window.playbound.prepareVirtualLan({
+        partyId: party.id, slug: party.gameSlug,
+        editionSlug: party.editionSlug || null, adapterFile: null,
+        isLeader: String(party.leaderId) === String(currentUserId(party)),
+      });
+      if (result?.error) setStatus(result.error, true);
+      else {
+        autoLanConnected = true;
+        setStatus("Connected to the private party network.");
+      }
+    } catch (error) {
+      setStatus(error?.message || "Could not join the party network.", true);
+    }
+  })().finally(() => { autoLanInFlight = null; });
+  await autoLanInFlight;
+}
 /*
  * Long enough for a cold room on a busy box — Veloren generates a world before
  * it listens — and short enough that a party is not left believing a join is
@@ -909,6 +956,9 @@ async function refreshFriendsData() {
     paintPartyArea(partiesData);
     syncFriendsPoll();
     const activeParty = Array.isArray(partiesData?.myParties) ? partiesData.myParties[0] : null;
+    void syncVirtualLanConnection(activeParty).catch((error) => {
+      setStatus(error?.message || "Could not update the party network connection.", true);
+    });
     if (activeParty?.id) void refreshPartyChat(activeParty);
 
     const incomingRequests = lastGoodRequests.incoming;
@@ -2233,6 +2283,17 @@ function buildPartyViewHtml(party) {
           .map((s) => `<li>${escapeHtml(String(s))}</li>`)
           .join("")}</ol>`
       : "";
+  const lanStatusHtml = lan.enabled
+    ? `<p class="${lan.status === "failed" || lan.configured === false ? "party-inline-note party-hosted-error" : "view-sub party-inline-note"}" role="status">${escapeHtml(
+        lan.configured === false
+          ? "Private party networking is unavailable right now."
+          : lan.status === "ready"
+          ? "Private party network ready. Each player connects when they join the game."
+          : lan.status === "failed"
+            ? lan.error || "Could not create the private party network."
+            : "Creating a private party network for everyone…"
+      )}</p>`
+    : "";
   const hostedStepsHtml =
     party.hostMode !== "self" && hosted.enabled && Array.isArray(hosted.steps) && hosted.steps.length
       ? `<ol class="party-lan-steps party-hosted-steps">${hosted.steps
@@ -2363,6 +2424,7 @@ function buildPartyViewHtml(party) {
             )}">${ICON.logout} ${leaveLabel}</button>
           </div>
           ${couchHtml}
+          ${lanStatusHtml}
           ${lanStepsHtml}
           ${hostedStepsHtml}
           <p class="party-voice-error" id="party-voice-error" style="display: none;"></p>
@@ -3335,8 +3397,15 @@ function wirePartyView(slot, party) {
     hostModeSelect.addEventListener("change", async () => {
       const mode = hostModeSelect.value;
       if (!mode) return;
-      await optimisticPartyAction(party, current => current,
+      setStatus(mode === "self" ? "Setting up your party network…" : "Switching away from your party network…");
+      const ok = await optimisticPartyAction(party, current => ({ ...current, hostMode: mode }),
         () => window.playbound.setPartyHostMode(partyId, mode), "Couldn't change where the game is hosted.");
+      if (ok) {
+        setStatus(mode === "self"
+          ? "Party network is starting. Everyone can join it from the party before launching."
+          : "Hosting mode changed. The private party network was released.");
+        void api.refreshFriendsData();
+      }
     });
     enhanceSelect(hostModeSelect);
   }

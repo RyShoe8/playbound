@@ -86,6 +86,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotifItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const shownRef = useRef<Set<string>>(new Set());
 
@@ -210,6 +211,13 @@ export function NotificationBell() {
               </button>
             ) : null}
           </div>
+          {joinError ? (
+            <p className="border-b border-border px-3 py-2 text-xs text-destructive" role="alert">
+              {joinError} {joinError === "Sign in again to join this party." ? (
+                <Link href="/login?callbackUrl=%2Ffriends" className="font-semibold underline">Sign in</Link>
+              ) : null}
+            </p>
+          ) : null}
           <ul className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
               <li className="px-3 py-6 text-center text-sm text-muted-foreground">No notifications yet.</li>
@@ -306,16 +314,23 @@ export function NotificationBell() {
                           type="button"
                           className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
                           onClick={async () => {
+                            setJoinError(null);
                             try {
-                              if (!n.readAt) void markRead(n.id);
-                              setOpen(false);
                               if (n.meta?.partyId) {
                                 const { usePartyStore } = await import("@/stores/partyStore");
-                                await usePartyStore.getState().joinParty(n.meta.partyId);
+                                const joined = await usePartyStore.getState().joinParty(n.meta.partyId);
+                                if (!joined) {
+                                  const error = usePartyStore.getState().error || "Could not join the party. Try again.";
+                                  setJoinError(/unauthorized|HTTP 401/i.test(error)
+                                    ? "Sign in again to join this party." : error);
+                                  return;
+                                }
                               }
+                              if (!n.readAt) void markRead(n.id);
+                              setOpen(false);
                               window.location.href = n.href || "/friends";
-                            } catch {
-                              window.location.href = n.href || "/friends";
+                            } catch (error) {
+                              setJoinError(error instanceof Error ? error.message : "Could not join the party. Try again.");
                             }
                           }}
                         >
