@@ -27,9 +27,9 @@ for (const signedOut of [false,true]) {
             await expect(page.locator('#view-multiplayer .server-table tbody tr')).toHaveCount(1);
             const bounds = await page.evaluate(() => {
               const server = document.querySelector('#view-multiplayer #mp-overview-servers-sec').getBoundingClientRect();
-              const rail = document.querySelector('#view-multiplayer .site-multiplayer-rail').getBoundingClientRect();
+              const parties = document.querySelector('#view-multiplayer .site-multiplayer-main').getBoundingClientRect();
               const wrapper = document.querySelector('#view-multiplayer #servers-table-wrap');
-              return {overlap:server.left < rail.right && rail.left < server.right && server.top < rail.bottom && rail.top < server.bottom,
+              return {overlap:server.left < parties.right && parties.left < server.right && server.top < parties.bottom && parties.top < server.bottom,
                 contained:wrapper.getBoundingClientRect().right <= server.right+1,
                 scrollable:getComputedStyle(wrapper).overflowX === 'auto'};
             });
