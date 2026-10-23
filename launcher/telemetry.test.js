@@ -44,6 +44,19 @@ async function main() {
       "a play session has one start and one end event"
     );
 
+    // A game can launch an edition other than the install record's default.
+    // The exit must use that launched edition, or no duration is sent.
+    const daggerfallOnline = { gameSlug: "daggerfall", editionSlug: "daggerfall-online" };
+    await telemetry.editionLaunched(daggerfallOnline);
+    const unmatched = await telemetry.editionExited({ gameSlug: "daggerfall", editionSlug: "classic-dos" });
+    assert.equal(unmatched.ok, false);
+    await telemetry.editionExited(daggerfallOnline);
+    assert.deepEqual(events.slice(-2).map((item) => [item.event, item.properties.editionSlug]), [
+      ["edition_launched", "daggerfall-online"],
+      ["game_ended", "daggerfall-online"],
+    ]);
+    assert.equal(typeof events.at(-1).properties.durationMs, "number");
+
     // Offline events are queued and resent, oldest first, once the site answers.
     const os = require("node:os");
     const fs = require("node:fs");

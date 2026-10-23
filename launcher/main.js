@@ -1667,14 +1667,17 @@ function editionInfoFor(slug, extra = {}) {
   } catch {
     stateMeta = {};
   }
+  const selectedSlug = extra.editionSlug || stateMeta.editionSlug || entry?.editionSlug || "official";
+  const selectedEdition = Array.isArray(entry?.editions)
+    ? entry.editions.find((ed) => (ed.editionSlug || ed.slug) === selectedSlug)
+    : null;
   return {
     gameSlug: slug,
     gameTitle: entry?.title,
-    editionSlug:
-      extra.editionSlug || stateMeta.editionSlug || entry?.editionSlug || "official",
+    editionSlug: selectedSlug,
     editionName:
-      extra.editionName || stateMeta.editionName || entry?.editionName || "Official",
-    editionType: extra.editionType || stateMeta.editionType || entry?.editionType || "official",
+      extra.editionName || selectedEdition?.name || stateMeta.editionName || entry?.editionName || "Official",
+    editionType: extra.editionType || selectedEdition?.type || stateMeta.editionType || entry?.editionType || "official",
     ...extra,
   };
 }
@@ -7647,7 +7650,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     launchEnv = playboundGameToken.withGameToken(launchEnv, gameToken);
   }
 
-  let spawnOpts = { env: launchEnv };
+  let spawnOpts = { env: launchEnv, editionSlug: info.editionSlug || edSlug };
 
   const steamRuntime = steamRuntimeForLaunch(
     entry?.kind,
@@ -7833,7 +7836,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       const offered = await offerManagedJavaInstall({ gameTitle: entry?.title || slug });
       if (offered.installed) {
         try {
-          await spawnTrackedExe(slug, launchPath, args, { env: launchEnv });
+          await spawnTrackedExe(slug, launchPath, args, { env: launchEnv, editionSlug: info.editionSlug || edSlug });
           // Fall through to success path below via jumping past failure
           void telemetry.editionLaunched(
             editionInfoFor(slug, {
@@ -8065,7 +8068,7 @@ const activeLaunches = new Map();
 const GAME_EXIT_DEBOUNCE_MS = 3000;
 const GAME_RUNNING_POLL_MS = 10000;
 
-function sendGameExited(slug) {
+function sendGameExited(slug, editionSlug) {
   // Stale crop data from this game must not leak into the next one's stream.
   lastCropRect = null;
   cropMeasuredForSlug = null;
@@ -8074,7 +8077,7 @@ function sendGameExited(slug) {
   stopCropTracking();
   // Reported from here rather than the renderer so a session still closes when
   // the window is hidden to the tray or the game outlived the launcher UI.
-  void telemetry.editionExited(editionInfoFor(slug));
+  void telemetry.editionExited(editionInfoFor(slug, { editionSlug }));
   void snapshotSavesAfterPlay(slug);
   try {
     void deviceControllerStorage.onGameExited(app.getPath("userData"), slug);
@@ -8477,11 +8480,11 @@ function onSpawnedProcessGone(slug) {
         confirmedGone += 1;
         if (confirmedGone < 2) return;
         clearLaunchTracking(slug, { beat: true });
-        sendGameExited(slug);
+        sendGameExited(slug, current.editionSlug);
       }, GAME_RUNNING_POLL_MS);
     } else {
       clearLaunchTracking(slug, { beat: true });
-      sendGameExited(slug);
+      sendGameExited(slug, current.editionSlug);
     }
   }, GAME_EXIT_DEBOUNCE_MS);
 }
@@ -8569,6 +8572,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
 
   activeLaunches.set(slug, {
     child,
+    editionSlug: opts.editionSlug,
     imageNames,
     pollTimer: null,
     settleTimer: null,

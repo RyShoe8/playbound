@@ -3,6 +3,26 @@
 const fs = require("fs");
 const path = require("path");
 
+const tesArena = {
+  slugs: ["tes-arena"],
+  resolve(state, h) {
+    const { launchPath, info, edSlug, slug } = state;
+    if (edSlug === "opentesarena") return state;
+    if (path.basename(launchPath || "").toUpperCase() === "A.EXE") return state;
+    const roots = [info?.dir, info?.dir && path.join(info.dir, "ARENA"), launchPath && path.dirname(launchPath)].filter(Boolean);
+    const dosExe = roots.map((root) => path.join(root, "A.EXE")).find((candidate) => {
+      try { return fs.statSync(candidate).isFile(); } catch { return false; }
+    });
+    if (!dosExe) {
+      const err = new Error("Arena's A.EXE is missing from this install. Reinstall The Elder Scrolls: Arena in PlayBound to restore its DOS game files.");
+      err.code = "ARENA_FILES_MISSING";
+      throw err;
+    }
+    h.persistEditionExe(slug, edSlug, launchPath, dosExe);
+    return { ...state, launchPath: dosExe, info: { ...info, exe: dosExe } };
+  },
+};
+
 /*
  * Launch-path fixes: games whose installer leaves a starter/updater exe that
  * drops join arguments, so the real engine binary is chosen here. Moved
@@ -221,4 +241,4 @@ const ysoccer = {
   },
 };
 
-module.exports = [unvanquished, xonotic, freedoomZandronum, shatteredPixelDungeon, ysoccer];
+module.exports = [tesArena, unvanquished, xonotic, freedoomZandronum, shatteredPixelDungeon, ysoccer];

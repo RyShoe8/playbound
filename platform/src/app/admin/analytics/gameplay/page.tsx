@@ -12,6 +12,7 @@ import { PeriodStatTile, SectionHeader, StatTile } from "@/components/ui/bits";
 import { emptyPeriodCounts, periodTelemetryCounts } from "@/lib/admin/analyticsPeriods";
 import { ADMIN_TZ_COOKIE, normalizeTimeZone, zonedDateEndExclusive, zonedDateStart, zonedDaysAgo } from "@/lib/admin/zonedTime";
 import { TimezoneField } from "@/components/admin/AdminTimezone";
+import { GAMEPLAY_ID, PLAYER_ID, PLAY_END_MATCH, PLAY_START_MATCH } from "@/lib/admin/gameplayEvents";
 
 function formatDuration(ms: number): string {
   if (!ms || ms < 0) return "—";
@@ -33,6 +34,7 @@ function formatTotalPlayTime(ms: number): string {
 
 type SearchParams = Promise<{
   game?: string;
+  edition?: string;
   from?: string;
   to?: string;
   tz?: string;
@@ -46,8 +48,22 @@ const MOBILE_OUTBOUND_SURFACES = [
   "library_install",
 ];
 
+function gameplayHref(id: { gameSlug: string; editionSlug: string | null }): string {
+  const game = encodeURIComponent(id.gameSlug);
+  const edition = encodeURIComponent(id.editionSlug || "__base__");
+  return `/admin/analytics/gameplay?game=${game}&edition=${edition}`;
+}
+
+function editionLabel(slug: string | null, name?: string | null): string {
+  if (!slug) return "Base game";
+  // Older launcher events sometimes used the install's default name for a
+  // different edition. The slug is more trustworthy in that case.
+  return name && (name !== "Official" || slug === "official") ? name : slug;
+}
+
 async function loadGameplayAnalytics(filters: {
   game?: string;
+  edition?: string;
   from?: string;
   to?: string;
   tz: string;
@@ -58,10 +74,11 @@ async function loadGameplayAnalytics(filters: {
   const d7 = zonedDaysAgo(7, now, filters.tz);
   const d14 = zonedDaysAgo(14, now, filters.tz);
 
-  // Play sessions and mobile outbound clicks are distinct events.
+  // Use edition-aware launcher events instead of duplicate renderer reports.
   const recentFilter: Record<string, unknown> = {
     $or: [
-      { event: { $in: ["game_started", "game_finished"] } },
+      ...PLAY_START_MATCH.$or,
+      ...PLAY_END_MATCH.$or,
       {
         event: "official_download_clicked",
         "properties.surface": { $in: MOBILE_OUTBOUND_SURFACES },
@@ -70,6 +87,11 @@ async function loadGameplayAnalytics(filters: {
   };
   if (filters.game) {
     recentFilter["properties.gameSlug"] = filters.game;
+  }
+  if (filters.edition) {
+    recentFilter["properties.editionSlug"] = filters.edition === "__base__"
+      ? { $in: [null, ""] }
+      : filters.edition;
   }
   // Calendar days in the admin's timezone; "to" includes the whole day it names.
   const createdAt: { $gte?: Date; $lt?: Date } = {};
@@ -90,17 +112,17 @@ async function loadGameplayAnalytics(filters: {
     mobileOutboundClicks7d,
     sessionsByPlatformRaw,
   ] = await Promise.all([
-    // Total game_started events in last 7 days
+    // Canonical launcher or browser start, once per session.
     TelemetryEvent.countDocuments({
-      event: "game_started",
+      ...PLAY_START_MATCH,
       createdAt: { $gte: d7 },
     }),
 
-    // Total play time from game_finished events (sum durationMs)
+    // Canonical launcher or browser end, with edition-aware duration.
     TelemetryEvent.aggregate<{ _id: null; totalMs: number; count: number; avgMs: number }>([
       {
         $match: {
-          event: "game_finished",
+          ...PLAY_END_MATCH,
           createdAt: { $gte: d7 },
           "properties.durationMs": { $exists: true, $gt: 0 },
         },
@@ -119,27 +141,23 @@ async function loadGameplayAnalytics(filters: {
     TelemetryEvent.aggregate<{ _id: null; count: number }>([
       {
         $match: {
-          event: "game_started",
+          ...PLAY_START_MATCH,
           createdAt: { $gte: d7 },
         },
       },
       {
         $group: {
-          _id: {
-            $ifNull: [
-              { $cond: [{ $eq: ["$userId", null] }, "$sessionId", "$userId"] },
-              "$sessionId",
-            ],
-          },
+          _id: PLAYER_ID,
         },
       },
       { $count: "count" },
     ]),
 
-    // Top games by play time
+    // Each game/edition combination has its own play-time row.
     TelemetryEvent.aggregate<{
-      _id: string;
+      _id: { gameSlug: string; editionSlug: string | null };
       title: string;
+      editionName: string | null;
       totalMs: number;
       sessions: number;
       avgMs: number;
@@ -147,7 +165,7 @@ async function loadGameplayAnalytics(filters: {
     }>([
       {
         $match: {
-          event: "game_finished",
+          ...PLAY_END_MATCH,
           createdAt: { $gte: d7 },
           "properties.durationMs": { $exists: true, $gt: 0 },
           "properties.gameSlug": { $exists: true },
@@ -155,19 +173,13 @@ async function loadGameplayAnalytics(filters: {
       },
       {
         $group: {
-          _id: "$properties.gameSlug",
+          _id: GAMEPLAY_ID,
           title: { $first: "$properties.gameTitle" },
+          editionName: { $first: "$properties.editionName" },
           totalMs: { $sum: "$properties.durationMs" },
           sessions: { $sum: 1 },
           avgMs: { $avg: "$properties.durationMs" },
-          players: {
-            $addToSet: {
-              $ifNull: [
-                { $cond: [{ $eq: ["$userId", null] }, "$sessionId", "$userId"] },
-                "$sessionId",
-              ],
-            },
-          },
+          players: { $addToSet: PLAYER_ID },
         },
       },
       { $addFields: { players: { $size: "$players" } } },
@@ -175,33 +187,28 @@ async function loadGameplayAnalytics(filters: {
       { $limit: 15 },
     ]),
 
-    // Top games by session count (from game_started)
+    // Top games and editions by session count.
     TelemetryEvent.aggregate<{
-      _id: string;
+      _id: { gameSlug: string; editionSlug: string | null };
       title: string;
+      editionName: string | null;
       sessions: number;
       players: number;
     }>([
       {
         $match: {
-          event: "game_started",
+          ...PLAY_START_MATCH,
           createdAt: { $gte: d7 },
           "properties.gameSlug": { $exists: true },
         },
       },
       {
         $group: {
-          _id: "$properties.gameSlug",
+          _id: GAMEPLAY_ID,
           title: { $first: "$properties.gameTitle" },
+          editionName: { $first: "$properties.editionName" },
           sessions: { $sum: 1 },
-          players: {
-            $addToSet: {
-              $ifNull: [
-                { $cond: [{ $eq: ["$userId", null] }, "$sessionId", "$userId"] },
-                "$sessionId",
-              ],
-            },
-          },
+          players: { $addToSet: PLAYER_ID },
         },
       },
       { $addFields: { players: { $size: "$players" } } },
@@ -213,7 +220,7 @@ async function loadGameplayAnalytics(filters: {
     TelemetryEvent.aggregate<{ _id: string; count: number }>([
       {
         $match: {
-          event: "game_started",
+          ...PLAY_START_MATCH,
           createdAt: { $gte: d14 },
         },
       },
@@ -244,7 +251,7 @@ async function loadGameplayAnalytics(filters: {
     TelemetryEvent.aggregate<{ _id: string; count: number }>([
       {
         $match: {
-          event: "game_started",
+          ...PLAY_START_MATCH,
           createdAt: { $gte: d7 },
         },
       },
@@ -363,6 +370,7 @@ export default async function GameplayAnalyticsPage({
     ] = await Promise.all([
       loadGameplayAnalytics({
         game: sp.game,
+        edition: sp.edition,
         from: sp.from,
         to: sp.to,
         tz,
@@ -406,8 +414,9 @@ export default async function GameplayAnalyticsPage({
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Gameplay</h1>
         <p className="mt-1 text-muted-foreground">
-          Play sessions use <code className="text-xs">game_started</code> /{" "}
-          <code className="text-xs">game_finished</code>. Mobile store and official-site
+          Launcher editions use <code className="text-xs">edition_launched</code> /{" "}
+          <code className="text-xs">game_ended</code>; browser play uses game_started / game_finished.{" "}
+          Each edition has its own gameplay totals. Mobile store and official-site
           opens are outbound clicks, not confirmed play sessions.
         </p>
       </div>
@@ -529,7 +538,7 @@ export default async function GameplayAnalyticsPage({
           {/* ── Top games by play time ─────────────────────────────────── */}
           <section>
             <SectionHeader
-              title="Top games by play time"
+              title="Top games and editions by play time"
               subtitle="Last 7 days"
             />
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -556,16 +565,19 @@ export default async function GameplayAnalyticsPage({
                   ) : (
                     data.topGamesByTime.map((row) => (
                       <tr
-                        key={row._id}
+                        key={`${row._id.gameSlug}:${row._id.editionSlug || "__base__"}`}
                         className="border-t border-border bg-card"
                       >
                         <td className="px-4 py-2.5">
                           <Link
-                            href={`/admin/analytics/gameplay?game=${encodeURIComponent(row._id)}`}
+                            href={gameplayHref(row._id)}
                             className="font-semibold text-primary hover:underline"
                           >
-                            {row.title || row._id}
+                            {row.title || row._id.gameSlug}
                           </Link>
+                          <span className="block text-xs text-muted-foreground">
+                            {editionLabel(row._id.editionSlug, row.editionName)}
+                          </span>
                         </td>
                         <td className="px-4 py-2.5 font-mono">
                           {row.sessions}
@@ -590,7 +602,7 @@ export default async function GameplayAnalyticsPage({
           {/* ── Top games by session count ─────────────────────────────── */}
           <section>
             <SectionHeader
-              title="Top games by sessions"
+              title="Top games and editions by sessions"
               subtitle="Last 7 days"
             />
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -615,16 +627,19 @@ export default async function GameplayAnalyticsPage({
                   ) : (
                     data.topGamesBySessions.map((row) => (
                       <tr
-                        key={row._id}
+                        key={`${row._id.gameSlug}:${row._id.editionSlug || "__base__"}`}
                         className="border-t border-border bg-card"
                       >
                         <td className="px-4 py-2.5">
                           <Link
-                            href={`/admin/analytics/gameplay?game=${encodeURIComponent(row._id)}`}
+                            href={gameplayHref(row._id)}
                             className="font-semibold text-primary hover:underline"
                           >
-                            {row.title || row._id}
+                            {row.title || row._id.gameSlug}
                           </Link>
+                          <span className="block text-xs text-muted-foreground">
+                            {editionLabel(row._id.editionSlug, row.editionName)}
+                          </span>
                         </td>
                         <td className="px-4 py-2.5 font-mono">
                           {row.sessions}
@@ -646,8 +661,8 @@ export default async function GameplayAnalyticsPage({
               title="Recent activity"
               subtitle={
                 sp.game
-                  ? `Filtered to ${sp.game}`
-                  : "Sessions and mobile store launches · latest 40"
+                  ? `Filtered to ${sp.game}${sp.edition ? ` / ${sp.edition === "__base__" ? "Base game" : sp.edition}` : ""}`
+                  : "Game and edition activity, plus mobile store launches · latest 40"
               }
             />
             <form
@@ -662,6 +677,15 @@ export default async function GameplayAnalyticsPage({
                   name="game"
                   defaultValue={sp.game || ""}
                   placeholder="openra"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
+                Edition slug
+                <input
+                  name="edition"
+                  defaultValue={sp.edition || ""}
+                  placeholder="All editions"
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
               </label>
@@ -689,7 +713,7 @@ export default async function GameplayAnalyticsPage({
               >
                 Filter
               </button>
-              {(sp.game || sp.from || sp.to) && (
+              {(sp.game || sp.edition || sp.from || sp.to) && (
                 <Link
                   href="/admin/analytics/gameplay"
                   className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
@@ -746,14 +770,14 @@ export default async function GameplayAnalyticsPage({
                           <td className="px-4 py-2.5">
                             <span
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                                doc.event === "game_started"
+                                doc.event === "game_started" || doc.event === "edition_launched"
                                   ? "bg-play/15 text-play"
                                   : doc.event === "official_download_clicked"
                                     ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
                                     : "bg-primary/15 text-primary"
                               }`}
                             >
-                              {doc.event === "game_started"
+                              {doc.event === "game_started" || doc.event === "edition_launched"
                                 ? "Started"
                                 : doc.event === "official_download_clicked"
                                   ? "Outbound"
@@ -761,12 +785,15 @@ export default async function GameplayAnalyticsPage({
                             </span>
                           </td>
                           <td className="px-4 py-2.5 font-semibold">
-                            {(props.gameTitle as string) ||
-                              (props.gameSlug as string) ||
-                              "—"}
+                            {(props.gameTitle as string) || (props.gameSlug as string) || "—"}
+                            {typeof props.editionSlug === "string" && props.editionSlug && (
+                              <span className="block text-xs font-normal text-muted-foreground">
+                                {editionLabel(props.editionSlug, typeof props.editionName === "string" ? props.editionName : null)}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5 font-mono text-xs">
-                            {doc.event === "game_finished" &&
+                            {(doc.event === "game_finished" || doc.event === "game_ended") &&
                             typeof props.durationMs === "number"
                               ? formatDuration(props.durationMs)
                               : "—"}
