@@ -10,6 +10,7 @@ const { spawn, execFile } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
+const daggerfallData = require("../daggerfallData");
 const { ensureGameInstallRecord, exeOnDisk, findExecutable, loadSettings, loadState, normalizeFsPath, pathUnderRoot, saveSettings, saveState, sevenZipBinary, syncGameInstallSummary } = require("./core");
 
 function listUninstallRegistryDump() {
@@ -268,9 +269,7 @@ async function prepareClassicDosInstall(entry, gameDir) {
   const fallExe = findExecutable(gameDir, "FALL.EXE");
   if (!fallExe) throw new Error("Daggerfall Classic is missing FALL.EXE");
   const daggerDir = path.dirname(fallExe);
-  if (!fs.existsSync(path.join(daggerDir, "ARENA2", "GLOBAL.BSA"))) {
-    throw new Error("Daggerfall Classic is missing its ARENA2 game data");
-  }
+  daggerfallData.completeClassicArena2(fs, path, path.join(daggerDir, "ARENA2"));
   const config = [
     "type dfall_huge",
     "path c:\\arena2\\",

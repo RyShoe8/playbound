@@ -230,6 +230,29 @@ function copyTree(fs, path, from, to, skip) {
   }
 }
 
+/** Finish the CD extraction in place, just as Bethesda's DOS installer does. */
+function completeClassicArena2(fs, path, arena2Dir, unpack = unpackPackedDat) {
+  const missing = missingArena2(fs, arena2Dir);
+  if (missing === null) throw new Error("Daggerfall Classic is missing its ARENA2 game data");
+  const sound = findCaseInsensitive(fs, path, arena2Dir, "DAGGER.SND");
+  if (missing.length || !sound) {
+    const packed = findCaseInsensitive(fs, path, arena2Dir, "PACKED.DAT");
+    if (!packed) throw new Error(`Daggerfall Classic game data is incomplete (missing ${[...missing, ...(!sound ? ["DAGGER.SND"] : [])].join(", ")}); PACKED.DAT is unavailable`);
+    for (const file of unpack(fs.readFileSync(packed))) {
+      const dest = path.join(arena2Dir, file.name);
+      if (!fs.existsSync(dest)) fs.writeFileSync(dest, file.data);
+    }
+  }
+  const stillMissing = missingArena2(fs, arena2Dir);
+  if (!stillMissing || stillMissing.length) {
+    throw new Error(`Daggerfall Classic game data is incomplete (missing ${(stillMissing || REQUIRED_ARENA2).join(", ")})`);
+  }
+  if (!findCaseInsensitive(fs, path, arena2Dir, "DAGGER.SND")) {
+    throw new Error("Daggerfall Classic game data is incomplete (missing DAGGER.SND)");
+  }
+  return arena2Dir;
+}
+
 /**
  * Build a complete ARENA2 folder in `destDir` from Bethesda's freeware download.
  *
@@ -405,6 +428,7 @@ module.exports = {
   BETHESDA_FREEWARE_URL,
   explode,
   unpackPackedDat,
+  completeClassicArena2,
   missingArena2,
   installFreewareArena2,
   applyDaggerfallPatch,

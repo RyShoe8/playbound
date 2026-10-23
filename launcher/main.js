@@ -4536,10 +4536,16 @@ async function offerDaggerfallBaseFirst(slug, editionSlug) {
     daggerfallBaseDeclined.add(editionSlug);
     return "proceed";
   }
-  // Queue the base game first; the edition queues behind it below.
-  void installGame(slug, null, daggerfallBaseFirst.BASE_EDITION).catch((err) => {
-    console.warn("[daggerfall] base game install did not complete:", err?.message || err);
-  });
+  // Complete and verify the base install before the engine edition starts.
+  const base = await installGame(slug, null, daggerfallBaseFirst.BASE_EDITION);
+  if (base?.status !== "installed") {
+    throw new Error("Daggerfall's game files did not finish installing. Retry the base game before installing this edition.");
+  }
+  const installed = loadState().daggerfall;
+  const baseDir = installed && listEditionEntries(installed).find((edition) => edition.editionSlug === daggerfallBaseFirst.BASE_EDITION)?.dir;
+  if (!baseDir || !daggerfallBaseFirst.baseFilesPresent({ fs, path, roots: [baseDir], missingArena2: daggerfallData.missingArena2 })) {
+    throw new Error("Daggerfall's game files are incomplete. Retry the Classic DOS install before installing this edition.");
+  }
   return "proceed";
 }
 
@@ -5970,6 +5976,11 @@ async function maybeAddOpenMwControllerMappings() {
 }
 
 async function maybeApplyEditionPostInstall(entry, gameDir) {
+  if (entry?.slug === "daggerfall") {
+    if (entry.editionSlug === "daggerfall-online") await maybePrepareDaggerfallOnline();
+    else await maybeRepairDaggerfallUnityInstall(entry.slug, { dir: gameDir }, entry.editionSlug);
+    return;
+  }
   if (!entry?.postInstallEqw && entry?.editionSlug !== "project-quarm") return;
   try {
     const repo = "CoastalRedwood/eqw_takp";
@@ -6004,13 +6015,6 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
     await maybeRepairZeldaMudoraInstall(entry.slug, { dir: gameDir });
   }
 
-  if (entry?.slug === "daggerfall") {
-    await maybeRepairDaggerfallUnityInstall(entry.slug, { dir: gameDir }, entry.editionSlug);
-  }
-
-  if (entry?.postInstallDaggerfallData) {
-    await maybePrepareDaggerfallOnline();
-  }
 }
 
 /**
@@ -6052,8 +6056,7 @@ async function maybePrepareDaggerfallOnline() {
     await fsp.mkdir(configDir, { recursive: true });
     await fsp.writeFile(configFile, JSON.stringify({ ...config, arena2Path: arena2 }, null, 2), "utf8");
   } catch (err) {
-    // The app still runs and will ask the player to point it at their own copy.
-    console.warn("[dfo] game data setup skipped:", err?.message || err);
+    throw new Error(`Daggerfall Online game-data setup failed: ${err?.message || err}`);
   }
 }
 

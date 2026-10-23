@@ -41,5 +41,6 @@ test("an incomplete or missing copy does not count as the base game being presen
   const partial = tree(["ARENA2/ARCH3D.BSA"]);
   const empty = tree(["readme.txt"]);
   assert.equal(baseFilesPresent({ fs, path, roots: [partial, empty, "/does/not/exist", null], missingArena2 }), false);
+  assert.equal(baseFilesPresent({ fs, path, roots: [partial], missingArena2: () => [] }), false);
   assert.equal(baseFilesPresent({ fs, path, roots: [], missingArena2 }), false);
 });

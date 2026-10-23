@@ -46,7 +46,7 @@ function findCompleteArena2(fs, path, dir, missingArena2, depth = 3) {
     if (!entry.isDirectory()) continue;
     const child = path.join(dir, entry.name);
     if (entry.name.toUpperCase() === "ARENA2") {
-      if (missingArena2(fs, child)?.length === 0) return child;
+      if (missingArena2(fs, child)?.length === 0 && entriesAreComplete(fs, path, child)) return child;
       continue;
     }
     if (depth > 0) {
@@ -55,6 +55,14 @@ function findCompleteArena2(fs, path, dir, missingArena2, depth = 3) {
     }
   }
   return null;
+}
+
+function entriesAreComplete(fs, path, arena2Dir) {
+  try {
+    return fs.readdirSync(arena2Dir).some((name) => name.toUpperCase() === "DAGGER.SND" && fs.statSync(path.join(arena2Dir, name)).size > 0);
+  } catch {
+    return false;
+  }
 }
 
 /**
