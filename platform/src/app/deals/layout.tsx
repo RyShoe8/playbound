@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 
 /**
- * Built through pageMetadata for the same reasons /free-games is: it supplies
+ * Built through pageMetadata: it supplies
  * `alternates`, so this page declares its own canonical instead of inheriting
  * the homepage's, and it leaves the brand to the root layout's
  * `%s · PlayBound` template rather than repeating it.

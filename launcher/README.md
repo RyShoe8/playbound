@@ -41,8 +41,14 @@ choice. See [`docs/couch-mode.md`](../docs/couch-mode.md) and
 
 Windows controller support is **bundled**: ViGEmBus setup and
 `PlayBound.VigemHost.exe` ship in `resources/vigem/`. Setup installs
-automatically with PlayBound Setup or on first **Start Couch Mode** (one UAC
+ViGEmBus and NetBird after explaining what each component does and asking for
+approval. Silent launcher updates keep existing installations. PlayBound checks
+both when a game needs them and offers repair if either is missing (one UAC
 prompt possible). No separate driver download for players.
+
+Games that need Java, .NET, DOSBox Staging, RetroArch, or SteamCMD get a named
+first-use setup prompt and visible preparation progress. Portable runtimes live
+in PlayBound's data folder.
 
 Signing happens **only** via `dist:prod`. Signings are metered (see
 [Release Signing](#release-signing)), so no other command can spend them.

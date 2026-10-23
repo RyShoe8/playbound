@@ -32,7 +32,7 @@ export function hostingReadiness(key) {
   if (key==="wolfenstein-enemy-territory") reason="Requires offline enrollment, root-promoted 2.85.0 engine/assets and the original short-ID save path. Native query, restart and rollback passed. Omni-bot and public listing remain disabled in the isolated profile pending separate acceptance.";
   if (key==="openmohaa") reason="Requires offline enrollment, a root-promoted dedicated engine, pinned base-game assets and the original eight-character save suffix. Native query, restart and rollback passed. New isolated engine/assets need operator review.";
   if (key==="terraria") reason="Requires offline enrollment and a root-published matching native loader, assembly and libraries. Private world creation/reload, connection-based occupancy, same-process recovery, scoped graceful stop and snapshot restore passed. Executable mods remain disabled.";
-  if (key==="hypersomnia") reason="Requires offline enrollment and a root-promoted sealed headless AppImage. Bounded extraction, port fence, same-process recovery, stop and data rollback passed. Human Join remains unverified for the isolated profile.";
+  if (key==="hypersomnia") reason="Requires offline enrollment and a root-promoted sealed headless AppImage. Bounded extraction, port fence, same-process recovery, stop and data rollback passed.";
   if (key==="warzone-2100") reason="Requires offline enrollment and root-promoted paired engine/assets. Typed autohost settings, connection-based occupancy, same-process agent recovery, stop and data rollback passed. Executable mod installation remains disabled.";
   if (key==="freeciv") reason="Requires offline enrollment and root-promoted paired engine/libraries/rulesets. Native query, same-process agent recovery, stop and data rollback passed. Executable ruleset/plugin installation remains disabled.";
   if (key==="freedoom") reason="Only the explicit Zandronum edition with the pinned Freedoom 2 IWAD is supported by this identity profile. Requires offline enrollment and a root-promoted engine/assets. Native query, restart and rollback passed; base/other Doom engines are excluded.";
@@ -55,16 +55,16 @@ export function hostingReadiness(key) {
   if (key==="bombsquad") { isolation="blocked"; reason="Local paired Python/controller namespace candidate implemented; the previous isolated transport startup failed. Native transport, controller shutdown, recovery and restore acceptance remain required. Do not enroll customers."; }
   if (Object.hasOwn(PENDING_BOUNDARIES,key)) reason=PENDING_BOUNDARIES[key];
   if (key==="counter-strike-source") { isolation="blocked"; reason="Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), port bind, same-process agent restart, stop and migration rollback passed on the VPS. RCON, protected restore and customer control acceptance are still required before enrollment."; }
-  if (key==="open-fortress") { isolation="blocked"; reason="Starts inside the per-UID AppArmor profile with its server library mapped as server.so (symlink in a private tmpfs), but the engine exits silently right after its crash handler initialises and never binds. Needs a trace of the engine inside the namespace before acceptance."; }
+  if (key==="open-fortress") { isolation="blocked"; reason="A disposable root-command fixture binds UDP and TCP under AppArmor, seccomp, cgroup, bind-port and host-network policy. Managed-room startup, query, restart, controls and protected restore remain unverified. Customer enrollment stays blocked."; }
   if (key==="battlefield-1942-anthology") { isolation="blocked"; reason="Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), sealed stock settings, same-process agent restart, stop and migration rollback passed on the VPS. Protected restore and customer control acceptance are still required before enrollment."; }
   let contentReason="Plugin and Workshop installation remains disabled until this game's tenant boundary and its content source/compatibility/rollback path pass acceptance.";
   if (key === "re-volt-rvgl") {
     isolation = "operator_rollout";
-    reason = "Fresh private-UID provisioning, root-managed lobby start, live capture/navigation, same-process agent restart and stop passed on the VPS. Enrollment requires an explicit tier selection; human Join and a complete race remain unverified. RVGL has no world-data backup support or enforced lobby player cap.";
+    reason = "Fresh private-UID provisioning, root-managed lobby start, live capture/navigation, same-process agent restart and stop passed on the VPS. Enrollment requires an explicit tier selection. A complete race remains unverified; RVGL has no world-data backup support or enforced lobby player cap.";
   }
   if (key === "core-keeper") {
     isolation = "blocked";
-    reason = "Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. Human Join and UID-aware controls remain unverified; customer enrollment remains unavailable.";
+    reason = "Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. UID-aware controls remain unverified; customer enrollment remains unavailable.";
   }
   if (key==="luanti") contentReason="Executable mods remain disabled: the pinned LuaJIT engine predates GHSA-g596-mf82-w8c3's fix. Engine mitigation/upgrade and content acceptance are required.";
   return {isolation,identityProfile:profile||null,reason,executableContentEnabled:false,contentReason};

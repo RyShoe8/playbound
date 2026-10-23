@@ -133,7 +133,7 @@ function showNotificationToast(n) {
         inviteId
       )}" data-id="${escapeHtml(n.id)}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(
       n.meta?.gameSlug || ""
-    )}">Play</button>
+    )}">${n.meta?.partyRequest ? "Start Party" : "Play"}</button>
       <button type="button" class="pb-toast-btn" data-action="toast-decline-invite" data-invite="${escapeHtml(
         inviteId
       )}" data-id="${escapeHtml(n.id)}">Decline</button>
@@ -192,9 +192,18 @@ function showNotificationToast(n) {
   toast.querySelector('[data-action="toast-accept-invite"]')?.addEventListener("click", async (e) => {
     e.stopPropagation();
     dismissToast(toast);
-    await window.playbound.playInviteAction?.(inviteId, "accept");
+    const result = await window.playbound.playInviteAction?.(inviteId, "accept");
+    if (result?.error || result?.ok === false) {
+      setStatus(result?.error || "Could not accept the invitation.", true);
+      return;
+    }
     void markRead(n.id);
-    await openHref(n.href || (n.meta?.gameSlug ? `/games/${n.meta.gameSlug}` : "/friends"), n.meta);
+    if (result?.party) {
+      await api.navigateTo?.("friends");
+      void api.refreshFriendsData?.();
+    } else {
+      await openHref(n.href || (n.meta?.gameSlug ? `/games/${n.meta.gameSlug}` : "/friends"), n.meta);
+    }
   });
 
   toast.querySelector('[data-action="toast-decline-invite"]')?.addEventListener("click", async (e) => {
@@ -338,7 +347,7 @@ function paintList() {
             inviteId
           )}" data-id="${escapeHtml(n.id)}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(
           n.meta?.gameSlug || ""
-        )}">Play</button>
+        )}">${n.meta?.partyRequest ? "Start Party" : "Play"}</button>
           <button type="button" class="notif-action" data-action="decline-invite" data-invite="${escapeHtml(
             inviteId
           )}" data-id="${escapeHtml(n.id)}">Decline</button>
@@ -404,10 +413,19 @@ async function onListClick(e) {
     return;
   }
   if (action === "accept-invite" && inviteId) {
-    await window.playbound.playInviteAction?.(inviteId, "accept");
+    const result = await window.playbound.playInviteAction?.(inviteId, "accept");
+    if (result?.error || result?.ok === false) {
+      setStatus(result?.error || "Could not accept the invitation.", true);
+      return;
+    }
     if (item && !item.readAt) await markRead(id);
     setPanelOpen(false);
-    await openHref(href || (slug ? `/games/${slug}` : "/friends"), item?.meta);
+    if (result?.party) {
+      await api.navigateTo?.("friends");
+      void api.refreshFriendsData?.();
+    } else {
+      await openHref(href || (slug ? `/games/${slug}` : "/friends"), item?.meta);
+    }
     return;
   }
   if (action === "decline-invite" && inviteId) {

@@ -7,8 +7,23 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const path = require("node:path");
+const os = require("node:os");
+const { randomUUID } = require("node:crypto");
 
-const { dosBoxLaunchSpec, pickDosBoxAsset } = require("./ManagedDosBox");
+const { dosBoxLaunchSpec, pickDosBoxAsset, createManagedDosBox } = require("./ManagedDosBox");
+
+test("declining DOSBox setup never starts a download", async () => {
+  const managed = createManagedDosBox({
+    userDataPath: path.join(os.tmpdir(), `playbound-dosbox-${randomUUID()}`),
+    loadSettings: () => ({}),
+    saveSettings: () => {},
+    onBeforeInstall: async () => false,
+    downloadTo: async () => { throw new Error("download must not start after cancellation"); },
+  });
+  const result = await managed.ensureManagedDosBox();
+  assert.equal(result.ok, false);
+  assert.match(result.error, /cancelled/);
+});
 
 test("Arena A.EXE mounts its own folder as C:, not the parent install", () => {
   const dosExe = path.join("C:", "Games", "tes-arena", "ARENA", "A.EXE");

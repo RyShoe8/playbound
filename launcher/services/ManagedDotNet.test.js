@@ -12,6 +12,7 @@ const os = require("node:os");
 const fsp = require("node:fs/promises");
 
 const {
+  createManagedDotNet,
   requiredDotNetMajor,
   launchEnvForRoot,
   hasMajorUnder,
@@ -19,6 +20,19 @@ const {
   DOTNET_MAJOR,
   winRid,
 } = require("./ManagedDotNet");
+
+test("declining .NET setup never starts a download", { skip: process.platform !== "win32" }, async () => {
+  const managed = createManagedDotNet({
+    userDataPath: path.join(os.tmpdir(), `playbound-dotnet-${require("node:crypto").randomUUID()}`),
+    loadSettings: () => ({}),
+    saveSettings: () => {},
+    onBeforeInstall: async () => false,
+    downloadTo: async () => { throw new Error("download must not start after cancellation"); },
+  });
+  const result = await managed.ensureManagedDotNet({ force: true });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /cancelled/);
+});
 
 test("requiredDotNetMajor reads the catalog field", () => {
   assert.equal(requiredDotNetMajor({ needsDotNetMajor: 10 }), 10);

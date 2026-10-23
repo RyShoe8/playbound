@@ -395,6 +395,12 @@ export function PartyView({
       let inviteUrl = party.discord?.inviteUrl;
       if (!inviteUrl) {
         const result = await provisionDiscord(party.id);
+        if (result.inPartyVoice) return;
+        if (result.voiceUnavailable) {
+          setVoiceError(result.error || "Party voice is temporarily unavailable.");
+          if (result.fallbackUrl) openDiscordInvite(result.fallbackUrl);
+          return;
+        }
         if (!result.inviteUrl) {
           setVoiceError(result.error || "Could not launch Discord voice.");
           if (result.needsDiscordLink) {

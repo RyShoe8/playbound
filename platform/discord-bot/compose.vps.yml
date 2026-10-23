@@ -1,0 +1,22 @@
+services:
+  discord-bot:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - /etc/playbound-discord-bot.env
+    environment:
+      PORT: "8787"
+    networks:
+      - netbird
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=netbird_netbird
+      - traefik.http.routers.playbound-discord-bot.rule=Host(`bot.playbound.club`)
+      - traefik.http.routers.playbound-discord-bot.entrypoints=websecure
+      - traefik.http.routers.playbound-discord-bot.tls.certresolver=letsencrypt
+      - traefik.http.services.playbound-discord-bot.loadbalancer.server.port=8787
+
+networks:
+  netbird:
+    external: true
+    name: netbird_netbird

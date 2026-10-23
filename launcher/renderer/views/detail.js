@@ -1811,6 +1811,11 @@ async function renderGameDetailView(slug, opts = {}) {
         cacheInvalidate(`editions:${slug}`);
         const res = await window.playbound.uninstall(slug);
         if (res?.status === "cancelled") return;
+        if (res?.status === "incomplete") {
+          setStatus(res.warning || `Could not finish uninstalling ${detail.title || slug}.`, true);
+          api.renderGameDetailView(slug, { force: true });
+          return;
+        }
         cacheInvalidate(`game:${slug}`);
         cacheInvalidate(`editions:${slug}`);
         if (res?.warning) setStatus(`Removed ${detail.title || slug} from your library. ${res.warning}`, true);
@@ -3177,6 +3182,11 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       cacheInvalidate(`editions:${gameSlug}`);
       const res = await window.playbound.uninstall(gameSlug, editionSlug);
       if (res?.status === "cancelled") return;
+      if (res?.status === "incomplete") {
+        setStatus(res.warning || `Could not finish uninstalling ${edition.editionName}.`, true);
+        api.renderEditionDetailView(gameSlug, editionSlug, { force: true });
+        return;
+      }
       cacheInvalidate(`game:${gameSlug}`);
       cacheInvalidate(`editions:${gameSlug}`);
       if (res?.warning) setStatus(`Removed ${edition.editionName} from your library. ${res.warning}`, true);

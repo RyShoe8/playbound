@@ -20,6 +20,15 @@ async function main() {
   };
 
   try {
+    const declined = createSteamCmdInstaller({
+      userDataPath: fakeRoot,
+      tempPath: path.join(fakeRoot, "temp"),
+      platform: "win32",
+      onBeforeInstall: async () => false,
+      downloadTo: async () => { throw new Error("download must not start after cancellation"); },
+    });
+    await assert.rejects(() => declined.ensureInstalled(), /cancelled/);
+
     const installer = createSteamCmdInstaller({
       userDataPath: fakeRoot,
       tempPath: path.join(fakeRoot, "temp"),

@@ -93,6 +93,7 @@ export async function GET(req: Request) {
             : null,
           currentEditionId: p.currentEditionId || null,
           lookingForPlayers,
+          lookingForPlayersUntil: p.lookingForPlayersUntil,
           lookingForPlayersGameId: lookingForPlayers
             ? p.lookingForPlayersGameId || p.currentGameId || null
             : null,
@@ -119,14 +120,14 @@ export async function GET(req: Request) {
           join,
         });
       }
-      if (presence.lookingForPlayers && presence.lookingForPlayersGameId) {
+      if (presence.lookingForPlayers) {
         friendsLooking.push({
           id: user.id,
           username: user.username,
-          gameSlug: presence.lookingForPlayersGameId,
-          gameTitle:
-            titleBySlug.get(String(presence.lookingForPlayersGameId)) ||
-            presence.lookingForPlayersGameId,
+          gameSlug: presence.lookingForPlayersGameId || null,
+          gameTitle: presence.lookingForPlayersGameId
+            ? titleBySlug.get(String(presence.lookingForPlayersGameId)) || presence.lookingForPlayersGameId
+            : "Up for anything",
         });
       }
     }

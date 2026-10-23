@@ -1177,6 +1177,24 @@ async function refreshFriendsData() {
         });
       });
 
+      content.querySelectorAll(".btn-request-party").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          btn.disabled = true;
+          btn.textContent = "Asking…";
+          const res = await window.playbound.requestFriendParty(btn.dataset.friendId, btn.dataset.slug);
+          const delivery = res?.results?.[0];
+          if (delivery?.status === 201) {
+            btn.textContent = "Requested";
+            setStatus("Party request sent. Your friend can accept it in notifications.");
+          } else {
+            btn.disabled = false;
+            btn.textContent = "Join";
+            setStatus(res?.error || delivery?.error || "Could not request a party.", true);
+          }
+        });
+      });
+
       content.querySelectorAll(".btn-event-link").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -1276,31 +1294,30 @@ function buildFriendCardHtml(f) {
   const statusDot = offline ? "" : `<span class="pb-friend-status-dot ${dotClass}"></span>`;
 
   /*
-   * Same precedence the site uses: a real join beats "View Game", which beats
-   * a party invite, which beats a bare LFG signal. `join` comes straight from
-   * the API's capability resolver, so the label matches the website's.
+   * Join an existing party directly. Otherwise a friend's Join action asks
+   * them to start one, so we never silently redirect to a game detail page.
    */
   const join = f.join || {};
   const showJoin =
     isPlaying && gameSlug && join.href && ["supported", "requiresManualJoin"].includes(join.capability);
 
   let action = "";
-  if (showJoin) {
-    action = `<button type="button" class="pb-friend-btn-play btn-view-game" data-slug="${escapeHtml(
-      gameSlug
-    )}">${escapeHtml(join.label || "Join Game")}</button>`;
+  if (inParty) {
+    action = `<button type="button" class="pb-friend-btn-play btn-join-friend-party" data-id="${escapeHtml(
+      presence.currentPartyId
+    )}">Join Party</button>`;
+  } else if (showJoin) {
+    action = `<button type="button" class="pb-friend-btn-play btn-request-party" data-friend-id="${escapeHtml(
+      f.id
+    )}" data-slug="${escapeHtml(gameSlug)}">${escapeHtml(join.label || "Join")}</button>`;
   } else if (isPlaying && gameSlug) {
     action = `<button type="button" class="pb-friend-btn-view btn-view-game" data-slug="${escapeHtml(
       gameSlug
     )}">View Game</button>`;
-  } else if (inParty) {
-    action = `<button type="button" class="pb-friend-btn-play btn-join-friend-party" data-id="${escapeHtml(
-      presence.currentPartyId
-    )}">Join Party</button>`;
   } else if (lfgSlug) {
-    action = `<button type="button" class="pb-friend-btn-play btn-view-game" data-slug="${escapeHtml(
-      lfgSlug
-    )}">Join</button>`;
+    action = `<button type="button" class="pb-friend-btn-play btn-request-party" data-friend-id="${escapeHtml(
+      f.id
+    )}" data-slug="${escapeHtml(lfgSlug)}">Join</button>`;
   }
 
   const shared = Array.isArray(f.sharedGames) ? f.sharedGames : [];
@@ -1674,7 +1691,7 @@ function buildRequirementsBannerHtml(party, isLeader = false) {
         <div class="party-req-icon">${ICON.alert}</div>
         <div class="party-req-body">
           <p class="party-req-title">Install controller support (ViGEmBus)</p>
-          <p class="party-req-desc">Hosting ${escapeHtml(party.gameTitle || "this game")} online requires the ViGEm driver so remote friends can connect as Player 2, 3, or 4.</p>
+          <p class="party-req-desc">Hosting ${escapeHtml(party.gameTitle || "this game")} online needs ViGEmBus, an established open-source virtual-controller driver bundled from its official release. PlayBound Setup normally installs it; if it is missing, PlayBound can repair it here so remote friends can join as Player 2, 3, or 4.</p>
         </div>
         <button type="button" id="btn-party-install-vigem" class="party-btn btn-primary party-req-btn">
           ${ICON.download} Install Controller Driver
@@ -1689,7 +1706,7 @@ function buildRequirementsBannerHtml(party, isLeader = false) {
         <div class="party-req-icon">${ICON.alert}</div>
         <div class="party-req-body">
           <p class="party-req-title">Virtual LAN (NetBird) Required</p>
-          <p class="party-req-desc">This game connects players directly over PlayBound's Virtual Network. NetBird is required to connect to the host.</p>
+          <p class="party-req-desc">PlayBound uses NetBird, an established open-source network client bundled from its official release, to create a private Virtual LAN between party PCs. PlayBound Setup normally installs it; if it is missing, PlayBound can repair it here and show each step.</p>
         </div>
         <button type="button" id="btn-party-install-netbird" class="party-btn btn-primary party-req-btn">
           ${ICON.download} Install NetBird
@@ -3286,6 +3303,13 @@ async function runPartyAction(partyId, request, fallbackMessage) {
   return optimisticPartyAction(current, p => p, request, fallbackMessage);
 }
 
+function isFriendOnline(friend) {
+  const presence = friend?.presence || {};
+  return Boolean(presence.currentPartyId || presence.lookingForPlayers ||
+    ["online", "browsing", "viewing_game", "installing", "launching", "playing", "away"]
+      .includes(presence.status));
+}
+
 function wirePartyView(slot, party) {
   const partyId = party.id;
 
@@ -3298,11 +3322,14 @@ function wirePartyView(slot, party) {
       if (invitePanel.hidden) return;
 
       const memberIds = new Set((party.members || []).map((member) => String(member.userId)));
-      const available = lastGoodFriends.filter((friend) => friend.id && !memberIds.has(String(friend.id)));
+      const available = lastGoodFriends
+        .filter((friend) => friend.id && !memberIds.has(String(friend.id)))
+        .sort((a, b) => Number(isFriendOnline(b)) - Number(isFriendOnline(a)) ||
+          String(a.username || "").localeCompare(String(b.username || "")));
       const list = invitePanel.querySelector(".party-invite-list");
       list.innerHTML = available.length
         ? available.map((friend) => `<div class="party-invite-row">
-            <span>${escapeHtml(friend.username || "Friend")}</span>
+            <span>${escapeHtml(friend.username || "Friend")}${isFriendOnline(friend) ? " · Online" : ""}</span>
             <button type="button" class="btn-secondary btn-sm" data-invite-friend-id="${escapeHtml(String(friend.id))}">Invite</button>
           </div>`).join("")
         : `<p class="view-sub">No friends available to invite. Add a friend from the Friends page or share the party link.</p>`;
@@ -3959,7 +3986,8 @@ async function wireRequirementsCheck(slot, party) {
   if (netBirdBtn) {
     netBirdBtn.addEventListener("click", async () => {
       netBirdBtn.disabled = true;
-      netBirdBtn.innerHTML = `${ICON.loader} Installing NetBird (approve Windows prompt)…`;
+      netBirdBtn.innerHTML = `${ICON.loader} Setting up NetBird Virtual LAN…`;
+      setStatus("PlayBound is installing NetBird for Virtual LAN. Approve the Windows Installer prompt if it appears.");
       try {
         const res = await window.playbound.installNetBird?.();
         if (res && res.ok) {
@@ -4732,7 +4760,9 @@ async function fillCreatePartyPanel() {
   if (visSelect) enhanceSelect(visSelect);
   visSelect?._syncCustomSelect?.();
 
-  const friends = state._createPartyFriends || [];
+  const friends = [...(state._createPartyFriends || [])]
+    .sort((a, b) => Number(isFriendOnline(b)) - Number(isFriendOnline(a)) ||
+      String(a.username || "").localeCompare(String(b.username || "")));
   friendsBox.innerHTML =
     friends.length === 0
       ? `<p class="create-party-empty-friends">Add friends to invite them.</p>`
@@ -4837,6 +4867,20 @@ async function handleLaunchPartyVoice(partyId, party, voiceBtn, errorEl) {
   }
   try {
     const res = await window.playbound.provisionPartyDiscord(partyId);
+    if (res?.voiceUnavailable) {
+      const notice = res.error || "Party voice is temporarily unavailable.";
+      if (errorEl) {
+        errorEl.textContent = notice;
+        errorEl.style.display = "block";
+      }
+      if (res.fallbackUrl) {
+        void window.playbound.openDiscordInvite?.(res.fallbackUrl);
+        setStatus("Opened the PlayBound Discord. Party voice is temporarily unavailable.");
+      } else {
+        setStatus(notice, true);
+      }
+      return;
+    }
     if (res?.needsDiscordLink) {
       handlePartyVoice(res);
       return;

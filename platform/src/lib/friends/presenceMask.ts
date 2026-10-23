@@ -6,23 +6,33 @@ export function applyPresenceFreshness<
     status?: string;
     lastHeartbeat?: unknown;
     currentGameId?: string | null;
+    currentGameTitle?: string | null;
     currentEditionId?: string | null;
     lookingForPlayers?: boolean;
     lookingForPlayersGameId?: string | null;
+    lookingForPlayersGameTitle?: string | null;
     lookingForPlayersUntil?: unknown;
     currentPartyId?: string | null;
   },
 >(presence: T, now = Date.now()): T {
   const hb = presence.lastHeartbeat ? new Date(presence.lastHeartbeat as string | Date).getTime() : 0;
   if (hb && now - hb < STALE_AFTER_MS) return presence;
+  // A browser can close after someone raises their hand; LFG has its own
+  // explicit expiry and must remain visible even when online presence is stale.
+  const lookingUntil = presence.lookingForPlayersUntil
+    ? new Date(presence.lookingForPlayersUntil as string | Date).getTime()
+    : 0;
+  const stillLooking = Boolean(presence.lookingForPlayers && lookingUntil > now);
   return {
     ...presence,
     status: "offline",
     currentGameId: null,
+    currentGameTitle: null,
     currentEditionId: null,
-    lookingForPlayers: false,
-    lookingForPlayersGameId: null,
-    lookingForPlayersUntil: null,
+    lookingForPlayers: stillLooking,
+    lookingForPlayersGameId: stillLooking ? presence.lookingForPlayersGameId : null,
+    lookingForPlayersGameTitle: stillLooking ? presence.lookingForPlayersGameTitle : null,
+    lookingForPlayersUntil: stillLooking ? presence.lookingForPlayersUntil : null,
     currentPartyId: null,
   };
 }

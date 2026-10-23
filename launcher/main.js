@@ -2263,6 +2263,22 @@ const managedJava = createManagedJava({
 });
 GameLauncher.managedJavaResolver = () => managedJava.findManagedJavaBinary();
 
+/** Ask before PlayBound downloads a portable third-party game runtime. */
+async function confirmManagedRuntime({ name, purpose, source }) {
+  const parent = win && !win.isDestroyed() ? win : undefined;
+  const answer = await dialog.showMessageBox(parent, {
+    type: "info",
+    title: `PlayBound setup: ${name}`,
+    message: `${name} is needed to ${purpose}`,
+    detail: `PlayBound will download ${name} from ${source} and keep a private copy in its data folder. It will not change your system PATH. PlayBound will show progress while it downloads and prepares the runtime.`,
+    buttons: [`Install ${name}`, "Cancel"],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+  return answer.response === 0;
+}
+
 /** PlayBound-managed .NET Desktop Runtime for framework-dependent Windows titles. */
 const managedDotNet = createManagedDotNet({
   userDataPath: app.getPath("userData"),
@@ -2270,6 +2286,11 @@ const managedDotNet = createManagedDotNet({
   saveSettings,
   downloadTo,
   onProgress: (payload) => sendProgress(payload),
+  onBeforeInstall: () => confirmManagedRuntime({
+    name: "Microsoft .NET Desktop Runtime",
+    purpose: "run this game",
+    source: "Microsoft",
+  }),
 });
 
 /** dgVoodoo + HKCU DirectDraw COM for FreeTrain and similar titles. */
@@ -2286,12 +2307,22 @@ const managedDosBox = createManagedDosBox({
   saveSettings,
   downloadTo,
   onProgress: (payload) => sendProgress(payload),
+  onBeforeInstall: () => confirmManagedRuntime({
+    name: "DOSBox Staging",
+    purpose: "run this classic DOS game",
+    source: "the official DOSBox Staging project",
+  }),
 });
 const managedRetroArch = createManagedRetroArch({
   userDataPath: app.getPath("userData"),
   downloadTo,
   extractArchive,
   onProgress: (payload) => sendProgress(payload),
+  onBeforeInstall: () => confirmManagedRuntime({
+    name: "RetroArch",
+    purpose: "run this classic game",
+    source: "the official RetroArch project",
+  }),
 });
 const managedSteamCmd = createSteamCmdInstaller({
   userDataPath: app.getPath("userData"),
@@ -2299,6 +2330,11 @@ const managedSteamCmd = createSteamCmdInstaller({
   downloadTo,
   extractArchive,
   onProgress: (payload) => sendProgress(payload),
+  onBeforeInstall: () => confirmManagedRuntime({
+    name: "SteamCMD",
+    purpose: "download this game's public files",
+    source: "Valve",
+  }),
 });
 GameLauncher.managedDosBoxResolver = () => managedDosBox.findManagedDosBoxBinary();
 
@@ -8975,20 +9011,13 @@ function findUninstallStringFromRegistry(entry, dir = null) {
     return true;
   });
 
-  const knownBases = entry
-    ? knownExecutablePathsFor(entry)
-        .map((p) => path.basename(expandWinPath(p)).toLowerCase())
-        .filter(Boolean)
-    : [];
-
   const targetDir = dir ? path.resolve(dir) : null;
-  if (titleList.length === 0 && knownBases.length === 0 && !targetDir) return null;
+  if (titleList.length === 0 && !targetDir) return null;
 
   try {
     const ps = `
 $ErrorActionPreference = 'SilentlyContinue'
 $titles = @(${titleList.map((t) => JSON.stringify(t)).join(",")})
-$bases = @(${knownBases.map((b) => JSON.stringify(b)).join(",")})
 $targetDir = ${JSON.stringify(targetDir || "")}
 $paths = @(
   'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
@@ -8996,7 +9025,6 @@ $paths = @(
   'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
 )
 $items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation -or $_.UninstallString }
-function Normalize($s) { ([string]$s).ToLower() -replace '[^a-z0-9]', '' }
 $hit = $null
 if ($targetDir) {
   $hit = $items | Where-Object {
@@ -9006,18 +9034,6 @@ if ($targetDir) {
     if ($un -and ($un.ToLower().Contains($targetDir.ToLower()))) { return $true }
     $false
   } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
-  if (-not $hit) {
-    $parentDir = Split-Path -Parent $targetDir
-    if ($parentDir) {
-      $hit = $items | Where-Object {
-        $loc = [string]$_.InstallLocation
-        $un = [string]$_.UninstallString
-        if ($loc -and (Test-Path $loc) -and ((Resolve-Path $loc).Path.TrimEnd('\\').ToLower() -eq $parentDir.TrimEnd('\\').ToLower())) { return $true }
-        if ($un -and ($un.ToLower().Contains($parentDir.ToLower()))) { return $true }
-        $false
-      } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
-    }
-  }
 }
 if (-not $hit) {
   foreach ($title in $titles) {
@@ -9027,31 +9043,6 @@ if (-not $hit) {
       Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
     if ($hit) { break }
   }
-}
-if (-not $hit) {
-  foreach ($title in $titles) {
-    if (-not $title -or $title.Length -lt 4) { continue }
-    $needle = Normalize $title
-    if (-not $needle) { continue }
-    $hit = $items | Where-Object {
-      $hay = Normalize $_.DisplayName
-      $hay -and ($hay.Contains($needle) -or $needle.Contains($hay))
-    } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
-    if ($hit) { break }
-  }
-}
-if (-not $hit -and $bases.Count -gt 0) {
-  $hit = $items | Where-Object {
-    $icon = [string]$_.DisplayIcon
-    $loc = [string]$_.InstallLocation
-    $un = [string]$_.UninstallString
-    foreach ($b in $bases) {
-      if ($icon -and ($icon.ToLower().Contains($b))) { return $true }
-      if ($loc -and (Test-Path (Join-Path $loc $b))) { return $true }
-      if ($un -and ($un.ToLower().Contains($b))) { return $true }
-    }
-    $false
-  } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
 }
 if (-not $hit) { return }
 @{
@@ -9130,7 +9121,8 @@ async function runGameUninstaller(slug, entry, dir) {
           resolve(code === 0);
         });
 
-        setTimeout(() => resolve(true), 30_000);
+        // A successful spawn is not a successful uninstall. Wait for exit;
+        // otherwise a slow vendor installer is reported as removed mid-run.
       });
 
       if (directSuccess) return true;
@@ -9148,7 +9140,7 @@ async function runGameUninstaller(slug, entry, dir) {
     const uninstallCmd = findUninstallStringFromRegistry(entry || { slug }, dir);
     if (uninstallCmd) {
       console.log(`[uninstall] executing registry uninstall command: ${uninstallCmd}`);
-      await new Promise((resolve) => {
+      return await new Promise((resolve) => {
         exec(uninstallCmd, { timeout: 60_000, windowsHide: false, cwd: dir || undefined }, (err) => {
           if (err) {
             console.warn(`[uninstall] registry uninstall error:`, err?.message);
@@ -9158,14 +9150,13 @@ async function runGameUninstaller(slug, entry, dir) {
               "powershell.exe",
               ["-NoProfile", "-NonInteractive", "-Command", psCommand],
               { timeout: 180_000, windowsHide: false },
-              () => resolve(true)
+              (elevatedErr) => resolve(!elevatedErr)
             );
             return;
           }
           resolve(true);
         });
       });
-      return true;
     }
   }
   return false;
@@ -9186,7 +9177,7 @@ async function tryRemovePlayBoundInstallDir(
   slug,
   dir,
   entry = null,
-  { editionSlug = null, lastOwnerOfInstallPath = false } = {}
+  { editionSlug = null, lastOwnerOfInstallPath = false, skipUninstaller = false } = {}
 ) {
   if (!dir) return null;
 
@@ -9199,10 +9190,9 @@ async function tryRemovePlayBoundInstallDir(
       isStandalone: Boolean(entry?.isStandalone),
     });
 
-  let ranUninstaller = false;
-  if (mayRunUninstaller || hasUninstaller) {
+  if (!skipUninstaller && (mayRunUninstaller || hasUninstaller)) {
     try {
-      ranUninstaller = await runGameUninstaller(slug, entry, dir);
+      await runGameUninstaller(slug, entry, dir);
     } catch (err) {
       console.warn(`[uninstall] runGameUninstaller error:`, err?.message);
     }
@@ -9260,8 +9250,7 @@ async function tryRemovePlayBoundInstallDir(
     if (isSteamGame) {
       return "Removed from PlayBound. To delete game files from disk, uninstall the game in Steam.";
     }
-    if (ranUninstaller) return null;
-    return "Removed from PlayBound. Files outside the PlayBound games folder were left on disk — finish uninstall from Windows Apps & features if needed.";
+    return "Game files outside the PlayBound games folder remain. Use the game's uninstaller or Windows Apps & features to remove them.";
   }
 }
 
@@ -9349,7 +9338,7 @@ async function uninstallGame(slug, editionSlug = null) {
   // leaves the full game installed. Hand the app id to Steam before clearing
   // our state; Steam shows its own confirmation and removes the correct depot.
   const steamAppId = entry?.kind === "external" ? steamAppIdForEntry(entry) : null;
-  if (steamAppId) {
+  if (steamAppId && !editionSlug) {
     await ensureSteamRunning();
     await safeOpenExternal(`steam://uninstall/${steamAppId}`, { skipUtm: true });
   }
@@ -9391,6 +9380,17 @@ async function uninstallGame(slug, editionSlug = null) {
           isStandalone: Boolean(entry?.isStandalone),
         });
         if (warning) warnings.push(warning);
+        const trackedExeStillExists = Boolean(
+          info.exe && path.isAbsolute(info.exe) && fs.existsSync(info.exe)
+        );
+        if (trackedExeStillExists) {
+          return {
+            status: "incomplete",
+            dir: info.dir || null,
+            editionSlug,
+            warning: `The game is still installed at ${info.exe}. Complete its uninstaller; PlayBound kept the edition in your library.`,
+          };
+        }
       } else if (uninstallDir && siblingsSharePath) {
         console.warn(
           `[uninstall] keeping shared install path for ${slug}/${editionSlug}: ${uninstallDir}`
@@ -9428,6 +9428,7 @@ async function uninstallGame(slug, editionSlug = null) {
   const dirs = collectGameUninstallDirs(slug, game, entry);
   const primaryDir = dirs[0];
   const hasUninstaller = Boolean(primaryDir && findUninstallerBinary(primaryDir));
+  let attemptedVendorUninstall = false;
   // Prefer running the vendor uninstaller once against the primary dir before
   // sweeping every candidate folder (installer games in Program Files).
   if (
@@ -9438,6 +9439,7 @@ async function uninstallGame(slug, editionSlug = null) {
         hasUninstaller,
       }))
   ) {
+    attemptedVendorUninstall = true;
     try {
       await runGameUninstaller(slug, entry, dirs[0]);
       await new Promise((r) => setTimeout(r, 2000));
@@ -9453,6 +9455,7 @@ async function uninstallGame(slug, editionSlug = null) {
     if (!fs.existsSync(dir)) continue;
     const warning = await tryRemovePlayBoundInstallDir(slug, dir, entry, {
       lastOwnerOfInstallPath: true,
+      skipUninstaller: attemptedVendorUninstall,
     });
     if (warning) warnings.push(warning);
   }
@@ -9492,6 +9495,24 @@ async function uninstallGame(slug, editionSlug = null) {
     } catch {
       /* ignore */
     }
+  }
+
+  // Storefront hand-offs and native uninstallers can be declined or finish
+  // later. Never erase the PlayBound record while a tracked game executable
+  // is still on disk: that hides the remaining installation from the player.
+  const remainingExe = [game.exe, ...editions.map((edition) => edition.exe)]
+    .filter((exe) => exe && path.isAbsolute(exe))
+    .find((exe) => fs.existsSync(exe));
+  const remainingVendorExe = knownExecutablePathsFor(entry)
+    .map((raw) => expandWinPath(String(raw)))
+    .find((exe) => exe && path.isAbsolute(exe) && fs.existsSync(exe));
+  if (remainingExe || remainingVendorExe) {
+    const remaining = remainingExe || remainingVendorExe;
+    return {
+      status: "incomplete",
+      dir: game.dir || null,
+      warning: `The game is still installed at ${remaining}. Complete the storefront or game uninstaller; PlayBound kept its install record until the files are gone.`,
+    };
   }
 
   delete state[slug];
@@ -10980,6 +11001,16 @@ ipcMain.handle("play-invite-action", async (_event, inviteId, action) => {
     return { ok: false, error: err?.message || "Network error" };
   }
 });
+ipcMain.handle("request-friend-party", async (_event, recipientId, gameSlug) => {
+  try {
+    return await launcherJson("/api/play-invites", {
+      method: "POST",
+      body: { recipientId, gameSlug, partyRequest: true },
+    });
+  } catch (err) {
+    return { error: err?.message || "Could not request a party" };
+  }
+});
 ipcMain.handle("get-event-detail", async (_event, eventId) => {
   try {
     const res = await apiFetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
@@ -11406,17 +11437,20 @@ ipcMain.handle("install-netbird", async () => {
   try {
     void telemetry.track("netbird_install_started", {});
     const outcome = await virtualLan.autoInstallNetBird((msg) => {
-      sendProgress?.({ phase: "netbird", message: msg });
+      if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "netbird", message: msg });
     });
     if (outcome && outcome.ok) {
       void telemetry.track("netbird_install_succeeded", {});
+      if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "prerequisite-done", message: "NetBird Virtual LAN is ready." });
       return { ok: true };
     }
     const error = outcome?.error || "NetBird installation failed";
     void telemetry.track("netbird_install_failed", { message: error });
+    if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "prerequisite-error", message: error });
     return { ok: false, error };
   } catch (err) {
     void telemetry.track("netbird_install_failed", { message: err.message });
+    if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "prerequisite-error", message: err.message });
     return { ok: false, error: err.message };
   }
 });
@@ -11438,17 +11472,20 @@ ipcMain.handle("install-vigem", async () => {
     }
     void telemetry.track("vigem_install_started", {});
     const outcome = await ensureVigem((msg) => {
-      sendProgress?.({ phase: "vigem", message: msg });
+      if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "vigem", message: msg });
     });
     if (outcome && outcome.ok) {
       void telemetry.track("vigem_install_succeeded", {});
+      if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "prerequisite-done", message: "ViGEmBus controller support is ready." });
       return { ok: true };
     }
     const error = outcome?.reason || "ViGEm setup failed";
     void telemetry.track("vigem_install_failed", { message: error });
+    if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "prerequisite-error", message: error });
     return { ok: false, error };
   } catch (err) {
     void telemetry.track("vigem_install_failed", { message: err.message });
+    if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "prerequisite-error", message: err.message });
     return { ok: false, error: err.message };
   }
 });
@@ -11583,7 +11620,17 @@ ipcMain.handle("couch-controller-action", async (_event, action, controllerId, p
   }
 });
 ipcMain.handle("couch-probe-driver", async () => couchHost.probeDriver());
-ipcMain.handle("gamepad-bridge-start", async (_event, profile) => gamepadBridge.startBridge(profile));
+ipcMain.handle("gamepad-bridge-start", async (_event, profile) => {
+  const result = await gamepadBridge.startBridge(profile, (message) => {
+    if (win && !win.isDestroyed()) win.webContents.send("progress", { phase: "vigem", message });
+  });
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("progress", result.ok
+      ? { phase: "prerequisite-done", message: "Controller support is ready." }
+      : { phase: "prerequisite-error", message: result.error || "Controller setup failed." });
+  }
+  return result;
+});
 ipcMain.handle("gamepad-bridge-stop", async () => gamepadBridge.stopBridge());
 ipcMain.on("gamepad-bridge-frame", (_event, frame) => gamepadBridge.applyInputFrame(frame));
 ipcMain.handle("get-controller-support", (_event, slug) => {
@@ -12871,6 +12918,14 @@ ipcMain.handle("set-presence-visibility", async (_event, patch = {}) => {
 ipcMain.handle("get-lfg", async () => {
   try {
     return await launcherJson("/api/play-together");
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("get-looking-to-party-count", async () => {
+  try {
+    return await launcherJson("/api/presence/lfg/count");
   } catch (err) {
     return { error: err.message };
   }

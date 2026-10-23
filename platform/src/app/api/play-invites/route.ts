@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       modSlug?: string | null;
       /** Connect room code, for games that join in-game. */
       connectCode?: string | null;
+      partyRequest?: boolean;
     };
     const gameSlug = String(body.gameSlug || "").trim();
     if (!gameSlug) return NextResponse.json({ error: "gameSlug required" }, { status: 400 });
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
         editionSlug: body.editionSlug,
         modSlug: body.modSlug,
         connectCode,
+        partyRequest: body.partyRequest === true,
       });
       results.push({ recipientId, ...result });
     }

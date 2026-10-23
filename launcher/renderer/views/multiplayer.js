@@ -19,6 +19,7 @@ let _cachedActivity = null;
 let _cachedParties = [];
 let _cachedEvents = [];
 let _cachedMyLfg = { active: false, gameSlugs: [] };
+let _liveLookingCount = null;
 let _activeParty = null;
 
 function formatEventDate(isoStr) {
@@ -38,13 +39,16 @@ function formatEventDate(isoStr) {
 }
 
 async function loadMultiplayerData() {
-  const [actRes, lfgRes, partiesRes, eventsRes, installed] = await Promise.all([
+  const [actRes, lfgRes, partiesRes, eventsRes, installed, lookingCount] = await Promise.all([
     window.playbound.getMultiplayerActivity?.().catch(() => null),
     window.playbound.getLfg?.().catch(() => null),
     window.playbound.getParties?.({ includeDiscoverable: true }).catch(() => null),
     window.playbound.getEvents?.().catch(() => null),
     window.playbound.getInstalled?.().catch(() => []),
+    window.playbound.getLookingToPartyCount?.().catch(() => null),
   ]);
+
+  if (Number.isFinite(lookingCount?.count)) _liveLookingCount = lookingCount.count;
 
   state._installedGameSlugs = readyInstalledGameSlugs(installed);
 
@@ -114,8 +118,12 @@ export async function renderMultiplayerView(params = {}) {
     if (state.currentView !== "multiplayer") return;
     if (state.multiplayerState.createPartyOpen || state.multiplayerState.ltpDrawerOpen) return;
     const next = await window.playbound.getMultiplayerActivity?.().catch(() => null);
+    const count = await window.playbound.getLookingToPartyCount?.().catch(() => null);
+    if (Number.isFinite(count?.count)) _liveLookingCount = count.count;
     if (next && !next.error && next.asOf !== _cachedActivity?.asOf) {
       _cachedActivity = next;
+      paintMultiplayerView(container);
+    } else if (Number.isFinite(count?.count)) {
       paintMultiplayerView(container);
     } else if (!_cachedActivity && rechecks < 6) {
       setTimeout(recheck, 10000);
@@ -141,6 +149,7 @@ function paintMultiplayerView(container) {
     totalUsersLooking: activityGames.reduce((n, g) => n + (g.usersLookingCount || 0), 0),
     ..._cachedActivity?.summary,
   };
+  if (_liveLookingCount !== null) summary.totalUsersLooking = _liveLookingCount;
   const stat = (n) => (hasActivity ? Number(n || 0).toLocaleString() : "—");
   const ltpActive = state.multiplayerState.ltpActive;
   const ltpDrawerOpen = state.multiplayerState.ltpDrawerOpen;

@@ -421,15 +421,13 @@ export async function sweepStalePresence(now = new Date()) {
         currentEditionId: null,
         currentPartyId: null,
         currentPage: null,
-        lookingForPlayersUntil: null,
-        lookingForPlayersGameId: null,
       },
     }
   );
 
   const lfgCleared = await Presence.updateMany(
     { lookingForPlayersUntil: { $ne: null, $lte: now } },
-    { $set: { lookingForPlayersUntil: null, lookingForPlayersGameId: null } }
+    { $set: { lookingForPlayersUntil: null, lookingForPlayersGameId: null, lookingForPlayersGameIds: [] } }
   );
 
   const sessions = await PlatformSession.updateMany(

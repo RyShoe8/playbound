@@ -1,7 +1,7 @@
 "use client";
 
 import { useProgressiveList } from "@/hooks/useProgressiveList";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Gift, Tag } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
 import { storeShortName, storeColor } from "@/lib/freeOffers/labels";
@@ -40,14 +40,33 @@ export function DealsBrowser({
   offers,
   discounted,
   minPercentOff,
+  initialKind,
 }: {
   offers: FreeOfferRecord[];
   discounted: DiscountedGame[];
   minPercentOff: number;
+  initialKind: Kind;
 }) {
-  const [kind, setKind] = useState<Kind>("all");
+  const [kind, setKind] = useState<Kind>(initialKind);
   const [store, setStore] = useState<string>(ALL_STORES);
   const [genre, setGenre] = useState<string>(ALL_GENRES);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const type = new URL(window.location.href).searchParams.get("type");
+      setKind(type === "free" ? "free" : type === "75-off" ? "discounted" : "all");
+    };
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, []);
+
+  function selectKind(next: Kind) {
+    setKind(next);
+    const url = new URL(window.location.href);
+    if (next === "all") url.searchParams.delete("type");
+    else url.searchParams.set("type", next === "free" ? "free" : "75-off");
+    window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
 
   /*
    * Options come from what is actually on the page, not from the full store
@@ -146,16 +165,16 @@ export function DealsBrowser({
       {/* ── Filters ─────────────────────────────────────────────── */}
       <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
         <FilterRow label="Show">
-          <Chip label="All deals" active={kind === "all"} onClick={() => setKind("all")} />
+          <Chip label="All deals" active={kind === "all"} onClick={() => selectKind("all")} />
           <Chip
             label={`Free (${offers.length})`}
             active={kind === "free"}
-            onClick={() => setKind("free")}
+            onClick={() => selectKind("free")}
           />
           <Chip
             label={`${minPercentOff}% off or more (${discounted.length})`}
             active={kind === "discounted"}
-            onClick={() => setKind("discounted")}
+            onClick={() => selectKind("discounted")}
           />
         </FilterRow>
 
@@ -203,7 +222,7 @@ export function DealsBrowser({
           </FilterRow></div>
           </>
         )}
-        {(kind !== "all" || store !== ALL_STORES || genre !== ALL_GENRES) && <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => {setKind("all");setStore(ALL_STORES);setGenre(ALL_GENRES);}}>Clear filters</button>}
+        {(kind !== "all" || store !== ALL_STORES || genre !== ALL_GENRES) && <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => {selectKind("all");setStore(ALL_STORES);setGenre(ALL_GENRES);}}>Clear filters</button>}
       </div>
 
       {nothingAtAll && (

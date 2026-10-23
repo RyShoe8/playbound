@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { maskPresenceForOthers } from "@/lib/friends/presenceMask";
+import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
+
+describe("LFG remains active after a browser heartbeat ends", () => {
+  it("keeps the independent one-hour looking window while marking presence offline", () => {
+    const now = Date.parse("2026-10-22T12:00:00Z");
+    const presence = {
+      status: "online",
+      lastHeartbeat: new Date(now - 3 * 60_000),
+      lookingForPlayers: true,
+      lookingForPlayersGameId: "openra",
+      lookingForPlayersUntil: new Date(now + 30 * 60_000),
+      currentGameId: "openra",
+    };
+    const result = applyPresenceFreshness(presence, now);
+    expect(result.status).toBe("offline");
+    expect(result.currentGameId).toBeNull();
+    expect(result.lookingForPlayers).toBe(true);
+    expect(result.lookingForPlayersGameId).toBe("openra");
+    expect(applyPresenceFreshness(presence, now + 31 * 60_000).lookingForPlayers).toBe(false);
+  });
+});
 
 describe("maskPresenceForOthers", () => {
   it("returns presence unchanged when appearOffline is false", () => {

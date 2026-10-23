@@ -25,12 +25,12 @@ const { execFile } = require("child_process");
 
 const EXEC_TIMEOUT_MS = 30_000;
 
-function run(file, args) {
+function run(file, args, timeout = EXEC_TIMEOUT_MS) {
   return new Promise((resolve) => {
     execFile(
       file,
       args,
-      { timeout: EXEC_TIMEOUT_MS, windowsHide: true },
+      { timeout, windowsHide: true },
       (err, stdout, stderr) => {
         resolve({
           ok: !err,
@@ -112,9 +112,8 @@ function bundledMsiPath() {
  * this during Setup, so it only fires for portable builds, users who
  * declined UAC at install time, or when NetBird was uninstalled.
  *
- * `msiexec /quiet` requires elevation, so this shells out through
- * PowerShell's `Start-Process -Verb RunAs` to trigger a single UAC prompt.
- * The user sees one dialog the first time they join a party; never again.
+ * `msiexec /quiet` requires elevation. Start it directly from PowerShell so
+ * Windows shows only the UAC approval, not an unrelated command prompt.
  */
 async function autoInstallNetBird(onProgress) {
   const msi = bundledMsiPath();
@@ -126,37 +125,55 @@ async function autoInstallNetBird(onProgress) {
     return { error: "Could not check for bundled NetBird installer.", needsInstall: true };
   }
 
-  onProgress?.("Installing network client (approve the Windows prompt)…");
+  onProgress?.("PlayBound is installing NetBird for Virtual LAN. Approve the Windows administrator prompt for Windows Installer.");
 
-  // PowerShell Start-Process -Wait -Verb RunAs triggers a single UAC prompt,
-  // runs msiexec quietly, and cleans up the NetBird desktop shortcut.
+  // The MSI path is a fixed, bundled app resource, but quote it for PowerShell
+  // nonetheless. Capture msiexec's actual exit code; Start-Process's own exit
+  // code only tells us whether it managed to launch the installer.
+  const escapedMsi = msi.replace(/'/g, "''");
   const ps = [
     "-NoProfile",
     "-NonInteractive",
     "-Command",
-    `Start-Process cmd -ArgumentList '/c','msiexec /i "${msi}" /quiet & del /f /q "%PUBLIC%\\Desktop\\NetBird*.lnk" "%USERPROFILE%\\Desktop\\NetBird*.lnk"' -Verb RunAs -Wait; exit $LASTEXITCODE`,
+    `$installer = Start-Process -FilePath 'msiexec.exe' -ArgumentList '/i "${escapedMsi}" /quiet /norestart' -Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit $installer.ExitCode`,
   ];
-  const res = await run("powershell", ps);
+  const res = await run("powershell", ps, 5 * 60_000);
+
+  if (!res.ok) {
+    const cancelled = /1223|canceled|cancelled|denied|elevation/i.test(`${res.error}${res.stdout}${res.stderr}`);
+    return { error: cancelled
+      ? "NetBird installation was cancelled at the Windows administrator prompt. Try again when you're ready."
+      : `NetBird installation failed: ${res.error || res.stderr || "Windows Installer did not complete."}`, needsInstall: true };
+  }
+
+  // The MSI can create a separate desktop shortcut. PlayBound owns the setup
+  // flow, so remove that shortcut without spawning another shell window.
+  for (const desktop of [path.join(process.env.PUBLIC || "", "Desktop"), path.join(process.env.USERPROFILE || "", "Desktop")]) {
+    if (!desktop.startsWith(path.sep) && !path.isAbsolute(desktop)) continue;
+    try {
+      for (const name of fs.readdirSync(desktop)) {
+        if (/^NetBird.*\.lnk$/i.test(name)) fs.rmSync(path.join(desktop, name));
+      }
+    } catch { /* shortcut cleanup is best effort */ }
+  }
 
   // Verify the CLI is now discoverable.
   const cli = findCli();
   if (cli) {
-    onProgress?.("Starting network service…");
+    onProgress?.("NetBird installed. Starting the Virtual LAN network service…");
     // Wait briefly for the NetBird service to finish starting up.
     for (let attempt = 0; attempt < 10; attempt++) {
       const status = await run(cli, ["status"]);
       if (status.ok || !status.stderr.toLowerCase().includes("daemon")) break;
       await new Promise((r) => setTimeout(r, 1000));
     }
+    onProgress?.("NetBird is ready. PlayBound can now connect you to the party network.");
     return { ok: true };
   }
 
   // The MSI ran but the CLI still is not where we expect it. Either the user
   // declined UAC or the install failed silently.
-  const hint = /canceled|cancelled|denied|elevation/i.test(`${res.stdout}${res.stderr}`)
-    ? "Administrator access was declined."
-    : "The installer ran but NetBird was not found afterwards.";
-  return { error: hint, needsInstall: true };
+  return { error: "Windows Installer completed, but PlayBound could not find NetBird. Try again or restart PlayBound.", needsInstall: true };
 }
 
 /**

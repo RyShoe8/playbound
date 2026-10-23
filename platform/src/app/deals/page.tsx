@@ -24,30 +24,22 @@ import { absoluteUrl } from "@/lib/site";
  * an empty shell under a heading. Even store-wide, a real 75%+ discount is not
  * guaranteed on any given day — that should still look deliberate, not broken.
  *
- * On the overlap with /free-games: that page is still the canonical list for the
- * giveaway search intent and keeps the higher sitemap priority. This page lists
- * the same offers because it is the navigation destination and a deals hub that
- * truncated its own contents would be the wrong trade — but the structured data
- * below deliberately stays with the discounts only, so the two pages do not
- * compete for the same rich results.
+ * This is the canonical destination for both giveaways and deep discounts.
  */
 
-export default async function DealsPage() {
+export default async function DealsPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   // Per-request render, like /community: without it the served HTML holds only the
   // loading skeleton and the page (H1 included) reaches crawlers as client payload.
   await connection();
-  // Per-request render, like /community: without it the served HTML is only the
-  // loading skeleton and the page (H1 included) arrives as client payload.
-  await connection();
+  const { type } = await searchParams;
+  const initialKind = type === "free" ? "free" : type === "75-off" ? "discounted" : "all";
   const [activeOffers, discounted] = await Promise.all([
     listActiveOffers(),
     listDiscountedGames(),
   ]);
 
   /*
-   * Only the discounted games get ItemList markup. The free offers already have
-   * it on /free-games, and that page is their canonical home — emitting the same
-   * offers as structured data here would compete with it.
+   * Discounted games get ItemList markup; free offers share this canonical page.
    *
    * `item.url` prefers the store's own product page over a PlayBound game page.
    * Most discounts have no PlayBound catalog match (`game.slug` is usually
@@ -116,6 +108,7 @@ export default async function DealsPage() {
         offers={activeOffers}
         discounted={discounted}
         minPercentOff={DEEP_DISCOUNT_MIN_PERCENT}
+        initialKind={initialKind}
       />
 
       {/* ── Standing explanation of what belongs here ───────────── */}

@@ -10,6 +10,7 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import Presence from "@/lib/models/Presence";
 import { getLookingToPartyCounts, listLookingToParty } from "@/lib/playTogether/lookingToParty";
 import { POST as stopLooking } from "@/app/api/presence/lfg/route";
+import { sweepStalePresence } from "@/lib/presence/server";
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
 vi.mock("@/lib/playTogether/sharedGames", () => ({ listSharedLibraryByFriend: async () => ({}) }));
 vi.mock("@/lib/catalog", () => ({ getGame: async () => ({ slug: "openra", features: ["Multiplayer"] }), listGames: async () => [{ slug: "openra", title: "OpenRA" }] }));
@@ -81,4 +82,22 @@ it("Stop Looking disables automatic listing without deleting the saved window", 
   const saved = await PlayAvailability.findOne({ userId: owner }).lean();
   expect(saved?.publishLooking).toBe(false);
   expect(new Date(saved!.window.endsAt).getTime()).toBe(endsAt.getTime());
+});
+it("keeps Looking to Party active after a browser heartbeat expires", async () => {
+  const now = new Date();
+  const user = await User.collection.insertOne({ username: "stale-lfg", email: "stale-lfg@example.test" });
+  await Presence.collection.insertOne({
+    userId: user.insertedId,
+    status: "online",
+    lastHeartbeat: new Date(now.getTime() - 60 * 60_000),
+    lookingForPlayersUntil: new Date(now.getTime() + 30 * 60_000),
+    lookingForPlayersGameId: "openra",
+    lookingForPlayersGameIds: ["openra"],
+  });
+  await sweepStalePresence(now);
+  const saved = await Presence.findOne({ userId: user.insertedId }).lean();
+  expect(saved?.status).toBe("offline");
+  expect(saved?.lookingForPlayersGameIds).toEqual(["openra"]);
+  expect(new Date(saved!.lookingForPlayersUntil!).getTime()).toBeGreaterThan(now.getTime());
+  expect((await listLookingToParty()).some(player => player.username === "stale-lfg")).toBe(true);
 });

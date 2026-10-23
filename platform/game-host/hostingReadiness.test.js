@@ -8,6 +8,7 @@ test("every installation reports tenant/content readiness separately from update
     const value=hostingReadiness(key);
     assert.ok(["operator_rollout","blocked","pending"].includes(value.isolation));
     assert.ok(value.reason.length>30);
+    assert.doesNotMatch(value.reason,/human Join/i,`${key} must not require a staged player Join`);
     assert.ok(value.contentReason.length>30);
     assert.equal(value.executableContentEnabled,false);
   }
@@ -80,7 +81,7 @@ test("Core Keeper handoff stays blocked after isolated lifecycle acceptance", ()
   assert.equal(value.identityProfile, "core-keeper-unix-v1");
   assert.equal(value.isolation, "blocked");
   assert.equal(value.executableContentEnabled, false);
-  assert.match(value.reason, /Human Join/);
+  assert.doesNotMatch(value.reason, /Human Join/i);
   assert.match(value.reason, /UID-aware controls/);
 });
 
@@ -90,5 +91,5 @@ test("RVGL identity is available for explicit operator rollout after fresh lifec
   assert.equal(value.isolation,"operator_rollout");
   assert.equal(value.executableContentEnabled,false);
   assert.match(value.reason,/Fresh private-UID provisioning/);
-  assert.match(value.reason,/human Join/);
+  assert.doesNotMatch(value.reason,/human Join/i);
 });

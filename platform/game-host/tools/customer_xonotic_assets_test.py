@@ -244,6 +244,32 @@ class AssetDescriptorTests(unittest.TestCase):
         (published/'tf/cfg/unreviewed.cfg').write_bytes(self.data)
         with self.assertRaises(ValueError):self.reader.open_assets(published,game='team-fortress-2')
 
+    def test_root_owned_asset_cache_skips_unchanged_bytes_but_rechecks_changed_file(self):
+        source=self.root/'cached-source';source.mkdir()
+        (source/'srcds_linux64').write_bytes(self.data)
+        rows=[{'path':'srcds_linux64','bytes':len(self.data),'sha256':hashlib.sha256(self.data).hexdigest()}]
+        published=self.root/'cached-source-runtime'
+        module.promote(source,published,{'files':rows},game='team-fortress-2')
+        cache=self.root/'verification-cache'
+        with patch.object(self.reader.hashlib,'sha256',wraps=hashlib.sha256) as digest:
+            descriptor=self.reader.open_assets(published,game='team-fortress-2',cache_root=cache);os.close(descriptor)
+            self.assertEqual(digest.call_count,2)
+            self.assertTrue((cache/'team-fortress-2.json').exists())
+            cached=json.loads((cache/'team-fortress-2.json').read_text())
+            self.assertIsNotNone(self.reader.read_asset_cache(cache,'team-fortress-2',published,cached['profileDigest']))
+            self.assertEqual(cached['files']['srcds_linux64'],self.reader.asset_stamp((published/'srcds_linux64').stat()))
+            descriptor=self.reader.open_assets(published,game='team-fortress-2',cache_root=cache);os.close(descriptor)
+            self.assertEqual(digest.call_count,3)
+        binary=published/'srcds_linux64'
+        binary.write_bytes(b'x'*len(self.data))
+        binary.chmod(0o555)
+        with self.assertRaisesRegex(ValueError,'Immutable assets differ'):
+            self.reader.open_assets(published,game='team-fortress-2',cache_root=cache)
+        binary.write_bytes(self.data);binary.chmod(0o555)
+        (published/'tf/cfg/unreviewed.cfg').write_bytes(b'unlisted')
+        with self.assertRaisesRegex(ValueError,'Unlisted immutable asset entry'):
+            self.reader.open_assets(published,game='team-fortress-2',cache_root=cache)
+
     def test_corekeeper_and_rvgl_roundtrip_reject_extra_private_files(self):
         for game,paths in [('aneurism-iv',('aniv_server.x86_64','aniv_server_Data/globalgamemanagers')),('core-keeper',('CoreKeeperServer','CoreKeeperServer_Data/Managed/Assembly-CSharp.dll')),
                            ('re-volt-rvgl',('rvgl.64','lib/lib64/libunistring.so.2','lib/libunistring.so.2'))]:

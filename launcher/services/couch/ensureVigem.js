@@ -123,15 +123,18 @@ async function ensureVigem(onStatus) {
   const { dialog } = require("electron");
   if (dialog?.showMessageBox) {
     const answer = await dialog.showMessageBox({
-      type: "info", title: "Install controller support", message: "Install ViGEmBus so your controller can work with PlayBound games",
-      detail: "This one-time driver installation lets PlayBound present your PS5, phone, or remote controller as an Xbox-compatible controller. Windows will ask for permission to install it. Choose Yes to continue.",
+      type: "info", title: "Install PlayBound controller support", message: "Install ViGEmBus so your controller can work with PlayBound games",
+      detail: "ViGEmBus is an established, open-source virtual-controller driver bundled with PlayBound. It lets a phone or remote controller appear as an Xbox-compatible controller. PlayBound will show setup progress; Windows may ask for administrator approval.",
       buttons: ["Install Controller Driver", "Cancel"], defaultId: 0, cancelId: 1, noLink: true,
     });
     if (answer.response !== 0) return { ok: false, reason: "Controller driver installation cancelled. Try again and choose Install Controller Driver to enable controller support." };
   }
-  status("Installing ViGEmBus to enable your controller — choose Yes on the Windows installation prompt…");
+  status("PlayBound is installing ViGEmBus controller support. Approve the Windows administrator prompt if it appears…");
   // Prefer elevated silent install (UAC once). Fallback to direct /quiet if already elevated.
   let install = await installBundledSetup(setupPath);
+  if (install.code === 1223 || install.code === 1602) {
+    return { ok: false, reason: "ViGEmBus installation was cancelled. Try again when you're ready." };
+  }
   if (!install.ok) {
     status("Retrying ViGEmBus driver installation to enable your controller…");
     install = tryQuietInstall(setupPath);

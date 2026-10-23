@@ -186,7 +186,7 @@ function createManagedJava(deps) {
 
     installPromise = (async () => {
       try {
-        onProgress?.({ phase: "java", message: "Downloading Java 17…" });
+        onProgress?.({ phase: "java", message: "Downloading Eclipse Temurin Java 17 for this game (private PlayBound copy)…" });
         const root = getRoot();
         await fsp.mkdir(root, { recursive: true });
 
@@ -194,7 +194,7 @@ function createManagedJava(deps) {
         const archivePath = path.join(tmpDir, `temurin-${JAVA_MAJOR}${archiveExtension()}`);
         try {
           await downloadTo(adoptiumDownloadUrl(), archivePath);
-          onProgress?.({ phase: "java", message: "Installing Java 17…" });
+          onProgress?.({ phase: "java", message: "Preparing Eclipse Temurin Java 17 in PlayBound's data folder…" });
 
           // Fresh extract into a staging folder, then replace root contents carefully
           const staging = path.join(tmpDir, "extract");

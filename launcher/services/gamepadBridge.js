@@ -49,7 +49,7 @@ function setCouchActiveChecker(fn) {
   isCouchActive = typeof fn === "function" ? fn : null;
 }
 
-async function startBridge(profile = {}) {
+async function startBridge(profile = {}, onStatus) {
   if (isCouchActive?.()) {
     console.warn("[gamepad-bridge] refused — couch session is active");
     return { ok: false, error: "Couch session is active" };
@@ -71,7 +71,7 @@ async function startBridge(profile = {}) {
      * ensure-then-probe path here so first-time solo bridging self-installs
      * exactly like Couch Mode does.
      */
-    const ensured = await ensureVigem();
+    const ensured = await ensureVigem(onStatus);
     if (!ensured.ok) {
       return { ok: false, error: ensured.reason || "ViGEmBus driver not ready" };
     }

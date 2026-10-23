@@ -108,7 +108,7 @@ function coreBinary(root, core, platform = process.platform) {
   );
 }
 
-function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onProgress }) {
+function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onProgress, onBeforeInstall }) {
   const root = managedRetroArchRoot(userDataPath);
   let runtimeJob = null;
   const coreJobs = new Map();
@@ -126,7 +126,10 @@ function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onPr
       const ext = RETROARCH_URL.toLowerCase().endsWith(".dmg") ? "dmg" : "7z";
       const temp = path.join(root, ".downloads", `RetroArch-${RETROARCH_VERSION}.${ext}`);
       try {
-        onProgress?.({ phase: "retroarch", message: "Installing shared RetroArch runtime…" });
+        if (onBeforeInstall && !(await onBeforeInstall())) {
+          return { ok: false, error: "RetroArch setup was cancelled." };
+        }
+        onProgress?.({ phase: "retroarch", message: "Preparing RetroArch to run this classic game…" });
         await fsp.mkdir(path.dirname(temp), { recursive: true });
         await downloadTo(RETROARCH_URL, temp);
         const current = path.join(root, "current");

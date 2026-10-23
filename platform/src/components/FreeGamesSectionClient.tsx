@@ -39,7 +39,7 @@ export function FreeGamesSectionClient({ offers, diversifyStores = false }: { of
           </p>
         </div>
         <a
-          href="/free-games"
+          href="/deals?type=free"
           className="shrink-0 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
         >
           See all free games →

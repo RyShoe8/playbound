@@ -150,7 +150,7 @@ async function resolveDosBoxDownload() {
 }
 
 function createManagedDosBox(deps) {
-  const { userDataPath, loadSettings, saveSettings, downloadTo, onProgress } = deps;
+  const { userDataPath, loadSettings, saveSettings, downloadTo, onProgress, onBeforeInstall } = deps;
 
   function getRoot() {
     return managedDosBoxRoot(userDataPath);
@@ -246,7 +246,10 @@ function createManagedDosBox(deps) {
 
     installPromise = (async () => {
       try {
-        onProgress?.({ phase: "dosbox", message: "Downloading DOSBox…" });
+        if (onBeforeInstall && !(await onBeforeInstall())) {
+          return { ok: false, error: "DOSBox Staging setup was cancelled." };
+        }
+        onProgress?.({ phase: "dosbox", message: "Downloading DOSBox Staging to run this classic game…" });
         const root = getRoot();
         await fsp.mkdir(root, { recursive: true });
         const dl = await resolveDosBoxDownload();
@@ -254,7 +257,7 @@ function createManagedDosBox(deps) {
         const archivePath = path.join(tmpDir, dl.name || "dosbox-staging.zip");
         try {
           await downloadTo(dl.url, archivePath);
-          onProgress?.({ phase: "dosbox", message: "Installing DOSBox…" });
+          onProgress?.({ phase: "dosbox", message: "Preparing DOSBox Staging in PlayBound's data folder…" });
           const staging = path.join(tmpDir, "extract");
           await fsp.mkdir(staging, { recursive: true });
           await extractArchive(archivePath, staging);

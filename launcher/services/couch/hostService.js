@@ -717,12 +717,12 @@ function createHostService(deps) {
   }
 
   async function probeDriver() {
-    return ensureVigem(() => {});
+    return ensureVigem((message) => broadcast("couch-status", { message }));
   }
 
   /** Exposed for Play — warm a ViGEm slot when couch is already live. */
   async function warmControllerSlot(slot = 0) {
-    const ensured = await ensureVigem(() => {});
+    const ensured = await ensureVigem((message) => broadcast("couch-status", { message }));
     if (!ensured.ok) return ensured;
     getProvider();
     await ensureSlot(slot);

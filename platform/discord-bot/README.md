@@ -8,6 +8,39 @@ Long-lived worker for channel provisioning, welcome pins, slash commands, and Ga
 2. Set env: `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `MONGODB_URI`, `SITE_URL`, `BOT_WEBHOOK_SECRET`, `PORT`.
 3. Start command: `npm start`
 
+## VPS cutover for reliable party voice
+
+Render's shared outbound IP has received long Discord gateway rate limits. The
+VPS can run the same bot as a persistent container behind its existing Traefik
+proxy; keep just **one** bot instance logged in to Discord at a time.
+
+1. Create an A record for `bot.playbound.club` pointing to the VPS public IP.
+2. On Windows, connect with
+   `ssh -i "$env:USERPROFILE\.ssh\playbound_vps" root@147.93.133.235`, then run
+   `nano /etc/playbound-discord-bot.env`. Copy `DISCORD_BOT_TOKEN`,
+   `DISCORD_GUILD_ID`, `MONGODB_URI`, and `BOT_WEBHOOK_SECRET` from the Render
+   Discord bot service's Environment page; add `SITE_URL=https://playbound.club`.
+   Put one `NAME=value` entry per line. Save with Ctrl+O, Enter, Ctrl+X and
+   keep this file root-only (`chmod 600 /etc/playbound-discord-bot.env`). Do
+   not put secret values in shell commands, version control, tickets, or chat.
+3. Suspend the Render bot before starting this copy, so one token does not
+   create competing Discord gateway sessions. Copy this directory to
+   `/opt/playbound-discord-bot` and run
+   `docker compose -f compose.vps.yml up -d --build` there. The compose file
+   uses the VPS's existing external `netbird_netbird` Docker network and Traefik.
+4. Verify `https://bot.playbound.club/health/discord` reports ready and that
+   an authenticated party voice provisioning request works. Then change
+   Vercel's `DISCORD_BOT_WEBHOOK_URL` to `https://bot.playbound.club`, keeping
+   the same `BOT_WEBHOOK_SECRET`.
+5. Keep the Render bot suspended. Run
+   `docker compose -f compose.vps.yml exec discord-bot node smoke-voice.js`
+   to create and then remove a temporary voice room. Test **Launch Voice** from
+   a real party as the final player-facing check.
+
+The site and launcher offer the general PlayBound Discord invite if a party
+voice room cannot be created. That fallback is explicitly labelled as a
+fallback; it is not a substitute for the dedicated party room.
+
 Invite the bot with scopes `bot` **and** `applications.commands`, plus permissions:
 Manage Channels, Manage Messages, Manage Webhooks, Create Instant Invite, Send Messages, Embed Links, Move Members.
 

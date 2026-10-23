@@ -501,7 +501,7 @@ queued update/rollback, namespace-mounted process detection, sandbox startup,
 stop and saved-file preservation for all four. BZFlag, Hedgewars and OpenTTD
 answered zero-player queries. Luanti initialized and preserved world metadata;
 its master-list/player query was not certified by the isolated bind test.
-Human client Join remains a separate acceptance gate for all four.
+Human client Join can be observed during normal use; it is not a release gate for these four.
 
 ### Wesnoth and RimWorld Together updates
 

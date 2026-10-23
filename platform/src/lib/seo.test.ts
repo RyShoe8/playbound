@@ -77,6 +77,17 @@ function createMockEdition(overrides: Partial<Edition> = {}): Edition {
 }
 
 describe("Game SEO", () => {
+  it("uses supplied game cover art for social previews", () => {
+    const image = "https://images.example.test/regular-human-basketball.jpg";
+    const metadata = pageMetadata({
+      title: "Regular Human Basketball",
+      description: "Robots play basketball.",
+      path: "/games/regular-human-basketball",
+      images: [image],
+    });
+    expect(metadata.openGraph?.images).toEqual([image]);
+    expect(metadata.twitter?.images).toEqual([image]);
+  });
   it("generates free titles and descriptions for free FOSS games", () => {
     const game = createMockGame({
       title: "Veloren",

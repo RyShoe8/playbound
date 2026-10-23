@@ -55,7 +55,7 @@ export const metadata: Metadata = {
    * Metadata is inherited key by key, so a canonical defined at the root is
    * adopted by every page that does not set one, and those pages then declare
    * the homepage to be their canonical version. Nine indexable routes were
-   * doing exactly that, /free-games and the whole /gear section among them.
+   * doing exactly that, including pages under /gear.
    *
    * Leaving it off means a page that forgets its canonical emits none, and a
    * crawler self-canonicalizes to the URL it requested. Both are mistakes; only

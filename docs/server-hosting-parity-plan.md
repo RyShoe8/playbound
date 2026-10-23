@@ -7,8 +7,12 @@ verified the live player-count display across the hosting inventory. Treat
 player counts as an accepted product capability, not an open release gate.
 Older dated fixture notes below retain their original observations (including
 unknown counts from unregistered test servers); those notes do not reopen the
-live player-count requirement. Human Join, UID isolation and game controls have
-separate acceptance gates.
+live player-count requirement. **Real-player Join is not a release or enrollment
+gate.** It will be observed during normal use; do not hold a working server or
+edition for a staged human Join session. Native startup, binding, query/control,
+recovery, tenant isolation and data safety still require their own acceptance.
+Older dated entries that call human Join a gate are historical and superseded by
+this policy. No human Join result is implied by runtime acceptance.
 
 The target is **every dedicated-server game and hosted edition PlayBound offers**.
 This includes the union of community-hostable, dedicated-only/customer-hostable,
@@ -55,8 +59,9 @@ controls. The dated rollout entries below record acceptance and unresolved gaps.
    and per-game backup/restore coverage. Keep subscription/admin controls in
    existing pages; keep quick safe controls in the single game helper.
 7. **Full release gate.** Every offered recipe/edition has saved acceptance
-   evidence or an explicit surfaced limitation; essential hosting/query/Join
-   paths pass live verification. Check all roles and narrow layouts, preserve
+   evidence or an explicit surfaced limitation; essential hosting/query/control
+   paths pass live verification. Real-player Join is not required. Check all
+   roles and narrow layouts, preserve
    populated servers and user saves, run relevant suites/builds, and release a
    launcher binary for launcher changes.
 
@@ -1014,7 +1019,7 @@ Remaining update work is concrete, not covered by another game's handler:
   Wine runtime rather than overwriting a running or customized private copy.
 - Vintage Story remains excluded at the owner's request.
 
-Full management parity still requires the isolation/plugin and human Join gates
+Full management parity still requires the isolation/plugin gates
 above and a packaged launcher release. The update coverage count does not close
 those gates. Validation for this batch: 335 agent tests (292 passed, 43 platform
 skips), six platform coverage tests, TypeScript, affected-file lint and Linux
@@ -1059,7 +1064,7 @@ HX's reviewed Wine/mod update handler remains separate unfinished work.
 Coverage is 45 installation families and 30 daily release-discovery sources.
 Remaining update entries: Freedoom's hosted Zandronum engine, Deus Ex HX, GoldenEye:
 Source, OpenRA RA2 and Open Fortress; Vintage Story remains owner-deferred.
-Runtime isolation/plugin support, human Join acceptance and a packaged launcher
+Runtime isolation/plugin support and a packaged launcher
 release remain full-plan gates. SS14 validation: six platform coverage tests,
 TypeScript and affected-file lint, 340 agent tests (295 passed, 45 platform skips),
 23 affected Linux JS tests and four archive-boundary cases; HX's three Linux
@@ -1117,7 +1122,7 @@ Wine runtime was stopped and its large temporary copy removed after checking
 that no process referenced it; acceptance evidence was retained. The recipe now
 binds explicitly and the agent/platform occupancy mapping uses the existing A2S
 public-address fallback. Its coordinated SDK/mod/private-runtime updater and
-human Join acceptance remain unfinished; this query does not enable its profile.
+private Wine/runtime acceptance remain unfinished; this query does not enable its profile.
 
 HX's published Ports.txt specifies its native query socket at gameplay + 1. A
 private Wine fixture returned a complete HXGameInfo reply with its exact gameplay
@@ -1140,7 +1145,7 @@ always selected the ordinary `tf` game even for the Open Fortress edition.
 That invalid fallback now fails closed; an ordinary TF2 server must not be
 advertised as Open Fortress. The staging packages do not enable that edition or
 replace any existing TF2 files. Coordinated SDK/mod updates, private runtime
-refresh, native acceptance and human Join remain its gates.
+refresh and native acceptance remain its gates.
 
 The subsequent native staging check passed: Open Fortress loaded dm_2fort,
 returned zero humans/four slots/zero bots through the existing Source query,
@@ -1160,8 +1165,8 @@ Validation includes the final full agent suite (348 cases: 303 passed, 45 platfo
 skips), targeted Linux cases and the real HX adapter fixture. The affected platform coverage/query tests,
 TypeScript and lint passed. No catalog/profile or production database changes
 were made by this batch. Remaining update handlers are HX, GoldenEye, Open
-Fortress and RA2; Vintage Story stays owner-deferred. General isolation/plugin,
-human Join and packaged-launcher gates still apply.
+Fortress and RA2; Vintage Story stays owner-deferred. General isolation/plugin
+and packaged-launcher gates still apply.
 
 
 ## Open Fortress production recipe and private runtime (2026-10-15)
@@ -1267,7 +1272,7 @@ platform cases, TypeScript and affected-file lint. Evidence is retained under
 
 Remaining update handlers: Deus Ex HX, GoldenEye: Source and OpenRA RA2.
 Vintage Story remains owner-deferred. Remaining acceptance includes per-customer
-Unix isolation/plugin boundaries, actual human Join and human/bot replacement,
+Unix isolation/plugin boundaries, native bot replacement where supported,
 and packaged-launcher/self-hosted controls. These fixtures do not satisfy those
 gates or enable an operational hosting profile.
 
@@ -3144,7 +3149,7 @@ against the staged source before the scoped installer replaced the helper and
 validated its sudo rule. The game-host service stayed active without a restart.
 No customer room, catalog or database record was changed. Core Keeper admin
 readiness now records the accepted isolated lifecycle while remaining blocked
-pending human Join, occupied-load behavior and UID-aware controls.
+pending occupied-load behavior and UID-aware controls.
 
 Recovery now compares the saved process's Linux boot identity with the current
 boot. A missing runtime from an earlier boot is reported as unavailable after a
@@ -3386,3 +3391,56 @@ expected name and no link is written into customer data. With that, the engine
 no longer reports the `memy` error, but it exits silently after its crash
 handler initialises and never binds. It stays a surfaced limitation until the
 exit is traced inside the namespace.
+
+### Release-gate correction and Open Fortress follow-up (2026-10-22)
+
+Real-player Join is no longer a release or enrollment gate, as stated in the
+coverage contract above. The generated readiness matrix and active admin
+readiness copy no longer list it as a blocker. Native startup, query/control,
+recovery and private data boundaries remain required. No new game was enrolled
+or marked ready by this wording change.
+
+The existing Open Fortress private test runtime was run directly with the same
+`-game open_fortress`, `-basedir` and SDK library-path form as the isolated
+launcher. It stayed alive through an 18-second bounded run, then the timeout
+stopped it. This narrows the remaining problem to behavior under the isolated
+namespace or its mounted assets; it does not prove that the port bound or that
+the isolated profile works. Port 29982 was free again after the test. The next
+acceptance attempt should capture the isolated engine's file/socket syscalls
+or equivalent startup diagnostics without changing a production server.
+
+The VPS disk audit also found a failed Team Fortress 2 update job with a
+14 GiB retained staging directory. After checking the job was terminal and
+the path had no managed-room or process references, that failed stage was
+removed with an audit record. Rollback copies, installed game files and saves
+were retained. Free space rose from 49 GiB to 63 GiB; the game-host service
+remained active.
+
+### Open Fortress security-boundary fixture (2026-10-22)
+
+A disposable UID 40000 fixture now reproduces the reviewed Open Fortress asset
+mounts, private configuration, TF2 dependency bundle and `-basedir` command.
+On the unused port 27158 it bound in about 8–10 seconds in all three bounded
+runs: namespace only, namespace plus the per-UID AppArmor profile, and the full
+AppArmor plus guarded-i386 seccomp handoff. The full-policy process stayed up
+for 35 seconds with a 2 GiB address-space limit, peaked around 318 MiB RSS,
+and was stopped by the fixture. The transient AppArmor profile and private
+fixture were removed after each run. The live room on port 27150 was untouched.
+
+The follow-up fixture then ran the actual root `command()` builder and
+`private_display_handoff()` under a disposable 2 GiB systemd scope with the
+reviewed cgroup bind-port BPF policy, per-UID host-network nftables guard and
+root-promoted TF2 assets. It bound both UDP and TCP on the private port in
+about 9 seconds; the agent's own `/proc/net/udp` readiness check returned
+true. The fixture stopped after the bounded check, and its host guard and
+AppArmor profile were removed. Thus the mod library alias, mounts, AppArmor,
+seccomp, bind-port and host-network policies, sealed config/DNS descriptors
+and address-space limit are not standalone causes of the earlier managed-room
+failure. A missing `steam_appid.txt` was also ruled out in a
+separate bounded private-runtime run; the original file was restored. The live
+room's higher memory use after long uptime does not establish its startup
+requirement, so no resource default was changed. Open Fortress remains
+**blocked** until the agent-managed path is rerun with identity binding and
+restart adoption, followed by native query, controls, stop
+and protected restore. Do not count these direct fixture runs as full agent
+acceptance or enroll customer rooms from them.

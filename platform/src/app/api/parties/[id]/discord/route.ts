@@ -38,13 +38,12 @@ export async function POST(req: Request, ctx: RouteContext) {
     // Being in the room already counts as success — it is the outcome the
     // caller wanted, not a failure to produce an invite.
     if (!inviteUrl && !voice.inPartyVoice) {
-      return NextResponse.json(
-        {
-          error: "Could not create Discord voice room. The bot service may be offline.",
-          needsDiscordLink: voice.needsDiscordLink,
-        },
-        { status: 503 }
-      );
+      return NextResponse.json({
+        error: "Party voice is temporarily unavailable. You can still join the PlayBound Discord.",
+        voiceUnavailable: true,
+        fallbackUrl: SITE_DISCORD_INVITE,
+        needsDiscordLink: voice.needsDiscordLink,
+      });
     }
 
     return NextResponse.json({

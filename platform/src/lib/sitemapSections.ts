@@ -56,10 +56,7 @@ async function pagesSection(): Promise<Entries> {
   return [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1.0 },
     { url: `${SITE_URL}/standards`, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${SITE_URL}/free-games`, changeFrequency: "daily", priority: 0.9 },
-    // Ranked just below /free-games on purpose: /free-games is the canonical list
-    // for the giveaway queries and /deals only previews it.
-    { url: `${SITE_URL}/deals`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/deals`, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/weekly`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/blog`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/discover`, changeFrequency: "weekly", priority: 0.9 },

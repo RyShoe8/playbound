@@ -56,6 +56,9 @@ interface PartyState {
     inviteUrl: string | null;
     needsDiscordLink?: boolean;
     error?: string | null;
+    voiceUnavailable?: boolean;
+    fallbackUrl?: string | null;
+    inPartyVoice?: boolean;
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
   setHostMode: (partyId: string, hostMode: string) => Promise<void>;
@@ -537,6 +540,9 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         method: "POST",
       });
       const data = await res.json();
+      if (data.voiceUnavailable) {
+        return { inviteUrl: null, error: data.error, voiceUnavailable: true, fallbackUrl: data.fallbackUrl || null };
+      }
       if (res.ok && data.party?.discord) {
         void get().fetchParties();
         return {

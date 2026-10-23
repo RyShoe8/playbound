@@ -191,6 +191,8 @@ contextBridge.exposeInMainWorld("playbound", {
   openDiscordInvite: (inviteUrl) => ipcRenderer.invoke("open-discord-invite", inviteUrl),
   setPresenceVisibility: (patch) => ipcRenderer.invoke("set-presence-visibility", patch || {}),
   getLfg: () => ipcRenderer.invoke("get-lfg"),
+  requestFriendParty: (recipientId, gameSlug) => ipcRenderer.invoke("request-friend-party", recipientId, gameSlug),
+  getLookingToPartyCount: () => ipcRenderer.invoke("get-looking-to-party-count"),
   setLfg: (enabled, gameSlug) => ipcRenderer.invoke("set-lfg", enabled, gameSlug || null),
   getDiscordStatus: () => ipcRenderer.invoke("get-discord-status"),
   linkDiscord: () => ipcRenderer.invoke("link-discord"),

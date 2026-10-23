@@ -194,11 +194,16 @@ async function renderSettingsView() {
 
     <div class="settings-group">
       <label class="settings-label">Open Source Components</label>
-      <p class="settings-hint">PlayBound embeds and automates open source technologies to deliver native performance and seamless play.</p>
+      <p class="settings-hint">PlayBound Setup includes the established ViGEmBus controller driver and NetBird network client for games and multiplayer. PlayBound checks them again when needed and explains any repair here. Java, .NET, DOSBox, and RetroArch are prepared on demand for games that need them; portable runtimes stay in PlayBound's data folder.</p>
       <ul style="margin: 8px 0 0 16px; padding: 0; font-size: 12px; color: var(--text-muted); line-height: 1.6;">
         <li><strong>ViGEmBus / Nefarius</strong> — Virtual gamepad emulation driver (MIT)</li>
         <li><strong>NetBird</strong> — WireGuard mesh networking for online multiplayer (BSD-3-Clause)</li>
         <li><strong>DOSBox Staging</strong> — DOS compatibility environment (GPL-2.0)</li>
+        <li><strong>Eclipse Temurin Java</strong> — Java runtime for games that require it</li>
+        <li><strong>Microsoft .NET</strong> — Desktop runtime for games that require it</li>
+        <li><strong>RetroArch</strong> — Runtime and cores for supported classic games</li>
+        <li><strong>SteamCMD</strong> — Valve's download helper for public game files</li>
+        <li><strong>dgVoodoo</strong> — Compatibility files for selected older Windows games</li>
       </ul>
     </div>
   `;

@@ -100,8 +100,8 @@ module.exports = {
     "!**/node_modules/7zip-bin/win/{arm64,ia32}/**",
   ],
   /*
-   * ViGEmBus setup must sit beside the app (not inside asar) so Couch Mode and
-   * the NSIS post-install step can run the silent installer from disk.
+   * ViGEmBus and NetBird setups sit beside the app (not inside asar) so
+   * PlayBound Setup can install them and the launcher can repair them later.
    */
   extraResources: [
     {
@@ -195,7 +195,7 @@ module.exports = {
      */
     installerIcon: "assets/icon.ico",
     uninstallerIcon: "assets/icon.ico",
-    /** Best-effort silent ViGEmBus install during PlayBound Setup. */
+    /** Shortcut refresh and bundled controller/network prerequisite setup. */
     include: "nsis/installer.nsh",
   },
 

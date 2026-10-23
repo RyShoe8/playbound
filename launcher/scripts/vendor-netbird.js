@@ -22,8 +22,8 @@ const LICENSE_URL =
   `https://raw.githubusercontent.com/netbirdio/netbird/v${NETBIRD_VERSION}/LICENSE`;
 
 const outDir = path.join(__dirname, "..", "resources", "netbird");
-// The NSIS script and runtime code both reference this fixed name so a version
-// bump only needs to touch this file, not the installer hooks.
+// The NSIS setup hook and launcher runtime reference this fixed name so a
+// version bump only needs to touch this file.
 const msiPath = path.join(outDir, "netbird_installer.msi");
 const licensePath = path.join(outDir, "LICENSE");
 const versionPath = path.join(outDir, "VERSION");

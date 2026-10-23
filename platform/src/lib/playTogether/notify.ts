@@ -8,14 +8,17 @@ export async function createPlayInviteNotification(opts: {
   inviteId: string;
   gameSlug: string;
   gameTitle: string;
+  partyRequest?: boolean;
 }) {
   try {
     await dbConnect();
     await Notification.create({
       userId: opts.recipientId,
       type: "play_invite",
-      title: `${opts.senderUsername} invited you to play`,
-      body: opts.gameTitle,
+      title: opts.partyRequest
+        ? `${opts.senderUsername} wants to start a party with you`
+        : `${opts.senderUsername} invited you to play`,
+      body: opts.partyRequest ? `Start a ${opts.gameTitle} party?` : opts.gameTitle,
       href: `/games/${encodeURIComponent(opts.gameSlug)}?playInvite=${encodeURIComponent(opts.inviteId)}`,
       meta: {
         inviteId: opts.inviteId,
@@ -23,7 +26,8 @@ export async function createPlayInviteNotification(opts: {
         fromUsername: opts.senderUsername,
         gameSlug: opts.gameSlug,
         gameTitle: opts.gameTitle,
-        actions: ["play", "decline"],
+        partyRequest: opts.partyRequest === true,
+        actions: [opts.partyRequest ? "start-party" : "play", "decline"],
       },
     });
   } catch (err) {
@@ -39,6 +43,7 @@ export async function createPlayInviteResponseNotification(opts: {
   gameSlug: string;
   gameTitle: string;
   accepted: boolean;
+  partyId?: string | null;
 }) {
   try {
     await dbConnect();
@@ -49,12 +54,13 @@ export async function createPlayInviteResponseNotification(opts: {
         ? `${opts.fromUsername} accepted your play invite`
         : `${opts.fromUsername} declined your play invite`,
       body: opts.gameTitle,
-      href: `/games/${encodeURIComponent(opts.gameSlug)}`,
+      href: opts.partyId ? `/party/${encodeURIComponent(opts.partyId)}` : `/games/${encodeURIComponent(opts.gameSlug)}`,
       meta: {
         inviteId: opts.inviteId,
         fromUserId: opts.fromUserId,
         fromUsername: opts.fromUsername,
         gameSlug: opts.gameSlug,
+        partyId: opts.partyId || null,
       },
     });
   } catch (err) {

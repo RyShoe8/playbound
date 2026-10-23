@@ -37,7 +37,7 @@ Activation verifies the source against the checkpoint and verifies a new private
 
 Rollback copies and verifies the **latest** UID data, including later game progress, then atomically exchanges it with the legacy placeholder. The original checkpoint, original legacy files and latest UID copy remain retained. Altered originals, placeholders or unexpected directory identities require review.
 
-Runtime enrollment requires a separate explicit command. After activation, run `enroll` before restarting the agent. It requires one stopped/failed Teeworlds job, no retained managed-room row, a root-verified active data transaction, both UIDs offline and the runtime lock. It changes only that job's `identityProfile`. After data rollback, run `complete-rollback` to remove that job's sticky UID enrollment only after the restored data identity is verified. Ordinary agent operations still cannot downgrade enrollment. No unrelated registry entries are modified; the root journal records actor UID, time, target profile and completion state. Do not hand-edit registry files. General production migration remains off pending an approved maintenance rollout and human Join verification.
+Runtime enrollment requires a separate explicit command. After activation, run `enroll` before restarting the agent. It requires one stopped/failed Teeworlds job, no retained managed-room row, a root-verified active data transaction, both UIDs offline and the runtime lock. It changes only that job's `identityProfile`. After data rollback, run `complete-rollback` to remove that job's sticky UID enrollment only after the restored data identity is verified. Ordinary agent operations still cannot downgrade enrollment. No unrelated registry entries are modified; the root journal records actor UID, time, target profile and completion state. Do not hand-edit registry files. General production migration remains off pending an approved maintenance rollout; real-player Join verification is not a gate.
 
 ## Interrupted operations
 
@@ -49,7 +49,7 @@ Interrupted profile transitions are recovered by repeating `enroll` or `complete
 
 ## Acceptance scope
 
-The VPS fixture used two reserved test UIDs, avoiding interruption of the live service UID. It covered actual checkpoint/activation, managed start, a real zero-player/four-slot query, unchanged game PID across agent restart, full scoped shutdown, writes as the game UID and rollback preserving those writes. A separate fixture exercised explicit enrollment and completed profile rollback through the real agent registry reader, preserving the neighboring job and newer save progress. The actual operator CLI always fixes the legacy UID to `playbound` and requires maintenance. No production customer was migrated. Human Join and the maintenance rollout remain separate gates.
+The VPS fixture used two reserved test UIDs, avoiding interruption of the live service UID. It covered actual checkpoint/activation, managed start, a real zero-player/four-slot query, unchanged game PID across agent restart, full scoped shutdown, writes as the game UID and rollback preserving those writes. A separate fixture exercised explicit enrollment and completed profile rollback through the real agent registry reader, preserving the neighboring job and newer save progress. The actual operator CLI always fixes the legacy UID to `playbound` and requires maintenance. No production customer was migrated. The maintenance rollout remains a separate gate; real-player Join does not.
 
 ## Additional native identity profiles (2026-10-16)
 

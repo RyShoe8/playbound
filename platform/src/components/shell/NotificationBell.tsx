@@ -23,6 +23,7 @@ type NotifItem = {
     actions?: string[];
     fromUserId?: string;
     partyId?: string;
+    partyRequest?: boolean;
   };
 };
 
@@ -260,6 +261,7 @@ export function NotificationBell() {
                                   body: JSON.stringify({ action: "accept" }),
                                 }
                               );
+                              const result = await res.json().catch(() => ({}));
                               if (res.ok) {
                                 void import("@/lib/telemetry").then(({ telemetry }) =>
                                   telemetry.track("play_invite_accepted", {
@@ -267,20 +269,20 @@ export function NotificationBell() {
                                     gameSlug: n.meta?.gameSlug,
                                   })
                                 );
+                                if (!n.readAt) void markRead(n.id);
+                                setOpen(false);
+                                window.location.href = result.party?.id
+                                  ? `/party/${encodeURIComponent(result.party.id)}`
+                                  : n.href || (n.meta?.gameSlug
+                                    ? `/games/${encodeURIComponent(n.meta.gameSlug)}`
+                                    : "/friends");
                               }
-                              if (!n.readAt) void markRead(n.id);
-                              setOpen(false);
-                              window.location.href =
-                                n.href ||
-                                (n.meta?.gameSlug
-                                  ? `/games/${encodeURIComponent(n.meta.gameSlug)}`
-                                  : "/friends");
                             } catch {
                               /* ignore */
                             }
                           }}
                         >
-                          Play
+                          {n.meta?.partyRequest ? "Start Party" : "Play"}
                         </button>
                         <button
                           type="button"

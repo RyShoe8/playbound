@@ -674,14 +674,32 @@ function wireMainEvents() {
       setStatus(message || `${titlePrefix}Queued — waiting for current install to finish…`);
       setProgress(null);
     } else if (phase === "java") {
-      setStatus(message || "Installing Java…");
+      setStatus(message || "Preparing Eclipse Temurin Java 17 for this game…");
       setProgress("indeterminate");
     } else if (phase === "dosbox") {
-      setStatus(message || "Installing DOSBox…");
+      setStatus(message || "Preparing DOSBox to run this classic game…");
       setProgress("indeterminate");
     } else if (phase === "retroarch") {
-      setStatus(message || "Installing RetroArch runtime…");
+      setStatus(message || "Preparing RetroArch to run this game…");
       setProgress("indeterminate");
+    } else if (phase === "dotnet") {
+      setStatus(message || "Preparing Microsoft's .NET runtime for this game…");
+      setProgress("indeterminate");
+    } else if (phase === "steamcmd") {
+      setStatus(message || "Preparing Valve SteamCMD to download game files…");
+      setProgress("indeterminate");
+    } else if (phase === "compatibility") {
+      setStatus(message || "Preparing this game's compatibility layer…");
+      setProgress("indeterminate");
+    } else if (phase === "netbird" || phase === "vigem") {
+      setStatus(message || (phase === "netbird" ? "Preparing NetBird Virtual LAN…" : "Preparing ViGEmBus controller driver…"));
+      setProgress("indeterminate");
+    } else if (phase === "prerequisite-done") {
+      setStatus(message || "PlayBound setup is ready.");
+      setProgress(null);
+    } else if (phase === "prerequisite-error") {
+      setStatus(message || "PlayBound setup failed.", true);
+      setProgress(null);
     } else if (phase === "downloading") {
       const pct = total ? Math.round((received / total) * 100) : null;
       const prefix = addon ? `Downloading ${addon}` : "Downloading";
@@ -740,6 +758,16 @@ function wireMainEvents() {
 
     const returnToParty =
       !data?.uninstalled && data?.slug && (await finishPartyInstallReturn(data.slug));
+
+    // Party readiness is computed from the server library, not from this local
+    // install event. Force a receipt before repainting so the panel cannot keep
+    // telling the player to install a game the launcher just found.
+    if (!data?.uninstalled && data?.slug && (returnToParty || state.currentView === "friends" || state._activeParty)) {
+      const synced = await window.playbound.syncLibraryNow?.({ quiet: true, force: true }).catch(() => null);
+      if (!synced?.connected || synced?.error) {
+        setStatus("Game installed, but party install status has not synced. Sign in or retry library sync.", true);
+      }
+    }
 
     if (data?.slug) {
       cacheInvalidate(`game:${data.slug}`);

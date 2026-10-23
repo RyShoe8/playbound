@@ -985,6 +985,11 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
               try {
                 const res = await window.playbound.uninstall(game.slug, ed.slug);
                 if (res?.status === "cancelled") return;
+                if (res?.status === "incomplete") {
+                  setStatus(res.warning || `Could not finish uninstalling ${label}.`, true);
+                  api.renderLibraryView();
+                  return;
+                }
                 if (res?.warning) setStatus(`Removed ${label} from your library. ${res.warning}`, true);
                 else setStatus(`Uninstalled ${label}`);
                 api.renderLibraryView();
@@ -1091,6 +1096,11 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
             try {
               const res = await window.playbound.uninstall(game.slug, ed.slug);
               if (res?.status === "cancelled") return;
+              if (res?.status === "incomplete") {
+                setStatus(res.warning || `Could not finish uninstalling ${game.title}.`, true);
+                api.renderLibraryView();
+                return;
+              }
               if (res?.warning) setStatus(`Removed ${game.title}. ${res.warning}`, true);
               else setStatus(`Uninstalled ${game.title}`);
               api.renderLibraryView();

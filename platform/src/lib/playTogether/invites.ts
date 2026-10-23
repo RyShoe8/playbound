@@ -61,6 +61,7 @@ function serializeInvite(doc: Record<string, unknown>) {
     modSlug: (doc.modSlug as string) || null,
     partyId: doc.partyId ? String(doc.partyId) : null,
     connectCode: (doc.connectCode as string) || null,
+    partyRequest: Boolean(doc.partyRequest),
     status: doc.status as PlayInviteStatus,
     expiresAt: (doc.expiresAt as Date).toISOString(),
     createdAt: (doc.createdAt as Date).toISOString(),
@@ -77,6 +78,7 @@ export async function sendPlayInvite(opts: {
   partyId?: string | null;
   /** Connect room code for in-game joins; see PlayInvite.connectCode. */
   connectCode?: string | null;
+  partyRequest?: boolean;
 }) {
   await dbConnect();
   const allowed = await checkInviteRecipient(opts.senderId, opts.recipientId);
@@ -90,6 +92,7 @@ export async function sendPlayInvite(opts: {
     senderId: opts.senderId,
     recipientId: opts.recipientId,
     gameSlug: opts.gameSlug,
+    partyRequest: opts.partyRequest === true,
     status: "pending",
     expiresAt: { $gt: now },
   }).lean();
@@ -115,6 +118,7 @@ export async function sendPlayInvite(opts: {
     modSlug: opts.modSlug || null,
     partyId: opts.partyId || null,
     connectCode: opts.connectCode || null,
+    partyRequest: opts.partyRequest === true,
     status: "pending",
     expiresAt: new Date(now.getTime() + PLAY_INVITE_TTL_MS),
   });
@@ -127,6 +131,7 @@ export async function sendPlayInvite(opts: {
     inviteId: String(invite._id),
     gameSlug: opts.gameSlug,
     gameTitle: game.title,
+    partyRequest: opts.partyRequest === true,
   });
 
   return { invite: serializeInvite(invite), status: 201 as const };
@@ -172,12 +177,30 @@ export async function respondPlayInvite(opts: {
     return { error: "Only the recipient can respond", status: 403 as const };
   }
 
+  let partyResult = null;
+  if (opts.action === "accept" && invite.partyRequest) {
+    const { createParty, joinParty } = await import("@/lib/playTogether/party");
+    const created = await createParty({
+      userId: opts.userId,
+      gameSlug: invite.gameSlug,
+      visibility: "friends",
+      wantVoice: false,
+    });
+    if (!("party" in created)) return created;
+    if (created.party.gameSlug !== invite.gameSlug) {
+      return { error: "Your active party is for another game. End it before starting this one.", status: 409 as const };
+    }
+    const joined = await joinParty(created.party.id, String(invite.senderId));
+    if (!("party" in joined)) return joined;
+    partyResult = joined;
+    invite.partyId = new Types.ObjectId(created.party.id);
+  }
+
   invite.status = transition.status;
   invite.respondedAt = now;
   await invite.save();
 
-  let partyResult = null;
-  if (opts.action === "accept" && invite.partyId) {
+  if (opts.action === "accept" && invite.partyId && !partyResult) {
     try {
       const { joinParty } = await import("@/lib/playTogether/party");
       partyResult = await joinParty(String(invite.partyId), opts.userId);
@@ -198,6 +221,7 @@ export async function respondPlayInvite(opts: {
     gameSlug: invite.gameSlug,
     gameTitle: game?.title || invite.gameSlug,
     accepted: opts.action === "accept",
+    partyId: partyResult && "party" in partyResult ? partyResult.party.id : null,
   });
 
   return {

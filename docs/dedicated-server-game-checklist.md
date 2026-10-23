@@ -117,7 +117,7 @@ pull credentials, edit environment files, or alter unrelated database records.
   remove nondeterministic generator ordering and timestamps at their source.
   Keep compiler/toolchain setup operator-only. Update workers must remain
   unprivileged and must not gain Docker, package-manager or general shell sudo.
-  Record native protocol/synthetic-client checks separately from human Join.
+  Record native protocol/synthetic-client checks separately from any observed human Join. A staged real-player Join test is not required for release; known protocol incompatibility still blocks the server.
 - For engines that migrate databases on startup, test old → new → old using an
   isolated database with retained fixture data and integrity checks. Record the
   exact migration history and engine/content pair. Keep databases/configuration

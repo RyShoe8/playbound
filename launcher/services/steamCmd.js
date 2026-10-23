@@ -46,6 +46,7 @@ function createSteamCmdInstaller({
   spawnImpl,
   platform = process.platform,
   onProgress,
+  onBeforeInstall,
 }) {
   const root = path.join(userDataPath, "runtimes", "steamcmd");
   const binary = path.join(root, "steamcmd.exe");
@@ -59,7 +60,10 @@ function createSteamCmdInstaller({
     if (ensurePromise) return ensurePromise;
 
     ensurePromise = (async () => {
-      onProgress?.({ phase: "downloading", addon: "Installing the PlayBound download helper…" });
+      if (onBeforeInstall && !(await onBeforeInstall())) {
+        throw new Error("SteamCMD setup was cancelled.");
+      }
+      onProgress?.({ phase: "steamcmd", message: "Downloading SteamCMD from Valve to install this game's files…" });
       await fsp.mkdir(root, { recursive: true });
       const archive = path.join(tempPath, "playbound-launcher", "steamcmd.zip");
       await downloadTo(STEAMCMD_WINDOWS_URL, archive);

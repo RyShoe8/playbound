@@ -139,7 +139,7 @@ function launchEnvForRoot(root) {
  * @param {(payload: object) => void} [deps.onProgress]
  */
 function createManagedDotNet(deps) {
-  const { userDataPath, loadSettings, saveSettings, downloadTo, onProgress } = deps;
+  const { userDataPath, loadSettings, saveSettings, downloadTo, onProgress, onBeforeInstall } = deps;
 
   function getRoot() {
     return managedDotNetRoot(userDataPath);
@@ -212,9 +212,12 @@ function createManagedDotNet(deps) {
 
     installPromise = (async () => {
       try {
+        if (onBeforeInstall && !(await onBeforeInstall())) {
+          return { ok: false, error: ".NET Desktop Runtime setup was cancelled." };
+        }
         onProgress?.({
           phase: "dotnet",
-          message: `Downloading .NET ${major} Desktop Runtime…`,
+          message: `Downloading Microsoft's .NET ${major} Desktop Runtime for this game…`,
         });
         const asset = await resolveDesktopRuntimeZip(winRid());
         const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "playbound-dotnet-"));
@@ -223,7 +226,7 @@ function createManagedDotNet(deps) {
           await downloadTo(asset.url, archivePath);
           onProgress?.({
             phase: "dotnet",
-            message: `Installing .NET ${asset.version}…`,
+            message: `Preparing .NET ${asset.version} in PlayBound's data folder…`,
           });
 
           const staging = path.join(tmpDir, "extract");

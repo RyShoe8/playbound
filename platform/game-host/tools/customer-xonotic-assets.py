@@ -5,14 +5,76 @@ import os
 from pathlib import Path
 import re
 import stat
+import tempfile
 
 OPENRA_BINARIES = {'openra':'OpenRA.Server','openhv':'OpenHV.Server','combined-arms':'OpenRA.Server','earth-2140-trilogy':'OpenE2140','romanovs-vengeance':'OpenRA.Server','tiberian-dawn-hd':'OpenRA.Server','crystallized-nexus':'OpenRA.Server'}
 
 SOURCE_EMPTY_DIRS = {'counter-strike-source':('cstrike/cfg','cstrike/logs'), 'team-fortress-2': ('tf/cfg','tf/logs'), 'counter-strike-2': ('game/csgo/cfg','game/csgo/logs')}
 ROOT = Path('/usr/local/libexec/playbound-isolated-xonotic-data-086')
+CACHE_ROOT = Path('/var/lib/playbound-customer-runtime/asset-verification-cache')
+CACHED_FAMILIES = frozenset(('open-fortress', 'team-fortress-2'))
 
 
-def open_assets(root=None, game='xonotic'):
+def asset_stamp(info):
+    return [info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+            info.st_ctime_ns, info.st_mode, info.st_uid, info.st_nlink]
+
+
+def secure_cache_directory(directory):
+    try:
+        directory.mkdir(mode=0o700)
+    except FileExistsError:
+        pass
+    info = directory.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) != 0o700:
+        raise ValueError('Untrusted asset verification cache directory')
+
+
+def read_asset_cache(directory, game, root, profile_digest):
+    try:
+        secure_cache_directory(directory)
+        file = directory / (game + '.json')
+        descriptor = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        try:
+            info = os.fstat(descriptor)
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or stat.S_IMODE(info.st_mode) != 0o600 or info.st_size > 16 * 1024 * 1024:
+                return None
+            with os.fdopen(descriptor, 'rb', closefd=False) as stream:
+                value = json.load(stream)
+        finally:
+            os.close(descriptor)
+        if value.get('game') == game and value.get('root') == str(root) and value.get('profileDigest') == profile_digest and isinstance(value.get('files'), dict):
+            return value['files']
+    except (FileNotFoundError, OSError, ValueError, TypeError, json.JSONDecodeError):
+        pass
+    return None
+
+
+def write_asset_cache(directory, game, root, profile_digest, files):
+    try:
+        secure_cache_directory(directory)
+        descriptor, temporary = tempfile.mkstemp(prefix='.pb-asset-', dir=directory)
+        try:
+            with os.fdopen(descriptor, 'w') as stream:
+                json.dump({'game': game, 'root': str(root), 'profileDigest': profile_digest, 'files': files}, stream, separators=(',', ':'))
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, directory / (game + '.json'))
+            parent = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                os.fsync(parent)
+            finally:
+                os.close(parent)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+    except OSError:
+        # Verification already succeeded. An unavailable cache never weakens it.
+        pass
+
+
+def open_assets(root=None, game='xonotic', cache_root=None):
+    fixed_root = root is None
     if game not in OPENRA_BINARIES and game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','bombsquad','bombsquad-python','terraria','factorio','unvanquished','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv'):raise ValueError('Unsupported immutable asset family')
     if root is None and game in OPENRA_BINARIES:
         root=Path('/usr/local/libexec/playbound-isolated-'+game+'-data-v1')
@@ -80,7 +142,7 @@ def open_assets(root=None, game='xonotic'):
             if info.st_uid!=0 or info.st_mode&0o022:
                 os.close(child);raise ValueError('Untrusted asset directory')
             os.close(parent);parent=child
-        def read_file(name,maximum):
+        def read_file(name,maximum,cached_stamp=None,cached_digest=None):
             directory=os.dup(parent)
             try:
                 parts=name.split('/')
@@ -96,17 +158,23 @@ def open_assets(root=None, game='xonotic'):
                 before=os.fstat(source.fileno())
                 if not stat.S_ISREG(before.st_mode) or before.st_uid!=0 or before.st_nlink!=1 or before.st_mode&0o7222 or before.st_size>maximum:
                     raise ValueError('Untrusted immutable asset')
-                digest=hashlib.sha256();content=b''
-                while True:
-                    block=source.read(1024**2)
-                    if not block:break
-                    digest.update(block)
-                    if name=='profile.json':content+=block
+                stamp=asset_stamp(before)
+                use_cache=cached_digest is not None and cached_stamp==stamp and name!='profile.json'
+                digest=None if use_cache else hashlib.sha256();content=b''
+                if not use_cache:
+                    while True:
+                        block=source.read(1024**2)
+                        if not block:break
+                        digest.update(block)
+                        if name=='profile.json':content+=block
                 after=os.fstat(source.fileno())
                 if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Asset changed')
-                return before.st_size,digest.hexdigest(),content
-        _,_,content=read_file('profile.json',8*1024*1024 if game=='open-fortress' else 4*1024*1024 if game in ('veloren','dont-starve-together','unturned') else 1024*1024 if game in ('factorio','openra','space-station-14','barotrauma','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 512*1024 if game in ('freeciv','warzone-2100','bombsquad','bombsquad-python') else 32768)
+                return before.st_size,cached_digest if use_cache else digest.hexdigest(),content,stamp
+        _,profile_digest,content,_=read_file('profile.json',8*1024*1024 if game=='open-fortress' else 4*1024*1024 if game in ('veloren','dont-starve-together','unturned') else 1024*1024 if game in ('factorio','openra','space-station-14','barotrauma','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 512*1024 if game in ('freeciv','warzone-2100','bombsquad','bombsquad-python') else 32768)
         rows=json.loads(content)['files']
+        cache_directory=Path(cache_root) if cache_root is not None else CACHE_ROOT if fixed_root and game in CACHED_FAMILIES else None
+        cached=read_asset_cache(cache_directory,game,root,profile_digest) if cache_directory is not None else None
+        new_cache={} if cache_directory is not None else None
         if not isinstance(rows,list) or not 1<=len(rows)<=(32768 if game=='open-fortress' else 16384 if game in ('veloren','dont-starve-together','unturned') else 128 if game in ('battlefield-1942-anthology','aneurism-iv') else 64 if game=='trackmania' else 512 if game=='morrowind' else 256 if game in ('triplea','necesse') else 4096 if game in ('space-station-14','barotrauma','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 1 if game=='rimworld-together' else 4096 if game=='openra' else 1 if game in OPENRA_BINARIES else 128 if game=='unvanquished' else 4096 if game=='factorio' else 2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 64 if game=='terraria' else 16):raise ValueError('Invalid immutable asset inventory')
         seen={'profile.json'};total=0
         for row in rows:
@@ -114,11 +182,13 @@ def open_assets(root=None, game='xonotic'):
             if not isinstance(name,str) or not re.fullmatch(pattern,name) or name in seen or any(part in ('.','..') for part in name.split('/')):raise ValueError('Invalid immutable asset path')
             if game in SOURCE_EMPTY_DIRS and any(part in ('cfg','logs','addons','custom','download','downloads','downloadlists','replays','workshop','steamapps') for part in name.split('/')):raise ValueError('Private Source content cannot enter the public bundle')
             seen.add(name)
-            size,digest,_=read_file(name,(1024 if game in SOURCE_EMPTY_DIRS else 768)*1024**2);total+=size
+            size,digest,_,stamp=read_file(name,(1024 if game in SOURCE_EMPTY_DIRS else 768)*1024**2,
+                cached.get(name) if cached is not None else None,row.get('sha256') if cached is not None else None);total+=size
             if total>(80 if game=='counter-strike-2' else 20 if game=='team-fortress-2' else 8 if game=='open-fortress' else 4 if game=='counter-strike-source' else 8 if game=='dont-starve-together' else 2)*1024**3 or size!=row.get('bytes') or digest!=row.get('sha256'):raise ValueError('Immutable assets differ from reviewed pins')
+            if new_cache is not None:new_cache[name]=stamp
         if game=='core-keeper':
             for name in ('GameInfo.txt','GameID.txt'):
-                size,_,_=read_file(name,0)
+                size,_,_,_=read_file(name,0)
                 if size != 0:raise ValueError('Core Keeper output mountpoint is not empty')
                 seen.add(name)
         children={}
@@ -142,6 +212,7 @@ def open_assets(root=None, game='xonotic'):
                 try:verify_tree(child,nested)
                 finally:os.close(child)
         verify_tree(parent)
+        if new_cache is not None and cached!=new_cache:write_asset_cache(cache_directory,game,root,profile_digest,new_cache)
         result,parent=parent,None
         return result
     finally:

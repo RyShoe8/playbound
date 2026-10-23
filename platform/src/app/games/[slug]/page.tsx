@@ -148,7 +148,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: gameTitle(game),
     description: gameDescription(game),
     path: `/games/${game.slug}`,
-    images: [`/games/${game.slug}/opengraph-image`],
+    images: [game.coverImage || `/api/og?title=${encodeURIComponent(game.title)}`],
   });
 }
 
