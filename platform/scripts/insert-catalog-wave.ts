@@ -14,6 +14,7 @@
  * Allowlists live in `insert-catalog-wave.allowlist.ts`.
  */
 import { loadEnvConfig } from "@next/env";
+import { shouldStampPublishedAt } from "../src/lib/catalogStatus";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -453,7 +454,7 @@ async function main() {
       continue;
     }
 
-    const existing = await CatalogGame.findOne({ slug }).select("_id").lean();
+    const existing = await CatalogGame.findOne({ slug }).select("_id status published").lean();
     if (!existing) {
       console.warn(`insert-catalog-wave — patch game ${slug} not in DB, skipping (no upsert)`);
       gamesPatchSkipped++;
@@ -600,7 +601,7 @@ async function main() {
 
     if (payload.status) {
       payload.published = payload.status === "published";
-      if (payload.status === "published") {
+      if (payload.status === "published" && shouldStampPublishedAt(existing, "published")) {
         payload.publishedAt = new Date();
       }
     }
@@ -629,6 +630,28 @@ async function main() {
     }
     console.log(`patch game ${slug} fields=[${fields.join(", ")}]`);
     gamesPatched++;
+  }
+
+  // The old wave restamped this game's publishedAt on every deploy because its
+  // allowlist included status: "published". Repair only the observed bad value.
+  // If the original publication receipt exists, restore it; otherwise leave
+  // the date unknown so newest-game sorting falls back to the original row date.
+  if (!scopedRun) {
+    const slug = "tmnt-rescue-palooza";
+    const badPublishedAt = new Date("2026-10-23T17:45:02.774Z");
+    const affected = await CatalogGame.findOne({ slug, publishedAt: badPublishedAt })
+      .select("discordAnnouncement.publishedAt")
+      .lean();
+    if (affected) {
+      const receipt = affected.discordAnnouncement?.publishedAt;
+      const replacement = receipt && new Date(receipt) < badPublishedAt
+        ? { $set: { publishedAt: receipt } }
+        : { $unset: { publishedAt: "" } };
+      const repaired = await CatalogGame.updateOne(
+        { slug, publishedAt: badPublishedAt }, replacement, { timestamps: false }
+      );
+      console.log(`repair TMNT publication date: ${repaired.modifiedCount} field(s) changed`);
+    }
   }
 
   // The old feature badge was added by an earlier wave. Steam's current PC

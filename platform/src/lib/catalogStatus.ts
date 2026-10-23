@@ -36,6 +36,14 @@ export function statusToPublished(status: CatalogStatus): boolean {
   return status === "published";
 }
 
+/** Reapplying a published status is not a new release. */
+export function shouldStampPublishedAt(
+  previous: { status?: unknown; published?: unknown } | null,
+  nextStatus: CatalogStatus
+): boolean {
+  return nextStatus === "published" && (!previous || normalizeStatus(previous) !== "published");
+}
+
 /**
  * Mongo filter for public vs admin (published + testing + ready) surfaces.
  * Includes legacy docs that only have `published: true` and no `status`.

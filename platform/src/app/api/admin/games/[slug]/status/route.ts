@@ -4,7 +4,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { getGame } from "@/lib/catalog";
-import { CATALOG_STATUSES, normalizeStatus, statusToPublished } from "@/lib/catalogStatus";
+import { CATALOG_STATUSES, normalizeStatus, shouldStampPublishedAt, statusToPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   requestDiscordProvision,
@@ -48,11 +48,11 @@ export async function PATCH(
      * imported weeks ago appeared to have been published weeks ago the instant
      * you published it.
      *
-     * Only written when the game is going published — unpublishing leaves the
-     * previous date rather than wiping it, and republishing moves it forward.
+     * Only written on a transition into published — reapplying Published must
+     * not make an existing game look newly released.
      */
     const set: Record<string, unknown> = { status, published, adminUpdatedAt: new Date() };
-    if (published) set.publishedAt = new Date();
+    if (shouldStampPublishedAt(previous, status)) set.publishedAt = new Date();
 
     let doc = await CatalogGame.findOneAndUpdate(
       { slug },

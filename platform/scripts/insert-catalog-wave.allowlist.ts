@@ -349,7 +349,6 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "tmnt-rescue-palooza": [
     "title",
     "aliases",
-    "status",
     "maxPlayers",
     "launcherInstall",
     "firstPlaySteps",
