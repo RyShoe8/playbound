@@ -54,6 +54,7 @@ describe("roundup integration", () => {
     expect(firstReceipt).toMatchObject({ published: true, idempotencyKey: input.idempotencyKey, created: true, url: firstReceipt.post.url });
     expect(retryReceipt).toMatchObject({ published: true, idempotencyKey: input.idempotencyKey, created: false, url: firstReceipt.url });
     expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ coverImageUrl: "https://playbound.club/blog/new-games-platform-updates-blue.png" }));
     expect(mocks.index).toHaveBeenCalled();
     expect(mocks.path.mock.calls.filter(([path]) => path === "/blog")).toHaveLength(2);
     expect(mocks.tag).toHaveBeenCalledWith("blog", { expire: 0 });

@@ -9,6 +9,8 @@ import { publicationIdentity, roundupInput, verifyRoundupRequest } from "@/lib/n
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 const iso = (value: unknown) => value ? new Date(String(value)).toISOString() : null;
+// PlayBound's editorial cover for this series; callers remain brand agnostic.
+const ROUNDUP_COVER = `${SITE_URL}/blog/new-games-platform-updates-blue.png`;
 type Doc = Record<string, unknown>;
 function postRecord(post: Doc) {
   return { id: String(post._id), slug: String(post.slug), url: `${SITE_URL}/blog/${post.slug}`, title: post.title, summary: post.summary, bodyMarkdown: post.bodyMarkdown, publishedAt: iso(post.publishedAt), sourceKey: post.sourceKey ?? null, coverageStart: iso(post.coverageStart), coverageEnd: iso(post.coverageEnd), coveredIds: post.coveredIds ?? [] };
@@ -50,7 +52,7 @@ async function handle(req: Request) {
     let created = false;
     if (!existing) {
       try {
-        existing = await BlogPost.create({ ...identity.normalized, idempotencyKey: undefined, slug: identity.slug, sourceKey: identity.sourceKey, sourcePayloadHash: identity.hash, published: true, publishedAt: new Date(), authorName: "PlayBound Team" });
+        existing = await BlogPost.create({ ...identity.normalized, coverImageUrl: ROUNDUP_COVER, idempotencyKey: undefined, slug: identity.slug, sourceKey: identity.sourceKey, sourcePayloadHash: identity.hash, published: true, publishedAt: new Date(), authorName: "PlayBound Team" });
         created = true;
       } catch (error) {
         if (!(typeof error === "object" && error !== null && "code" in error && error.code === 11000)) throw error;
