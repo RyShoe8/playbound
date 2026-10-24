@@ -12,6 +12,7 @@ class FakePad:
     def __init__(self):
         self.axes = {}
         self.buttons = set()
+        self.connected = True
 
     def findAxis(self, axis):
         return SimpleNamespace(known=axis in self.axes, value=self.axes.get(axis, 0.0))
@@ -29,6 +30,7 @@ class GamepadTests(unittest.TestCase):
         self.keyboard = SimpleNamespace(
             keyMap={key: 0 for key in ("accelerate", "brake", "left", "right", "space", "p")},
             padMap={key: 0 for key in ("accelerate", "brake", "left", "right", "space", "p")},
+            padSteering=0.0,
         )
         devices = SimpleNamespace(getDevices=lambda device_class: self.connected)
         base = SimpleNamespace(
@@ -37,7 +39,8 @@ class GamepadTests(unittest.TestCase):
             detachInputDevice=lambda device: self.detached.append(device),
         )
         task_manager = SimpleNamespace(add=lambda callback, name: None)
-        self.adapter = PlayBoundGamepad(self.keyboard, base, task_manager)
+        self.xinput = (0.0, 0.0)
+        self.adapter = PlayBoundGamepad(self.keyboard, base, task_manager, lambda: self.xinput)
         self.task = SimpleNamespace(cont="continue")
 
     def tick(self):
@@ -45,15 +48,43 @@ class GamepadTests(unittest.TestCase):
 
     def test_stick_triggers_and_dpad_drive_separate_pad_state(self):
         self.keyboard.keyMap["right"] = 1
+        self.tick()
         self.pad.axes[InputDevice.Axis.left_x] = -0.8
         self.pad.axes[InputDevice.Axis.right_trigger] = 0.7
         self.pad.buttons.add(GamepadButton.dpad_right())
         self.tick()
-        self.assertEqual(self.keyboard.padMap["left"], 1)
+        self.assertEqual(self.keyboard.padMap["left"], 0)
         self.assertEqual(self.keyboard.padMap["right"], 1)
+        self.assertLess(self.keyboard.padSteering, -0.4)
         self.assertEqual(self.keyboard.padMap["accelerate"], 1)
         self.assertEqual(self.keyboard.keyMap["right"], 1)
         self.assertEqual(self.attached, [(self.pad, "gridpad")])
+
+    def test_xinput_trigger_fallback_and_calibrated_negative_axis(self):
+        self.pad.axes[InputDevice.Axis.left_trigger] = -1.0
+        self.tick()
+        self.xinput = (0.7, 0.8)
+        self.tick()
+        self.assertEqual(self.keyboard.padMap["accelerate"], 1)
+        self.assertEqual(self.keyboard.padMap["brake"], 1)
+        self.xinput = (0.0, 0.0)
+        self.pad.axes[InputDevice.Axis.left_trigger] = -0.7
+        self.tick()
+        self.assertEqual(self.keyboard.padMap["brake"], 1)
+        self.assertEqual(self.keyboard.padMap["accelerate"], 0)
+
+    def test_analog_deadzone_and_disconnect(self):
+        self.tick()
+        self.pad.axes[InputDevice.Axis.left_x] = 0.2
+        self.tick()
+        self.assertEqual(self.keyboard.padSteering, 0)
+        self.pad.axes[InputDevice.Axis.left_x] = 0.7
+        self.tick()
+        self.assertGreater(self.keyboard.padSteering, 0.25)
+        self.pad.connected = False
+        self.connected.clear()
+        self.tick()
+        self.assertEqual(self.keyboard.padSteering, 0)
 
     def test_a_and_start_are_one_shot_and_disconnect_releases_controls(self):
         self.pad.buttons.update((GamepadButton.face_a(), GamepadButton.start()))
@@ -70,6 +101,7 @@ class GamepadTests(unittest.TestCase):
         self.pad.buttons.add(GamepadButton.face_a())
         self.tick()
         self.assertEqual(self.keyboard.padMap["space"], 1)
+        self.pad.connected = False
         self.connected.clear()
         self.tick()
         self.assertTrue(all(value == 0 for value in self.keyboard.padMap.values()))

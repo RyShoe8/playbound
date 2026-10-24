@@ -35,7 +35,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path.home() / "Downloads" / "GridLeader-PlayBound-test2-win64.zip",
+        default=Path.home() / "Downloads" / "GridLeader-PlayBound-test3-win64.zip",
     )
     args = parser.parse_args()
     output = args.output.resolve()
@@ -71,6 +71,12 @@ if getattr(sys, 'frozen', False):
         replace_once(main_py, "\t\tbase.makeDefaultPipe()", "\t\tif base.pipe is None:\n\t\t\tbase.makeDefaultPipe()")
         replace_once(main_py, "PStatClient.connect()", "# PStats disabled for the portable build")
         replace_once(main_py, "\nrun()", "\nbase.run()")
+        # Keep fullscreen, but avoid rendering this 2012 game at 1440p/4K.
+        # A 1080p fullscreen mode still fills the display on 16:9 monitors.
+        replace_once(main_py, "props.setSize(width,height)",
+                     "if width * 9 == height * 16 and width > 1920:\n"
+                     "\t\t\tprops.setSize(1920, 1080)\n"
+                     "\t\telse:\n\t\t\tprops.setSize(width, height)")
 
         # The source game only reads KeyboardHandler. Feed it a separate pad
         # state map, leaving keyboard state and the game's own driving logic
@@ -81,7 +87,14 @@ if getattr(sys, 'frozen', False):
             keyboard,
             'self.keyMap = {"accelerate":0, "brake":0, "left":0, "right":0, "space":0, "p":0}',
             'self.keyMap = {"accelerate":0, "brake":0, "left":0, "right":0, "space":0, "p":0}\n'
-            '\t\tself.padMap = dict(self.keyMap)',
+            '\t\tself.padMap = dict(self.keyMap)\n'
+            '\t\tself.padSteering = 0.0',
+        )
+        replace_once(
+            keyboard,
+            '\tdef getUpArrowStatus(self):',
+            '\tdef getPadSteeringStatus(self):\n\t\treturn self.padSteering\n\n'
+            '\tdef getUpArrowStatus(self):',
         )
         replace_once(
             keyboard,
@@ -103,6 +116,35 @@ if getattr(sys, 'frozen', False):
                 f'self.keyMap["{action}"]=0',
                 f'self.keyMap["{action}"]=0\n\t\tself.padMap["{action}"]=0',
             )
+
+        driver = source / "keyboarddriver.py"
+        replace_once(driver, "\t\tself.pauseToggleRequested=0",
+                     "\t\tself.pauseToggleRequested=0\n\t\tself.padSteeringInUse=False")
+        replace_once(
+            driver,
+            "\t\tif upArrow==1:\n\t\t\tself.acceleration=1.0\n"
+            "\t\telif downArrow==1:\n\t\t\tself.braking=1.0",
+            "\t\tif upArrow==1:\n\t\t\tself.acceleration=1.0\n\t\t\tself.braking=0\n"
+            "\t\telif downArrow==1:\n\t\t\tself.acceleration=0\n\t\t\tself.braking=1.0",
+        )
+        replace_once(
+            driver,
+            "\t\tif leftArrow==1:\n\t\t\tself.steering=self.steering-75\n"
+            "\t\t\tif self.steering<-10000:\n\t\t\t\tself.steering=-10000\n"
+            "\t\telif rightArrow==1:\n\t\t\tself.steering=self.steering+75\n"
+            "\t\t\tif self.steering>10000:\n\t\t\t\tself.steering=10000",
+            "\t\tif leftArrow==1 or rightArrow==1:\n"
+            "\t\t\tself.padSteeringInUse=False\n"
+            "\t\t\tif leftArrow==1:\n\t\t\t\tself.steering=max(-10000, self.steering-75)\n"
+            "\t\t\telse:\n\t\t\t\tself.steering=min(10000, self.steering+75)\n"
+            "\t\telse:\n"
+            "\t\t\tpadSteering=self.keyboardHandler.getPadSteeringStatus()\n"
+            "\t\t\tif padSteering or self.padSteeringInUse:\n"
+            "\t\t\t\tself.padSteeringInUse=True\n"
+            "\t\t\t\tself.steering+=(padSteering*10000-self.steering)*0.12\n"
+            "\t\t\t\tif not padSteering and abs(self.steering)<20:\n"
+            "\t\t\t\t\tself.steering=0\n\t\t\t\t\tself.padSteeringInUse=False",
+        )
 
         venv = work / "venv"
         subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
@@ -136,7 +178,7 @@ if getattr(sys, 'frozen', False):
             "Grid Leader - PlayBound Windows test build\n"
             f"Game source: {UPSTREAM} at {REVISION}\n"
             f"Runtime: {PANDA3D}; package tool: {PYINSTALLER}\n"
-            "PlayBound test changes: native gamepad support; native-resolution fullscreen.\n"
+            "PlayBound test changes: native gamepad, tuned steering and trigger input; fullscreen up to 1080p.\n"
             "This compatibility build is for evaluating the game in PlayBound testing.\n"
             "The original project does not include a license file in its repository.\n"
             "Panda3D's license is included separately as Panda3D-LICENSE.txt.\n",
