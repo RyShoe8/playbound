@@ -10,11 +10,17 @@ const BlogPostSchema = new Schema(
     authorName: { type: String, required: true, default: "PlayBound Team", maxlength: 100 },
     published: { type: Boolean, default: false, index: true },
     publishedAt: { type: Date, default: null },
+    sourceKey: { type: String, maxlength: 240 },
+    sourcePayloadHash: { type: String },
+    coveredIds: { type: [String], default: undefined },
+    coverageStart: { type: Date },
+    coverageEnd: { type: Date },
   },
   { timestamps: true }
 );
 
 BlogPostSchema.index({ published: 1, publishedAt: -1 });
+BlogPostSchema.index({ sourceKey: 1 }, { unique: true, partialFilterExpression: { sourceKey: { $type: "string" } } });
 
 const BlogPost = models.BlogPost || model("BlogPost", BlogPostSchema);
 export default BlogPost;
