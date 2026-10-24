@@ -109,6 +109,8 @@ const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
 ] as const;
 
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // Existing DB-only testing game. Leave its status, editorial and images alone.
+  "grid-leader": ["platforms", "launchMethods", "sizeMB", "installSteps", "launcherInstall"],
   "populous-reincarnated": ["access.requiresGameSlugs"],
   openage: ["access.requiredExternalGameName"],
   // First-party GitHub release: add native one-click desktop installs while

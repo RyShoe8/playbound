@@ -3830,6 +3830,7 @@ const BUNDLED_CONTROL_PROFILES = {
   holocure: "./services/inputEngine/profiles/holocure.json",
   "wolfenstein-enemy-territory": "./services/inputEngine/profiles/wolfenstein-enemy-territory.json",
   outrun: "./services/inputEngine/profiles/outrun.json",
+  "grid-leader": "./services/inputEngine/profiles/grid-leader.json",
   "shadow-warrior-classic-complete": "./services/inputEngine/profiles/shadow-warrior-classic-complete.json",
 };
 
