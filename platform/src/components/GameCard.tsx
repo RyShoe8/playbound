@@ -55,7 +55,7 @@ const ctaSizes = {
 /** The fields PlayCta reads, so card-sized projections can use it too. */
 export type PlayCtaGame = Pick<Game,
   "slug" | "title" | "access" | "website" | "browserPlayable" | "launchMethods" | "androidStoreUrl" | "iosStoreUrl"
-> & { launcherInstall?: { kind?: string; url?: string } | Game["launcherInstall"] };
+> & { launcherInstall?: { kind?: string; url?: string; enabled?: boolean } | Game["launcherInstall"] };
 
 export function PlayCta({
   game,
@@ -78,7 +78,12 @@ export function PlayCta({
   const launcherKnown = useLauncherKnown();
   const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
   const paid = directPurchaseRequired(game.access);
-  const installLabel = isInstalled ? "Play" : paid ? "Install" : "Get It Free";
+  const oneClickInstall = Boolean(
+    game.launcherInstall?.kind &&
+    game.launcherInstall.kind !== "external" &&
+    game.launcherInstall.enabled !== false
+  );
+  const installLabel = isInstalled ? "Play" : paid || oneClickInstall ? "Install" : "Get It Free";
 
 
   const className = cn(
@@ -160,7 +165,7 @@ export function PlayCta({
     e.preventDefault();
     e.stopPropagation();
     // Signing into the website does not mean the desktop launcher is installed.
-    if (!isInstalled && !paid) {
+    if (!isInstalled && !paid && (!launcherKnown || !oneClickInstall)) {
       setShowDownloadChoice(true);
       return;
     }
@@ -195,7 +200,7 @@ export function PlayCta({
         onClick={handleInstall}
         disabled={status === "trying"}
         className={className}
-        title={isInstalled ? `Play ${game.title}` : paid ? `Install ${game.title} with PlayBound Launcher` : `Get ${game.title} free`}
+        title={isInstalled ? `Play ${game.title}` : paid || oneClickInstall ? `Install ${game.title} with PlayBound Launcher` : `Get ${game.title} free`}
       >
         {status === "trying" ? (
           <>
