@@ -817,4 +817,13 @@ describe("insert-catalog-wave allowlists", () => {
     expect(script).toContain("const allowedMods = new Set(scopedRun ? [] : NEW_MOD_SLUGS)");
     expect(script).toContain("if (scopedRun) continue;");
   });
+
+  it("keeps the Grid Leader test-package update scoped to its install fields", () => {
+    const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "apply-catalog-wave.yml"), "utf8");
+    const scopedJob = workflow.split("  apply-grid-leader:")[1] ?? "";
+    expect(workflow).toContain("!contains(github.event.head_commit.message, '[catalog-scope:grid-leader]')");
+    expect(scopedJob.match(/npm run insert:catalog-wave[^\r\n]*/g)).toEqual([
+      "npm run insert:catalog-wave -- --games=grid-leader --fields=launcherInstall,installSteps",
+    ]);
+  });
 });

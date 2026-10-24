@@ -35,7 +35,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path.home() / "Downloads" / "GridLeader-PlayBound-test-win64.zip",
+        default=Path.home() / "Downloads" / "GridLeader-PlayBound-test2-win64.zip",
     )
     args = parser.parse_args()
     output = args.output.resolve()
@@ -69,10 +69,40 @@ from panda3d.core import loadPrcFileData, loadPrcFile, Filename
 if getattr(sys, 'frozen', False):
     loadPrcFile(Filename.fromOsSpecific(os.path.join(sys._MEIPASS, 'Config.prc')))""")
         replace_once(main_py, "\t\tbase.makeDefaultPipe()", "\t\tif base.pipe is None:\n\t\t\tbase.makeDefaultPipe()")
-        replace_once(main_py, "props.setSize(width,height)", "props.setSize(min(width, 1280), min(height, 720))")
-        replace_once(main_py, "props.setFullscreen(True)", "props.setFullscreen(False)")
         replace_once(main_py, "PStatClient.connect()", "# PStats disabled for the portable build")
         replace_once(main_py, "\nrun()", "\nbase.run()")
+
+        # The source game only reads KeyboardHandler. Feed it a separate pad
+        # state map, leaving keyboard state and the game's own driving logic
+        # untouched. Panda3D's native device API handles Xbox-style pads.
+        shutil.copy2(Path(__file__).with_name("grid_leader_gamepad.py"), source / "playbound_gamepad.py")
+        keyboard = source / "keyboardhandler.py"
+        replace_once(
+            keyboard,
+            'self.keyMap = {"accelerate":0, "brake":0, "left":0, "right":0, "space":0, "p":0}',
+            'self.keyMap = {"accelerate":0, "brake":0, "left":0, "right":0, "space":0, "p":0}\n'
+            '\t\tself.padMap = dict(self.keyMap)',
+        )
+        replace_once(
+            keyboard,
+            'self.accept("escape", sys.exit)',
+            'self.accept("escape", sys.exit)\n'
+            '\t\timport builtins\n'
+            '\t\tfrom playbound_gamepad import PlayBoundGamepad\n'
+            '\t\tself.gamepad = PlayBoundGamepad(self, builtins.base, builtins.taskMgr)',
+        )
+        for action in ("accelerate", "brake", "left", "right", "space", "p"):
+            replace_once(
+                keyboard,
+                f'return self.keyMap["{action}"]',
+                f'return int(bool(self.keyMap["{action}"] or self.padMap["{action}"]))',
+            )
+        for action in ("space", "p"):
+            replace_once(
+                keyboard,
+                f'self.keyMap["{action}"]=0',
+                f'self.keyMap["{action}"]=0\n\t\tself.padMap["{action}"]=0',
+            )
 
         venv = work / "venv"
         subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
@@ -106,6 +136,7 @@ if getattr(sys, 'frozen', False):
             "Grid Leader - PlayBound Windows test build\n"
             f"Game source: {UPSTREAM} at {REVISION}\n"
             f"Runtime: {PANDA3D}; package tool: {PYINSTALLER}\n"
+            "PlayBound test changes: native gamepad support; native-resolution fullscreen.\n"
             "This compatibility build is for evaluating the game in PlayBound testing.\n"
             "The original project does not include a license file in its repository.\n"
             "Panda3D's license is included separately as Panda3D-LICENSE.txt.\n",

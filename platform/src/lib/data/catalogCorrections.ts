@@ -21,25 +21,25 @@ import { launcherInstallBySlug } from "./launcherInstall";
 const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   // Windows testing build of Jonathan Thomas's 2012 Panda3D source, rebuilt
   // against Panda3D 1.10.16. The archive was extracted and launched locally;
-  // title -> qualifying was smoke-tested. Keep the existing publication status.
+  // the previous build reached qualifying. Keep the existing publication status.
   "grid-leader": {
     platforms: ["Windows"],
     launchMethods: ["install"],
     sizeMB: 138,
     installSteps: [
       { platform: "windows", text: "In the PlayBound Launcher, select Grid Leader and press Install. PlayBound downloads the tested Windows build and extracts it automatically; no Python or Panda3D setup is needed." },
-      { platform: "windows", text: "Press Play to run GridLeader.exe. Arrow keys steer, accelerate and brake; Space starts a race and changes gear. PlayBound Controls has a testing controller profile for this build." },
+      { platform: "windows", text: "Press Play to run GridLeader.exe at your display's native fullscreen size. On a controller, steer with the left stick or D-pad, use RT to accelerate, LT to brake, A to start or change gear, and Start to pause. The keyboard's arrow keys, Space and P still work." },
     ],
     launcherInstall: {
       enabled: true,
       kind: "direct-zip",
-      url: "https://mirror.playbound.club/launcher-packages/games/grid-leader/GridLeader-PlayBound-test-win64.zip?v=989c34b6",
-      fileName: "GridLeader-PlayBound-test-win64.zip",
+      url: "https://mirror.playbound.club/launcher-packages/games/grid-leader/GridLeader-PlayBound-test2-win64.zip",
+      fileName: "GridLeader-PlayBound-test2-win64.zip",
       exeHint: "GridLeader.exe",
       knownExePaths: ["GridLeader.exe"],
       unwrapSingleRoot: true,
-      versionLabel: "2012 source · PlayBound Windows test build",
-      note: "Portable Windows test build from upstream revision f266f20d. Controller profile is still being tested; the game is not marked release-ready.",
+      versionLabel: "2012 source · PlayBound Windows test build 2",
+      note: "Portable Windows test build from upstream revision f266f20d with native gamepad input and native-resolution fullscreen. Physical controller support is still being tested; the game is not marked release-ready.",
     },
   },
   // The live Populous: Reincarnated game row needs the retail parent. Patch
