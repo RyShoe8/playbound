@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/site";
 import { publicationIdentity, roundupInput, verifyRoundupRequest } from "@/lib/nucleasRoundup";
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
-const iso = (value: unknown) => value ? new Date(String(value)).toISOString() : null;
+const iso = (value: unknown) => value ? (value instanceof Date ? value : new Date(String(value))).toISOString() : null;
 // PlayBound's editorial cover for this series; callers remain brand agnostic.
 const ROUNDUP_COVER = `${SITE_URL}/blog/new-games-platform-updates-blue.png`;
 type Doc = Record<string, unknown>;

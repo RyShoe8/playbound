@@ -16,6 +16,14 @@ function request(method = "POST", body = JSON.stringify(input), query = "", time
 function existing() { const identity = publicationIdentity(input); return { ...identity.normalized, _id: "post1", published: true, slug: identity.slug, sourcePayloadHash: identity.hash, publishedAt: new Date() }; }
 beforeEach(() => { vi.resetAllMocks(); process.env.NUCLEAS_ROUNDUP_SECRET = secret; });
 describe("roundup integration", () => {
+  it("preserves millisecond precision in the durable publication receipt", async () => {
+    const post = { ...existing(), coverageEnd: new Date('2026-10-24T00:57:39.068Z'), publishedAt: new Date('2026-10-24T02:00:00.123Z') };
+    mocks.previous.mockReturnValue({ lean: vi.fn().mockResolvedValue(post) });
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect((await response.json()).post).toMatchObject({ coverageEnd: '2026-10-24T00:57:39.068Z', publishedAt: '2026-10-24T02:00:00.123Z' });
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
   it("uses a readable title and coverage date with a short stable key suffix", () => {
     const identity = publicationIdentity({ ...input, title: "New Games & Platform Updates!" });
     expect(identity.slug).toMatch(/^new-games-platform-updates-2026-10-02-[a-f0-9]{12}$/);
