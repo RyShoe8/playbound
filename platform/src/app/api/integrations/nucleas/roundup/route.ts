@@ -7,7 +7,6 @@ import { mongoVisibleFilter } from "@/lib/catalogStatus";
 import { SITE_URL } from "@/lib/site";
 import { publicationIdentity, roundupInput, verifyRoundupRequest } from "@/lib/nucleasRoundup";
 
-export const runtime = "nodejs";
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 const iso = (value: unknown) => value ? new Date(String(value)).toISOString() : null;
 type Doc = Record<string, unknown>;
