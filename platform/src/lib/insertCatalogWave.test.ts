@@ -192,6 +192,7 @@ describe("insert-catalog-wave allowlists", () => {
         "deus-ex-goty-edition",
         "dune-legacy",
         "freetrain",
+        "grid-leader",
         "hawken-hawkening",
         "hurry-curry",
         "hyperdisc-arena",
