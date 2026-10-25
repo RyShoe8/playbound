@@ -81,6 +81,14 @@ import CatalogGame from "@/lib/models/CatalogGame";
  * could create every missing seed edition/mod. These checks pin the contract.
  */
 describe("insert-catalog-wave allowlists", () => {
+  it("never changes a curated game's publication state from seed data", () => {
+    for (const [slug, fields] of Object.entries(PATCH_GAME_FIELDS)) {
+      expect(fields, slug).not.toContain("status");
+      expect(fields, slug).not.toContain("published");
+      expect(fields, slug).not.toContain("publishedAt");
+    }
+  });
+
   it("only names the batch games we intend to create", () => {
     expect([...NEW_GAME_SLUGS].sort()).toEqual(
       [
@@ -208,6 +216,7 @@ describe("insert-catalog-wave allowlists", () => {
         "seven-kingdoms-ancient-adversaries",
         "shadow-warrior-classic-complete",
         "sky-children-of-the-light",
+        "skylance",
         "slapshot-rebound",
         "space-station-14",
         "stalker-anomaly",
@@ -801,10 +810,11 @@ describe("insert-catalog-wave allowlists", () => {
     expect(src).toContain('from "./insert-catalog-wave.allowlist"');
   });
 
-  it("applies this push through four named game records and one named edition only", () => {
+  it("requires an explicit catalog scope instead of running a global push job", () => {
     const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "apply-catalog-wave.yml"), "utf8");
     const scopedJob = workflow.split("  apply-four-games:")[1]?.split("  apply-battlefield-features:")[0] ?? "";
-    expect(workflow).toContain("!contains(github.event.head_commit.message, '[catalog-scope:four-games]')");
+    expect(workflow).not.toMatch(/^  apply:$/m);
+    expect(workflow).not.toMatch(/run: npm run insert:catalog-wave\s*$/m);
     expect(scopedJob).toContain("--games=unturned,aneurism-iv --fields=launcherInstall.url,launcherInstall.steamAppId");
     expect(scopedJob).toContain("--games=aneurism-iv --fields=installSteps");
     expect(scopedJob).toContain("--games=rimworld --fields=hasControllerSupport,launcherInstall.exeHint");
@@ -813,6 +823,8 @@ describe("insert-catalog-wave allowlists", () => {
 
     const script = readFileSync(join(process.cwd(), "scripts", "insert-catalog-wave.ts"), "utf8");
     expect(script).toContain("const scopedRun = Boolean(scopedGames || scopedEditions)");
+    expect(script).toContain("if (!scopedRun) {");
+    expect(script).toContain("if (scopedGames && !scopedFields && !featuresOnly)");
     expect(script).toContain("const allowedEditions = new Set(scopedRun ? [] : NEW_EDITION_KEYS)");
     expect(script).toContain("const allowedMods = new Set(scopedRun ? [] : NEW_MOD_SLUGS)");
     expect(script).toContain("if (scopedRun) continue;");
@@ -820,8 +832,7 @@ describe("insert-catalog-wave allowlists", () => {
 
   it("keeps the Grid Leader test-package update scoped to its install fields", () => {
     const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "apply-catalog-wave.yml"), "utf8");
-    const scopedJob = workflow.split("  apply-grid-leader:")[1] ?? "";
-    expect(workflow).toContain("!contains(github.event.head_commit.message, '[catalog-scope:grid-leader]')");
+    const scopedJob = workflow.split("  apply-grid-leader:")[1]?.split("  apply-skylance:")[0] ?? "";
     expect(scopedJob.match(/npm run insert:catalog-wave[^\r\n]*/g)).toEqual([
       "npm run insert:catalog-wave -- --games=grid-leader --fields=launcherInstall,installSteps",
     ]);

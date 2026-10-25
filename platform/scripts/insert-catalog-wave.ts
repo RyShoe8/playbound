@@ -1,6 +1,7 @@
 /**
  * Catalog wave — applied by `.github/workflows/apply-catalog-wave.yml`
- * (`npm run insert:catalog-wave` / `postdeploy:catalog`). Not part of `build`.
+ * (`npm run insert:catalog-wave -- --games=... --fields=...`). Not part of
+ * build or deployment. Refuses unscoped runs.
  *
  * Contract:
  *   - explicit allowlists only (never the whole seed catalog)
@@ -14,7 +15,6 @@
  * Allowlists live in `insert-catalog-wave.allowlist.ts`.
  */
 import { loadEnvConfig } from "@next/env";
-import { shouldStampPublishedAt } from "../src/lib/catalogStatus";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -178,8 +178,7 @@ async function main() {
     await applyStoreMediaRepairs(process.argv.includes("--dry-run"));
     process.exit(0);
   }
-  // Optional operational scope for an explicitly named game batch. The
-  // scheduled/deploy wave keeps its established behavior when omitted.
+  // Every run must name the exact game fields or edition records to update.
   const scopeArg = process.argv.find((arg) => arg.startsWith("--games="));
   const scopedGames = scopeArg
     ? new Set(scopeArg.slice("--games=".length).split(",").map((slug) => slug.trim()).filter(Boolean))
@@ -189,6 +188,9 @@ async function main() {
     ? new Set(editionsArg.slice("--editions=".length).split(",").map((key) => key.trim()).filter(Boolean))
     : null;
   const scopedRun = Boolean(scopedGames || scopedEditions);
+  if (!scopedRun) {
+    throw new Error("Catalog wave requires --games=<slugs> with --fields=<fields>, or --editions=<keys>");
+  }
   const fieldsArg = process.argv.find((arg) => arg.startsWith("--fields="));
   const scopedFields = fieldsArg
     ? new Set(fieldsArg.slice("--fields=".length).split(",").map((field) => field.trim()).filter(Boolean))
@@ -197,6 +199,9 @@ async function main() {
   const singleFeatureArg = process.argv.find((arg) => arg.startsWith("--feature="));
   const singleFeature = singleFeatureArg?.slice("--feature=".length).trim();
   if (scopedGames && scopedEditions) throw new Error("--games and --editions are mutually exclusive");
+  if (scopedGames && !scopedFields && !featuresOnly) {
+    throw new Error("--games requires --fields=<fields> or --features-only with --feature=<name>");
+  }
   if (scopedEditions && (scopedEditions.size === 0 || [...scopedEditions].some((key) => !PATCH_EDITION_FIELDS[key]))) {
     throw new Error("--editions must list nonempty, comma-separated keys already in PATCH_EDITION_FIELDS");
   }
@@ -454,7 +459,13 @@ async function main() {
       continue;
     }
 
-    const existing = await CatalogGame.findOne({ slug }).select("_id status published").lean();
+    // The CMS owns publication state. Seed data can lag behind a curator's
+    // decision, as happened when Deus Ex was reset from published to testing.
+    if (fields.some((field) => ["status", "published", "publishedAt"].includes(field))) {
+      throw new Error(`insert-catalog-wave — refuse publication-state patch for ${slug}`);
+    }
+
+    const existing = await CatalogGame.findOne({ slug }).select("_id").lean();
     if (!existing) {
       console.warn(`insert-catalog-wave — patch game ${slug} not in DB, skipping (no upsert)`);
       gamesPatchSkipped++;
@@ -596,13 +607,6 @@ async function main() {
         throw new Error(
           `insert-catalog-wave — refuse patch ${slug}: missing source for field "${field}"`
         );
-      }
-    }
-
-    if (payload.status) {
-      payload.published = payload.status === "published";
-      if (payload.status === "published" && shouldStampPublishedAt(existing, "published")) {
-        payload.publishedAt = new Date();
       }
     }
 

@@ -22,24 +22,18 @@ Production Mongo credentials are not for local shells, `vercel env pull`, or
 `vercel env run`. Catalog writes that belong on an allowlist go through
 [`.github/workflows/apply-catalog-wave.yml`](../../.github/workflows/apply-catalog-wave.yml):
 
-1. Edit seed (`games.ts` / `editions.ts` / `editorial.ts` / …) and put the
-   intended inserts / field patches / edition retires on
-   `scripts/insert-catalog-wave.allowlist.ts`.
-2. Merge to `main` (or run **Actions → Apply catalog wave → Run workflow**).
-3. The workflow runs `npm run insert:catalog-wave` against the repository
-   `MONGODB_URI` secret. New games land as **draft**; publish in Admin after
-   editorial/media check.
+1. For an existing game, put the reviewed field values in seed/corrections and
+   name the exact slug and fields in `scripts/insert-catalog-wave.allowlist.ts`.
+2. Run a specifically scoped **Apply catalog wave** job for that request. The
+   job must pass `--games=<slugs> --fields=<fields>` (or a named edition scope)
+   and use the repository `MONGODB_URI` secret. A regular push does not run a
+   broad wave. New games are entered through the Admin Panel.
 4. Never `POST /api/admin/games/sync` to “fix” an existing SoC/CoP (or any
    curated) row from seed. Never `DELETE` catalog games.
 
-Pushing allowlist/seed changes to `main` triggers the workflow automatically.
+Pushing allowlist/seed changes to `main` only runs a catalog job when that
+commit explicitly selects a scoped job. The script rejects unscoped runs.
 `npm run build` still writes nothing to the database — that stays intentional.
-
-`postdeploy:catalog` runs `seed:developers` before the wave, because a new game
-names a `developerSlug` that may not have a row yet. That script is insert-only
-per slug and leaves an existing developer completely alone, so admin edits to a
-bio or hue survive every redeploy — which is exactly what made the deleted
-global seed scripts unsafe and makes this one safe to run repeatedly.
 
 Local `seed:missing-* --dry-run` is fine for reading blast radius when a
 usable URI is already in the environment. It is not the production apply path.

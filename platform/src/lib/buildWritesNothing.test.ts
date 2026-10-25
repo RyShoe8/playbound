@@ -45,18 +45,8 @@ describe("the build chain", () => {
     }
   });
 
-  it("keeps catalog and host sync as an explicit post-deploy job", () => {
-    /*
-     * seed:developers leads, because a game the wave creates names a
-     * developerSlug that may have no row yet. It is admitted here only because
-     * it is insert-only per slug — an existing developer is never written to, so
-     * a redeploy cannot undo an admin's edit to a bio or hue. Nothing else
-     * belongs in this chain: every script the repository deleted was one that
-     * wrote more than the slug it was given.
-     */
-    expect(pkg.scripts["postdeploy:catalog"]).toBe(
-      "npm run seed:developers && npm run insert:catalog-wave && npm run sync:game-host"
-    );
+  it("has no deploy hook that reapplies the catalog wave", () => {
+    expect(pkg.scripts["postdeploy:catalog"]).toBeUndefined();
   });
 
   it("keeps the seeding scripts available to run by hand", () => {

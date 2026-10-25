@@ -137,7 +137,9 @@ export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "counter-strike-source": ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   unturned: ["steamAppId", "hasControllerSupport", "multiplayerGamingSteps", "launcherInstall.url", "launcherInstall.steamAppId", ...DEDICATED_DRAFT_EDITORIAL_FIELDS],
   "shadow-warrior-classic-complete": ["launcherInstall"],
-  "deus-ex-goty-edition": ["status", "features", "multiplayerGamingSteps"],
+  // Publication state is curated in the admin CMS. The seed still says
+  // testing, so including status here unpublished a live game on every wave.
+  "deus-ex-goty-edition": ["features", "multiplayerGamingSteps"],
   /*
    * releaseYear audit, 2026-09-22.
    *

@@ -1,9 +1,5 @@
-# Catalog wave apply.
-# Never runs seed:editions / seed:mods / seed:launcher-install / sync-single-game.
-# Writes only allowlisted inserts plus named field patches from insert:catalog-wave.
-#
-# This is how allowlisted catalog changes reach production Mongo.
-# Do not apply catalog waves from a local machine (no env pull, no vercel env run).
+# Explicit, scoped catalog corrections only. A normal push must never rewrite
+# curated Mongo rows from seed data. No local credential pulls.
 
 name: Apply catalog wave
 
@@ -35,71 +31,6 @@ on:
       - ".github/workflows/apply-catalog-wave.yml"
 
 jobs:
-  apply:
-    # The Dedicated-draft commit uses the isolated job below. A global wave
-    # here would also rewrite unrelated catalog rows on the same push.
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.media_only == true) && !contains(github.event.head_commit.message, '[catalog-scope:store-media]') && !contains(github.event.head_commit.message, '[catalog-scope:dedicated-drafts]') && !contains(github.event.head_commit.message, '[catalog-scope:battlefield-features]') && !contains(github.event.head_commit.message, '[catalog-scope:hyperdisc-install]') && !contains(github.event.head_commit.message, '[catalog-scope:four-games]') && !contains(github.event.head_commit.message, '[catalog-scope:grid-leader]') && !contains(github.event.head_commit.message, '[catalog-scope:skylance]') }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: platform
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Check Mongo URI
-        id: check_mongo
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-        run: |
-          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
-            echo "MONGODB_URI secret is not configured in GitHub Repository Settings (Settings → Secrets and variables → Actions)."
-            echo "Skipping catalog wave apply."
-            echo "has_mongo=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "has_mongo=true" >> $GITHUB_OUTPUT
-
-      - name: Install Platform Dependencies
-        if: steps.check_mongo.outputs.has_mongo == 'true'
-        run: npm install
-
-      - name: Seed new developers (insert-only, preserves existing)
-        if: steps.check_mongo.outputs.has_mongo == 'true'
-        run: npm run seed:developers
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-
-      - name: Insert / field-patch allowlisted catalog rows
-        if: steps.check_mongo.outputs.has_mongo == 'true'
-        run: npm run insert:catalog-wave
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-
-      - name: Migrate CoP anomaly library/party rows to stalker-anomaly
-        if: steps.check_mongo.outputs.has_mongo == 'true'
-        run: npm run migrate:cop-anomaly-to-stalker-anomaly:apply
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-
-      - name: "Sync Ashes and ET: Legacy recipes"
-        if: steps.check_mongo.outputs.has_mongo == 'true'
-        run: npm run sync:edition-install -- freedoom/ashes-2063 wolfenstein-enemy-territory/et-legacy
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-
-      - name: Patch Combined Arms, VoxeLibre, and DREAM download fields
-        if: steps.check_mongo.outputs.has_mongo == 'true'
-        run: npm run patch:named-mods -- openra-combined-arms luanti-voxelibre dfu-dream
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-
   apply-media-only:
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.media_only == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:store-media]')) }}
     runs-on: ubuntu-latest

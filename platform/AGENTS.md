@@ -48,9 +48,9 @@ build that can surprise you.
 
 ## The catalog wave is the only way to update a published game
 
-Allowlisted catalog inserts/patches/retires reach production via the
-**Apply catalog wave** GitHub Action (`insert:catalog-wave`), which also runs
-as `postdeploy:catalog` on every deploy. Not via local env pulls. See
+Allowlisted catalog corrections reach production via explicitly scoped
+**Apply catalog wave** GitHub Action jobs (`insert:catalog-wave`). Normal pushes
+and deployments never apply the whole wave. Not via local env pulls. See
 `docs/database-seeding.md` → *How allowlisted catalog changes reach
 production*.
 
@@ -63,10 +63,10 @@ field on a live game means two edits and nothing else:
 2. Name the slug and the exact fields in `PATCH_GAME_FIELDS`
    (`insert-catalog-wave.allowlist.ts`).
 
-The wave then `$set`s only those fields, refuses a field with no source,
-refuses a slug that does not already exist, and never touches editions or
-mods. That last property is the whole point: every catalog script we have
-deleted was one that wrote more than it was asked to.
+The scoped game wave then `$set`s only those fields, refuses a field with no
+source, refuses a slug that does not already exist, and never touches editions
+or mods. The wave requires explicit slugs and fields and refuses publication
+state changes; game status and publication are managed in Admin.
 
 The per-slug admin routes under `/api/admin/games/[slug]` remain fine — that
 is a human editing one game on purpose, through the CMS.
