@@ -107,6 +107,10 @@ test("ROM extensions still pick the core they always did", () => {
   assert.equal(coreForExtension(".xyz"), null);
 });
 
+test("Neo Geo .neo cartridges resolve to Geolith", () => {
+  assert.equal(coreForExtension(".neo"), "geolith");
+});
+
 test("NES ROMs resolve to fceumm", () => {
   assert.equal(coreForExtension(".nes"), "fceumm");
   assert.equal(coreForExtension("nes"), "fceumm");
@@ -136,6 +140,7 @@ test("coreForSlug returns overrides for registered games", () => {
   assert.equal(coreForSlug("super-sidekicks"), "fbneo");
   assert.equal(coreForSlug("baseball-stars-2"), "fbneo");
   assert.equal(coreForSlug("soccer-brawl"), "fbneo");
+  assert.equal(coreForSlug("sklyance"), "geolith");
   assert.equal(coreForSlug("unknown-game"), null);
   assert.equal(coreForSlug(""), null);
   assert.equal(coreForSlug(null), null);

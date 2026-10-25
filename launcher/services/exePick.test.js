@@ -122,6 +122,15 @@ test("Shattered Pixel Dungeon picks its root Windows launcher over dependency JA
   }
 });
 
+test("a Neo Geo .neo cartridge is selected as the launch target", () => {
+  const dir = makeInstall({ "SkyLance.neo": 17_567_744, "neogeo.zip": 21_550 });
+  try {
+    assert.equal(path.basename(findExecutable(dir, "SkyLance.neo")), "SkyLance.neo");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("Streets of Rage Remake launches the game, not the level editor", () => {
   /*
    * The real sizes, read off an install: both stubs are exactly 14,336 bytes,

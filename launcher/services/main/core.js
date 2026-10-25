@@ -2017,7 +2017,7 @@ function findExecutable(dir, exeHint) {
             size: stat.size,
             rank: eacBootstrap.test(name) ? 150 : tool.test(name) ? 60 : 100,
           });
-        } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
+        } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|neo)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 90 });
         } else if (/\.(bat|cmd)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
           /*

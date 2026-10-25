@@ -911,9 +911,9 @@ function setLinkedCanUseAdminChannel(next) {
   const was = linkedCanUseAdminChannel;
   linkedCanUseAdminChannel = Boolean(next);
   applyUpdaterChannel();
-  // The catalog is fetched anonymously unless this is true; refetch the
-  // tester view as soon as the account is confirmed.
-  if (!was && linkedCanUseAdminChannel) void refreshRemoteCatalog(true);
+  // Both transitions change which games this account may see. In particular,
+  // a public refresh already in flight must not replace the tester catalog.
+  if (was !== linkedCanUseAdminChannel) void refreshRemoteCatalog(true);
 }
 
 async function refreshAdminUpdateChannel() {
@@ -1697,6 +1697,8 @@ function catalogReadHeaders() {
 }
 
 let lastCatalogRefreshTime = 0;
+let catalogRefreshRequestId = 0;
+const { catalogRequestTimeoutMs, shouldApplyCatalogResponse } = require('./services/catalogRefreshPolicy');
 
 /** List-view catalog rows — no install URLs, exe paths, or registry keys. */
 /*
@@ -1808,12 +1810,17 @@ async function refreshRemoteCatalog(force = false) {
   if (!force && Date.now() - lastCatalogRefreshTime < 15_000) {
     return;
   }
+  const requestId = ++catalogRefreshRequestId;
+  const requestedTestingCatalog = linkedCanUseAdminChannel;
+  const requestedToken = requestedTestingCatalog ? loadSettings().launcherToken : null;
   try {
     /*
      * A deadline, because there is a working catalog on disk already. Without
      * one this waits on undici's default, which is long enough that a captive
      * portal or a dead connection keeps the catalog stale for minutes; ten
-     * seconds is far past a healthy response and well short of that.
+     * seconds is enough for the cached public feed. Authenticated tester
+     * requests bypass the CDN and currently take about 22 seconds in
+     * production, so give those a longer deadline or testing games vanish.
      */
     /*
      * Signed only for admins and testers — the only accounts the catalog
@@ -1823,12 +1830,18 @@ async function refreshRemoteCatalog(force = false) {
      */
     const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
       headers: catalogReadHeaders(),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(catalogRequestTimeoutMs(requestedTestingCatalog)),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const remote = Array.isArray(data.games) ? data.games : [];
     if (remote.length === 0) return;
+    // A later refresh or account change wins. Otherwise the fast public
+    // request started at boot can overwrite a slower authorized response.
+    if (!shouldApplyCatalogResponse(
+      { id: requestId, includeTesting: requestedTestingCatalog, token: requestedToken },
+      { id: catalogRefreshRequestId, includeTesting: linkedCanUseAdminChannel, token: loadSettings().launcherToken }
+    )) return;
     /*
      * The live feed decides which games exist. Bundled and cached entries only
      * fill in fields for slugs it still lists.
@@ -7431,7 +7444,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
-  const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|zip)$/i.test(launchPath);
+  const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|neo|zip)$/i.test(launchPath);
   if (isRom) {
     const ext = path.extname(launchPath);
     const { coreForExtension, coreForSlug } = require("./services/ManagedRetroArch");
@@ -7449,6 +7462,9 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
     const romFile = launchPath;
     launchPath = runtime.binary;
+    const skyLanceArgs = slug === "sklyance"
+      ? await require("./services/sklyanceRetroArch").prepareSklyanceRetroArch(managedRetroArch.root(), path.dirname(romFile))
+      : [];
     /*
      * RetroArch netplay flags for multiplayer.
      *
@@ -7460,13 +7476,13 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     if (resolvedJoin?.host && isNetplayRomGame(slug)) {
       // connectArgs has already contributed -C <host> above. Use one copy.
       const hasClientFlag = args.includes("-C");
-      args = ["-L", runtime.corePath, romFile, "-f", ...(hasClientFlag ? [] : ["-C", resolvedJoin.host]), ...args];
+      args = [...skyLanceArgs, "-L", runtime.corePath, romFile, "-f", ...(hasClientFlag ? [] : ["-C", resolvedJoin.host]), ...args];
     } else if (isNetplayRomGame(slug) && join === null) {
       // Solo play or hosting — add -H so a joiner can connect later.
       // The -H flag is harmless when nobody joins: RetroArch plays normally.
-      args = ["-L", runtime.corePath, romFile, "-f", "-H", ...args];
+      args = [...skyLanceArgs, "-L", runtime.corePath, romFile, "-f", "-H", ...args];
     } else {
-      args = ["-L", runtime.corePath, romFile, "-f", ...args];
+      args = [...skyLanceArgs, "-L", runtime.corePath, romFile, "-f", ...args];
     }
   }
 

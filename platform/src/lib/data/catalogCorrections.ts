@@ -19,6 +19,31 @@
 import { launcherInstallBySlug } from "./launcherInstall";
 
 const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  // Sky Lance v2 is a preview release from Eagle Software's NeoGeoSDK. The
+  // upstream MVS .neo cartridge and redistributable EagleBIOS are packaged
+  // together on the VPS mirror. Geolith loads the cartridge in MVS/Europe mode.
+  // Sources: github.com/eaglesoftware777/neogeosdk/releases/tag/v1.7.7 and
+  // docs.libretro.com/library/geolith/. Preserve the CMS editorial/status.
+  sklyance: {
+    launchMethods: ["install"],
+    hasControllerSupport: true,
+    sizeMB: 18,
+    installSteps: [
+      { platform: "all", text: "In the PlayBound Launcher, select Sky Lance and press Install. PlayBound downloads the v2 Neo Geo cartridge and its free EagleBIOS together; no separate BIOS or arcade files are needed." },
+      { platform: "all", text: "Press Play to launch Sky Lance in PlayBound's RetroArch with the Geolith core. Use the stick to fly, A to fire, B for afterburner and evasive moves, C for a super bomb, and D for a heavy missile. The game is a work-in-progress preview." },
+    ],
+    launcherInstall: {
+      enabled: true,
+      kind: "direct-zip",
+      url: "https://mirror.playbound.club/games/sklyance/v2/SkyLance-PlayBound-v2.zip",
+      fileName: "SkyLance-PlayBound-v2.zip",
+      exeHint: "SkyLance.neo",
+      knownExePaths: ["SkyLance.neo"],
+      unwrapSingleRoot: false,
+      versionLabel: "Sky Lance v2 preview (NeoGeoSDK v1.7.7)",
+      note: "PlayBound uses RetroArch's Geolith core and the bundled open EagleBIOS; controller input is handled by RetroArch. This is an unfinished preview build.",
+    },
+  },
   // Windows testing build of Jonathan Thomas's 2012 Panda3D source, rebuilt
   // against Panda3D 1.10.16. The archive was extracted and launched locally;
   // the previous build reached qualifying. Keep the existing publication status.

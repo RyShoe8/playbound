@@ -32,7 +32,7 @@ import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 export const metadata: Metadata = pageMetadata({
   title: "Launcher — Install, Play, Party Up in One Click",
   description:
-    "A free desktop app for PlayBound's curated free and affordable games. Get one-click installs, cloud saves, mod management, and parties that land everyone in the same game.",
+    "PlayBound's open-source desktop launcher for curated free and affordable games. Get one-click installs, cloud saves, mod management, and parties that land everyone in the same game.",
   path: "/launcher",
   images: ["/launcher/opengraph-image"],
 });
@@ -172,6 +172,16 @@ export default async function LauncherPage() {
           install anything.
         </p>
         <LauncherHeroDownload />
+        <Link
+          href="/open-platform"
+          className="mt-4 inline-flex items-center gap-3 rounded-xl border border-primary/40 bg-background/70 px-4 py-3 text-sm transition-colors hover:border-primary hover:bg-primary/10"
+        >
+          <ShieldCheck className="size-5 shrink-0 text-play" />
+          <span>
+            <strong className="block text-foreground">The launcher is open source</strong>
+            <span className="text-muted-foreground">Read our Trust &amp; Architecture page →</span>
+          </span>
+        </Link>
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
             <ShieldCheck className="size-4 text-play" /> Official sources only
@@ -283,7 +293,7 @@ export default async function LauncherPage() {
           href="/open-platform"
           className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
         >
-          Explore Open Architecture →
+          Read Trust &amp; Architecture →
         </Link>
       </section>
 

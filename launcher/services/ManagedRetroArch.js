@@ -13,7 +13,7 @@ const RETROARCH_VERSION = "1.19.1";
  * checked. Every DOS-style ROM install and mrboom's RetroArch edition depend
  * on this, and libretro publish all three platforms under the same layout.
  */
-const CORES = ["mrboom", "puae", "gambatte", "sameboy", "mgba", "snes9x", "genesis_plus_gx", "fceumm", "fbneo"];
+const CORES = ["mrboom", "puae", "gambatte", "sameboy", "mgba", "snes9x", "genesis_plus_gx", "fceumm", "fbneo", "geolith"];
 
 function retroPlatform(platform = process.platform) {
   if (platform === "darwin") return { path: "apple/osx/x86_64", coreExt: "dylib" };
@@ -49,6 +49,7 @@ function coreForExtension(ext) {
   if (clean === "sfc" || clean === "smc") return "snes9x";
   if (clean === "md" || clean === "gen") return "genesis_plus_gx";
   if (clean === "nes") return "fceumm";
+  if (clean === "neo") return "geolith";
   return null;
 }
 
@@ -65,6 +66,7 @@ const SLUG_CORE_OVERRIDES = {
   "baseball-stars-2": "fbneo",
   "super-sidekicks": "fbneo",
   "soccer-brawl": "fbneo",
+  "sklyance": "geolith",
 };
 
 function coreForSlug(slug) {
