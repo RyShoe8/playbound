@@ -7462,7 +7462,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
     const romFile = launchPath;
     launchPath = runtime.binary;
-    const skyLanceArgs = slug === "sklyance"
+    const skyLanceArgs = slug === "skylance"
       ? await require("./services/sklyanceRetroArch").prepareSklyanceRetroArch(managedRetroArch.root(), path.dirname(romFile))
       : [];
     /*

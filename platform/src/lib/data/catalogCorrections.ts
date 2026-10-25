@@ -24,7 +24,7 @@ const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unkno
   // together on the VPS mirror. Geolith loads the cartridge in MVS/Europe mode.
   // Sources: github.com/eaglesoftware777/neogeosdk/releases/tag/v1.7.7 and
   // docs.libretro.com/library/geolith/. Preserve the CMS editorial/status.
-  sklyance: {
+  skylance: {
     launchMethods: ["install"],
     hasControllerSupport: true,
     sizeMB: 18,

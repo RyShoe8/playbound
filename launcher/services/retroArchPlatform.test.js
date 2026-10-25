@@ -140,7 +140,7 @@ test("coreForSlug returns overrides for registered games", () => {
   assert.equal(coreForSlug("super-sidekicks"), "fbneo");
   assert.equal(coreForSlug("baseball-stars-2"), "fbneo");
   assert.equal(coreForSlug("soccer-brawl"), "fbneo");
-  assert.equal(coreForSlug("sklyance"), "geolith");
+  assert.equal(coreForSlug("skylance"), "geolith");
   assert.equal(coreForSlug("unknown-game"), null);
   assert.equal(coreForSlug(""), null);
   assert.equal(coreForSlug(null), null);

@@ -66,7 +66,7 @@ const SLUG_CORE_OVERRIDES = {
   "baseball-stars-2": "fbneo",
   "super-sidekicks": "fbneo",
   "soccer-brawl": "fbneo",
-  "sklyance": "geolith",
+  "skylance": "geolith",
 };
 
 function coreForSlug(slug) {
