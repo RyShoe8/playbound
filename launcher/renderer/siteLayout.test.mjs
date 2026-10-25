@@ -2,6 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { diversifyOffers, homepageSelections } from './siteLayout.js';
 
+test('weekly editions retain separate ranks and links for the same parent game', () => {
+  const result = homepageSelections([{slug:'a'}], {popularEditions:[
+    {gameSlug:'a',edition:{slug:'mod'}},{gameSlug:'a',edition:{slug:'official'}},
+    {gameSlug:'missing',edition:{slug:'mod'}}]});
+  assert.deepEqual(result.popularEditions.map(item=>item.edition.slug),['mod','official']);
+  assert.ok(result.popularEditions.every(item=>item.game.slug==='a'));
+});
+
 test('weekly ranking follows server selections while keeping native catalog entries', () => {
   const games = [{slug:'a', installType:'zip'}, {slug:'b', installType:'exe'}];
   const result = homepageSelections(games, {released:['b'],popular:['b','missing','a']});

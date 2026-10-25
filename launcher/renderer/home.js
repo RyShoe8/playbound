@@ -133,7 +133,12 @@ async function loadHome() {
       paintFeature(selected.released[0]);
       document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';
       const failed = !feed;
-      paint('home-popular', feed ? selected.popular.map(game => createGameCard(game)) : [], failed);
+      paint('home-popular', feed ? (Array.isArray(feed.popularEditions) ? selected.popularEditions.map(({game,edition}) => {
+        if (!edition) return createGameCard(game);
+        const card = createGameCard({...game,title:edition.name,coverImage:edition.coverImage || game.coverImage,editions:[]});
+        card.addEventListener('click', event => {event.stopImmediatePropagation(); api.openEditionDetail?.(game.slug,edition.slug);}, {capture:true});
+        return card;
+      }) : selected.popular.map(game => createGameCard(game))) : [], failed);
       paint('home-mods', selected.mods.map(mod => createModCard({
         ...mod,
         baseGameTitle: catalog.find(game => game.slug === mod.baseGameSlug)?.title || mod.baseGameTitle,

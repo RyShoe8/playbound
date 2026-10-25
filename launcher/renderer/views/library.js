@@ -860,7 +860,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           async (launchOpts) => {
             setStatus(`Checking Java / launching ${game.title} (${ed.name})…`);
             const res = await window.playbound.play(game.slug, null, ed.slug, launchOpts);
-            startGameSession(game.slug, game.title);
+            startGameSession(game.slug, game.title, res?.editionSlug || ed.slug);
             maybeShowLaunchGuidance(res, {
               title: game.title,
               slug: game.slug,

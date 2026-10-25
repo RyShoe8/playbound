@@ -237,7 +237,7 @@ function renderDeepLinkView(ctx) {
           } catch {
             /* panel can still finish even if the context clear fails */
           }
-          startGameSession(ctx.slug, title);
+          startGameSession(ctx.slug, title, res?.editionSlug || ctx.editionSlug || null);
           maybeShowLaunchGuidance(res, {
             title,
             slug: ctx.slug,
@@ -295,13 +295,12 @@ function renderDeepLinkView(ctx) {
           } catch {
             /* panel can still finish even if the context clear fails */
           }
-          startGameSession(ctx.slug, title);
+          startGameSession(ctx.slug, title, res?.editionSlug || ctx.editionSlug || null);
           maybeShowLaunchGuidance(res, {
             title,
             slug: ctx.slug,
             address: `${host}:${port}`,
           });
-          startGameSession(ctx.slug, title);
           api.navigateTo("home");
         }, ctx.slug);
         if (!launched) return;

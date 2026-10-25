@@ -82,7 +82,8 @@ function isOpenBorCfg(buf) {
   return (
     Buffer.isBuffer(buf) &&
     buf.length >= playerKeysOffset(3) + BYTES_PER_PLAYER &&
-    buf.readUInt32LE(0) === OPENBOR_CFG_VERSION
+    ((buf.length === 348 && buf.readUInt32LE(0) === OPENBOR_CFG_VERSION) ||
+      (buf.length === 352 && buf.readUInt32LE(0) === 0x00033748))
   );
 }
 
@@ -167,9 +168,11 @@ function applyOpenBorP1Keys(buf, profile) {
     p1StillKeyboard(buf) ||
     playersShareJoyPort(buf) ||
     (family !== "xbox" && (p1HasBrokenDualSenseSpecial(buf) || p1HasOldDualSenseTemplate(buf))) ||
-    (family === "xbox" && p1HasDualSenseHatOnXbox(buf));
+    (family === "xbox" && (p1HasDualSenseHatOnXbox(buf) ||
+      readP1Keys(buf).every((key,index) => key === XMEN_DUALSENSE_P1_KEYS[index]) ||
+      readP1Keys(buf).every((key,index) => key === DUALSENSE_P1_KEYS[index])));
   if (!shouldFix) return null;
-  const p1Keys = keysForProfile(profile);
+  const p1Keys = buf.length === 352 && family !== "xbox" ? XMEN_DUALSENSE_P1_KEYS : keysForProfile(profile);
   const next = Buffer.from(buf);
   for (let player = 0; player < 4; player += 1) {
     const keys = shiftJoyKeysToPort(p1Keys, player);

@@ -6020,6 +6020,7 @@ textarea.input-text {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.15);
 }
+.party-session-actions { margin-left: auto; justify-content: flex-end; }
 .party-actions-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 /*
  * Party action buttons match the website's rounded-md controls rather than

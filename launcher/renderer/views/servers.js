@@ -579,7 +579,7 @@ function paintServersTable() {
       setStatus(`Joining ${host}:${port}…`);
       try {
         const res = await window.playbound.play(slug, { host, port, mod });
-        startGameSession(slug, slug);
+        startGameSession(slug, slug, res?.editionSlug || null);
         maybeShowLaunchGuidance(res, {
           title: slug,
           slug,

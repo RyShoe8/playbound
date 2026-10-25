@@ -18,14 +18,14 @@ export type HomeCardEdition = Pick<Edition, "id" | "slug" | "name" | "shortDescr
   branding: Pick<Edition["branding"], "heroImage" | "logo">;
 };
 
-export function NewHomeEditions({ candidates }: { candidates: { game: HomeCardGame; edition: HomeCardEdition }[] }) {
+export function NewHomeEditions({ candidates, title = "Newest Editions" }: { candidates: { game: HomeCardGame; edition: HomeCardEdition }[]; title?: string }) {
   const accessible = new Set(useFilteredGames(candidates.map(c => c.game)).map(g => g.slug));
   const { mode, device } = useCompatibilityFilter();
   const visible = candidates.filter(({ game, edition }) => accessible.has(game.slug) &&
     (mode === "all" || isEditionCompatible(edition, game, device.type))).slice(0, 4);
   if (!visible.length) return null;
-  return <section><div className="new-section-heading"><h2>Newest Editions</h2><Link href="/discover">Explore games →</Link></div>
-    <div className="new-card-grid">{visible.map(({ game, edition }) => <Link key={edition.id} className="new-panel overflow-hidden" href={`/games/${game.slug}/editions/${edition.slug}`}>
+  return <section><div className="new-section-heading"><h2>{title}</h2><Link href="/discover">Explore games →</Link></div>
+    <div className="new-card-grid">{visible.map(({ game, edition }) => <Link key={edition.id} className="new-panel overflow-hidden" href={edition.slug ? `/games/${game.slug}/editions/${edition.slug}` : `/games/${game.slug}`}>
       <GameArt game={{ ...game, title: edition.name, coverImage: edition.branding.heroImage || edition.branding.logo || game.coverImage }} showTitle={false} className="aspect-video" />
       <div className="new-pad"><p className="new-eyebrow">{game.title}</p><h3>{edition.name}</h3><p className="line-clamp-2">{edition.shortDescription}</p></div>
     </Link>)}</div>

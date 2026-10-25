@@ -1788,7 +1788,7 @@ async function renderGameDetailView(slug, opts = {}) {
           async (launchOpts) => {
             setStatus("Checking Java / launching…");
             const res = await window.playbound.play(slug, null, null, launchOpts);
-            startGameSession(slug, detail.title || slug);
+            startGameSession(slug, detail.title || slug, res?.editionSlug || null);
             maybeShowLaunchGuidance(res, {
               title: detail.title || slug,
               slug,
@@ -2260,7 +2260,7 @@ async function renderGameDetailView(slug, opts = {}) {
               port,
               mod: b.dataset.mod || undefined,
             });
-            startGameSession(slug, detail.title || slug);
+            startGameSession(slug, detail.title || slug, res?.editionSlug || null);
             maybeShowLaunchGuidance(res, {
               title: detail.title || slug,
               slug,
@@ -3161,7 +3161,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
         async (launchOpts) => {
           setStatus("Checking Java / launching…");
           const res = await window.playbound.play(gameSlug, null, editionSlug, launchOpts);
-          startGameSession(gameSlug, edition.gameTitle || gameSlug);
+          startGameSession(gameSlug, edition.gameTitle || gameSlug, res?.editionSlug || editionSlug);
           maybeShowLaunchGuidance(res, {
             title: edition.editionName || edition.gameTitle || gameSlug,
             slug: gameSlug,

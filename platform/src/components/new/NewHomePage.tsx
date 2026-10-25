@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { listGamesNewestFirst, mostPopularGames } from "@/lib/catalog";
+import { listGamesNewestFirst } from "@/lib/catalog";
+import { weeklyPopular } from "@/lib/weeklyPopular";
 import { toHomeCardGame } from "@/lib/discoverListing";
 import { listMods } from "@/lib/mods";
 import { listPublicEvents } from "@/lib/events/service";
@@ -21,7 +22,7 @@ import { NewHomeFeature, NewHomeGames, NewHomeHeading } from "@/components/new/N
 export default async function NewHomePage() {
   await connection();
   const [games, popular, mods, events, stats, session] = await Promise.all([
-    listGamesNewestFirst(), mostPopularGames(12, 7), listMods({ view: "card" }),
+    listGamesNewestFirst(), weeklyPopular(), listMods({ view: "card" }),
     listPublicEvents({ limit: 7 }), getCatalogLiveStats(), getServerSession(authOptions),
   ]);
   const launcherLinked = session?.user?.id ? await hasLinkedLauncher(session.user.id) : false;
@@ -57,7 +58,11 @@ export default async function NewHomePage() {
     <div className="new-home-layout">
       <div className="new-main-stack">
         <NewHomeFeature games={newestForClient} />
-        <NewHomeGames games={popular.map(toHomeCardGame)} title="Most Popular this week" counts={counts} />
+        <NewHomeEditions title="Most Popular this week" candidates={popular.map(({ game, edition }) => ({
+          game: toHomeCardGame(game),
+          edition: edition ? { id: edition.id, slug: edition.slug, name: edition.name, shortDescription: edition.shortDescription, platforms: edition.platforms, branding: {heroImage: edition.branding.heroImage, logo: edition.branding.logo} }
+            : { id: game.slug, slug: "", name: game.title, shortDescription: game.tagline || "", platforms: game.platforms, branding: {} },
+        }))} />
         <section className="new-home-event"><div className="new-section-heading"><h2>Next game night</h2><Link href="/events">Full schedule →</Link></div>{nextNight ? <EventCard event={nextNight} gameTitle={nextNight.gameSlug ? bySlug.get(nextNight.gameSlug)?.title : null} /> : <div className="new-panel new-pad"><h3>Make the next game night happen</h3><p>Gather your friends around a game you love.</p><Link className="new-button primary" href="/events/create">Create event</Link></div>}</section>
         <Suspense fallback={<FreeGamesSectionFallback />}><FreeGamesSection diversifyStores /></Suspense>
         <NewHomeGames games={newestForClient} title="Newest Games" counts={counts} />

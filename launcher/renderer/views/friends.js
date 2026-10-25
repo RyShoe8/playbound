@@ -2434,7 +2434,7 @@ function buildPartyViewHtml(party) {
             ${serverControlNoteHtml}
             ${playingPillHtml}
           </div>
-          <div class="party-actions-group">
+          <div class="party-actions-group party-session-actions">
             ${voiceHtml}
             <button type="button" id="btn-party-leave" class="party-btn party-leave-btn" data-id="${escapeHtml(
               party.id
@@ -4293,7 +4293,7 @@ async function launchPartyGame(party) {
             party.editionSlug || null,
             launchOpts
           );
-          startGameSession(slug, party.gameTitle || slug);
+          startGameSession(slug, party.gameTitle || slug, res?.editionSlug || party.editionSlug || null);
           maybeShowLaunchGuidance(res, {
             title: party.gameTitle || slug,
             slug,
@@ -4541,7 +4541,7 @@ async function launchPartyGame(party) {
           edition,
           launchOpts
         );
-        startGameSession(slug, party.gameTitle || slug);
+        startGameSession(slug, party.gameTitle || slug, res?.editionSlug || party.editionSlug || null);
         if (isLeader && party.hostMode === "self") {
           /*
            * A game with a dedicated server PlayBound can start gets one, and

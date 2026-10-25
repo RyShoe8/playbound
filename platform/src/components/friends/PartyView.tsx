@@ -1065,7 +1065,7 @@ export function PartyView({
 
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
           {party.voiceEnabled || party.discord.inviteUrl || party.discord.voiceChannelId ? (
             <button
               type="button"

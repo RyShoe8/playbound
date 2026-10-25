@@ -1116,12 +1116,13 @@ export function postTelemetry(event, properties) {
     });
 }
 
-export function startGameSession(slug, title) {
+export function startGameSession(slug, title, editionSlug = null) {
   endGameSession();
-  state._activeGameSession = { slug, title, startedAt: Date.now() };
+  state._activeGameSession = { slug, title, editionSlug, startedAt: Date.now() };
   postTelemetry("game_started", {
     gameSlug: slug,
     gameTitle: title,
+    editionSlug,
     installMethod: "launcher",
   });
 }
@@ -1135,6 +1136,7 @@ export function endGameSession() {
   postTelemetry("game_finished", {
     gameSlug: state._activeGameSession.slug,
     gameTitle: state._activeGameSession.title,
+    editionSlug: state._activeGameSession.editionSlug,
     durationMs,
   });
   state._activeGameSession = null;

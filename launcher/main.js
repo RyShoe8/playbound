@@ -3915,12 +3915,16 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     return true;
   }
 
-  if (!gameControllerConfig.supportsControllerConfig(slug)) return false;
-  const configPath = gameControllerConfig.configPathFor(slug, installDir);
+  const openborConfig = require("./services/openborSession").configs({dir:installDir})[0];
+  if (!gameControllerConfig.supportsControllerConfig(slug) && !openborConfig) return false;
+  const configPath = openborConfig?.file || gameControllerConfig.configPathFor(slug, installDir);
   if (!configPath) return false;
 
   const entry = gameControllerConfig.GAMES[slug];
-  const binary = Boolean(entry?.binary);
+  const binary = Boolean(openborConfig || entry?.binary);
+  const applyGameProfile = (data, profile) => openborConfig
+    ? require("./services/openborCfg").applyOpenBorP1Keys(data,profile)
+    : gameControllerConfig.applyProfile(slug,data,profile);
   const userDataPath = app.getPath("userData");
 
   // 1. If player chose Mouse & Keyboard, never apply controller configurations
@@ -3960,7 +3964,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     if (binary) {
       try {
         const restored = await fsp.readFile(configPath);
-        const separated = gameControllerConfig.applyProfile(slug, restored, profile);
+        const separated = applyGameProfile(restored, profile);
         if (separated) {
           await fsp.writeFile(configPath, separated);
           await deviceControllerStorage.saveDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
@@ -3985,7 +3989,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
   }
   if (binary && !current) return false;
 
-  const next = gameControllerConfig.applyProfile(slug, current, profile);
+  const next = applyGameProfile(current, profile);
   if (next == null) {
     if (current) {
       await deviceControllerStorage.saveDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
@@ -6856,6 +6860,7 @@ async function playGame(slug, join = null, editionSlug = null, opts = null) {
   try {
     return await playGameInner(slug, join, editionSlug, opts);
   } catch (err) {
+    require("./services/openborSession").restore(slug);
     gamepadBridge.deactivatePlayBoundControls();
     notifyPlayBoundControlsState(false);
     if (!err || !err.__launchFailedReported) {
@@ -7607,6 +7612,19 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     launchEnv = { ...(launchEnv || process.env), ...fixEnv };
   }
 
+  let openborBorderless = false;
+  if (process.platform === "win32") {
+    const openborEnv = require("./services/openborSession").prepare(slug, info, {
+      streaming: Boolean(couchHost?.getState?.()?.active),
+      profile: opts?.inputMode === "keyboard" ? null : couchHost?.getState?.()?.active || opts?.inputMode === "phone"
+        ? {family:"xbox"} : controllerProfiles.pickPrimary(lastKnownGamepads),
+    });
+    if (openborEnv) {
+      launchEnv = {...(launchEnv || process.env), ...openborEnv};
+      openborBorderless = Boolean(couchHost?.getState?.()?.active);
+    }
+  }
+
   // Repair modded editions before launching. Steam restores the original
   // executable on update or file verification, which silently strips the mod
   // loader; without this the player would just find the modded menus gone.
@@ -7748,6 +7766,18 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
 
   try {
     await spawnWithElevationFallback(slug, launchPath, args, spawnOpts);
+    if (openborBorderless) {
+      const gamePid = activeLaunches.get(slug)?.child?.pid;
+      const script = [path.join(process.resourcesPath || "", "scripts", "borderless-game.ps1"),
+        path.join(__dirname,"resources","scripts","borderless-game.ps1")].find(file => fs.existsSync(file));
+      if (gamePid && script) {
+        const helper = spawn("powershell.exe", ["-NoProfile","-ExecutionPolicy","Bypass","-File",script,
+          "-GameProcessId",String(gamePid),"-ExecutablePath",launchPath], {windowsHide:true,stdio:"ignore"});
+        helper.on("error", error => console.warn("[openbor] fullscreen helper:",error.message));
+        helper.on("exit", code => {if (code) console.warn("[openbor] fullscreen helper did not complete");});
+        helper.unref();
+      }
+    }
   } catch (err) {
     const rawMessage = err?.message || String(err);
     const exeName = path.basename(launchPath || "") || "game";
@@ -8069,6 +8099,7 @@ const GAME_EXIT_DEBOUNCE_MS = 3000;
 const GAME_RUNNING_POLL_MS = 10000;
 
 function sendGameExited(slug, editionSlug) {
+  require("./services/openborSession").restore(slug);
   // Stale crop data from this game must not leak into the next one's stream.
   lastCropRect = null;
   cropMeasuredForSlug = null;
