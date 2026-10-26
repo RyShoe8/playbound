@@ -81,9 +81,9 @@ export function FreeGameCard({
   const keyCounts = offer.store === "alienware_arena"
     ? offer.metadata?.remainingKeysByRegion as Record<string, unknown> | undefined
     : undefined;
-  const availability = keyCounts && ["US", "CA", "GB"].every((region) =>
+  const hasKeyCounts = keyCounts && ["US", "CA", "GB"].every((region) =>
     Number.isSafeInteger(keyCounts[region]) && Number(keyCounts[region]) >= 0
-  ) ? `Keys left: US ${Number(keyCounts.US).toLocaleString()} · CA ${Number(keyCounts.CA).toLocaleString()} · UK ${Number(keyCounts.GB).toLocaleString()}` : null;
+  );
   const incompLabel = useIncompatibilityLabel(offerToGameLike(offer));
 
   return (
@@ -172,10 +172,20 @@ export function FreeGameCard({
               </p>
             )}
           </div>
-          {availability && (
-            <p className="mt-1 text-[11px] font-medium text-amber-400" title="Availability varies by country and Alienware account tier">
-              {availability} · tier restrictions apply
-            </p>
+          {hasKeyCounts && (
+            <div className="mt-2" aria-label="Alienware keys left by region; account tier restrictions may apply">
+              <p className="mb-1 text-xs font-semibold text-muted-foreground">Keys left · account tier may apply</p>
+              <div className="flex flex-wrap gap-1.5">
+                {([ ["US", "US"], ["CA", "CA"], ["GB", "UK"] ] as const).map(([region, label]) => (
+                  <span
+                    key={region}
+                    className="inline-flex items-center gap-1 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-sm font-bold text-amber-200"
+                  >
+                    {label} <span>{Number(keyCounts[region]).toLocaleString()}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 

@@ -355,9 +355,9 @@ export function createFreeOfferCard(offer) {
   const typeLabel = offerTypeBadgeLabel(offer.offerType, offer.store);
   const expiry = formatOfferExpiration(offer.endDate);
   const keyCounts = offer.store === "alienware_arena" ? offer.metadata?.remainingKeysByRegion : null;
-  const availability = keyCounts && ["US", "CA", "GB"].every((region) =>
+  const hasKeyCounts = keyCounts && ["US", "CA", "GB"].every((region) =>
     Number.isSafeInteger(keyCounts[region]) && keyCounts[region] >= 0
-  ) ? `Keys left: US ${keyCounts.US.toLocaleString()} · CA ${keyCounts.CA.toLocaleString()} · UK ${keyCounts.GB.toLocaleString()}` : null;
+  );
 
   const art = document.createElement("div");
   art.className = "card-art";
@@ -395,8 +395,16 @@ export function createFreeOfferCard(offer) {
       ${offer.retailPrice ? `<span class="chip" style="text-decoration: line-through; opacity: 0.6;">${escapeHtml(offer.retailPrice)}</span>` : ""}
       <span class="chip" style="color: var(--color-play, #34d27b); font-weight: 700;">FREE</span>
       ${expiry ? `<span class="chip">⏱ ${escapeHtml(expiry)}</span>` : ""}
-      ${availability ? `<span class="chip" title="Availability varies by country and Alienware account tier">${escapeHtml(availability)}</span>` : ""}
     </div>
+    ${hasKeyCounts ? `
+      <div class="free-offer-key-counts" aria-label="Alienware keys left by region; account tier restrictions may apply">
+        <span class="free-offer-key-label">Keys left · account tier may apply</span>
+        <div class="free-offer-key-tags">
+          ${[["US", "US"], ["CA", "CA"], ["GB", "UK"]].map(([region, label]) =>
+            `<span class="free-offer-key-tag">${label} <strong>${escapeHtml(keyCounts[region].toLocaleString())}</strong></span>`
+          ).join("")}
+        </div>
+      </div>` : ""}
   `;
   card.appendChild(footer);
 

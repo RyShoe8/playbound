@@ -608,6 +608,45 @@ body {
   border-radius: 6px;
 }
 
+.free-offer-key-counts {
+  margin-top: 8px;
+}
+
+.free-offer-card .card-meta {
+  flex-direction: column;
+}
+
+.free-offer-card .card-meta .card-tags {
+  flex: none;
+}
+
+.free-offer-key-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.free-offer-key-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.free-offer-key-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd58a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .catalog-game-card .card-meta {
   flex-direction: column;
   flex: 1;
