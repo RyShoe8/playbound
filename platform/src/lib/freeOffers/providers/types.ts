@@ -44,10 +44,11 @@ export interface DiscoveredOffer {
 export interface StoreProviderAdapter {
   /** Which store this adapter serves. */
   readonly store: StoreSlug;
+  /** A fully verified empty response may retire this provider's old offers. */
+  readonly canExpireEmptyBatch?: boolean;
   /**
    * Fetch all currently active free offers.
-   * Must not throw on transient failures — return an empty array and let
-   * the caller handle logging.
+   * Throw on fetch/parse failures so ingestion preserves existing offers.
    */
   fetchCurrentOffers(): Promise<DiscoveredOffer[]>;
 }

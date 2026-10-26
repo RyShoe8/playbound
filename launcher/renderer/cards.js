@@ -354,6 +354,10 @@ export function createFreeOfferCard(offer) {
   const storeName = storeDisplayName(offer.store);
   const typeLabel = offerTypeBadgeLabel(offer.offerType, offer.store);
   const expiry = formatOfferExpiration(offer.endDate);
+  const keyCounts = offer.store === "alienware_arena" ? offer.metadata?.remainingKeysByRegion : null;
+  const availability = keyCounts && ["US", "CA", "GB"].every((region) =>
+    Number.isSafeInteger(keyCounts[region]) && keyCounts[region] >= 0
+  ) ? `Keys left: US ${keyCounts.US.toLocaleString()} · CA ${keyCounts.CA.toLocaleString()} · UK ${keyCounts.GB.toLocaleString()}` : null;
 
   const art = document.createElement("div");
   art.className = "card-art";
@@ -391,6 +395,7 @@ export function createFreeOfferCard(offer) {
       ${offer.retailPrice ? `<span class="chip" style="text-decoration: line-through; opacity: 0.6;">${escapeHtml(offer.retailPrice)}</span>` : ""}
       <span class="chip" style="color: var(--color-play, #34d27b); font-weight: 700;">FREE</span>
       ${expiry ? `<span class="chip">⏱ ${escapeHtml(expiry)}</span>` : ""}
+      ${availability ? `<span class="chip" title="Availability varies by country and Alienware account tier">${escapeHtml(availability)}</span>` : ""}
     </div>
   `;
   card.appendChild(footer);

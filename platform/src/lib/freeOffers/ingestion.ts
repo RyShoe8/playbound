@@ -203,7 +203,7 @@ async function ingestProvider(store: StoreSlug): Promise<IngestionResult> {
     // Mark offers as expired ONLY for offers from this provider that
     // were NOT in the current batch AND whose endDate has passed.
     // CRITICAL: We only do this when we successfully fetched data.
-    if (discovered.length > 0) {
+    if (discovered.length > 0 || adapter.canExpireEmptyBatch) {
       const now = new Date();
       const expireResult = await FreeOffer.updateMany(
         {

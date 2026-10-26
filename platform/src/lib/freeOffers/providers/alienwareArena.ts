@@ -30,6 +30,7 @@ import type { StoreProviderAdapter, DiscoveredOffer } from "./types";
 const AWA_GIVEAWAY_URL = "https://na.alienwarearena.com/esi/featured-tile-data/Giveaway";
 
 const AWA_ORIGIN = "https://na.alienwarearena.com";
+const DETAIL_CONCURRENCY = 4;
 
 type AwaGiveaway = {
   id?: number;
@@ -121,8 +122,49 @@ function parsePublishedAt(value: string | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Giveaway pages embed remaining keys by country and account tier. The same
+ * pool may appear in several tiers, so take the largest tier count per region
+ * rather than adding them. Alienware's UK country code is GB.
+ */
+export function remainingAlienwareKeys(html: string): { US: number; CA: number; GB: number } {
+  const match = html.match(/\bvar\s+countryKeys\s*=\s*(\{[^;]+\})\s*;/);
+  if (!match) throw new Error("Alienware giveaway page has no country key inventory");
+
+  const countries = JSON.parse(match[1]) as Record<string, unknown>;
+  if (!countries || typeof countries !== "object" || Array.isArray(countries)) {
+    throw new Error("Alienware giveaway inventory has an unexpected shape");
+  }
+
+  const remaining = { US: 0, CA: 0, GB: 0 };
+  for (const region of ["US", "CA", "GB"] as const) {
+    if (!(region in countries)) throw new Error(`Alienware inventory has no ${region} entry`);
+    const tiers = countries[region];
+    if (!tiers || typeof tiers !== "object") continue;
+    for (const count of Object.values(tiers)) {
+      if (typeof count === "number" && Number.isSafeInteger(count) && count > remaining[region]) {
+        remaining[region] = count;
+      }
+    }
+  }
+  return remaining;
+}
+
+async function giveawayRemainingKeys(url: string): Promise<ReturnType<typeof remainingAlienwareKeys>> {
+  const res = await fetch(url, {
+    headers: { "user-agent": "PlayBoundIngestion/1.0", accept: "text/html" },
+    next: { revalidate: 0 },
+  });
+  if (res.status === 404 || res.status === 410) return { US: 0, CA: 0, GB: 0 };
+  if (!res.ok) throw new Error(`Alienware giveaway page returned HTTP ${res.status}`);
+  return remainingAlienwareKeys(await res.text());
+}
+
 export class AlienwareArenaProviderAdapter implements StoreProviderAdapter {
   readonly store = "alienware_arena" as const;
+  // A successful board + detail-page scan can legitimately contain zero live
+  // offers. Ingestion may retire previous Alienware rows in that case.
+  readonly canExpireEmptyBatch = true;
 
   async fetchCurrentOffers(): Promise<DiscoveredOffer[]> {
     let payload: AwaResponse;
@@ -135,13 +177,11 @@ export class AlienwareArenaProviderAdapter implements StoreProviderAdapter {
         next: { revalidate: 0 },
       });
       if (!res.ok) {
-        console.error(`[alienware-adapter] Giveaway endpoint returned HTTP ${res.status}`);
-        return [];
+        throw new Error(`Alienware giveaway board returned HTTP ${res.status}`);
       }
       payload = (await res.json()) as AwaResponse;
     } catch (err) {
-      console.error("[alienware-adapter] Failed to fetch giveaway board:", err);
-      return [];
+      throw new Error("Failed to fetch Alienware giveaway board", { cause: err });
     }
 
     // The featured item is duplicated inside `data` often enough that ids, not
@@ -155,11 +195,27 @@ export class AlienwareArenaProviderAdapter implements StoreProviderAdapter {
       seen.add(id);
       raw.push(item);
     }
+    if (raw.length === 0) throw new Error("Alienware giveaway board contained no giveaways");
+
+    const giveaways = raw.filter(
+      (item) => !item.contentType || item.contentType.toLowerCase() === "giveaway"
+    );
+    if (giveaways.length === 0) throw new Error("Alienware board contained no giveaway tiles");
+    const inventories: ReturnType<typeof remainingAlienwareKeys>[] = [];
+    for (let i = 0; i < giveaways.length; i += DETAIL_CONCURRENCY) {
+      inventories.push(
+        ...(await Promise.all(
+          giveaways.slice(i, i + DETAIL_CONCURRENCY).map((item) =>
+            giveawayRemainingKeys(absoluteUrl(item.url))
+          )
+        ))
+      );
+    }
 
     const offers: DiscoveredOffer[] = [];
-    for (const item of raw) {
-      // The board occasionally carries non-giveaway tiles (articles, polls).
-      if (item.contentType && item.contentType.toLowerCase() !== "giveaway") continue;
+    for (const [index, item] of giveaways.entries()) {
+      const remainingKeys = inventories[index];
+      if (Object.values(remainingKeys).every((count) => count === 0)) continue;
 
       const title = cleanAwaTitle(item.title!);
       if (!title) continue;
@@ -193,6 +249,7 @@ export class AlienwareArenaProviderAdapter implements StoreProviderAdapter {
           featured: Boolean(item.featured),
           communityGiveaway: Boolean(item.isCommunityGiveaway),
           originalTitle: item.title,
+          remainingKeysByRegion: remainingKeys,
           // Claiming needs an account and usually ARP points; surfaced so the
           // UI can warn rather than promise a one-click claim.
           requiresAccount: true,

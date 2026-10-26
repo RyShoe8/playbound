@@ -78,6 +78,12 @@ export function FreeGameCard({
   const genres = offer.genres?.length ? offer.genres : inferGameGenres(displayTitle);
   const typeLabel = offerTypeLabel(offer.offerType, offer.store);
   const ctaLabel = claimCtaLabel(offer.store);
+  const keyCounts = offer.store === "alienware_arena"
+    ? offer.metadata?.remainingKeysByRegion as Record<string, unknown> | undefined
+    : undefined;
+  const availability = keyCounts && ["US", "CA", "GB"].every((region) =>
+    Number.isSafeInteger(keyCounts[region]) && Number(keyCounts[region]) >= 0
+  ) ? `Keys left: US ${Number(keyCounts.US).toLocaleString()} · CA ${Number(keyCounts.CA).toLocaleString()} · UK ${Number(keyCounts.GB).toLocaleString()}` : null;
   const incompLabel = useIncompatibilityLabel(offerToGameLike(offer));
 
   return (
@@ -166,6 +172,11 @@ export function FreeGameCard({
               </p>
             )}
           </div>
+          {availability && (
+            <p className="mt-1 text-[11px] font-medium text-amber-400" title="Availability varies by country and Alienware account tier">
+              {availability} · tier restrictions apply
+            </p>
+          )}
         </div>
 
         {/* CTA */}
