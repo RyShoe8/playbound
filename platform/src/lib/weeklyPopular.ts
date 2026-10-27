@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { listGames } from "@/lib/catalog";
 import { listEditionsForGames } from "@/lib/editions";
+import { GAMEPLAY_ID, PLAY_END_MATCH } from "@/lib/admin/gameplayEvents";
 
 /** Keep legacy sessions without an edition at game level; never credit a guessed edition. */
 export const weeklyPopular = unstable_cache(async () => {
@@ -14,11 +15,11 @@ export const weeklyPopular = unstable_cache(async () => {
     const rows = await TelemetryEvent.aggregate<{
       _id: { gameSlug: string; editionSlug: string | null }; totalMs: number;
     }>([
-      { $match: { event: "game_finished", isBot: { $ne: true },
+      { $match: { ...PLAY_END_MATCH, isBot: { $ne: true },
         createdAt: { $gte: new Date(Date.now() - 7 * 86400000) },
         "properties.durationMs": { $type: "number", $gt: 0 },
         "properties.gameSlug": { $type: "string", $ne: "" } } },
-      { $group: { _id: { gameSlug: "$properties.gameSlug", editionSlug: { $ifNull: ["$properties.editionSlug", null] } }, totalMs: { $sum: "$properties.durationMs" } } },
+      { $group: { _id: GAMEPLAY_ID, totalMs: { $sum: "$properties.durationMs" } } },
       { $sort: { totalMs: -1, "_id.gameSlug": 1, "_id.editionSlug": 1 } },
     ]);
     return rows.flatMap(row => {
@@ -34,4 +35,4 @@ export const weeklyPopular = unstable_cache(async () => {
     console.error("[weekly-popular] telemetry unavailable", error);
     return [];
   }
-}, ["weekly-popular-editions-v1"], { revalidate: 900, tags: ["catalog", "live-activity"] });
+}, ["weekly-popular-editions-v2"], { revalidate: 900, tags: ["catalog", "live-activity"] });
