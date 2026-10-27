@@ -109,6 +109,9 @@ const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
 ] as const;
 
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // Database-only Ready game. Correct one editorial line and the unsupported
+  // macOS platform claim; keep its publication state, media and recipe intact.
+  "wings-of-dawn": ["thatOneThing", "platforms"],
   // Existing CMS game only. Do not replace its editorial, media, or status.
   skylance: ["launchMethods", "hasControllerSupport", "sizeMB", "installSteps", "launcherInstall"],
   // Existing DB-only testing game. Leave its status, editorial and images alone.

@@ -227,3 +227,29 @@ jobs:
         run: npm run insert:catalog-wave -- --games=skylance --fields=launchMethods,hasControllerSupport,sizeMB,installSteps,launcherInstall
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+  apply-wings-of-dawn:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:wings-of-dawn]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is not configured; no catalog rows were changed."
+            exit 1
+          fi
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Update Wings of Dawn fields only
+        run: npm run insert:catalog-wave -- --games=wings-of-dawn --fields=thatOneThing,platforms
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}

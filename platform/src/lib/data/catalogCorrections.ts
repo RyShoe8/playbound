@@ -19,6 +19,17 @@
 import { launcherInstallBySlug } from "./launcherInstall";
 
 const CATALOG_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  // KingSpoon's 2018 standalone release includes a timed race in E1M6
+  // "Shopping" that earns money for upgrades. The official download ships a
+  // Windows EX17 executable; the author links a separate Linux build. Neither
+  // the release nor its FSNebula engine dependency offers a macOS build.
+  // Sources: hard-light.net/forums/index.php?topic=95368.0,
+  // moddb.com/mods/wings-of-dawn/downloads/wings-of-dawn2,
+  // fsnebula.org/mod/fso-wod. Do not change Ready status or artwork.
+  "wings-of-dawn": {
+    thatOneThing: "The 'Shopping' mission makes you race through space for cash to spend on upgrades. Even a galactic war has errands.",
+    platforms: ["Windows", "Linux"],
+  },
   // Sky Lance v2 is a preview release from Eagle Software's NeoGeoSDK. The
   // upstream MVS .neo cartridge and redistributable EagleBIOS are packaged
   // together on the VPS mirror. Geolith loads the cartridge in MVS/Europe mode.
