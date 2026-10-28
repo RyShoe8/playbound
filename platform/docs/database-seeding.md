@@ -28,6 +28,11 @@ Production Mongo credentials are not for local shells, `vercel env pull`, or
    job must pass `--games=<slugs> --fields=<fields>` (or a named edition scope)
    and use the repository `MONGODB_URI` secret. A regular push does not run a
    broad wave. New games are entered through the Admin Panel.
+3. After the job succeeds and the live record is verified, remove that request's
+   slug/fields from the wave allowlist, any wave-only correction source, and
+   its one-time workflow job. Commit the cleanup separately, without the job's
+   trigger marker. This prevents a future invocation from replaying old values
+   over later Admin edits.
 4. Never `POST /api/admin/games/sync` to “fix” an existing SoC/CoP (or any
    curated) row from seed. Never `DELETE` catalog games.
 

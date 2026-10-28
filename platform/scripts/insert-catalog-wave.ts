@@ -19,7 +19,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   ADD_GAME_FEATURES,
-  REMOVE_GAME_FEATURES,
   FILL_MISSING_STEAM_LAUNCH,
   STEAM_CLIENT_EXE_HINTS,
   NEW_EDITION_KEYS,
@@ -199,16 +198,14 @@ async function main() {
   const featuresOnly = process.argv.includes("--features-only");
   const singleFeatureArg = process.argv.find((arg) => arg.startsWith("--feature="));
   const singleFeature = singleFeatureArg?.slice("--feature=".length).trim();
-  const removeFeatureArg = process.argv.find((arg) => arg.startsWith("--remove-feature="));
-  const removeFeature = removeFeatureArg?.slice("--remove-feature=".length).trim();
   if (scopedGames && scopedEditions) throw new Error("--games and --editions are mutually exclusive");
-  if (scopedGames && !scopedFields && !featuresOnly && !removeFeatureArg) {
-    throw new Error("--games requires --fields=<fields>, --features-only with --feature=<name>, or --remove-feature=<name>");
+  if (scopedGames && !scopedFields && !featuresOnly) {
+    throw new Error("--games requires --fields=<fields> or --features-only with --feature=<name>");
   }
   if (scopedEditions && (scopedEditions.size === 0 || [...scopedEditions].some((key) => !PATCH_EDITION_FIELDS[key]))) {
     throw new Error("--editions must list nonempty, comma-separated keys already in PATCH_EDITION_FIELDS");
   }
-  if (scopedEditions && (scopedFields || featuresOnly || singleFeatureArg || removeFeatureArg)) {
+  if (scopedEditions && (scopedFields || featuresOnly || singleFeatureArg)) {
     throw new Error("--editions cannot be combined with game field or feature scopes");
   }
   if (scopedGames && (scopedGames.size === 0 || [...scopedGames].some((slug) => !PATCH_GAME_FIELDS[slug]))) {
@@ -223,10 +220,6 @@ async function main() {
     throw new Error("--features-only requires --games and one allowlisted --feature, with no --fields");
   }
   if (!featuresOnly && singleFeatureArg) throw new Error("--feature requires --features-only");
-  if (removeFeatureArg && (!scopedGames || scopedFields || featuresOnly || singleFeatureArg || !removeFeature ||
-    [...scopedGames].some((slug) => !REMOVE_GAME_FEATURES[slug]?.includes(removeFeature)))) {
-    throw new Error("--remove-feature requires --games and a feature allowlisted for removal from every named game");
-  }
   const inScope = (slug: string) => !scopedEditions && (!scopedGames || scopedGames.has(slug));
   if (!process.env.MONGODB_URI) {
     if (scopedRun) throw new Error("Scoped catalog wave cannot run: MONGODB_URI is not set");
@@ -257,16 +250,16 @@ async function main() {
   }
 
   const dbConnect = (await import("../src/lib/db")).default;
-  if (featuresOnly || removeFeatureArg) {
+  if (featuresOnly) {
     const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
     await dbConnect();
     for (const slug of scopedGames!) {
       const result = await CatalogGame.updateOne(
         { slug },
-        removeFeatureArg ? { $pull: { features: removeFeature! } } : { $addToSet: { features: singleFeature! } }
+        { $addToSet: { features: singleFeature! } }
       );
       if (result.matchedCount !== 1) throw new Error(`insert-catalog-wave — feature patch ${slug} matched ${result.matchedCount}, expected 1`);
-      console.log(`${removeFeatureArg ? "remove" : "add"} feature ${slug}: ${removeFeatureArg ? removeFeature : singleFeature}`);
+      console.log(`add feature ${slug}: ${singleFeature}`);
     }
     process.exit(0);
   }

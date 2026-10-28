@@ -68,6 +68,10 @@ source, refuses a slug that does not already exist, and never touches editions
 or mods. The wave requires explicit slugs and fields and refuses publication
 state changes; game status and publication are managed in Admin.
 
+After verifying the live update, remove its allowlist entry, any wave-only
+correction data, and its one-time Action job in a separate commit. A completed
+wave must not remain available to overwrite later Admin changes.
+
 The per-slug admin routes under `/api/admin/games/[slug]` remain fine — that
 is a human editing one game on purpose, through the CMS.
 

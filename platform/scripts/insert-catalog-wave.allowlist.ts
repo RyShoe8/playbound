@@ -109,20 +109,6 @@ const DEDICATED_DRAFT_EDITORIAL_FIELDS = [
 ] as const;
 
 export const PATCH_GAME_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  // CMS-only GOG import. Explicitly replace only its incorrect/missing factual,
-  // editorial, hardware, multiplayer, and external executable-detection fields.
-  // Leave price, access, media, and publication status entirely to the CMS.
-  "soldier-of-fortune-platinum-edition": [
-    "tagline", "description", "developerSlug", "developerName", "releaseYear",
-    "sizeMB", "genres", "platforms", "launchMethods", "browserPlayable",
-    "hasControllerSupport", "maxPlayers", "qualityBar", "thatOneThing", "longDescription",
-    "whyWePickedIt", "bestFor", "notFor", "comparableTo", "faq",
-    "installSteps", "multiplayerGamingSteps", "launcherInstall",
-    "systemRequirements", "hardwareRequirements",
-  ],
-  // Database-only Ready game. Correct one editorial line and the unsupported
-  // macOS platform claim; keep its publication state, media and recipe intact.
-  "wings-of-dawn": ["thatOneThing", "platforms"],
   // Existing CMS game only. Do not replace its editorial, media, or status.
   skylance: ["launchMethods", "hasControllerSupport", "sizeMB", "installSteps", "launcherInstall"],
   // Existing DB-only testing game. Leave its status, editorial and images alone.
@@ -798,7 +784,6 @@ export const SKIP_MISSING_PATCH_GAMES: readonly string[] = ["risk-of-rain-2"];
 
 /** Append only; do not replace these database-only drafts' curated features. */
 export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
-  "soldier-of-fortune-platinum-edition": ["Singleplayer", "Multiplayer", "LAN Support"],
   "battlefield-1942-anthology": ["Multiplayer", "Mod Support", "Dedicated Servers"],
   "aneurism-iv": ["Multiplayer", "LAN Support"],
   "stardew-valley": ["Multiplayer", "Co-op", "Couch Co-Op", "Split-Screen Co-op", "Controller Support"],
@@ -814,11 +799,6 @@ export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
   // Vanilla RimWorld is single-player; its multiplayer mod is an edition.
   "counter-strike-source": ["Multiplayer"],
   unturned: ["Multiplayer", "Co-op", "LAN Support"],
-};
-
-/** Remove only badges that falsely describe the unverified SoF installation. */
-export const REMOVE_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
-  "soldier-of-fortune-platinum-edition": ["Dedicated Servers", "Controller Support"],
 };
 
 /** Fill only absent launcher recipes on these Steam drafts. Existing recipes always win. */
