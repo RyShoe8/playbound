@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { hostableProfileStubs, readyGameHostSlugs, readyPublishedHostableCatalog } from "./hostableProfiles";
 
 describe("hostable profile stubs", () => {
+  it("offers only the openMERC edition of Soldier of Fortune", () => {
+    const gameSlug = "soldier-of-fortune-platinum-edition";
+    const editions = [{ gameSlug, slug: "openmerc", features: ["Dedicated Servers"] }, { gameSlug, slug: "official", features: ["Dedicated Servers"] }];
+    expect(hostableProfileStubs([], editions, [gameSlug]).map((row) => row.key)).toEqual([`${gameSlug}:openmerc`]);
+    const ready = readyPublishedHostableCatalog([{ slug: gameSlug, title: "Soldier of Fortune", status: "published" }], editions, [], new Set([gameSlug]));
+    expect(ready.editions.map((row) => row.slug)).toEqual(["openmerc"]);
+  });
   it("offers HX co-op rather than vanilla Deus Ex or single-player mods", () => {
     const hx = { gameSlug: "deus-ex-goty-edition", slug: "playbound-hx-coop", features: ["Multiplayer"] };
     const gmdx = { gameSlug: "deus-ex-goty-edition", slug: "gmdx", features: ["Dedicated Servers"] };

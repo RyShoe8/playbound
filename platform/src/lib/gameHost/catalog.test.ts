@@ -34,6 +34,9 @@ describe("game host catalog", () => {
       expect(PARTY_DEDICATED_GAMES[slug]).toBeUndefined();
     }
     expect(getPartyHostableGame("team-fortress-2", "open-fortress")?.slug).toBe("open-fortress");
+    expect(getPartyHostableGame("soldier-of-fortune-platinum-edition", "openmerc")?.slug).toBe("soldier-of-fortune-platinum-edition");
+    expect(getPartyHostableGame("soldier-of-fortune-platinum-edition", null)).toBeNull();
+    expect(getPartyHostableGame("soldier-of-fortune-platinum-edition", "official")).toBeNull();
     expect(partyDedicatedPlayerLimit("open-fortress", 64)).toBe(32);
     expect(partyDedicatedPlayerLimit("core-keeper", 32)).toBe(8);
     expect(partyDedicatedPlayerLimit("barotrauma", 32)).toBe(16);

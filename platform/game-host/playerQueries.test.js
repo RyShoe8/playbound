@@ -1,10 +1,19 @@
 import assert from "node:assert/strict";
 import dgram from "node:dgram";
 import { test } from "node:test";
-import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, parseHxInfo, stkDiscoveryPort, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
+import { parseQuake3Status, openMohaaBotCount, parseMindustryPing, parseAssaultCubeInfo, parseChocolateDoomStatus, parseHxInfo, parseOpenMercInfo, stkDiscoveryPort, queryRoomOccupancy, LOCAL_QUERY_GAMES } from "./playerQueries.js";
 import { parseA2sOccupancy } from "./a2sQuery.js";
 
 const ff = Buffer.from([0xff, 0xff, 0xff, 0xff]);
+
+test("openMERC info uses its own query port and requires matching game port and bounded counts", async () => {
+  const reply = "\\hostname\\noname\\hostport\\30912\\mapname\\dm/nycdm1\\gametype\\DM\\numplayers\\0\\maxplayers\\8\\gamemode\\openplaying\\violence\\32\\final\\\\queryid\\2.1";
+  assert.deepEqual(parseOpenMercInfo(Buffer.from(reply), 30912), { players: 0, maxPlayers: 8, bots: 0 });
+  for (const invalid of [reply.replace("30912", "30914"), reply.replace("numplayers\\0", "numplayers\\9"), reply.replace("maxplayers\\8", "maxplayers\\33"), reply.replace("\\final\\", "\\wrong\\")]) {
+    assert.equal(parseOpenMercInfo(Buffer.from(invalid), 30912), null);
+  }
+  assert.equal(await queryRoomOccupancy({ gameSlug: "soldier-of-fortune-platinum-edition", editionSlug: "official", port: 30912 }), null);
+});
 
 test("HX info requires complete matching native occupancy and rejects missing or impossible counts", async () => {
   const source='\\hostname\\Private fixture\\hostport\\29980\\gametype\\HXGameInfo\\numplayers\\0\\maxplayers\\4\\queryid\\1.1\\final\\';

@@ -237,6 +237,7 @@ RECIPE_SETTING_TYPES["rimworld-together"] = {
 };
 RECIPE_SETTING_TYPES.unturned = { map: "string", pve: "boolean", perspective: "string", cheats: "boolean" };
 RECIPE_SETTING_TYPES["aneurism-iv"] = {maxPlayers:"number",map:"string"};
+RECIPE_SETTING_TYPES["soldier-of-fortune-platinum-edition"] = { map: "string" };
 for (const field of rimworldDifficulty) RECIPE_SETTING_TYPES["rimworld-together"][`difficulty.${field.key}`] = typeof field.default;
 // slot setting below. Party-room settings remain independent.
 for (const slug of [
@@ -245,6 +246,7 @@ for (const slug of [
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
   "battlefield-1942-anthology", "counter-strike-source", "goldeneye-source", "open-fortress", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
+  "soldier-of-fortune-platinum-edition",
 ]) {
   RECIPE_SETTING_TYPES[slug] = { ...RECIPE_SETTING_TYPES[slug], maxPlayers: "number" };
 }
@@ -2125,6 +2127,11 @@ export function listGameHostStatus() {
       ready = fs.existsSync(path.join(root, "archives", "bf1942", "game.rfa")) &&
         fs.existsSync(path.join(root, "settings", "serversettings.con")) &&
         fs.existsSync(path.join(root, "settings", "maplist.con"));
+    }
+    if (slug === "soldier-of-fortune-platinum-edition" && hasBinary) {
+      const root = path.join(GAMES_ROOT, slug);
+      ready = ["openmerc/gamex86.so", "openmerc/player.so", "openmerc/zz_openmerc.pak", "base/pak0.pak"]
+        .every((file) => fs.statSync(path.join(root, file), { throwIfNoEntry: false })?.isFile());
     }
     out[slug] = { installed: hasBinary, ready };
   }

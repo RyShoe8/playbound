@@ -28,6 +28,7 @@ export const QUERY_BY_GAME: Record<string, string> = {
   "goldeneye-source": "agent-local",
   "open-fortress": "agent-local",
   "deus-ex-goty-edition": "agent-local",
+  "soldier-of-fortune-platinum-edition": "agent-local",
   "team-fortress-2": "agent-local",
   xonotic: "agent-local",
   openarena: "agent-local",

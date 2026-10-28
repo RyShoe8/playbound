@@ -109,6 +109,49 @@ export function createDedicatedRecipes(deps) {
   const keepStdinOpen = () => "";
 
   return {
+    "soldier-of-fortune-platinum-edition": {
+      // openMERC has separate game and GameSpy query sockets. Reserve both.
+      portStart: 28910,
+      portEnd: 28949,
+      portStride: 2,
+      portSpan: 2,
+      protocol: "udp",
+      binaries: gameBin("soldier-of-fortune-platinum-edition", ["openMerc-ded"]),
+      resolveBinary: (candidates, ctx) => ctx?.partyId
+        ? firstExisting([path.join(serverDir("openmerc-servers", ctx), "runtime", "openMerc-ded")])
+        : firstExisting(candidates),
+      cwd: (_port, ctx) => path.join(serverDir("openmerc-servers", ctx), "runtime"),
+      spawnEnv: isolatedHomeEnv("openmerc-servers"),
+      prepareSpawn: async (_port, ctx) => {
+        if (ctx.editionSlug !== "openmerc") throw new Error("The openMERC server requires the openMERC edition");
+        const source = path.join(GAMES_ROOT, "soldier-of-fortune-platinum-edition");
+        for (const required of ["openMerc-ded", "openmerc/gamex86.so", "openmerc/player.so", "openmerc/zz_openmerc.pak", "base/pak0.pak"]) {
+          if (!fs.statSync(path.join(source, required), { throwIfNoEntry: false })?.isFile()) {
+            throw new Error(`openMERC server files are incomplete: ${required}`);
+          }
+        }
+        const runtime = path.join(serverDir("openmerc-servers", ctx), "runtime");
+        fs.mkdirSync(runtime, { recursive: true, mode: 0o700 });
+        for (const name of ["openMerc-ded", "openmerc", "OMsnd.so", "ref_gl3.so", "ref_gles3.so"]) {
+          const from = path.join(source, name), to = path.join(runtime, name);
+          if (!fs.existsSync(to) && fs.existsSync(from)) fs.cpSync(from, to, { recursive: true, force: false });
+        }
+        // The engine writes to <exe dir>/openmerc/user. Keep that per server.
+        fs.mkdirSync(path.join(runtime, "openmerc", "user"), { recursive: true, mode: 0o700 });
+        const data = path.join(runtime, "base");
+        if (!fs.existsSync(data)) fs.symlinkSync(path.join(source, "base"), data, "dir");
+      },
+      args: (port, ctx) => [
+        "+set", "port", String(port),
+        "+set", "gamespyport", String(port + 1),
+        "+set", "public", "0",
+        "+set", "maxclients", String(Math.min(32, managedPlayerLimit(ctx))),
+        "+set", "deathmatch", "1",
+        "+map", settingToken("soldier-of-fortune-platinum-edition", ctx, "map", "dm/nycdm1"),
+        // openMERC's config.cfg loads after early +set; apply the name last.
+        "+set", "hostname", serverName(ctx, "PlayBound openMERC"),
+      ],
+    },
     "open-fortress": {
       portStart: 27150,
       portEnd: 27169,

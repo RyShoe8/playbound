@@ -50,6 +50,10 @@ describe("host mode configuration", () => {
     }
     expect(hostModesFor("deus-ex-goty-edition", "playbound-hx-coop")).toContain("dedicated");
     expect(hostModesFor("deus-ex-goty-edition", "gmdx")).toEqual([]);
+    expect(hostModesFor("soldier-of-fortune-platinum-edition", "openmerc")).toContain("dedicated");
+    expect(hostModesFor("soldier-of-fortune-platinum-edition", "official")).not.toContain("dedicated");
+    expect(hostModesFor("soldier-of-fortune-platinum-edition")).not.toContain("dedicated");
+    expect(getHostedInGameSteps("soldier-of-fortune-platinum-edition")[0]).toContain("openMERC");
     expect(hostModesFor("rimworld", "rimworld-together")).toContain("dedicated");
     expect(hostModesFor("rimworld")).not.toContain("dedicated");
     for (const slug of ["stardew-valley", "star-wars-galactic-battlegrounds-saga"]) {

@@ -1596,6 +1596,15 @@ const TES3MP: ServerSettingProfile = {
 };
 
 export const SERVER_SETTING_PROFILES: Readonly<Record<string, ServerSettingProfile>> = {
+  "soldier-of-fortune-platinum-edition": {
+    slug: "soldier-of-fortune-platinum-edition",
+    settings: [{
+      key: "map", label: "Starting map", feature: "map", type: "enum", default: "dm/nycdm1",
+      options: ["irqdm1", "irqdm2", "jpndm2", "kosdm1", "nycdm1", "nycdm2", "nycdm3", "nycdm4", "nycdm5", "suddm1", "suddm2", "suddm3", "factorydm", "plantdm", "labdm", "irqdesertdm", "airportdm"]
+        .map((name) => ({ value: `dm/${name}`, label: name.replace(/dm(\d*)$/, " Deathmatch $1").replace(/^(\w)/, (letter) => letter.toUpperCase()).trim() })),
+      apply: "restart", backend: "startup",
+    }],
+  },
   unturned: {
     slug: "unturned",
     unavailable: { bots: "Unturned has zombies and animals, but no native player bots or bot-fill quota." },

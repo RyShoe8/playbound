@@ -344,6 +344,7 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
 export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
   "open-fortress": { slug: "open-fortress", title: "Open Fortress", defaultPort: 27150, portEnd: 27169, protocol: "udp" },
   "battlefield-1942-anthology": { slug: "battlefield-1942-anthology", title: "Battlefield 1942 Anthology", defaultPort: 14567, portEnd: 14586, protocol: "udp" },
+  "soldier-of-fortune-platinum-edition": { slug: "soldier-of-fortune-platinum-edition", title: "Soldier of Fortune: openMERC", defaultPort: 28910, portEnd: 28949, protocol: "udp" },
   "counter-strike-source": { slug: "counter-strike-source", title: "Counter-Strike: Source", defaultPort: 27060, portEnd: 27070, protocol: "udp" },
   "goldeneye-source": { slug: "goldeneye-source", title: "GoldenEye: Source", defaultPort: 27120, portEnd: 27139, protocol: "udp" },
   terraria: { slug: "terraria", title: "Terraria", defaultPort: 7870, portEnd: 7890, protocol: "tcp" },
@@ -363,13 +364,13 @@ export const PARTY_DEDICATED_GAMES: Record<string, HostableGame> = Object.fromEn
   [
     "counter-strike-source", "terraria", "core-keeper",
     "factorio", "necesse", "barotrauma", "unturned",
-    "rimworld-together", "dont-starve-together", "trackmania", "open-fortress",
+    "rimworld-together", "dont-starve-together", "trackmania", "open-fortress", "soldier-of-fortune-platinum-edition",
   ].map((slug) => [slug, DEDICATED_ONLY_GAMES[slug]])
 );
 
 /** Party rooms use the admin's server cap, bounded by a game's fixed limit. */
 export function partyDedicatedPlayerLimit(slug: string, configured: number): number {
-  const gameCap: Record<string, number> = { "core-keeper": 8, barotrauma: 16, "open-fortress": 32 };
+  const gameCap: Record<string, number> = { "core-keeper": 8, barotrauma: 16, "open-fortress": 32, "soldier-of-fortune-platinum-edition": 32 };
   const safeConfigured = Number.isInteger(configured) ? Math.max(2, Math.min(64, configured)) : 16;
   return Math.min(safeConfigured, gameCap[slug] ?? 64);
 }
@@ -398,6 +399,8 @@ export function getPartyHostableGame(gameSlug: string, editionSlug?: string | nu
     return editionSlug === "rimworld-together" ? getHostableGame("rimworld-together") : null;
   }
   if (gameSlug === "deus-ex-goty-edition" && editionSlug !== "playbound-hx-coop") return null;
+  // The original Platinum client cannot join openMERC servers.
+  if (gameSlug === "soldier-of-fortune-platinum-edition" && editionSlug !== "openmerc") return null;
   return getHostableGame(gameSlug);
 }
 

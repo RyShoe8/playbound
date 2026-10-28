@@ -88,6 +88,30 @@ export async function queryHxOccupancy(gamePort) {
   return reply ? parseHxInfo(reply,gamePort) : null;
 }
 
+/** openMERC's GameSpy info socket lives on gameplay port + 1. */
+export function parseOpenMercInfo(packet, gamePort) {
+  if (!Buffer.isBuffer(packet) || packet.length > 4096 || !Number.isInteger(gamePort)) return null;
+  const text = packet.toString("latin1");
+  if (!text.startsWith("\\hostname\\") || !text.includes("\\final\\") || !/\\queryid\\\d+\.\d+$/.test(text)) return null;
+  const field = (name) => {
+    const matches = [...text.matchAll(new RegExp(`\\\\${name}\\\\([^\\\\]*)`, "g"))];
+    return matches.length === 1 ? matches[0][1] : null;
+  };
+  const port = field("hostport"), players = field("numplayers"), maximum = field("maxplayers");
+  if (port !== String(gamePort) || !/^\d{1,2}$/.test(players || "") || !/^\d{1,2}$/.test(maximum || "")) return null;
+  const count = Number(players), maxPlayers = Number(maximum);
+  return maxPlayers >= 2 && maxPlayers <= 32 && count <= maxPlayers ? { players: count, maxPlayers, bots: 0 } : null;
+}
+
+export async function queryOpenMerc(gamePort) {
+  if (!Number.isInteger(gamePort) || gamePort < 1 || gamePort >= 65535) return null;
+  const reply = await udpRequest(gamePort + 1, Buffer.from("\\info\\"), {
+    localReplyOnly: true,
+    accept: packet => parseOpenMercInfo(packet, gamePort) !== null,
+  });
+  return reply ? parseOpenMercInfo(reply, gamePort) : null;
+}
+
 /* â”€â”€ Quake 3 family: getstatus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const Q3_GETSTATUS = Buffer.concat([Buffer.from([0xff, 0xff, 0xff, 0xff]), Buffer.from("getstatus\n")]);
@@ -672,6 +696,7 @@ const TCP_CLIENT_GAMES = new Set(["freeciv", "battle-for-wesnoth", "triplea", "h
 /** Games this module can answer for, so the platform knows to ask. */
 export const LOCAL_QUERY_GAMES = new Set([
   "deus-ex-goty-edition",
+  "soldier-of-fortune-platinum-edition",
   ...QUAKE3_GAMES, ...A2S_GAMES, "mindustry", "assaultcube", "space-station-14", "morrowind",
   "openttd", "bzflag", "teeworlds", "veloren", "supertuxkart", "flightgear", "freedoom", "bombsquad",
   ...TCP_CLIENT_GAMES,
@@ -682,6 +707,7 @@ export async function queryRoomOccupancy(room) {
   if (!room || !Number.isInteger(room.port)) return null;
   const slug = room.gameSlug;
   if (slug === "deus-ex-goty-edition") return !room.editionSlug || room.editionSlug === "playbound-hx-coop" ? queryHxOccupancy(room.port) : null;
+  if (slug === "soldier-of-fortune-platinum-edition") return room.editionSlug === "openmerc" ? queryOpenMerc(room.port) : null;
   if (slug === "aneurism-iv") return queryAnivOccupancy(room);
   if (slug === "rimworld-together") {
     const snapshot = rimworldSnapshot(room);

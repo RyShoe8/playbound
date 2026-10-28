@@ -44,7 +44,7 @@ export const PLAYER_LIMIT_RECIPES = new Set([
   "wolfenstein-enemy-territory", "team-fortress-2", "unvanquished",
   "hedgewars", "freedoom", "veloren", "freeciv",
   // Paid Dedicated plan games (game-host/dedicatedRecipes.js).
-  "battlefield-1942-anthology", "counter-strike-source", "goldeneye-source", "open-fortress", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
+  "battlefield-1942-anthology", "soldier-of-fortune-platinum-edition", "counter-strike-source", "goldeneye-source", "open-fortress", "terraria", "unturned", "rimworld-together", "core-keeper", "vintage-story", "factorio", "necesse", "dont-starve-together", "barotrauma", "trackmania",
 ]);
 
 // Engines with a native bot fill mode (bots leave as people join, return as
@@ -65,7 +65,7 @@ export function managedRoomSettings(
   config: { maxPlayersPerServer?: number; botFillPercent?: number }
 ): { maxPlayers: number; botFill?: number } | undefined {
   if (!PLAYER_LIMIT_RECIPES.has(recipeSlug)) return undefined;
-  const maxPlayers = Math.min(["aneurism-iv", "open-fortress"].includes(recipeSlug) ? 32 : Infinity, config.maxPlayersPerServer ?? 16);
+  const maxPlayers = Math.min(["aneurism-iv", "open-fortress", "soldier-of-fortune-platinum-edition"].includes(recipeSlug) ? 32 : Infinity, config.maxPlayersPerServer ?? 16);
   const botPercent = config.botFillPercent !== undefined ? config.botFillPercent : 50;
   return BOT_FILL_RECIPES.has(recipeSlug)
     ? { maxPlayers, botFill: botFillFor(maxPlayers, botPercent) }

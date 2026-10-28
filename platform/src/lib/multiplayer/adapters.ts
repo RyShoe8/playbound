@@ -130,7 +130,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
         "Friends: find the match in the LAN browser or enter the leader's PlayBound network address",
       ],
     },
-    notes: "GOG's Platinum build supports LAN and direct IP. PlayBound coordinates a virtual LAN party; the original online master service is not supplied. A VPS dedicated SoFplus room requires a separately provisioned licensed 1.07f install and is not yet ready.",
+    notes: "GOG's Platinum build supports LAN and direct IP through a virtual LAN party. The openMERC edition uses a separate, PlayBound-hosted dedicated server and requires matching openMERC clients; it is not network-compatible with the original 1.07f client.",
   },
   // These games expose LAN hosting in their own clients. Connect provides the
   // party network and launch; each game's menu remains responsible for joining.
@@ -2793,6 +2793,9 @@ export function getVirtualLanConfig(gameSlug: string): VirtualLanConfig | null {
 
 /** In-game clicks still required after Connect joins a managed-server title. */
 export function getHostedInGameSteps(gameSlug: string): string[] {
+  if (gameSlug === "soldier-of-fortune-platinum-edition") {
+    return ["Launch the openMERC edition", "Open Multiplayer and connect to the PlayBound server address and port shown in this party"];
+  }
   const adapter = getMultiplayerAdapter(gameSlug);
   return adapter.client?.inGameSteps || [];
 }
