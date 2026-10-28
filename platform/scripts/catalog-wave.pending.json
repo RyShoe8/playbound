@@ -1,15 +1,4 @@
 {
-  "id": "sof-openmerc-dedicated-20261028",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "soldier-of-fortune-platinum-edition/openmerc",
-      "expected": {
-        "features": ["Singleplayer", "Multiplayer", "LAN Support", "Controller Support", "Story Campaign"]
-      },
-      "set": {
-        "features": ["Singleplayer", "Multiplayer", "LAN Support", "Controller Support", "Story Campaign", "Dedicated Servers"]
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
