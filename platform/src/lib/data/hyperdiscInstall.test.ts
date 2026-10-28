@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { launcherInstallSchema } from "../gamePayload";
 import { correctionsFor } from "./catalogCorrections";
-import { PATCH_GAME_FIELDS } from "../../../scripts/insert-catalog-wave.allowlist";
 
 describe("HyperDisc Arena one-click desktop recipe", () => {
   it("selects the corresponding official release archive on each platform", () => {
@@ -19,6 +18,5 @@ describe("HyperDisc Arena one-click desktop recipe", () => {
     expect(new RegExp(recipe.assetPatternMac || "").test("HyperDiscArena-windows.zip")).toBe(false);
     expect(correction?.platforms).toEqual(["Windows", "macOS", "Linux", "Web"]);
     expect(correction?.launchMethods).toEqual(["install", "browser"]);
-    expect(PATCH_GAME_FIELDS["hyperdisc-arena"]).toEqual(["platforms", "launchMethods", "launcherInstall"]);
   });
 });

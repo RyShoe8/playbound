@@ -1,20 +1,7 @@
 /**
- * Verified field corrections for published games that have no seed entry.
- *
- * `insert-catalog-wave` patches from `games.ts`, so a game curated entirely
- * through the admin CMS has no source to patch from and the wave refuses it.
- * That is the right default — it is what stops a blank seed silently blanking
- * live content — but it leaves no safe route for a one-field fix to a
- * DB-only game. This is that route: an explicit, reviewed value per field,
- * merged over the seed when one exists and standing alone when it does not.
- *
- * Field-scoped writes still go through PATCH_GAME_FIELDS, so nothing here is
- * applied unless the slug and field are both allowlisted for the wave.
- *
- * Every entry records where the value came from. A correction without a
- * source is a guess, and a guess is what put the wrong data here to begin
- * with: `releaseYear` had been defaulted to the year each game was added to
- * PlayBound, which is why sixteen titles claimed to have shipped in 2026.
+ * Historical, reviewed corrections for CMS-only games. This file is a source
+ * reference for tests and future curation; the catalog wave no longer reads
+ * or applies it. The database remains authoritative.
  */
 import { launcherInstallBySlug } from "./launcherInstall";
 

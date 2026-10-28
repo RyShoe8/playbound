@@ -48,29 +48,18 @@ build that can surprise you.
 
 ## The catalog wave is the only way to update a published game
 
-Allowlisted catalog corrections reach production via explicitly scoped
-**Apply catalog wave** GitHub Action jobs (`insert:catalog-wave`). Normal pushes
-and deployments never apply the whole wave. Not via local env pulls. See
+Catalog corrections reach production through the one-use
+**Apply catalog wave** GitHub Action (`insert:catalog-wave`). Only a push that
+changes `scripts/catalog-wave.pending.json` can apply a wave. Not via local env pulls. See
 `docs/database-seeding.md` → *How allowlisted catalog changes reach
 production*.
 
-**Do not write another script that updates a published game.** Changing a
-field on a live game means two edits and nothing else:
-
-1. Put the value where the wave can find it — `games.ts` / `editorial.ts` for
-   a seeded game, or `catalogCorrections.ts` for one that exists only in the
-   CMS and therefore has no seed row.
-2. Name the slug and the exact fields in `PATCH_GAME_FIELDS`
-   (`insert-catalog-wave.allowlist.ts`).
-
-The scoped game wave then `$set`s only those fields, refuses a field with no
-source, refuses a slug that does not already exist, and never touches editions
-or mods. The wave requires explicit slugs and fields and refuses publication
-state changes; game status and publication are managed in Admin.
-
-After verifying the live update, remove its allowlist entry, any wave-only
-correction data, and its one-time Action job in a separate commit. A completed
-wave must not remain available to overwrite later Admin changes.
+**Do not write another script that updates a published game.** Review the
+exact target, old values, and new values in `scripts/catalog-wave.pending.json`.
+The wave refuses missing rows, stale old values, publication-state fields,
+and unscoped or local applies. After a successful apply, the Action commits
+the empty pending file back to `main`. A failed apply leaves the reviewed
+payload in place for diagnosis; never clear it before resolving the failure.
 
 The per-slug admin routes under `/api/admin/games/[slug]` remain fine — that
 is a human editing one game on purpose, through the CMS.

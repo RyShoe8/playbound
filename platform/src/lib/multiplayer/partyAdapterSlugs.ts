@@ -70,6 +70,7 @@ export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
   "stunt-rally",
   "starcraft",
   "deus-ex-goty-edition",
+  "soldier-of-fortune-platinum-edition",
   "openciv3",
   "dungeon-keeper-gold",
   "heroes-of-might-and-magic-3-complete",

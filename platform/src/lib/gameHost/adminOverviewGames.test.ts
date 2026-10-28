@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { dedicatedOverviewSlugs } from "./adminOverviewGames";
-import { ADD_GAME_FEATURES } from "../../../scripts/insert-catalog-wave.allowlist";
 
 describe("dedicatedOverviewSlugs", () => {
   it("marks Battlefield Anthology for the database-backed VPS testing inventory", () => {
-    expect(ADD_GAME_FEATURES["battlefield-1942-anthology"]).toContain("Dedicated Servers");
     expect(dedicatedOverviewSlugs([], {}, {}, ["battlefield-1942-anthology"]))
       .toContain("battlefield-1942-anthology");
   });

@@ -14,30 +14,33 @@ seeds on its own. The risk is only ever at write time.
 
 ---
 
-## How allowlisted catalog changes reach production
+## How one-use catalog changes reach production
 
 **Use the GitHub Action — do not apply from a local machine.**
 
 Production Mongo credentials are not for local shells, `vercel env pull`, or
-`vercel env run`. Catalog writes that belong on an allowlist go through
+`vercel env run`. Targeted catalog writes go through
 [`.github/workflows/apply-catalog-wave.yml`](../../.github/workflows/apply-catalog-wave.yml):
 
-1. For an existing game, put the reviewed field values in seed/corrections and
-   name the exact slug and fields in `scripts/insert-catalog-wave.allowlist.ts`.
-2. Run a specifically scoped **Apply catalog wave** job for that request. The
-   job must pass `--games=<slugs> --fields=<fields>` (or a named edition scope)
-   and use the repository `MONGODB_URI` secret. A regular push does not run a
-   broad wave. New games are entered through the Admin Panel.
-3. After the job succeeds and the live record is verified, remove that request's
-   slug/fields from the wave allowlist, any wave-only correction source, and
-   its one-time workflow job. Commit the cleanup separately, without the job's
-   trigger marker. This prevents a future invocation from replaying old values
-   over later Admin edits.
-4. Never `POST /api/admin/games/sync` to “fix” an existing SoC/CoP (or any
+1. Begin with `scripts/catalog-wave.pending.json` empty. Add one named wave
+   id and up to 50 exact game, edition, or mod operations. Every field needs
+   both its reviewed current value (`expected`) and proposed value (`set`).
+   Use `null` in `expected` for an absent field. Never include credentials.
+2. Run `npm run insert:catalog-wave -- --check` locally to validate the file
+   without connecting to the database. Review the diff, then push the pending
+   file to `main`. This is the only push path that starts the Action.
+3. The Action checks all old values before its first write. It then updates
+   only the named records and fields, with no upserts or deletes. If an Admin
+   value has changed, the Action fails rather than overwriting it.
+4. On success, the Action commits the empty pending file back to `main`.
+   Verify that cleanup commit and the live record. If the Action fails,
+   keep the pending file intact while investigating; reruns skip operations
+   already applied and refuse later Admin changes.
+5. Never `POST /api/admin/games/sync` to “fix” an existing SoC/CoP (or any
    curated) row from seed. Never `DELETE` catalog games.
 
-Pushing allowlist/seed changes to `main` only runs a catalog job when that
-commit explicitly selects a scoped job. The script rejects unscoped runs.
+The wave contains no standing targets. Seed and editorial changes alone do
+not trigger catalog writes. The script rejects arbitrary command-line scopes.
 `npm run build` still writes nothing to the database — that stays intentional.
 
 Local `seed:missing-* --dry-run` is fine for reading blast radius when a
@@ -135,7 +138,7 @@ everything it did both, and the second effect is invisible from the name.
 |---|---|
 | `seed:games` | Counts documents first and exits if any exist. First-run only. |
 | `seed:admin`, `seed:developers`, `seed:hardware`, `seed:collections`, `seed:weekly`, `seed:store-providers`, `seed:mod-classifications` | Reference data, not curated catalog content. |
-| `insert:catalog-wave` | Takes an explicit list. |
+| `insert:catalog-wave` | Reads one reviewed pending file, requires exact old values, and is cleared after a successful GitHub Action run. |
 | `patch:named-mods` | Named mods only. |
 | `fix:mod-media` | Backfill-only — fills empty fields, never overwrites. |
 | `migrate:*` | One-off schema migrations. Most take `--apply`; without it they report and change nothing. |

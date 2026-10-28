@@ -1,7 +1,7 @@
 /**
  * Reviewed editorial and factual corrections for the fifteen named Dedicated
- * drafts. The catalog wave takes only the fields named for each slug in its
- * allowlist. No media, installation recipe, status, or publication field is
+ * drafts. This is historical source material; the one-use catalog wave does
+ * not read it. No media, installation recipe, status, or publication field is
  * supplied here. Dates/credits/platforms are from the official Steam app pages
  * (app IDs in the map below), the studios' sites, and the original BF1942
  * Anthology packaging. Editorial is original PlayBound copy, not store prose.

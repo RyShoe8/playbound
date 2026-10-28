@@ -1,4 +1,4 @@
-/** Reviewed, DB-only edition fields. Applied solely through PATCH_EDITION_FIELDS. */
+/** Historical DB-only edition corrections. The one-use catalog wave does not read this file. */
 export const CATALOG_EDITION_CORRECTIONS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   "rimworld/rimworld-together": {
     installConfig: {

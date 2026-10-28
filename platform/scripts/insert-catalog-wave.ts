@@ -1,1015 +1,156 @@
-/**
- * Catalog wave — applied by `.github/workflows/apply-catalog-wave.yml`
- * (`npm run insert:catalog-wave -- --games=... --fields=...`). Not part of
- * build or deployment. Refuses unscoped runs.
- *
- * Contract:
- *   - explicit allowlists only (never the whole seed catalog)
- *   - inserts: create only when absent; new games are draft / unpublished
- *   - patches: $set ONLY allowlisted fields on existing named docs
- *   - additive feature chips: $addToSet ONLY named drafts; never replace CMS arrays
- *   - retire editions/mods: $set archival fields only
- *   - never deletes rows, never upserts patches, never publishes a parent game
- *   - never writes a slug that is not on an allowlist
- *
- * Allowlists live in `insert-catalog-wave.allowlist.ts`.
- */
-import { loadEnvConfig } from "@next/env";
+/** Apply one reviewed catalog patch, then let the Action clear its pending file. */
+import { isDeepStrictEqual } from "node:util";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-  ADD_GAME_FEATURES,
-  FILL_MISSING_STEAM_LAUNCH,
-  STEAM_CLIENT_EXE_HINTS,
-  NEW_EDITION_KEYS,
-  NEW_GAME_SLUGS,
-  NEW_MOD_SLUGS,
-  PATCH_EDITION_FIELDS,
-  PATCH_GAME_FIELDS,
-  SKIP_MISSING_PATCH_GAMES,
-  PATCH_MOD_FIELDS,
-  RETIRE_EDITION_KEYS,
-  RETIRE_MOD_SLUGS,
-} from "./insert-catalog-wave.allowlist";
+import { fileURLToPath } from "node:url";
 
-loadEnvConfig(process.cwd());
+type Kind = "game" | "edition" | "mod";
+type Fields = Record<string, unknown>;
+type Operation = { kind: Kind; key: string; expected: Fields; set: Fields };
+type Wave = { id: string | null; operations: Operation[] };
 
-type MediaSwap<T> = { from: T; to: T };
-type GameMediaRepair = {
-  source: string;
-  coverImage?: MediaSwap<string>;
-  screenshots?: MediaSwap<string[]>;
-  videos?: MediaSwap<string[]>;
-};
-type EditionMediaRepair = {
-  source: string;
-  heroImage?: MediaSwap<string>;
-  screenshots?: MediaSwap<string[]>;
-};
+const PENDING_PATH = resolve(process.cwd(), "scripts/catalog-wave.pending.json");
+const FORBIDDEN_FIELDS = new Set([
+  "_id", "id", "slug", "gameSlug", "createdAt", "updatedAt", "__v",
+  "status", "published", "publishedAt", "managedBy",
+]);
 
-/** One scoped wave for broken storefront media. Compare old values exactly. */
-async function applyStoreMediaRepairs(dryRun: boolean) {
-  const games = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/data/storeMediaRepairAssets.json"), "utf8")) as Record<string, GameMediaRepair>;
-  const editions = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/data/storeEditionMediaRepairAssets.json"), "utf8")) as Record<string, EditionMediaRepair>;
-  const blobHost = "mt8u2b96lweefbpb.public.blob.vercel-storage.com";
-  const validateImage = (url: string, key: string) => {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:" || parsed.hostname !== blobHost || !parsed.pathname.endsWith(".webp")) {
-      throw new Error(`store media repair ${key}: replacement image is not a PlayBound Blob WebP`);
-    }
-  };
-  const validateSwap = (swap: MediaSwap<string[]> | undefined, key: string) => {
-    if (!swap) return;
-    if (!Array.isArray(swap.from) || !Array.isArray(swap.to) || !swap.from.some((url) => /gog-statics\.com|items\.gog\.com/i.test(url))) {
-      throw new Error(`store media repair ${key}: expected broken URL is missing`);
-    }
-    if (swap.to.some((url) => /gog-statics\.com|items\.gog\.com/i.test(url))) {
-      throw new Error(`store media repair ${key}: replacement still contains a broken GOG URL`);
-    }
-  };
-
-  for (const [slug, repair] of Object.entries(games)) {
-    if (!/^[a-z0-9-]+$/.test(slug) || !repair.source.startsWith("https://")) throw new Error(`invalid game media repair ${slug}`);
-    if (repair.coverImage) {
-      if (!/gog-statics\.com/i.test(repair.coverImage.from)) throw new Error(`${slug}: old cover is not GOG hosted`);
-      validateImage(repair.coverImage.to, slug);
-    }
-    validateSwap(repair.screenshots, `${slug} screenshots`);
-    for (const url of repair.screenshots?.to ?? []) if (url.includes(blobHost)) validateImage(url, slug);
-    validateSwap(repair.videos, `${slug} videos`);
-  }
-  for (const [key, repair] of Object.entries(editions)) {
-    if (!/^[a-z0-9-]+\/[a-z0-9-]+$/.test(key) || !repair.source.startsWith("https://")) throw new Error(`invalid edition media repair ${key}`);
-    if (repair.heroImage) {
-      if (!/gog-statics\.com/i.test(repair.heroImage.from)) throw new Error(`${key}: old hero is not GOG hosted`);
-      validateImage(repair.heroImage.to, key);
-    }
-    validateSwap(repair.screenshots, `${key} screenshots`);
-    for (const url of repair.screenshots?.to ?? []) if (url.includes(blobHost)) validateImage(url, key);
-  }
-
-  if (dryRun) {
-    console.log(`store media repair dry run: ${Object.keys(games).length} named games, ${Object.keys(editions).length} named editions; no database writes`);
-    return;
-  }
-
-  const dbConnect = (await import("../src/lib/db")).default;
-  const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
-  const Edition = (await import("../src/lib/models/Edition")).default;
-  await dbConnect();
-  let changed = 0;
-  for (const [slug, repair] of Object.entries(games)) {
-    if (repair.coverImage) {
-      const result = await CatalogGame.updateOne(
-        { slug, coverImage: repair.coverImage.from },
-        { $set: { coverImage: repair.coverImage.to } },
-        { timestamps: false },
-      );
-      changed += result.modifiedCount;
-    }
-    if (repair.screenshots) {
-      const result = await CatalogGame.updateOne(
-        { slug, screenshots: repair.screenshots.from },
-        { $set: { screenshots: repair.screenshots.to } },
-        { timestamps: false },
-      );
-      changed += result.modifiedCount;
-    }
-    if (repair.videos) {
-      const result = await CatalogGame.updateOne(
-        { slug, videos: repair.videos.from },
-        { $set: { videos: repair.videos.to } },
-        { timestamps: false },
-      );
-      changed += result.modifiedCount;
-    }
-    console.log(`store media repair game ${slug}: checked`);
-  }
-  for (const [key, repair] of Object.entries(editions)) {
-    const [gameSlug, slug] = key.split("/");
-    if (repair.heroImage) {
-      const result = await Edition.updateOne(
-        { gameSlug, slug, "branding.heroImage": repair.heroImage.from },
-        { $set: { "branding.heroImage": repair.heroImage.to } },
-        { timestamps: false },
-      );
-      changed += result.modifiedCount;
-    }
-    if (repair.screenshots) {
-      const result = await Edition.updateOne(
-        { gameSlug, slug, "branding.screenshots": repair.screenshots.from },
-        { $set: { "branding.screenshots": repair.screenshots.to } },
-        { timestamps: false },
-      );
-      changed += result.modifiedCount;
-    }
-    console.log(`store media repair edition ${key}: checked`);
-  }
-  console.log(`store media repair: ${changed} image/video field(s) changed`);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function pickFields(
-  source: Record<string, unknown>,
-  fields: readonly string[]
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const field of fields) {
-    if (field.includes(".")) {
-      const [head, ...rest] = field.split(".");
-      if (!head || rest.length === 0) continue;
-      let cursor: unknown = source[head];
-      for (const part of rest) {
-        if (cursor == null || typeof cursor !== "object") {
-          cursor = undefined;
-          break;
-        }
-        cursor = (cursor as Record<string, unknown>)[part];
+function same(a: unknown, b: unknown): boolean {
+  // Lean Mongo documents contain Dates/ObjectIds; the manifest is plain JSON.
+  return isDeepStrictEqual(JSON.parse(JSON.stringify(a ?? null)), b ?? null);
+}
+
+function atPath(row: Record<string, unknown>, path: string): unknown {
+  return path.split(".").reduce<unknown>((value, part) =>
+    isRecord(value) ? value[part] : undefined, row);
+}
+
+function safeValue(value: unknown): boolean {
+  if (Array.isArray(value)) return value.every(safeValue);
+  if (isRecord(value)) return Object.entries(value).every(([key, part]) =>
+    /^[A-Za-z][A-Za-z0-9_]*$/.test(key) && !["__proto__", "constructor", "prototype"].includes(key) && safeValue(part));
+  return value === null || typeof value === "string" || typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value));
+}
+
+export function parseWave(raw: unknown): Wave {
+  if (!isRecord(raw) || Object.keys(raw).sort().join(",") !== "id,operations" || !Array.isArray(raw.operations)) {
+    throw new Error("Catalog wave must contain only id and operations");
+  }
+  if (raw.operations.length === 0) {
+    if (raw.id !== null) throw new Error("Empty catalog wave must have a null id");
+    return { id: null, operations: [] };
+  }
+  if (typeof raw.id !== "string" || !/^[a-z0-9][a-z0-9-]{5,79}$/.test(raw.id)) {
+    throw new Error("Active catalog wave needs a unique lowercase id");
+  }
+  if (raw.operations.length > 50) throw new Error("Catalog wave is limited to 50 named records");
+  const seen = new Set<string>();
+  for (const op of raw.operations) {
+    if (!isRecord(op) || Object.keys(op).sort().join(",") !== "expected,key,kind,set" ||
+      !["game", "edition", "mod"].includes(String(op.kind)) ||
+      typeof op.key !== "string" ||
+      !(op.kind === "edition" ? /^[a-z0-9-]+\/[a-z0-9-]+$/.test(op.key) : /^[a-z0-9-]+$/.test(op.key)) ||
+      !isRecord(op.expected) || !isRecord(op.set)) {
+      throw new Error("Each operation must name one game, edition, or mod with expected and set objects");
+    }
+    const identity = `${op.kind}:${op.key}`;
+    if (seen.has(identity)) throw new Error(`Duplicate catalog target ${identity}`);
+    seen.add(identity);
+    const fields = Object.keys(op.set);
+    if (fields.length === 0 || fields.length > 40 ||
+      fields.sort().join(",") !== Object.keys(op.expected).sort().join(",")) {
+      throw new Error(`${identity}: expected must name exactly the fields being set`);
+    }
+    for (const field of fields) {
+      const parts = field.split(".");
+      if (parts.some((part) => !/^[A-Za-z][A-Za-z0-9_]*$/.test(part)) ||
+        parts.some((part) => FORBIDDEN_FIELDS.has(part))) {
+        throw new Error(`${identity}: forbidden field ${field}`);
       }
-      out[field] = cursor;
-    } else {
-      out[field] = source[field];
+      if (fields.some((other) => other !== field && other.startsWith(`${field}.`))) {
+        throw new Error(`${identity}: overlapping fields ${field}`);
+      }
+      if (same(op.expected[field], op.set[field])) {
+        throw new Error(`${identity}: ${field} has no change`);
+      }
+      if (!safeValue(op.expected[field]) || !safeValue(op.set[field])) {
+        throw new Error(`${identity}: ${field} contains an unsafe value`);
+      }
     }
   }
-  return out;
+  return raw as Wave;
 }
 
 async function main() {
-  if (process.argv.includes("--media-repairs-only")) {
-    await applyStoreMediaRepairs(process.argv.includes("--dry-run"));
-    process.exit(0);
+  const command = process.argv[2];
+  if ((command !== "--check" && command !== "--apply") || process.argv.length !== 3) {
+    throw new Error("Use --check or --apply. The pending file is the only catalog wave input.");
   }
-  // Every run must name the exact game fields or edition records to update.
-  const scopeArg = process.argv.find((arg) => arg.startsWith("--games="));
-  const scopedGames = scopeArg
-    ? new Set(scopeArg.slice("--games=".length).split(",").map((slug) => slug.trim()).filter(Boolean))
-    : null;
-  const editionsArg = process.argv.find((arg) => arg.startsWith("--editions="));
-  const scopedEditions = editionsArg
-    ? new Set(editionsArg.slice("--editions=".length).split(",").map((key) => key.trim()).filter(Boolean))
-    : null;
-  const scopedRun = Boolean(scopedGames || scopedEditions);
-  if (!scopedRun) {
-    throw new Error("Catalog wave requires --games=<slugs> with --fields=<fields>, or --editions=<keys>");
+  const wave = parseWave(JSON.parse(readFileSync(PENDING_PATH, "utf8")));
+  if (wave.operations.length === 0) {
+    console.log("Catalog wave empty: no updates pending.");
+    return;
   }
-  const fieldsArg = process.argv.find((arg) => arg.startsWith("--fields="));
-  const scopedFields = fieldsArg
-    ? new Set(fieldsArg.slice("--fields=".length).split(",").map((field) => field.trim()).filter(Boolean))
-    : null;
-  const featuresOnly = process.argv.includes("--features-only");
-  const singleFeatureArg = process.argv.find((arg) => arg.startsWith("--feature="));
-  const singleFeature = singleFeatureArg?.slice("--feature=".length).trim();
-  if (scopedGames && scopedEditions) throw new Error("--games and --editions are mutually exclusive");
-  if (scopedGames && !scopedFields && !featuresOnly) {
-    throw new Error("--games requires --fields=<fields> or --features-only with --feature=<name>");
-  }
-  if (scopedEditions && (scopedEditions.size === 0 || [...scopedEditions].some((key) => !PATCH_EDITION_FIELDS[key]))) {
-    throw new Error("--editions must list nonempty, comma-separated keys already in PATCH_EDITION_FIELDS");
-  }
-  if (scopedEditions && (scopedFields || featuresOnly || singleFeatureArg)) {
-    throw new Error("--editions cannot be combined with game field or feature scopes");
-  }
-  if (scopedGames && (scopedGames.size === 0 || [...scopedGames].some((slug) => !PATCH_GAME_FIELDS[slug]))) {
-    throw new Error("--games must list nonempty, comma-separated slugs already in PATCH_GAME_FIELDS");
-  }
-  if (scopedFields && (!scopedGames || scopedFields.size === 0 || [...scopedGames].some((slug) =>
-    [...scopedFields].some((field) => !PATCH_GAME_FIELDS[slug].includes(field))))) {
-    throw new Error("--fields requires --games and fields allowlisted for every named game");
-  }
-  if (featuresOnly && (!scopedGames || scopedFields || !singleFeature ||
-    [...scopedGames].some((slug) => !ADD_GAME_FEATURES[slug]?.includes(singleFeature)))) {
-    throw new Error("--features-only requires --games and one allowlisted --feature, with no --fields");
-  }
-  if (!featuresOnly && singleFeatureArg) throw new Error("--feature requires --features-only");
-  const inScope = (slug: string) => !scopedEditions && (!scopedGames || scopedGames.has(slug));
-  if (!process.env.MONGODB_URI) {
-    if (scopedRun) throw new Error("Scoped catalog wave cannot run: MONGODB_URI is not set");
-    console.warn("insert-catalog-wave skipped — MONGODB_URI is not set.");
-    process.exit(0);
-  }
-
-  const allowedEditions = new Set(scopedRun ? [] : NEW_EDITION_KEYS);
-  const allowedMods = new Set(scopedRun ? [] : NEW_MOD_SLUGS);
-  const patchGameSlugs = Object.keys(PATCH_GAME_FIELDS).filter(inScope);
-  const patchEditionKeys = scopedEditions ? [...scopedEditions] : scopedGames ? [] : Object.keys(PATCH_EDITION_FIELDS);
-  const patchModSlugs = scopedRun ? [] : Object.keys(PATCH_MOD_FIELDS);
-  const retireEditionKeys = scopedRun ? [] : [...RETIRE_EDITION_KEYS];
-  const retireModSlugs = scopedRun ? [] : [...RETIRE_MOD_SLUGS];
-
-  if (
-    NEW_GAME_SLUGS.length === 0 &&
-    allowedEditions.size === 0 &&
-    allowedMods.size === 0 &&
-    patchGameSlugs.length === 0 &&
-    patchEditionKeys.length === 0 &&
-    patchModSlugs.length === 0 &&
-    retireEditionKeys.length === 0 &&
-    retireModSlugs.length === 0
-  ) {
-    console.log("insert-catalog-wave: allowlists empty — nothing to do.");
-    process.exit(0);
+  console.log(`Catalog wave ${wave.id}: ${wave.operations.length} named record(s)`);
+  if (command === "--check") return;
+  if (process.env.GITHUB_ACTIONS !== "true" || !/^mongodb(\+srv)?:\/\//.test(process.env.MONGODB_URI ?? "")) {
+    throw new Error("Catalog wave apply requires GitHub Actions and its configured MongoDB URI");
   }
 
   const dbConnect = (await import("../src/lib/db")).default;
-  if (featuresOnly) {
-    const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
-    await dbConnect();
-    for (const slug of scopedGames!) {
-      const result = await CatalogGame.updateOne(
-        { slug },
-        { $addToSet: { features: singleFeature! } }
-      );
-      if (result.matchedCount !== 1) throw new Error(`insert-catalog-wave — feature patch ${slug} matched ${result.matchedCount}, expected 1`);
-      console.log(`add feature ${slug}: ${singleFeature}`);
-    }
-    process.exit(0);
-  }
-  const Edition = (await import("../src/lib/models/Edition")).default;
   const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
+  const Edition = (await import("../src/lib/models/Edition")).default;
   const CatalogMod = (await import("../src/lib/models/CatalogMod")).default;
-  const { games } = await import("../src/lib/data/games");
-  const { editions } = await import("../src/lib/data/editions");
-  const { mods } = await import("../src/lib/data/mods");
-  const { developersBySlug } = await import("../src/lib/data/developers");
-  const { launcherInstallBySlug } = await import("../src/lib/data/launcherInstall");
-  const { correctionsFor } = await import("../src/lib/data/catalogCorrections");
-  const { CATALOG_EDITION_CORRECTIONS } = await import("../src/lib/data/catalogEditionCorrections");
-  const { accessAuditModCorrection } = await import("../src/lib/data/accessAuditModCorrections");
-  const { dedicatedDraftEditorialFor } = await import("../src/lib/data/dedicatedDraftEditorial");
-  const { dedicatedDraftRequirementsFor } = await import("../src/lib/data/dedicatedDraftRequirements");
-  const { attributionFor } = await import("../src/lib/data/modAttributions");
-  const { modAuthorsBySlug } = await import("../src/lib/data/modAuthors");
-  const { defaultArtFor } = await import("../src/lib/gamePayload");
-  const { ensureDerivedModFields } = await import("../src/lib/enrich");
-  const {
-    ASSAULTCUBE_SLUG,
-    assaultCubeSystemRequirements,
-    assaultCubeHardwareRequirements,
-  } = await import("../src/lib/data/assaultCubeSpecs");
-  const {
-    FREETRAIN_SLUG,
-    freetrainEditorial,
-    freetrainHardwareRequirements,
-    freetrainLauncherInstall,
-    freetrainSystemRequirements,
-  } = await import("../src/lib/data/freetrainCatalog");
-  const { IDLE_SLAYER_SLUG, idleSlayerPatchSource } = await import(
-    "../src/lib/data/idleSlayerCatalog"
-  );
-  const { SEVEN_KINGDOMS_SLUG, sevenKingdomsLauncherInstall } = await import(
-    "../src/lib/data/sevenKingdomsCatalog"
-  );
-  const { HOLOCURE_RICH_PRESENCE_SLUG, holocureRichPresencePatchSource } = await import(
-    "../src/lib/data/holocureRichPresenceCatalog"
-  );
-  const { editorial } = await import("../src/lib/data/editorial");
-  const { SKY_CHILDREN_SLUG, skyChildrenPatchSource } = await import(
-    "../src/lib/data/skyChildrenCatalog"
-  );
-  const { SLAPSHOT_REBOUND_SLUG, slapshotReboundPatchSource } = await import(
-    "../src/lib/data/slapshotReboundCatalog"
-  );
-  const { TEEWORLDS_SLUG, teeworldsPatchSource } = await import(
-    "../src/lib/data/teeworldsCatalog"
-  );
-  const { THE_DARK_MOD_SLUG, theDarkModPatchSource } = await import(
-    "../src/lib/data/theDarkModCatalog"
-  );
-  const { UNKNOWN_HORIZONS_SLUG, unknownHorizonsPatchSource } = await import(
-    "../src/lib/data/unknownHorizonsCatalog"
-  );
-  const { SPIKE_CROSS_SLUG, spikeCrossPatchSource } = await import(
-    "../src/lib/data/spikeCrossCatalog"
-  );
-  const { DRAFT_INSTALL_PICKUP } = await import("../src/lib/data/draftInstallPickup");
-  const { ALIEN_SWARM_SLUG, alienSwarmPatchSource } = await import(
-    "../src/lib/data/alienSwarmCatalog"
-  );
-  const { SUPER_NOVA_STRIKE_SLUG, superNovaStrikePatchSource } = await import(
-    "../src/lib/data/superNovaStrikeCatalog"
-  );
-
   await dbConnect();
 
-  let gamesCreated = 0;
-  let gamesSkipped = 0;
-  for (const slug of NEW_GAME_SLUGS) {
-    if (scopedRun) continue;
-    const seed = games.find((g) => g.slug === slug);
-    if (!seed) {
-      console.warn(`insert-catalog-wave — game ${slug} not in seed, skipping`);
-      gamesSkipped++;
+  const filterFor = (op: Operation) => op.kind === "edition"
+    ? { gameSlug: op.key.split("/")[0], slug: op.key.split("/")[1] }
+    : { slug: op.key };
+  const read = async (op: Operation): Promise<Record<string, unknown> | null> => {
+    const filter = filterFor(op);
+    if (op.kind === "game") return await CatalogGame.findOne(filter).lean() as Record<string, unknown> | null;
+    if (op.kind === "edition") return await Edition.findOne(filter).lean() as Record<string, unknown> | null;
+    return await CatalogMod.findOne(filter).lean() as Record<string, unknown> | null;
+  };
+
+  // Check every target before the first write. A changed Admin value blocks
+  // the wave instead of allowing the old patch to overwrite that person's edit.
+  const pending: Operation[] = [];
+  for (const op of wave.operations) {
+    const current = await read(op);
+    if (!current) throw new Error(`${op.kind}:${op.key} does not exist; no upsert allowed`);
+    const fields = Object.keys(op.set);
+    if (fields.every((field) => same(atPath(current, field), op.set[field]))) {
+      console.log(`already applied ${op.kind}:${op.key}`);
       continue;
     }
-    const existing = await CatalogGame.findOne({ slug }).select("_id").lean();
-    if (existing) {
-      gamesSkipped++;
-      continue;
+    if (!fields.every((field) => same(atPath(current, field), op.expected[field]))) {
+      throw new Error(`${op.kind}:${op.key} changed since review; wave stopped without overwriting Admin data`);
     }
-    await CatalogGame.create({ ...seed, published: false, status: "draft" });
-    console.log(`add game ${slug} (draft)`);
-    gamesCreated++;
+    pending.push(op);
   }
 
-  const parentSlugs = [
-    ...new Set([
-      ...NEW_GAME_SLUGS,
-      ...NEW_EDITION_KEYS.map((k) => k.split("/")[0]!).filter(Boolean),
-      ...patchEditionKeys.map((k) => k.split("/")[0]!).filter(Boolean),
-      ...patchGameSlugs,
-      ...NEW_MOD_SLUGS.map((slug) => mods.find((m) => m.slug === slug)?.baseGameSlug).filter(
-        (s): s is string => Boolean(s)
-      ),
-    ]),
-  ];
-  const parents = await CatalogGame.find({ slug: { $in: parentSlugs } })
-    .select("_id slug title")
-    .lean();
-  const gameBySlug = new Map(parents.map((g) => [String(g.slug), g]));
-
-  let editionsCreated = 0;
-  let editionsSkipped = 0;
-  for (const seed of editions) {
-    const key = `${seed.gameSlug}/${seed.slug}`;
-    if (!allowedEditions.has(key)) continue;
-
-    const existing = await Edition.findOne({ gameSlug: seed.gameSlug, slug: seed.slug })
-      .select("_id")
-      .lean();
-    if (existing) {
-      editionsSkipped++;
-      continue;
-    }
-    const game = gameBySlug.get(seed.gameSlug);
-    if (!game) {
-      console.warn(`insert-catalog-wave — no parent game for ${key}, skipping`);
-      editionsSkipped++;
-      continue;
-    }
-    await Edition.create({
-      ...seed,
-      isDefault: seed.isDefault === true,
-      gameId: game._id,
-    });
-    console.log(`add edition ${key}`);
-    editionsCreated++;
-  }
-
-  const baseTitles = new Map(parents.map((g) => [String(g.slug), String(g.title)]));
-
-  let modsCreated = 0;
-  let modsSkipped = 0;
-  for (const seed of mods) {
-    if (!allowedMods.has(seed.slug)) continue;
-
-    const existing = await CatalogMod.findOne({ slug: seed.slug }).select("_id").lean();
-    if (existing) {
-      modsSkipped++;
-      continue;
-    }
-    const baseSlug =
-      seed.baseGameSlug === "keeperfx" ? "dungeon-keeper-gold" : seed.baseGameSlug;
-    const baseTitle =
-      baseTitles.get(seed.baseGameSlug) || baseTitles.get(baseSlug) || seed.baseGameSlug;
-    const m = ensureDerivedModFields(seed, baseTitle);
-    await CatalogMod.create({
-      slug: m.slug,
-      title: m.title,
-      tagline: m.tagline,
-      description: m.description,
-      baseGameSlug: m.baseGameSlug,
-      developerSlug: m.developerSlug,
-      developerName: developersBySlug.get(m.developerSlug)?.name ?? modAuthorsBySlug.get(m.developerSlug)?.name ?? null,
-      license: m.license,
-      releaseYear: m.releaseYear,
-      sizeMB: m.sizeMB,
-      website: m.website,
-      githubRepo: m.githubRepo ?? null,
-      downloadKind: m.downloadKind,
-      assetPattern: m.assetPattern ?? null,
-      directUrl: m.directUrl ?? null,
-      installerFile: m.installerFile ?? null,
-      archiveSha256: m.archiveSha256 ?? null,
-      installRelativePath: m.installRelativePath ?? "mods",
-      art: m.art ?? defaultArtFor([], m.slug),
-      coverImage: m.coverImage ?? null,
-      screenshots: m.screenshots ?? [],
-      platforms: m.platforms ?? [],
-      published: m.published !== false,
-      status: m.published !== false ? "published" : "draft",
-      managedBy: m.managedBy || "admin",
-      longDescription: m.longDescription ?? null,
-      whatItChanges: m.whatItChanges ?? null,
-      compatibility: m.compatibility ?? null,
-      installSteps: m.installSteps ?? [],
-      faq: m.faq ?? [],
-    });
-    console.log(`add mod ${m.slug}`);
-    modsCreated++;
-  }
-
-  let gamesPatched = 0;
-  let gamesPatchSkipped = 0;
-  for (const slug of patchGameSlugs) {
-    let fields = scopedFields
-      ? PATCH_GAME_FIELDS[slug].filter((field) => scopedFields.has(field))
-      : PATCH_GAME_FIELDS[slug];
-    if (!fields || fields.length === 0) {
-      console.warn(`insert-catalog-wave — empty patch field list for ${slug}, skipping`);
-      gamesPatchSkipped++;
-      continue;
-    }
-
-    // The CMS owns publication state. Seed data can lag behind a curator's
-    // decision, as happened when Deus Ex was reset from published to testing.
-    if (fields.some((field) => ["status", "published", "publishedAt"].includes(field))) {
-      throw new Error(`insert-catalog-wave — refuse publication-state patch for ${slug}`);
-    }
-
-    const existing = await CatalogGame.findOne({ slug }).select("_id").lean();
-    if (!existing) {
-      console.warn(`insert-catalog-wave — patch game ${slug} not in DB, skipping (no upsert)`);
-      gamesPatchSkipped++;
-      continue;
-    }
-
-    // These two records had a known bad external handoff in the live CMS.
-    // If an admin has since selected another recipe, leave it authoritative.
-    const staleHandoffs: Record<string, string> = {
-      "aneurism-iv": "https://vellocetsoftware.com/games/",
-      unturned: "https://smartlydressedgames.com/unturned/",
-    };
-    if (fields.includes("launcherInstall.url") && staleHandoffs[slug]) {
-      const current = await CatalogGame.findOne({ slug }).select("launcherInstall.kind launcherInstall.url").lean();
-      if (current?.launcherInstall?.kind !== "external" ||
-          ![staleHandoffs[slug], (correctionsFor(slug)?.launcherInstall as { url?: string } | undefined)?.url]
-            .includes(String(current.launcherInstall.url || ""))) {
-        fields = fields.filter((field) => !field.startsWith("launcherInstall."));
-        console.warn(`insert-catalog-wave — preserve curator's ${slug} install recipe`);
-      }
-    }
-    if (slug === "rimworld" && fields.includes("launcherInstall.exeHint")) {
-      const current = await CatalogGame.findOne({ slug }).select("launcherInstall.kind launcherInstall.exeHint").lean();
-      if (current?.launcherInstall?.kind !== "external" ||
-          !["RimWorldWin64.exe", "RimWorldWin64|RimWorldLinux|RimWorld.app"]
-            .includes(String(current.launcherInstall.exeHint || ""))) {
-        fields = fields.filter((field) => field !== "launcherInstall.exeHint");
-        console.warn("insert-catalog-wave — preserve curator's rimworld executable hint");
-      }
-    }
-
-    let source: Record<string, unknown>;
-    if (slug === FREETRAIN_SLUG) {
-      source = {
-        ...freetrainEditorial,
-        systemRequirements: freetrainSystemRequirements,
-        hardwareRequirements: freetrainHardwareRequirements,
-        launcherInstall: freetrainLauncherInstall,
-      };
-    } else if (slug === IDLE_SLAYER_SLUG) {
-      source = { ...idleSlayerPatchSource };
-    } else if (slug === SKY_CHILDREN_SLUG) {
-      source = { ...skyChildrenPatchSource };
-    } else if (slug === SLAPSHOT_REBOUND_SLUG) {
-      source = { ...slapshotReboundPatchSource };
-    } else if (slug === TEEWORLDS_SLUG) {
-      source = { ...teeworldsPatchSource };
-    } else if (slug === THE_DARK_MOD_SLUG) {
-      source = { ...theDarkModPatchSource };
-    } else if (slug === UNKNOWN_HORIZONS_SLUG) {
-      source = { ...unknownHorizonsPatchSource };
-    } else if (slug === SPIKE_CROSS_SLUG) {
-      source = { ...spikeCrossPatchSource };
-    } else if (slug === ALIEN_SWARM_SLUG) {
-      source = { ...alienSwarmPatchSource };
-    } else if (slug === SUPER_NOVA_STRIKE_SLUG) {
-      source = { ...superNovaStrikePatchSource };
-    } else if (slug === SEVEN_KINGDOMS_SLUG) {
-      source = { launcherInstall: sevenKingdomsLauncherInstall };
-    } else if (slug === "space-station-14") {
-      const seed = games.find((g) => g.slug === slug);
-      const ed = editorial["space-station-14"];
-      const install = seed?.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
-      if (!install || !ed?.installSteps) {
-        console.warn(`insert-catalog-wave — missing SS14 install/steps source, skipping`);
-        gamesPatchSkipped++;
-        continue;
-      }
-      source = {
-        launcherInstall: install,
-        installSteps: ed.installSteps,
-        faq: ed.faq,
-        thatOneThing: ed.thatOneThing,
-        comparableTo: ed.comparableTo,
-      };
-    } else if (slug === ASSAULTCUBE_SLUG) {
-      const install = launcherInstallBySlug[ASSAULTCUBE_SLUG];
-      if (!install) {
-        console.warn(`insert-catalog-wave — no launcherInstall for ${slug}, skipping`);
-        gamesPatchSkipped++;
-        continue;
-      }
-      source = {
-        launcherInstall: install,
-        systemRequirements: assaultCubeSystemRequirements,
-        hardwareRequirements: assaultCubeHardwareRequirements,
-      };
-    } else {
-      const seed = games.find((g) => g.slug === slug);
-      const corrections = correctionsFor(slug) ?? dedicatedDraftEditorialFor(slug);
-      /*
-       * A game curated entirely in the admin CMS has no seed row, so the wave
-       * skipped it and there was no safe way to fix one wrong field. A
-       * reviewed correction can now stand on its own; the "missing source"
-       * check below still refuses any allowlisted field it does not supply.
-       */
-      if (!seed && !corrections) {
-        console.warn(`insert-catalog-wave — patch game ${slug} not in seed, skipping`);
-        gamesPatchSkipped++;
-        continue;
-      }
-      const ed = editorial[slug];
-      if (seed) {
-        const install = seed.launcherInstall ?? launcherInstallBySlug[slug] ?? null;
-        // Always merge editorial.ts — do not rely solely on withEditorial on the
-        // games export. Patch allowlists often name longDescription / faq / etc.
-        source = {
-          ...(seed as unknown as Record<string, unknown>),
-          ...((ed ?? {}) as unknown as Record<string, unknown>),
-          launcherInstall: install,
-        };
-      } else {
-        // No seed: editorial plus the correction overlay below is the whole
-        // source. launcherInstall is deliberately not synthesised here —
-        // patching a live install recipe from a file that never described one
-        // is how you break an install.
-        source = { ...((ed ?? {}) as unknown as Record<string, unknown>) };
-      }
-    }
-
-    /*
-     * Reviewed corrections win over every source above, including the
-     * hand-written per-slug blocks. teeworlds and space-station-14 both have
-     * their own source objects describing install and hardware only, so a
-     * releaseYear fix for them had nowhere to come from until this overlay.
-     */
-    const slugCorrections = correctionsFor(slug);
-    if (slugCorrections) {
-      source = { ...source, ...slugCorrections };
-    }
-    const draftEditorial = dedicatedDraftEditorialFor(slug);
-    if (draftEditorial) source = { ...source, ...draftEditorial };
-    const draftRequirements = dedicatedDraftRequirementsFor(slug);
-    if (draftRequirements) source = { ...source, ...draftRequirements };
-
-    const payload = pickFields(source, fields);
-    for (const field of fields) {
-      if (payload[field] === undefined) {
-        throw new Error(
-          `insert-catalog-wave — refuse patch ${slug}: missing source for field "${field}"`
-        );
-      }
-    }
-
-    if (slug === "castlevania-revamped") {
-      delete payload.coverImage;
-    }
-
-    const additions = scopedFields ? [] : (ADD_GAME_FEATURES[slug] ?? []);
-    if (additions.length && fields.includes("features")) {
-      throw new Error(`insert-catalog-wave — refuse conflicting feature writes for ${slug}`);
-    }
-    const update = additions.length
-      ? { $set: payload, $addToSet: { features: { $each: [...additions] } } }
-      : { $set: payload };
-    const result = await CatalogGame.updateOne({ slug }, update);
+  for (const op of pending) {
+    const filter = { ...filterFor(op), ...op.expected };
+    const update = { $set: op.set };
+    const options = { upsert: false, runValidators: true, timestamps: false };
+    const result = op.kind === "game"
+      ? await CatalogGame.updateOne(filter, update, options)
+      : op.kind === "edition"
+        ? await Edition.updateOne(filter, update, options)
+        : await CatalogMod.updateOne(filter, update, options);
     if (result.matchedCount !== 1) {
-      if (result.matchedCount === 0 && SKIP_MISSING_PATCH_GAMES.includes(slug)) {
-        console.warn(`insert-catalog-wave — ${slug} draft not renamed yet, skipping`);
-        gamesPatchSkipped++;
-        continue;
-      }
-      throw new Error(
-        `insert-catalog-wave — patch ${slug} matched ${result.matchedCount}, expected 1`
-      );
+      throw new Error(`${op.kind}:${op.key} changed during apply; remaining operations stopped`);
     }
-    console.log(`patch game ${slug} fields=[${fields.join(", ")}]`);
-    gamesPatched++;
+    console.log(`patched ${op.kind}:${op.key} fields=[${Object.keys(op.set).join(", ")}]`);
   }
-
-  // The old wave restamped this game's publishedAt on every deploy because its
-  // allowlist included status: "published". Repair only the observed bad value.
-  // If the original publication receipt exists, restore it; otherwise leave
-  // the date unknown so newest-game sorting falls back to the original row date.
-  if (!scopedRun) {
-    const slug = "tmnt-rescue-palooza";
-    const badPublishedAt = new Date("2026-10-23T17:45:02.774Z");
-    const affected = await CatalogGame.findOne({ slug, publishedAt: badPublishedAt })
-      .select("discordAnnouncement.publishedAt")
-      .lean();
-    if (affected) {
-      const receipt = affected.discordAnnouncement?.publishedAt;
-      const replacement = receipt && new Date(receipt) < badPublishedAt
-        ? { $set: { publishedAt: receipt } }
-        : { $unset: { publishedAt: "" } };
-      const repaired = await CatalogGame.updateOne(
-        { slug, publishedAt: badPublishedAt }, replacement, { timestamps: false }
-      );
-      console.log(`repair TMNT publication date: ${repaired.modifiedCount} field(s) changed`);
-    }
-  }
-
-  // The old feature badge was added by an earlier wave. Steam's current PC
-  // listing does not advertise controller support, and there is no verified
-  // PlayBound profile. Pull just that one stale badge, preserving every other
-  // CMS-curated feature and never replacing the array from seed data.
-  if (!featuresOnly && inScope("rimworld") && (!scopedFields || scopedFields.has("hasControllerSupport"))) {
-    await CatalogGame.updateOne(
-      { slug: "rimworld", features: "Controller Support" },
-      { $pull: { features: "Controller Support" } }
-    );
-  }
-
-  // Steam is a launch handoff, not a download recipe. Do not replace a
-  // curator's existing recipe (including an intentionally disabled one).
-  // Exception: the imported Risk of Rain 2 draft may still carry Alloyed
-  // Collective's DLC app id after its slug/title are corrected. Replace only
-  // that exact, provably wrong handoff; never touch another store's recipe.
-  const correctedDlc = scopedRun ? { modifiedCount: 0 } : await CatalogGame.updateOne(
-    { slug: "risk-of-rain-2", status: "draft", $or: [
-      { "launcherInstall.steamAppId": "2781620" },
-      { "launcherInstall.url": "steam://run/2781620" },
-    ] },
-    { $set: {
-      "launcherInstall.enabled": true,
-      "launcherInstall.kind": "external",
-      "launcherInstall.url": "steam://run/632360",
-      "launcherInstall.steamAppId": "632360",
-      "launcherInstall.exeHint": "Risk of Rain 2.exe",
-    } }
-  );
-  if (correctedDlc.modifiedCount) console.log("replace Risk of Rain 2 DLC Steam handoff with base game");
-  for (const [slug, appId] of Object.entries(FILL_MISSING_STEAM_LAUNCH)) {
-    if (scopedRun) continue;
-    const result = await CatalogGame.updateOne(
-      { slug, status: "draft", $or: [{ launcherInstall: null }, { launcherInstall: { $exists: false } }] },
-      { $set: { launcherInstall: {
-        enabled: true,
-        kind: "external",
-        url: `steam://run/${appId}`,
-        steamAppId: appId,
-        ...(STEAM_CLIENT_EXE_HINTS[slug] ? { exeHint: STEAM_CLIENT_EXE_HINTS[slug] } : {}),
-        note: "Steam installs and launches this game. Each player needs their own copy where required.",
-      } } }
-    );
-    if (result.modifiedCount) console.log(`fill missing Steam launch ${slug}`);
-  }
-
-  // Database-only paid games: a store hands off the acquisition; PlayBound
-  // discovers the owned executable afterwards. Patch only detection subfields
-  // so an admin's install method, download URL, and other recipe settings stay
-  // authoritative. Anthology's existing verified VPS package is preserved;
-  // there is no storefront handoff to synthesize if that recipe is absent.
-  for (const [slug, pickup] of Object.entries(DRAFT_INSTALL_PICKUP)) {
-    if (scopedRun) continue;
-    const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
-    if (!doc) continue;
-    const existing = doc.launcherInstall;
-    if (!existing) {
-      if (pickup.acquisitionAvailable === false) continue;
-      const result = await CatalogGame.updateOne(
-        { slug, $or: [{ launcherInstall: null }, { launcherInstall: { $exists: false } }] },
-        { $set: { launcherInstall: {
-          enabled: true,
-          kind: "external",
-          url: pickup.storeUrl,
-          exeHint: pickup.exeHint,
-          knownExePaths: pickup.knownExePaths,
-          registryTitles: pickup.registryTitles ?? [],
-          note: "Get and install your own copy from the official store. PlayBound detects its executable afterwards.",
-        } }, $addToSet: { launchMethods: "install" } }
-      );
-      if (result.modifiedCount) console.log(`add store handoff and pickup for ${slug}`);
-      continue;
-    }
-
-    const knownExePaths = Array.isArray(existing.knownExePaths)
-      ? existing.knownExePaths.filter((path: unknown): path is string => typeof path === "string")
-      : [];
-    const registryTitles = Array.isArray(existing.registryTitles)
-      ? existing.registryTitles.filter((title: unknown): title is string => typeof title === "string")
-      : [];
-    const detection: Record<string, unknown> = {
-      "launcherInstall.knownExePaths": [...new Set([...knownExePaths, ...pickup.knownExePaths])],
-      "launcherInstall.registryTitles": [...new Set([...registryTitles, ...(pickup.registryTitles ?? [])])],
-    };
-    if (slug === "battlefield-1942-anthology" &&
-        existing.kind === "direct-zip" &&
-        /^https:\/\/mirror\.playbound\.club\/launcher-packages\/games\/battlefield-1942-the-complete-collection\/[^/]+\.zip$/i.test(String(existing.url || ""))) {
-      detection["launcherInstall.archiveInstallerName"] = "bf1942-setup.exe";
-    }
-    if (pickup.acquisitionAvailable !== false && !existing.enabled) {
-      detection["launcherInstall.enabled"] = true;
-    }
-    if (!existing.exeHint || existing.exeHint === STEAM_CLIENT_EXE_HINTS[slug] || slug === "dont-starve-together") {
-      detection["launcherInstall.exeHint"] = pickup.exeHint;
-    }
-    const oldUrl = String(existing.url || "");
-    if (existing.kind === "external" && (
-      !oldUrl ||
-      (pickup.replaceSteamUrl && oldUrl === pickup.replaceSteamUrl) ||
-      (slug === "vintage-story" && /^https?:\/\/(?:www\.)?(?:vintagestory\.at|account\.vintagestory\.at)(?:\/|$)/i.test(oldUrl))
-    )) {
-      detection["launcherInstall.url"] = pickup.storeUrl;
-      if (pickup.replaceSteamUrl && oldUrl === pickup.replaceSteamUrl) {
-        detection["launcherInstall.note"] = "Get your own copy from GOG; PlayBound detects the GOG or Steam installation afterwards.";
-      }
-    }
-    const result = await CatalogGame.updateOne(
-      { slug, "launcherInstall.kind": existing.kind },
-      { $set: detection, ...(pickup.acquisitionAvailable === false ? {} : { $addToSet: { launchMethods: "install" } }) }
-    );
-    if (result.modifiedCount) console.log(`patch owned-game pickup for ${slug}`);
-  }
-  // These two storefront links were supplied by the curator. Keep the game's
-  // existing offers/prices untouched; the normal GOG matcher can price them.
-  for (const slug of ["stardew-valley", "starbound"] as const) {
-    if (scopedRun) continue;
-    await CatalogGame.updateOne(
-      { slug, $or: [{ gogStoreUrl: null }, { gogStoreUrl: { $exists: false } }] },
-      { $set: { gogStoreUrl: DRAFT_INSTALL_PICKUP[slug].storeUrl } }
-    );
-  }
-
-  let editionsPatched = 0;
-  let editionsPatchSkipped = 0;
-  for (const key of patchEditionKeys) {
-    const fields = PATCH_EDITION_FIELDS[key];
-    if (!fields || fields.length === 0) {
-      console.warn(`insert-catalog-wave — empty patch field list for ${key}, skipping`);
-      editionsPatchSkipped++;
-      continue;
-    }
-    const [gameSlug, editionSlug] = key.split("/");
-    if (!gameSlug || !editionSlug) {
-      console.warn(`insert-catalog-wave — bad edition key ${key}, skipping`);
-      editionsPatchSkipped++;
-      continue;
-    }
-
-    const seed = editions.find((e) => e.gameSlug === gameSlug && e.slug === editionSlug);
-    const editionCorrection = CATALOG_EDITION_CORRECTIONS[key];
-    if (!seed && !editionCorrection) {
-      console.warn(`insert-catalog-wave — patch edition ${key} not in seed, skipping`);
-      editionsPatchSkipped++;
-      continue;
-    }
-
-    const existing = await Edition.findOne({ gameSlug, slug: editionSlug }).select("_id installConfig").lean();
-    if (!existing) {
-      console.warn(`insert-catalog-wave — patch edition ${key} not in DB, skipping (no upsert)`);
-      editionsPatchSkipped++;
-      continue;
-    }
-
-    if (key === "rimworld/rimworld-together") {
-      const currentInstaller = (existing.installConfig as { playbound_installer?: { kind?: string; repo?: string } } | null)?.playbound_installer;
-      if (!currentInstaller || !["github-zip", "locate-then-zip"].includes(currentInstaller.kind || "") ||
-          currentInstaller.repo !== "RimWorld-Together/Rimworld-Together") {
-        console.warn(`insert-catalog-wave — preserve curator's ${key} install recipe`);
-        editionsPatchSkipped++;
-        continue;
-      }
-    }
-
-    const source: Record<string, unknown> = {
-      name: seed?.name,
-      description: seed?.description,
-      version: seed?.version,
-      installConfig: seed?.installConfig,
-      shortDescription: seed?.shortDescription,
-      visibility: seed?.visibility,
-      status: seed?.status,
-      installMethod: seed?.installMethod,
-      requirements: seed?.requirements,
-      hardwareRequirements: seed?.hardwareRequirements,
-      aliases: seed?.aliases,
-      links: seed?.links,
-      features: seed?.features,
-      tags: seed?.tags,
-      multiplayerGamingSteps: seed?.multiplayerGamingSteps,
-      faq: seed?.faq,
-      verificationNote: seed?.verificationNote,
-      ...editionCorrection,
-    };
-    const payload = pickFields(source, fields);
-    for (const field of fields) {
-      if (payload[field] === undefined) {
-        throw new Error(
-          `insert-catalog-wave — refuse patch ${key}: missing source for field "${field}"`
-        );
-      }
-    }
-
-    const result = await Edition.updateOne({ gameSlug, slug: editionSlug }, { $set: payload });
-    if (result.matchedCount !== 1) {
-      throw new Error(
-        `insert-catalog-wave — patch ${key} matched ${result.matchedCount}, expected 1`
-      );
-    }
-    console.log(`patch edition ${key} fields=[${fields.join(", ")}]`);
-    editionsPatched++;
-  }
-
-  let editionsRetired = 0;
-  let editionsRetireSkipped = 0;
-  for (const key of retireEditionKeys) {
-    const [gameSlug, editionSlug] = key.split("/");
-    if (!gameSlug || !editionSlug) {
-      console.warn(`insert-catalog-wave — bad retire edition key ${key}, skipping`);
-      editionsRetireSkipped++;
-      continue;
-    }
-    const existing = await Edition.findOne({ gameSlug, slug: editionSlug }).select("_id").lean();
-    if (!existing) {
-      console.warn(`insert-catalog-wave — retire edition ${key} not in DB, skipping (no upsert)`);
-      editionsRetireSkipped++;
-      continue;
-    }
-    const result = await Edition.updateOne(
-      { gameSlug, slug: editionSlug },
-      { $set: { visibility: "hidden", status: "archived" } }
-    );
-    if (result.matchedCount !== 1) {
-      throw new Error(
-        `insert-catalog-wave — retire ${key} matched ${result.matchedCount}, expected 1`
-      );
-    }
-    console.log(`retire edition ${key} visibility=hidden status=archived`);
-    editionsRetired++;
-  }
-
-  let modsPatched = 0;
-  let modsPatchSkipped = 0;
-  for (const slug of patchModSlugs) {
-    const fields = PATCH_MOD_FIELDS[slug];
-    if (!fields || fields.length === 0) {
-      console.warn(`insert-catalog-wave — empty patch field list for mod ${slug}, skipping`);
-      modsPatchSkipped++;
-      continue;
-    }
-
-    const existing = await CatalogMod.findOne({ slug }).select("_id").lean();
-    if (!existing) {
-      console.warn(`insert-catalog-wave — patch mod ${slug} not in DB, skipping (no upsert)`);
-      modsPatchSkipped++;
-      continue;
-    }
-
-    let source: Record<string, unknown>;
-    if (slug === HOLOCURE_RICH_PRESENCE_SLUG) {
-      source = { ...holocureRichPresencePatchSource };
-    } else {
-      /*
-       * Default mod patch source: the seed row, with corrected attribution
-       * layered on top.
-       *
-       * There was no default path here at all, so every mod except HoloCure
-       * was skipped with "no patch source" — which meant the wave could
-       * create and retire mods but never fix one. developerName is resolved
-       * the same way the game path does it, looking through game studios
-       * first and then mod authors, so a mod credited to a person and a mod
-       * credited to a studio both end up with a real name rather than null.
-       */
-      const seedMod = mods.find((m) => m.slug === slug);
-      if (!seedMod && !attributionFor(slug)) {
-        console.warn(`insert-catalog-wave — no patch source for mod ${slug}, skipping`);
-        modsPatchSkipped++;
-        continue;
-      }
-      source = { ...((seedMod ?? {}) as unknown as Record<string, unknown>) };
-    }
-
-    /*
-     * Corrected attribution overlays every source, including the hand-written
-     * per-mod blocks — holocure-rich-presence has one and also needs its
-     * credit fixed, and without this the allowlist could name a field that
-     * branch never supplies. developerName is resolved through game studios
-     * first and then mod authors, so both kinds of credit end up with a real
-     * name instead of null.
-     */
-    const attributed = attributionFor(slug);
-    if (attributed) {
-      source = {
-        ...source,
-        developerSlug: attributed,
-        developerName:
-          developersBySlug.get(attributed)?.name ??
-          modAuthorsBySlug.get(attributed)?.name ??
-          null,
-      };
-    }
-    // This legacy "Loot filter hubs" row is an external link with no live
-    // Diablo II parent. Archive the one orphan without deleting its record.
-    source = { ...source, ...accessAuditModCorrection(slug) };
-
-    const payload = pickFields(source, fields);
-    for (const field of fields) {
-      if (payload[field] === undefined) {
-        throw new Error(
-          `insert-catalog-wave — refuse patch mod ${slug}: missing source for field "${field}"`
-        );
-      }
-    }
-
-    const result = await CatalogMod.updateOne({ slug }, { $set: payload });
-    if (result.matchedCount !== 1) {
-      throw new Error(
-        `insert-catalog-wave — patch mod ${slug} matched ${result.matchedCount}, expected 1`
-      );
-    }
-    console.log(`patch mod ${slug} fields=[${fields.join(", ")}]`);
-    modsPatched++;
-  }
-
-  const { partyMaxPlayersBySlug } = await import("../src/lib/data/partyMaxPlayers");
-  let maxPlayersPatched = 0;
-  for (const [slug, maxPlayers] of Object.entries(partyMaxPlayersBySlug)) {
-    if (scopedRun) continue;
-    const result = await CatalogGame.updateOne({ slug }, { $set: { maxPlayers } });
-    if (result.matchedCount === 1) {
-      maxPlayersPatched++;
-      console.log(`patch game ${slug} fields=[maxPlayers]=${maxPlayers}`);
-    }
-  }
-
-  // 6. Soft-retire allowlisted non-mod slugs. Never delete catalog records.
-  let modsRetired = 0;
-  if (retireModSlugs.length > 0) {
-    const res = await CatalogMod.updateMany(
-      { slug: { $in: retireModSlugs }, status: { $ne: "archived" } },
-      { $set: { published: false, status: "archived" } }
-    );
-    modsRetired = res.modifiedCount ?? 0;
-    if (modsRetired > 0) {
-      console.log(`retired ${modsRetired} non-mod catalog mod(s)`);
-    }
-  }
-
-  console.log(
-    `insert-catalog-wave: games +${gamesCreated}/skip ${gamesSkipped}, ` +
-      `editions +${editionsCreated}/skip ${editionsSkipped}, ` +
-      `mods +${modsCreated}/skip ${modsSkipped}, ` +
-      `game-patches ${gamesPatched}/skip ${gamesPatchSkipped}, ` +
-      `edition-patches ${editionsPatched}/skip ${editionsPatchSkipped}, ` +
-      `editions-retired ${editionsRetired}/skip ${editionsRetireSkipped}, ` +
-      `mod-patches ${modsPatched}/skip ${modsPatchSkipped}, ` +
-      `mods-retired ${modsRetired}, ` +
-      `maxPlayers ${maxPlayersPatched}`
-  );
-  process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("insert-catalog-wave failed:", err);
-  process.exit(1);
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => { console.error(error); process.exitCode = 1; });
+}

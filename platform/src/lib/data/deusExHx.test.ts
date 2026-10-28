@@ -4,7 +4,6 @@ import { games } from "./games";
 import { mods } from "./mods";
 import { hostModesFor, publicLobbyPortFor } from "@/lib/multiplayer/hostModes";
 import { getMultiplayerAdapter } from "@/lib/multiplayer/adapters";
-import { NEW_EDITION_KEYS, NEW_MOD_SLUGS, PATCH_EDITION_FIELDS, PATCH_GAME_FIELDS } from "../../../scripts/insert-catalog-wave.allowlist";
 
 describe("Deus Ex HX co-op", () => {
   it("installs the official archive as a mod and into an isolated edition", () => {
@@ -17,10 +16,6 @@ describe("Deus Ex HX co-op", () => {
     expect(edition?.installConfig?.playbound_installer?.kind).toBe("locate-then-zip");
     expect(edition?.installConfig?.playbound_installer?.overlayUrl).toBe(mod?.directUrl);
     expect(edition?.installConfig?.playbound_installer?.knownExePaths).toContain("System/HX.exe");
-    expect(NEW_MOD_SLUGS).toContain("deus-ex-hx");
-    expect(NEW_EDITION_KEYS).toContain("deus-ex-goty-edition/playbound-hx-coop");
-    expect(PATCH_EDITION_FIELDS["deus-ex-goty-edition/playbound-hx-coop"]).toContain("multiplayerGamingSteps");
-    expect(PATCH_GAME_FIELDS["deus-ex-goty-edition"]).toContain("features");
     expect(games.find((g) => g.slug === "deus-ex-goty-edition")?.status).toBe("testing");
   });
 

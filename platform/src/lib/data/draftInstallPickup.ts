@@ -1,8 +1,7 @@
 /**
  * Purchase/install handoffs and executable identity for DB-only catalog games.
- * The catalog wave writes only these named launcherInstall subfields, preserving
- * every other launcher recipe field curated in Mongo. No paid game is hosted or
- * redistributed by PlayBound.
+ * Historical source material; the one-use catalog wave does not read this
+ * file. No paid game is hosted or redistributed by PlayBound.
  */
 export type DraftInstallPickup = {
   storeUrl: string;

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DRAFT_INSTALL_PICKUP } from "./draftInstallPickup";
 import { editions } from "./editions";
-import { NEW_EDITION_KEYS } from "../../../scripts/insert-catalog-wave.allowlist";
 import Edition from "@/lib/models/Edition";
 import { retailerToStoreSlug, STORE_CAPABILITIES } from "@/lib/commerce/stores";
 import { launcherInstallSchema } from "@/lib/gamePayload";
@@ -26,7 +25,6 @@ describe("owned-game executable pickup", () => {
 
   it("makes Alloyed Collective an edition of the base game, not a second executable", async () => {
     const edition = editions.find((item) => item.gameSlug === "risk-of-rain-2" && item.slug === "alloyed-collective");
-    expect(NEW_EDITION_KEYS).toContain("risk-of-rain-2/alloyed-collective");
     expect(edition?.installConfig?.steam?.appId).toBe("2781620");
     expect(edition?.requirements?.notes).toContain("632360");
     expect(edition?.installConfig?.playbound_installer).toBeUndefined();
