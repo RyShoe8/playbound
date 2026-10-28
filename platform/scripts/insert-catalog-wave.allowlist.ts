@@ -816,6 +816,11 @@ export const ADD_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
   unturned: ["Multiplayer", "Co-op", "LAN Support"],
 };
 
+/** Remove only badges that falsely describe the unverified SoF installation. */
+export const REMOVE_GAME_FEATURES: Readonly<Record<string, readonly string[]>> = {
+  "soldier-of-fortune-platinum-edition": ["Dedicated Servers", "Controller Support"],
+};
+
 /** Fill only absent launcher recipes on these Steam drafts. Existing recipes always win. */
 export const FILL_MISSING_STEAM_LAUNCH: Readonly<Record<string, string>> = {
   "aneurism-iv": "2773280",

@@ -31,6 +31,26 @@ on:
       - ".github/workflows/apply-catalog-wave.yml"
 
 jobs:
+  remove-soldier-of-fortune-unverified-badges:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:soldier-features]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Remove only the two unverified badges
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          npm run insert:catalog-wave -- --games=soldier-of-fortune-platinum-edition "--remove-feature=Dedicated Servers"
+          npm run insert:catalog-wave -- --games=soldier-of-fortune-platinum-edition "--remove-feature=Controller Support"
+
   apply-soldier-of-fortune:
     if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:soldier-of-fortune]') }}
     runs-on: ubuntu-latest
