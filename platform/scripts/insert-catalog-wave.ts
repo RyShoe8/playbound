@@ -106,6 +106,8 @@ async function main() {
   const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
   const Edition = (await import("../src/lib/models/Edition")).default;
   const CatalogMod = (await import("../src/lib/models/CatalogMod")).default;
+  const mongoose = (await import("mongoose")).default;
+  try {
   await dbConnect();
 
   const filterFor = (op: Operation) => op.kind === "edition"
@@ -129,8 +131,9 @@ async function main() {
       console.log(`already applied ${op.kind}:${op.key}`);
       continue;
     }
-    if (!fields.every((field) => same(atPath(current, field), op.expected[field]))) {
-      throw new Error(`${op.kind}:${op.key} changed since review; wave stopped without overwriting Admin data`);
+    const changed = fields.filter((field) => !same(atPath(current, field), op.expected[field]));
+    if (changed.length > 0) {
+      throw new Error(`${op.kind}:${op.key} changed since review at [${changed.join(", ")}]; wave stopped without overwriting Admin data`);
     }
     pending.push(op);
   }
@@ -148,6 +151,9 @@ async function main() {
       throw new Error(`${op.kind}:${op.key} changed during apply; remaining operations stopped`);
     }
     console.log(`patched ${op.kind}:${op.key} fields=[${Object.keys(op.set).join(", ")}]`);
+  }
+  } finally {
+    await mongoose.disconnect();
   }
 }
 
