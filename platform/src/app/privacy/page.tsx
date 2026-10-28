@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Shield, Lock, Eye, Cpu, Users, Server, Mail, Trash2, ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
@@ -210,7 +211,11 @@ export default function PrivacyPage() {
       <section className="space-y-3 rounded-xl border border-border bg-card/60 p-5">
         <h2 className="text-lg font-bold text-foreground">8. Contact Us</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          For privacy inquiries, data export requests, or security disclosures, contact{" "}
+          For privacy inquiries, data export requests, or security disclosures, email{" "}
+          <a href={CONTACT_MAILTO} className="font-semibold text-primary hover:underline">
+            {CONTACT_EMAIL}
+          </a>
+          . PlayBound is operated by{" "}
           <a
             href={mediaShopHref}
             className="font-semibold text-primary hover:underline"

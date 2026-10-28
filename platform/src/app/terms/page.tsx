@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FileText, ShieldAlert, CheckCircle, Scale, AlertTriangle, ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms of Use",
@@ -115,7 +116,11 @@ export default function TermsPage() {
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           PlayBound respects the rights of creators and open-source contributors. If you are a developer or
           rights holder and would like to update your project’s metadata, install recipe, or request
-          delisting, please contact us or submit a correction via our Developer portal.
+          delisting, please email{" "}
+          <a href={CONTACT_MAILTO} className="font-semibold text-primary hover:underline">
+            {CONTACT_EMAIL}
+          </a>{" "}
+          or submit a correction via our Developer portal.
         </p>
       </section>
 

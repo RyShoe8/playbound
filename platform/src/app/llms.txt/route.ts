@@ -1,3 +1,4 @@
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { listGames, collections } from "@/lib/catalog";
 import { cacheLife, cacheTag } from "next/cache";
 import { listDevelopers } from "@/lib/developers";
@@ -46,6 +47,7 @@ async function buildLlmsTxt(): Promise<string> {
   lines.push("");
   lines.push(`Canonical domain: ${SITE_URL}`);
   lines.push(`Publisher: The Media Shop (https://themediashop.co)`);
+  lines.push(`Contact: ${CONTACT_EMAIL}`);
   lines.push("");
 
   lines.push("## The PlayBound Bar");

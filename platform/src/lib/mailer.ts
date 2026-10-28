@@ -6,7 +6,12 @@ const FROM_NAME_DEFAULT = "PlayBound";
  * Without it (local dev), the email content is logged so verification links
  * remain usable without a mail provider.
  */
-export async function sendMail(to: string, subject: string, html: string) {
+export async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  opts: { replyTo?: string } = {}
+) {
   const apiKey = process.env.BREVO_API_KEY;
   const fromEmail = process.env.MAIL_FROM_EMAIL || FROM_EMAIL_DEFAULT;
   const fromName = process.env.MAIL_FROM_NAME || FROM_NAME_DEFAULT;
@@ -26,6 +31,7 @@ export async function sendMail(to: string, subject: string, html: string) {
     body: JSON.stringify({
       sender: { email: fromEmail, name: fromName },
       to: [{ email: to }],
+      ...(opts.replyTo ? { replyTo: { email: opts.replyTo } } : {}),
       subject,
       htmlContent: html,
     }),

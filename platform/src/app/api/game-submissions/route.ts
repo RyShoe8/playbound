@@ -5,9 +5,10 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import GameSubmission from "@/lib/models/GameSubmission";
-import { isFounderAdminEmail } from "@/lib/admin";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { canViewAdmin } from "@/lib/adminAccess";
 import { sendMail } from "@/lib/mailer";
+import { escapeHtml } from "@/lib/newsletterEmail";
 
 const submitSchema = z.object({
   title: z.string().trim().min(2).max(120),
@@ -50,20 +51,19 @@ export async function POST(req: Request) {
       status: "pending",
     });
 
-    const founder = "ryanschumacher@themediashop.co";
-    if (isFounderAdminEmail(founder)) {
-      try {
-        await sendMail(
-          founder,
-          `New game submission: ${data.title}`,
-          `<p><strong>${data.title}</strong> was submitted for PlayBound.</p>
-           <p><a href="${data.website}">${data.website}</a></p>
-           <p>${data.description.slice(0, 500)}</p>
-           <p>Review in Admin → Submissions.</p>`
-        );
-      } catch (err) {
-        console.error("Failed to notify founder of submission:", err);
-      }
+    try {
+      await sendMail(
+        CONTACT_EMAIL,
+        `New game submission: ${data.title}`,
+        `<p><strong>${escapeHtml(data.title)}</strong> was submitted for PlayBound.</p>
+           <p>${escapeHtml(String(data.website ?? ""))}</p>
+           <p>From: ${escapeHtml(data.contactEmail)}</p>
+           <p>${escapeHtml(data.description.slice(0, 500))}</p>
+           <p>Review in Admin → Submissions.</p>`,
+        { replyTo: data.contactEmail }
+      );
+    } catch (err) {
+      console.error("Failed to email the team about a game submission:", err);
     }
 
     return NextResponse.json({ success: true, id: submission._id }, { status: 201 });

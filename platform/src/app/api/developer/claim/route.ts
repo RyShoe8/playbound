@@ -6,8 +6,9 @@ import dbConnect from "@/lib/db";
 import DeveloperClaim from "@/lib/models/DeveloperClaim";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Developer from "@/lib/models/Developer";
-import { isFounderAdminEmail } from "@/lib/admin";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { sendMail } from "@/lib/mailer";
+import { escapeHtml } from "@/lib/newsletterEmail";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 const claimSchema = z.object({
@@ -62,21 +63,20 @@ export async function POST(req: Request) {
     });
 
     const targetLabel = data.claimType === "game" ? `game: ${data.gameSlug}` : `studio: ${data.developerSlug}`;
-    const founder = "ryanschumacher@themediashop.co";
-    if (isFounderAdminEmail(founder)) {
-      try {
-        await sendMail(
-          founder,
-          `New ownership claim for ${targetLabel}`,
-          `<p>User <strong>${session.user.username || session.user.id}</strong> requested ownership for ${targetLabel}.</p>
-           <p>Contact: <a href="mailto:${data.contactEmail}">${data.contactEmail}</a></p>
-           <p>Verification link: <a href="${data.verificationUrl}">${data.verificationUrl}</a></p>
-           <p>Message: ${data.message}</p>
-           <p>Review in Admin → Developer Claims.</p>`
-        );
-      } catch (err) {
-        console.error("Failed to notify founder of developer claim:", err);
-      }
+    try {
+      await sendMail(
+        CONTACT_EMAIL,
+        `New ownership claim for ${targetLabel}`,
+        // Everything below was typed by the submitter, so none of it goes into HTML as-is.
+        `<p>User <strong>${escapeHtml(String(session.user.username || session.user.id))}</strong> requested ownership for ${escapeHtml(targetLabel)}.</p>
+           <p>Contact: <a href="mailto:${escapeHtml(data.contactEmail)}">${escapeHtml(data.contactEmail)}</a></p>
+           <p>Verification link: ${escapeHtml(String(data.verificationUrl ?? ""))}</p>
+           <p>Message: ${escapeHtml(String(data.message ?? ""))}</p>
+           <p>Review in Admin → Developer Claims.</p>`,
+        { replyTo: data.contactEmail }
+      );
+    } catch (err) {
+      console.error("Failed to email the team about a developer claim:", err);
     }
 
     return NextResponse.json({ success: true, id: claim._id }, { status: 201 });

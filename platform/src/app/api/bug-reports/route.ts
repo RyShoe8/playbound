@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import BugReport from "@/lib/models/BugReport";
 import { BUG_REPORT_KINDS, BUG_REPORT_SOURCES, isBugReportStatus } from "@/lib/bugReports";
-import { isFounderAdminEmail } from "@/lib/admin";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { sendMail } from "@/lib/mailer";
 import { userFromLauncherBearer } from "@/lib/library";
 import { requireAdminViewSession } from "@/lib/requireAdmin";
@@ -83,22 +83,22 @@ export async function POST(req: Request) {
       status: "open",
     });
 
-    const founder = "ryanschumacher@themediashop.co";
     const kindLabel = data.kind === "suggestion" ? "Suggestion" : "Bug report";
-    if (isFounderAdminEmail(founder)) {
-      try {
-        await sendMail(
-          founder,
-          `${kindLabel} (${data.source}): ${data.title}`,
-          `<p><strong>${escapeHtml(data.title)}</strong></p>
+    try {
+      await sendMail(
+        CONTACT_EMAIL,
+        `${kindLabel} (${data.source}): ${data.title}`,
+        `<p><strong>${escapeHtml(data.title)}</strong></p>
            <p>Source: ${escapeHtml(data.source)}</p>
            ${data.pageUrl ? `<p>Page: ${escapeHtml(data.pageUrl)}</p>` : ""}
+           ${data.contactEmail ? `<p>Reply to: ${escapeHtml(data.contactEmail)}</p>` : ""}
            <p>${escapeHtml(data.description.slice(0, 800))}</p>
-           <p>Review in Admin → ${data.kind === "suggestion" ? "Feedback" : "Ops → Bugs"}.</p>`
-        );
-      } catch (err) {
-        console.error("Failed to notify founder of bug report:", err);
-      }
+           <p>Review in Admin → ${data.kind === "suggestion" ? "Feedback" : "Ops → Bugs"}.</p>`,
+        // Answering the email reaches the person who wrote in.
+        { replyTo: data.contactEmail || undefined }
+      );
+    } catch (err) {
+      console.error("Failed to email the team about a bug report:", err);
     }
 
     return NextResponse.json({ success: true, id: report._id }, { status: 201 });

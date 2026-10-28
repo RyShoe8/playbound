@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
 import { listGames } from "@/lib/catalog";
@@ -233,6 +234,13 @@ export default async function AboutPage() {
           </a>
           . We are committed to maintaining a clean, privacy-respecting platform. We do not sell user
           data, run intrusive tracking scripts, or compromise our curation integrity.
+        </p>
+        <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Questions, corrections or press: email{" "}
+          <a href={CONTACT_MAILTO} className="font-semibold text-primary hover:underline">
+            {CONTACT_EMAIL}
+          </a>
+          .
         </p>
         <div className="flex flex-wrap gap-4 pt-2">
           <Link
