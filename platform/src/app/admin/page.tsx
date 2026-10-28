@@ -9,8 +9,10 @@ import GameSubmission from "@/lib/models/GameSubmission";
 import BugReport from "@/lib/models/BugReport";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import CatalogMod from "@/lib/models/CatalogMod";
+import CatalogGame from "@/lib/models/CatalogGame";
 import Party from "@/lib/models/Party";
-import { listAllGames } from "@/lib/catalog";
+import { normalizeStatus } from "@/lib/catalogStatus";
+import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { PeriodStatTile, SectionHeader } from "@/components/ui/bits";
 import { unstable_cache } from "next/cache";
@@ -142,26 +144,36 @@ function loadDashboardKpis() {
   })();
 }
 
+/** The dashboard needs twelve small rows, not every editable catalog record. */
+const loadDashboardCatalog = unstable_cache(async () => {
+  await dbConnect();
+  const [docs, brokenGames, brokenMods] = await Promise.all([
+    CatalogGame.find()
+      .sort({ adminUpdatedAt: -1, updatedAt: -1 })
+      .limit(12)
+      .select("slug title genres status published license art coverImage")
+      .lean<Array<Pick<Game, "slug" | "title" | "genres" | "license" | "art" | "coverImage"> & { status?: string; published?: boolean }>>(),
+    CatalogGame.countDocuments({ "launcherInstall.versionCheckStatus": "broken" }),
+    CatalogMod.countDocuments({ versionCheckStatus: "broken" }),
+  ]);
+  return {
+    games: docs.map((doc) => {
+      const status = normalizeStatus(doc);
+      return { ...doc, status, published: status === "published" };
+    }),
+    brokenVersions: brokenGames + brokenMods,
+  };
+}, ["admin-dashboard-catalog-v1"], { revalidate: 60, tags: ["catalog"] });
+
 export default async function AdminPage() {
   // Never prerendered — see the layout. Each segment prerenders
   // independently, so the layout's opt-out does not cover this page.
   await connection();
-  // Establish the DB connection before Promise.all. Both loadDashboardKpis()
-  // and listAllGames() call dbConnect() internally, but when their results are
-  // cached they return immediately without connecting. CatalogMod.countDocuments()
-  // runs in the same Promise.all with bufferCommands = false, so it throws if
-  // no connection exists yet. Awaiting dbConnect() here guarantees a connection
-  // is live before any of the three queries start.
-  await dbConnect();
-  const [kpis, games, brokenModCount] = await Promise.all([
+  const [kpis, catalog] = await Promise.all([
     loadDashboardKpis(),
-    listAllGames(),
-    CatalogMod.countDocuments({ versionCheckStatus: "broken" }),
+    loadDashboardCatalog(),
   ]);
-
-  const brokenVersions =
-    games.filter((g) => g.launcherInstall?.versionCheckStatus === "broken").length +
-    brokenModCount;
+  const { games, brokenVersions } = catalog;
   const adminLauncherUrl = getAdminLauncherDownloadUrl();
 
   return (
