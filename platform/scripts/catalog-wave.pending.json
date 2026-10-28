@@ -1,5 +1,5 @@
 {
-  "id": "openmerc-edition-completion-20261028-retry",
+  "id": "openmerc-edition-completion-20261028-retry2",
   "operations": [
     {
       "kind": "edition",
@@ -8,9 +8,9 @@
         "shortDescription": "Open-source (GPL v2) engine for Soldier of Fortune (2000): clean-room, Yamagi Quake II based. Bring your own licensed copy.",
         "description": "Open-source (GPL v2) engine for Soldier of Fortune (2000): clean-room, Yamagi Quake II based. Bring your own licensed copy.\n\nLicense: GPL-2.0",
         "installConfig.playbound_installer": { "kind": "github-zip", "repo": "sidreshot/openMERC", "assetPattern": "\\.zip$" },
-        "requirements.min": null,
-        "requirements.recommended": null,
-        "requirements.notes": null,
+        "requirements.min": "",
+        "requirements.recommended": "",
+        "requirements.notes": "",
         "hardwareRequirements": null,
         "platforms": [],
         "features": [],
@@ -18,20 +18,20 @@
         "aliases": [],
         "languages": [],
         "hasControllerSupport": null,
-        "developerName": null,
+        "developerName": "",
         "credits": [],
-        "license": null,
+        "license": "",
         "releaseYear": null,
-        "longDescription": null,
-        "whyWePickedIt": null,
+        "longDescription": "",
+        "whyWePickedIt": "",
         "bestFor": [],
         "notFor": [],
-        "version": null,
+        "version": "",
         "firstPlaySteps": [],
         "multiplayerGamingSteps": [],
         "patchNotes": [],
         "faq": [],
-        "verificationNote": null
+        "verificationNote": ""
       },
       "set": {
         "shortDescription": "Soldier of Fortune through a new engine: widescreen menus, modern rendering, and the same brutal campaign. Bring your own game files.",
