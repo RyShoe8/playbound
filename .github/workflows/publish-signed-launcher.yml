@@ -1,0 +1,30 @@
+name: Publish Signed Launcher Release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-signed-launcher.yml
+      - .github/scripts/publish-signed-launcher.ps1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-signed-launcher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify public signed installer and publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: ./.github/scripts/publish-signed-launcher.ps1

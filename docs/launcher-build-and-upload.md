@@ -14,6 +14,7 @@ The operator does **not** run a local Next.js server.
 | Windows orchestrator | `launcher/scripts/build-windows.js` |
 | electron-builder config | `launcher/electron-builder.js` (not `electron-builder.config.js`) |
 | **Public signed Windows ship** | Admin → [/admin/download-mirrors](https://playbound.club/admin/download-mirrors) → **Upload signed launcher** → **Promote to R2** |
+| GitHub Releases | `.github/workflows/publish-signed-launcher.yml` mirrors the verified public signed Windows installer after promotion |
 | Unsigned / Mac / Linux Blob upload | `platform/scripts/upload-launcher.ts` → `npm run upload:launcher` from **`platform/`** |
 | Update-feed URL helpers | `platform/src/lib/launcherUpdateFeed.ts` |
 | Runtime updater feed | `https://playbound.club/api/launcher/updates/` (overrides electron-builder `publish.url`) |
@@ -68,6 +69,14 @@ That is the full public signed Windows release. The admin route:
 - Archives the installer to the VPS (server-side `MONGODB_URI` / `GAME_HOST_SECRET`)
 - Publishes `latest.yml` with a download URL ending in `.exe`
 - Registers the mirror artifact for site `/api/launcher/download`
+
+The GitHub release job checks the public `latest.yml` hourly and can also be run
+manually from Actions. It downloads that exact installer, checks its size and
+SHA-512 against the feed, and requires a valid Windows signature from The Media
+Shop, LLC before publishing `launcher-v<version>` with the signed installer as
+an asset. It never reads `admin.yml` or publishes unsigned builds. The public
+site and updater continue to use R2/VPS; GitHub Releases is an additional
+download and release-history page.
 
 ### `.exe` hard rule (electron-updater)
 
