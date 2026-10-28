@@ -8,6 +8,7 @@ const GAPS: Record<string, Gap> = {
   "vintage-story": ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
+  "soldier-of-fortune-platinum-edition": { category: "private-runtime", reason: "The openMERC engine can be updated only with a reviewed compatibility and rollback plan; preserve each server's private licensed PAK files and writable state." },
 };
 const EDITIONS: InstallationCoverageRow[] = [
   { id: "openra:combined-arms", name: "OpenRA · Combined Arms", category: "edition", installationKey: "combined-arms", reason: "Separate official Combined Arms package; verify agent deployment, installation and compatibility before queueing its update." },
