@@ -113,6 +113,25 @@ export interface GameMultiplayerAdapter {
 }
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
+  "soldier-of-fortune-platinum-edition": {
+    gameSlug: "soldier-of-fortune-platinum-edition",
+    title: "Soldier of Fortune: Platinum Edition",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: ["Open Multiplayer in Soldier of Fortune and connect to the host's address; use a matching Platinum 1.07f copy."],
+    },
+    virtualLan: {
+      hostPort: 28910,
+      inGameSteps: [
+        "Leader: start a LAN game in Soldier of Fortune",
+        "Friends: find the match in the LAN browser or enter the leader's PlayBound network address",
+      ],
+    },
+    notes: "GOG's Platinum build supports LAN and direct IP. PlayBound coordinates a virtual LAN party; the original online master service is not supplied. A VPS dedicated SoFplus room requires a separately provisioned licensed 1.07f install and is not yet ready.",
+  },
   // These games expose LAN hosting in their own clients. Connect provides the
   // party network and launch; each game's menu remains responsible for joining.
   "battlefield-1942-anthology": {

@@ -3844,6 +3844,7 @@ const BUNDLED_CONTROL_PROFILES = {
   "wolfenstein-enemy-territory": "./services/inputEngine/profiles/wolfenstein-enemy-territory.json",
   outrun: "./services/inputEngine/profiles/outrun.json",
   "shadow-warrior-classic-complete": "./services/inputEngine/profiles/shadow-warrior-classic-complete.json",
+  "soldier-of-fortune-platinum-edition": "./services/inputEngine/profiles/soldier-of-fortune-platinum-edition.json",
 };
 
 function bundledControlProfile(slug) {

@@ -31,6 +31,39 @@ on:
       - ".github/workflows/apply-catalog-wave.yml"
 
 jobs:
+  apply-soldier-of-fortune:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:soldier-of-fortune]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "MONGODB_URI is not configured; no catalog rows were changed."
+            exit 1
+          fi
+      - name: Install Platform Dependencies
+        run: npm ci
+      - name: Update Soldier of Fortune fields only
+        run: npm run insert:catalog-wave -- --games=soldier-of-fortune-platinum-edition --fields=tagline,description,developerSlug,developerName,releaseYear,sizeMB,genres,platforms,launchMethods,browserPlayable,hasControllerSupport,maxPlayers,qualityBar,thatOneThing,longDescription,whyWePickedIt,bestFor,notFor,comparableTo,faq,installSteps,multiplayerGamingSteps,launcherInstall,systemRequirements,hardwareRequirements
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      - name: Add multiplayer feature labels without replacing existing ones
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          for feature in Singleplayer Multiplayer "LAN Support"; do
+            npm run insert:catalog-wave -- --games=soldier-of-fortune-platinum-edition --features-only "--feature=$feature"
+          done
+
   apply-media-only:
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.media_only == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalog-scope:store-media]')) }}
     runs-on: ubuntu-latest

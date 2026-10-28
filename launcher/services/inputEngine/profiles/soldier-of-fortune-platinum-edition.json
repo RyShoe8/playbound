@@ -1,0 +1,40 @@
+{
+  "gameSlug": "soldier-of-fortune-platinum-edition",
+  "editionSlug": null,
+  "name": "PlayBound Controls Preview — Soldier of Fortune",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "status": "testing",
+  "antiCheatCompatibility": "unknown",
+  "testedControllers": [],
+  "notes": "Keyboard-and-mouse preview for the GOG Platinum 1.07f client. The physical controller, menu navigation, in-game bindings, and multiplayer compatibility need a live playtest before verification. Do not enable automatically for untested public servers.",
+  "actions": [
+    { "id": "forward", "label": "Move forward", "output": { "type": "key", "vk": "W" } },
+    { "id": "backward", "label": "Move backward", "output": { "type": "key", "vk": "S" } },
+    { "id": "left", "label": "Strafe left", "output": { "type": "key", "vk": "A" } },
+    { "id": "right", "label": "Strafe right", "output": { "type": "key", "vk": "D" } },
+    { "id": "fire", "label": "Fire", "output": { "type": "mouseButton", "button": "left" } },
+    { "id": "altFire", "label": "Alternate fire / aim", "output": { "type": "mouseButton", "button": "right" } },
+    { "id": "jump", "label": "Jump", "output": { "type": "key", "vk": "Space" } },
+    { "id": "crouch", "label": "Crouch", "output": { "type": "key", "vk": "C" } },
+    { "id": "reload", "label": "Reload", "output": { "type": "key", "vk": "R" } },
+    { "id": "use", "label": "Use", "output": { "type": "key", "vk": "E" } },
+    { "id": "menu", "label": "Menu", "output": { "type": "key", "vk": "Escape" } }
+  ],
+  "bindings": [
+    { "actionId": "forward", "physicalInput": "LEFT_UP" },
+    { "actionId": "backward", "physicalInput": "LEFT_DOWN" },
+    { "actionId": "left", "physicalInput": "LEFT_LEFT" },
+    { "actionId": "right", "physicalInput": "LEFT_RIGHT" },
+    { "actionId": "fire", "physicalInput": "RT" },
+    { "actionId": "altFire", "physicalInput": "LT" },
+    { "actionId": "jump", "physicalInput": "A" },
+    { "actionId": "crouch", "physicalInput": "B" },
+    { "actionId": "reload", "physicalInput": "X" },
+    { "actionId": "use", "physicalInput": "Y" },
+    { "actionId": "menu", "physicalInput": "START" }
+  ],
+  "contexts": [],
+  "stickMouseSettings": { "enabled": true, "deadzone": 0.16, "curve": "exponential", "sensitivity": 1.2, "acceleration": 0.3, "smoothing": 0.08, "maxVelocity": 850 }
+}
