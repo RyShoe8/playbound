@@ -7,7 +7,8 @@ import DiscoverLoading from "./loading";
 import { CatalogDirectory } from "@/components/CatalogDirectory";
 import { pageMetadata } from "@/lib/seo";
 import { toDiscoverListingGame } from "@/lib/discoverListing";
-import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
+import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
   title: "Games — Free and Affordable Catalog Worth Playing",
@@ -29,12 +30,18 @@ export default async function DiscoverPage() {
       */}
       <JsonLd
         data={graph(
-          itemListSchema(
-            "PlayBound Games",
-            "Free and affordable games that clear PlayBound's four published criteria.",
-            "/discover",
-            games
-          ),
+          {
+            "@type": "ItemList",
+            name: "PlayBound Games",
+            url: absoluteUrl("/discover"),
+            numberOfItems: games.length,
+            itemListElement: games.map((game, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: game.title,
+              url: absoluteUrl(`/games/${game.slug}`),
+            })),
+          },
           breadcrumbSchema([{ name: "Games", path: "/discover" }])
         )}
       />

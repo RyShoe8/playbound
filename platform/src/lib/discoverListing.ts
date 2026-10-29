@@ -1,4 +1,15 @@
 import type { Game } from "@/lib/data/types";
+import type { HardwareRequirementsBlock, RequirementSpec } from "@/lib/hardware/types";
+
+function cardRequirements(block?: HardwareRequirementsBlock | null): HardwareRequirementsBlock | undefined {
+  if (!block) return undefined;
+  const compact = (spec?: RequirementSpec): RequirementSpec | undefined => spec && ({
+    os: spec.os, arch: spec.arch, cpuTier: spec.cpuTier, cpuText: spec.cpuText,
+    gpuTier: spec.gpuTier, gpuText: spec.gpuText, ramMB: spec.ramMB,
+    vramMB: spec.vramMB, storageMB: spec.storageMB, apis: spec.apis,
+  });
+  return { min: compact(block.min), recommended: compact(block.recommended) };
+}
 
 /** Fields consumed by the Discover filters and game cards. */
 export type DiscoverListingGame = Pick<Game,
@@ -24,7 +35,7 @@ export function toDiscoverListingGame(game: Game): DiscoverListingGame {
     browserPlayable: game.browserPlayable,
     steamDeck: game.steamDeck,
     platforms: game.platforms,
-    hardwareRequirements: game.hardwareRequirements,
+    hardwareRequirements: cardRequirements(game.hardwareRequirements),
     access: game.access,
     status: game.status,
     website: game.website,

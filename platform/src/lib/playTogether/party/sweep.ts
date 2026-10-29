@@ -157,9 +157,11 @@ export async function sweepStaleParties(now = new Date()) {
  * Immediately cleans up any party where the user was the host or a member.
  */
 export async function handleUserPresenceEnded(userId: string): Promise<void> {
+  if (!Types.ObjectId.isValid(userId)) return;
   await dbConnect();
-  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
-  const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
+  // Both fields are ObjectId in PartySchema. Passing a nested $in expression
+  // into $ne makes Mongoose cast that expression as an ObjectId and throws.
+  const matchUser = new Types.ObjectId(userId);
 
   try {
     const leaderParties = await Party.find({

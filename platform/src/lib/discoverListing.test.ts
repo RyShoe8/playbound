@@ -4,6 +4,7 @@ import { toDiscoverListingGame } from "@/lib/discoverListing";
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { isGameCompatible, type DeviceType } from "@/lib/compatibility/compatibility";
 import { isBrowserGame } from "@/lib/gameLaunch";
+import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 
 describe("Discover listing projection", () => {
   const projected = games.map(toDiscoverListingGame);
@@ -27,5 +28,13 @@ describe("Discover listing projection", () => {
     expect(listingBytes).toBeLessThan(fullBytes / 2);
     expect(Object.keys(projected[0])).not.toContain("longDescription");
     expect(Object.keys(projected[0])).not.toContain("launcherInstall");
+  });
+
+  it("keeps hardware filter verdicts after dropping unused requirement metadata", () => {
+    const hardware = { osFamily: "windows", arch: "x64", cpuTier: "mid" as const, gpuTier: "mid" as const, ramMB: 16384, vramMB: 4096, storageMB: 100000, apis: ["dx11"] };
+    for (let i = 0; i < games.length; i++) {
+      expect(evaluateCompatibility(hardware, projected[i].hardwareRequirements).verdict, games[i].slug)
+        .toBe(evaluateCompatibility(hardware, games[i].hardwareRequirements).verdict);
+    }
   });
 });
