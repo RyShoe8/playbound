@@ -3,7 +3,7 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import Presence from "@/lib/models/Presence";
 import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
-import { listGames, listGamesForJoin } from "@/lib/catalog";
+import { listGamesForJoin } from "@/lib/catalog";
 import { isMultiplayerGame } from "@/lib/playTogether/multiplayer";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 import { maskPresenceForOthers } from "@/lib/friends/presenceMask";
@@ -55,7 +55,7 @@ export async function listSharedPlayGames(userId: string, limit = 12): Promise<S
     LibraryEntry.find({ userId: { $in: friendIds }, installed: true })
       .select("userId gameSlug")
       .lean(),
-    listGames({ includeTesting: true }),
+    listGamesForJoin(),
     User.find({ _id: { $in: friendIds } })
       .select("username preferences")
       .lean(),

@@ -124,7 +124,7 @@ async function gamesSection(): Promise<Entries> {
     url: `${SITE_URL}/games/${g.slug}`,
     changeFrequency: "weekly" as const,
     priority: 0.8,
-    ...lastMod(g.qualityBar?.lastVerified),
+    ...lastMod(g.updatedAt),
   }));
 }
 
@@ -156,7 +156,7 @@ async function editionsSection(): Promise<Entries> {
       url: `${SITE_URL}/play-with-friends/${g.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.7,
-      ...lastMod(g.qualityBar?.lastVerified),
+      ...lastMod(g.updatedAt),
     }));
   return [...editionRoutes, ...playWithFriends];
 }
@@ -210,7 +210,7 @@ async function developersSection(): Promise<Entries> {
   const datesByDeveloper = new Map<string, { updatedAt?: string }[]>();
   for (const g of games) {
     const bucket = datesByDeveloper.get(g.developerSlug) || [];
-    bucket.push({ updatedAt: g.qualityBar?.lastVerified });
+    bucket.push({ updatedAt: g.updatedAt });
     datesByDeveloper.set(g.developerSlug, bucket);
   }
   // Only developers with a published game; the page is nothing but that list.

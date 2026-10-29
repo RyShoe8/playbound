@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
-import { listGames } from "@/lib/catalog";
-import { listEditionsForGames } from "@/lib/editions";
+import { listGamesForJoin } from "@/lib/catalog";
+import { listStoredPublicEditionChips } from "@/lib/editions";
 
 export type EditionChipMap = Record<string, Array<[slug: string, name: string]>>;
 
@@ -20,20 +20,9 @@ export type EditionChipMap = Record<string, Array<[slug: string, name: string]>>
  */
 async function computeEditionChips(): Promise<EditionChipMap | null> {
   try {
-    const games = await listGames();
-    const byGame = await listEditionsForGames(games);
-    const out: EditionChipMap = {};
-    for (const game of games) {
-      const real = (byGame.get(game.slug) ?? []).filter(
-        (e) => !e.id.startsWith("virtual:") && e.visibility === "public" && e.status !== "archived"
-      );
-      if (real.length === 0) continue;
-      if (real.length === 1 && (real[0].slug === "official" || real[0].slug === "default") && real[0].type === "official") {
-        continue;
-      }
-      out[game.slug] = real.map((e) => [e.slug, e.name]);
-    }
-    return out;
+    const games = await listGamesForJoin({ includeTesting: false });
+    const byGame = await listStoredPublicEditionChips(games.map((game) => game.slug));
+    return Object.fromEntries(byGame);
   } catch (err) {
     console.error("[edition chips] live read failed, using static data:", err);
     return null;

@@ -654,6 +654,14 @@ const loadJoinCatalog = cache(async (): Promise<JoinCatalogGame[]> =>
   )()
 );
 
+const loadPublishedJoinCatalog = cache(async (): Promise<JoinCatalogGame[]> =>
+  unstable_cache(
+    async () => (await readVisibleGames(false)).map(toJoinCatalogGame),
+    ["catalog-games", "join-published"],
+    { revalidate: 300, tags: ["catalog"] }
+  )()
+);
+
 /**
  * Visible catalog, projected for join/presence resolution.
  *
@@ -661,8 +669,8 @@ const loadJoinCatalog = cache(async (): Promise<JoinCatalogGame[]> =>
  * what is it called" — notably the friends list and shared-library lookups.
  * Anything rendering a game needs `listGames` and its full objects.
  */
-export function listGamesForJoin(): Promise<JoinCatalogGame[]> {
-  return loadJoinCatalog();
+export function listGamesForJoin(opts?: { includeTesting?: boolean }): Promise<JoinCatalogGame[]> {
+  return opts?.includeTesting === false ? loadPublishedJoinCatalog() : loadJoinCatalog();
 }
 
 /** All games including drafts (admin). */

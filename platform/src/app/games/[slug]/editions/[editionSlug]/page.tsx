@@ -187,7 +187,12 @@ export default async function EditionPage({
   const action = resolveInstallAction(edition);
   const secondary = resolveSecondaryActions(edition);
   const telemetryProps = editionTelemetryProps(game, edition);
-  const liveStats = await getEditionLiveStats(game.slug, edition.slug);
+  // Activity is optional; a Mongo pool timeout must not turn an otherwise
+  // available edition page into a 5xx response for visitors or crawlers.
+  const liveStats = await getEditionLiveStats(game.slug, edition.slug).catch((error) => {
+    console.warn("Edition activity unavailable:", error);
+    return null;
+  });
   const session = await getServerSession(authOptions);
   const pageBase = `/games/${game.slug}/editions/${edition.slug}`;
 
@@ -342,14 +347,14 @@ export default async function EditionPage({
             <EditionTypeBadge edition={edition} />
             <VerificationBadge level={edition.verificationLevel} />
             <EditionStatusBadge edition={edition} />
-            {liveStats.playingNow > 0 ? (
+            {liveStats && liveStats.playingNow > 0 ? (
               <EditionPopulationBadge edition={edition} population={liveStats.playingNow} />
-            ) : (
+            ) : liveStats ? (
               <PlayingNowBadge
                 count={liveStats.playingNow}
                 className="border-white/20 bg-black/40 text-white"
               />
-            )}
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             {isInstalled ? (
@@ -562,7 +567,7 @@ function OverviewTab({
 }: {
   game: Game;
   edition: Edition;
-  liveStats: EntityLiveStats;
+  liveStats: EntityLiveStats | null;
   screenshots: string[];
   requirements: Edition["requirements"] | Game["systemRequirements"];
   communityLinks: { href: string; label: string; icon: typeof Globe }[];
@@ -802,13 +807,13 @@ function OverviewTab({
       </div>
 
       <aside className="min-w-0 space-y-6">
-        <ActivityStatsCard
+        {liveStats && <ActivityStatsCard
           playingNow={liveStats.playingNow}
           rows={[
             { label: "Players this month", value: liveStats.playersThisMonth },
             { label: "Live servers", value: liveStats.serverCount },
           ]}
-        />
+        />}
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h2 className="text-sm font-extrabold tracking-wider text-muted-foreground uppercase">
@@ -886,7 +891,7 @@ function OverviewTab({
           </div>
         )}
 
-        {liveStats.serverCount > 0 && (
+        {liveStats && liveStats.serverCount > 0 && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
             <Link
               href={serversHref(game.slug, edition.slug)}

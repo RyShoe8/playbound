@@ -136,7 +136,10 @@ export default async function ModPage({
 
   const base = baseGame?.title ?? mod.baseGameSlug;
   const showPlay = modInstalled && canOneClickBase;
-  const liveStats = await getModLiveStats(mod.slug);
+  const liveStats = await getModLiveStats(mod.slug).catch((error) => {
+    console.warn("Mod activity unavailable:", error);
+    return null;
+  });
   const isSignedIn = Boolean(session?.user);
   const classificationTags = await getModClassificationsWithAncestry(mod.classificationIds ?? []);
   const manualUrl = mod.downloadKind === "direct-zip" && mod.directUrl
@@ -246,7 +249,7 @@ export default async function ModPage({
               </p>
             );
           })()}
-          <PlayingNowBadge count={liveStats.playingNow} />
+          {liveStats && <PlayingNowBadge count={liveStats.playingNow} />}
           {baseGame && (
             <p className="text-sm text-muted-foreground">
               For{" "}
@@ -459,7 +462,7 @@ export default async function ModPage({
             </div>
 
             <aside className="min-w-0 space-y-4">
-              <ActivityStatsCard
+              {liveStats && <ActivityStatsCard
                 playingNow={liveStats.playingNow}
                 rows={[
                   { label: "Players this month", value: liveStats.playersThisMonth },
@@ -470,7 +473,7 @@ export default async function ModPage({
                     ? [{ label: "Total installs", value: liveStats.installsAllTime }]
                     : []),
                 ]}
-              />
+              />}
             </aside>
           </div>
         )}

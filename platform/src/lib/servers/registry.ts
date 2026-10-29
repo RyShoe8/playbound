@@ -507,7 +507,10 @@ export function isKnownServerGame(slug: string): boolean {
   return hasServerBrowser(slug) || (UNSUPPORTED_SERVER_SLUGS as readonly string[]).includes(slug);
 }
 
-export async function listServersForGame(slug: string): Promise<ServerListResult> {
+export async function listServersForGame(
+  slug: string,
+  hostedSnapshot?: readonly GameServer[]
+): Promise<ServerListResult> {
   /*
    * The clock is read after the fetch, not before it.
    *
@@ -524,7 +527,9 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
    * timestamp either, so it reports the epoch instead of inventing a reading.
    */
   const provider = providers[slug];
-  const hosted = await listJoinableCommunityServers(slug);
+  const hosted = hostedSnapshot
+    ? hostedSnapshot.filter((server) => server.gameSlug === slug)
+    : await listJoinableCommunityServers(slug);
   if (!provider) return hosted.length
     ? { supported: true, servers: hosted, updatedAt: new Date().toISOString() }
     : { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
@@ -548,14 +553,15 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
 }
 
 export async function getPlayerCountForGame(
-  slug: string
+  slug: string,
+  hostedSnapshot?: readonly GameServer[]
 ): Promise<{ players: number; servers: number }> {
   const provider = providers[slug];
   if (!provider) return { players: 0, servers: 0 };
   if (provider.fetchPlayerCount) {
     return provider.fetchPlayerCount();
   }
-  const result = await listServersForGame(slug);
+  const result = await listServersForGame(slug, hostedSnapshot);
   const servers = result.servers ?? [];
   return {
     players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0),

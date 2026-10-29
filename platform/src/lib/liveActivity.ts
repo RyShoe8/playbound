@@ -10,6 +10,8 @@ import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { editions as seedEditions } from "@/lib/data/editions";
 import { getPlayerCountForGame, hasServerProvider, listServersForGame } from "@/lib/servers/registry";
+import { listAllJoinableCommunityServers } from "@/lib/communityHosting/discovery";
+import type { GameServer } from "@/lib/servers/types";
 import { fetchHoloCurePlayers } from "@/lib/servers/providers/steam-concurrent";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
@@ -95,9 +97,12 @@ function propertyMatch(scope: Scope): Record<string, unknown> {
   return props;
 }
 
-async function multiplayerForGame(slug: string): Promise<{ players: number; servers: number }> {
+async function multiplayerForGame(
+  slug: string,
+  hostedSnapshot?: readonly GameServer[]
+): Promise<{ players: number; servers: number }> {
   try {
-    return await getPlayerCountForGame(slug);
+    return await getPlayerCountForGame(slug, hostedSnapshot);
   } catch {
     return { players: 0, servers: 0 };
   }
@@ -417,20 +422,22 @@ async function countModInstalls(modSlug: string): Promise<{ month: number; allTi
 
 async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
   const [games, mods] = await Promise.all([listGames(), listMods({ view: "card" })]);
+  // One Mongo query and one game-host request for the whole snapshot. Calling
+  // per-game discovery for every multiplayer title at once exhausted the
+  // serverless Mongo pool during cold cache refreshes.
+  const hostedSnapshot = listAllJoinableCommunityServers(games);
   const multiplayer = games.filter(
     (g) => g.launchMethods.includes("server") || hasServerProvider(g.slug)
   );
 
   const [settled, platformByGame, editionCountBySlug, externalEntries] = await Promise.all([
-    Promise.allSettled(
-      multiplayer.map((g) =>
-        // One budget for everyone; see MULTIPLAYER_FANOUT_MS for why.
-        withTimeout(multiplayerForGame(g.slug), MULTIPLAYER_FANOUT_MS, {
-          players: 0,
-          servers: 0,
-        })
-      )
-    ),
+    hostedSnapshot.then((hosted) => Promise.allSettled(
+      multiplayer.map((game) => withTimeout(
+        multiplayerForGame(game.slug, hosted),
+        MULTIPLAYER_FANOUT_MS,
+        { players: 0, servers: 0 }
+      ))
+    )),
     countActivePlatformPlayersByGame(),
     publicEditionCountsByGame(),
     Promise.all(
@@ -455,10 +462,10 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
   const mpBySlug = new Map<string, number>();
   let multiplayerPlayers = 0;
   multiplayer.forEach((g, i) => {
-    const r = settled[i];
-    if (r?.status === "fulfilled") {
-      mpBySlug.set(g.slug, r.value.players);
-      multiplayerPlayers += r.value.players;
+    const result = settled[i];
+    if (result?.status === "fulfilled") {
+      mpBySlug.set(g.slug, result.value.players);
+      multiplayerPlayers += result.value.players;
     }
   });
 

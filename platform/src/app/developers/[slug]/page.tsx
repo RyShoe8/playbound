@@ -133,7 +133,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
    */
   const [devGames, liveStats] = await Promise.all([
     gamesByDeveloper(dev.slug),
-    getCatalogLiveStats(),
+    getCatalogLiveStats().catch(() => null),
   ]);
   const repo = devGames.find((g) => g.githubRepo)?.githubRepo;
   const releases = repo ? await fetchGithubReleases(repo, 3) : [];
@@ -212,7 +212,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
 
       <section>
         <SectionHeader title="Games" subtitle={`Everything by ${dev.name} on PlayBound`} />
-        <CompatibleCardRow games={devGames} playingNowBySlug={playingNowBySlug(liveStats)} />
+        <CompatibleCardRow games={devGames} playingNowBySlug={liveStats ? playingNowBySlug(liveStats) : {}} />
       </section>
 
       {/* The cards above are filtered to the viewer's device; this list is not, so

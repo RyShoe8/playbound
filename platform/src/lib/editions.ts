@@ -820,6 +820,30 @@ export async function listEditionsForGames(
   return result;
 }
 
+/** Public, stored edition chips without materializing every full game record. */
+export async function listStoredPublicEditionChips(
+  gameSlugs: readonly string[]
+): Promise<Map<string, Array<[slug: string, name: string]>>> {
+  const stateBySlug = await fetchEditionStateForGames([...gameSlugs]);
+  const chips = new Map<string, Array<[slug: string, name: string]>>();
+  for (const gameSlug of gameSlugs) {
+    const state = stateBySlug.get(gameSlug);
+    const editions = mergeStoredAndSeedEditions(
+      gameSlug,
+      state?.editions ?? [],
+      state?.occupiedSeedSlugs ?? new Set<string>()
+    )
+      .filter((edition) => edition.visibility === "public" && edition.status !== "archived")
+      .sort(compareEditions);
+    if (editions.length === 0) continue;
+    if (editions.length === 1 &&
+        (editions[0].slug === "official" || editions[0].slug === "default") &&
+        editions[0].type === "official") continue;
+    chips.set(gameSlug, editions.map((edition) => [edition.slug, edition.name]));
+  }
+  return chips;
+}
+
 /** Editions shown in listings — public visibility only. */
 export async function listPublicEditionsForGame(game: Game): Promise<Edition[]> {
   const all = await listEditionsForGame(game);

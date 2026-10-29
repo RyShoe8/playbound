@@ -159,7 +159,9 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
   }
 }
 
-export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
+export async function listAllJoinableCommunityServers(
+  catalogGames?: ReadonlyArray<{ slug: string; title: string }>
+): Promise<GameServer[]> {
   if (!hasDatabase()) return [];
   try {
     const config = await discoveryConfig();
@@ -174,7 +176,7 @@ export async function listAllJoinableCommunityServers(): Promise<GameServer[]> {
         ...listableFilter(Boolean(config?.enabled)),
       }).lean(),
       listManagedHostRooms().catch(() => null),
-      listGames().catch(() => []),
+      catalogGames ? Promise.resolve(catalogGames) : listGames().catch(() => []),
     ]);
 
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));

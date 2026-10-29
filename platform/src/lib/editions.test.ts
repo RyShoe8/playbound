@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   listedEditionsFromStored,
+  listEditionsForGames,
+  listStoredPublicEditionChips,
   mergeStoredAndSeedEditions,
   parseSeedEditionId,
 } from "./editions";
 import type { Game } from "@/lib/data/types";
+import { games as seedGames } from "@/lib/data/games";
 import type { Edition } from "@/lib/editionTypes";
 
 describe("seed edition deletion", () => {
@@ -47,6 +50,33 @@ describe("seed edition deletion", () => {
     );
     expect(visible.some((edition) => edition.slug === "opene2140")).toBe(false);
     expect(visible.some((edition) => edition.slug === "official")).toBe(true);
+  });
+});
+
+describe("compact public edition chips", () => {
+  it("matches the full edition listing across the seed catalog", async () => {
+    const previousUri = process.env.MONGODB_URI;
+    delete process.env.MONGODB_URI;
+    try {
+      const byGame = await listEditionsForGames(seedGames);
+      const compact = await listStoredPublicEditionChips(seedGames.map((game) => game.slug));
+      const expected = new Map<string, Array<[string, string]>>();
+      for (const game of seedGames) {
+        const real = (byGame.get(game.slug) ?? []).filter(
+          (edition) => !edition.id.startsWith("virtual:") &&
+            edition.visibility === "public" && edition.status !== "archived"
+        );
+        if (real.length === 0) continue;
+        if (real.length === 1 &&
+            (real[0].slug === "official" || real[0].slug === "default") &&
+            real[0].type === "official") continue;
+        expected.set(game.slug, real.map((edition) => [edition.slug, edition.name]));
+      }
+      expect([...compact]).toEqual([...expected]);
+    } finally {
+      if (previousUri === undefined) delete process.env.MONGODB_URI;
+      else process.env.MONGODB_URI = previousUri;
+    }
   });
 });
 

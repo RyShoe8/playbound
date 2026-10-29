@@ -5,7 +5,7 @@ import { listPartiesForUser, listDiscoverableParties } from "@/lib/playTogether/
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
-import { listGames } from "@/lib/catalog";
+import { listGamesForJoin } from "@/lib/catalog";
 import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 import PlayAvailability from "@/lib/models/PlayAvailability";
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
     const ids = friendUsers.map((f) => f.id);
     const [presences, games, sharedGames, mePresence, activeParties, discoverableParties, myAvailability] = await Promise.all([
       Presence.find({ userId: { $in: ids } }).lean(),
-      listGames({ includeTesting: true }),
+      listGamesForJoin(),
       listSharedPlayGames(userId, 8),
       Presence.findOne({ userId }).lean(),
       listPartiesForUser(userId),

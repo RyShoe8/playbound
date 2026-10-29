@@ -23,7 +23,7 @@ export default async function NewHomePage() {
   await connection();
   const [games, popular, mods, events, stats, session] = await Promise.all([
     listGamesNewestFirst(), weeklyPopular(), listMods({ view: "card" }),
-    listPublicEvents({ limit: 7 }), getCatalogLiveStats(), getServerSession(authOptions),
+    listPublicEvents({ limit: 7 }), getCatalogLiveStats().catch(() => null), getServerSession(authOptions),
   ]);
   const launcherLinked = session?.user?.id ? await hasLinkedLauncher(session.user.id) : false;
   const bySlug = new Map(games.map(game => [game.slug, game]));
@@ -52,7 +52,7 @@ export default async function NewHomePage() {
     const base = bySlug.get(mod.baseGameSlug);
     return { mod, baseGame: base ? { slug: base.slug, title: base.title, coverImage: base.coverImage, platforms: base.platforms, browserPlayable: base.browserPlayable, steamDeck: base.steamDeck } : null };
   });
-  const counts = playingNowBySlug(stats);
+  const counts = stats ? playingNowBySlug(stats) : {};
   return <div className="new-home new-page">
     <NewHomeHeading />
     <div className="new-home-layout">

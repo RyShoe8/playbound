@@ -88,7 +88,8 @@ function Pulse({ className }: { className?: string }) {
 
 /** Hero playing-now — master / telemetry work streams after first paint. */
 export async function GameHeroPlayingNow({ slug }: { slug: string }) {
-  const liveStats = await getGameLiveStats(slug);
+  const liveStats = await getGameLiveStats(slug).catch(() => null);
+  if (!liveStats) return null;
   return (
     <PlayingNowBadge
       count={liveStats.playingNow}
@@ -284,9 +285,10 @@ export function GameSimilarFallback() {
 
 export async function GameActivityAside({ gameSlug }: { gameSlug: string }) {
   const [liveStats, topPlayers] = await Promise.all([
-    getGameLiveStats(gameSlug),
-    getGameTopPlayers(gameSlug),
+    getGameLiveStats(gameSlug).catch(() => null),
+    getGameTopPlayers(gameSlug).catch(() => []),
   ]);
+  if (!liveStats) return null;
   const installTotal = liveStats.installsAllTime ?? 0;
   return (
     <ActivityStatsCard
