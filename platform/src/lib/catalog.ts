@@ -25,6 +25,7 @@ import { normalizeQualityBar, normalizeTags, GENRES, FEATURES } from "@/lib/game
 import { accessFromDoc } from "@/lib/access/docs";
 import { pickHardwareRequirements, pickSystemRequirements } from "@/lib/catalogRequirements";
 import { repairMorrowindMultiplayerFromSeed } from "@/lib/catalog/morrowindMultiplayerRepair";
+import { CATALOG_SLUG_BOUNDS, slugInShard } from "@/lib/catalogCacheShards";
 
 export type { Game } from "@/lib/data/types";
 import type { Collection, Developer } from "@/lib/data/types";
@@ -557,12 +558,20 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
  * decide whether the collection was empty — an empty result says the same
  * thing for free.
  */
-async function readVisibleGames(includeTesting: boolean): Promise<Game[]> {
+async function readVisibleGames(
+  includeTesting: boolean,
+  lower?: string,
+  upper?: string
+): Promise<Game[]> {
   const filter = {
     ...mongoVisibleFilter({ includeTesting }),
     playboundSupported: { $ne: false },
+    ...(lower || upper ? { slug: { ...(lower ? { $gte: lower } : {}), ...(upper ? { $lt: upper } : {}) } } : {}),
   };
-  return fromMongo(filter);
+  const games = await fromMongo(filter);
+  // fromMongo uses the seed catalog during builds. Apply the same range to
+  // that fallback so every seed game appears in exactly one shard.
+  return lower || upper ? games.filter((game) => slugInShard(game.slug, lower, upper)) : games;
 }
 
 /**
@@ -575,19 +584,32 @@ async function readVisibleGames(includeTesting: boolean): Promise<Game[]> {
  * this query from scratch. Tagged so admin writes can drop it immediately
  * rather than serving a stale catalog for the full window.
  */
-const loadPublishedGames = cache(async (): Promise<Game[]> =>
-  unstable_cache(() => readVisibleGames(false), ["catalog-games", "published"], {
-    revalidate: 300,
-    tags: ["catalog"],
-  })()
-);
+async function readCachedVisibleGames(includeTesting: boolean): Promise<Game[]> {
+  // The full published catalog exceeded Next's 2 MiB limit for one
+  // unstable_cache value. The indexed slug ranges keep each cache entry small
+  // while preserving the full Game objects needed by detail pages. Limit cold
+  // refreshes to two concurrent Mongo reads to protect the connection pool.
+  const bounds: Array<string | undefined> = [undefined, ...CATALOG_SLUG_BOUNDS, undefined];
+  const shards: Game[][] = [];
+  for (let index = 0; index < bounds.length - 1; index += 2) {
+    const batch = [index, index + 1].filter((i) => i < bounds.length - 1);
+    shards.push(...(await Promise.all(batch.map((i) => {
+      const lower = bounds[i];
+      const upper = bounds[i + 1];
+      return unstable_cache(
+        () => readVisibleGames(includeTesting, lower, upper),
+        ["catalog-games", "slug-shard-v1", includeTesting ? "with-testing" : "published", lower ?? "", upper ?? ""],
+        { revalidate: 300, tags: ["catalog"] }
+      )();
+    }))));
+  }
+  // Match Mongo's default binary title sort rather than changing catalog
+  // ordering when the results from separate ranges are joined.
+  return shards.flat().sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? 1 : 0);
+}
 
-const loadPublishedAndTestingGames = cache(async (): Promise<Game[]> =>
-  unstable_cache(() => readVisibleGames(true), ["catalog-games", "published+testing+ready"], {
-    revalidate: 300,
-    tags: ["catalog"],
-  })()
-);
+const loadPublishedGames = cache(() => readCachedVisibleGames(false));
+const loadPublishedAndTestingGames = cache(() => readCachedVisibleGames(true));
 
 /** Visible catalog. Pass `includeTesting` for admin viewers (published + testing + ready). */
 export async function listGames(opts?: { includeTesting?: boolean }): Promise<Game[]> {
