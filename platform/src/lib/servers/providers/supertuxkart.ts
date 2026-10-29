@@ -27,7 +27,9 @@ export async function fetchSuperTuxKartServers(): Promise<GameServer[]> {
   const res = await fetch("https://online.supertuxkart.net/api/v2/server/get-all", {
     headers: { "user-agent": "PlayBound/1.0", accept: "application/xml,text/xml,*/*" },
     next: { revalidate: 30 },
-    signal: AbortSignal.timeout(12_000),
+    // Catalog live stats have an 8.5s upstream budget. Abort this request
+    // before that budget expires so a failing API cannot keep work alive.
+    signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) throw new Error(`STK API returned ${res.status}`);
   const xml = await res.text();

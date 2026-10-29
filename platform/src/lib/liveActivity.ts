@@ -17,6 +17,7 @@ import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import EditionModel from "@/lib/models/Edition";
 import { isModCompatible, type DeviceType } from "@/lib/compatibility/compatibility";
+import { withLiveActivityPermit } from "@/lib/liveActivityLimiter";
 
 const EXTERNAL_CONCURRENT_PROVIDERS: Record<string, () => Promise<number>> = {
   holocure: async () => {
@@ -627,7 +628,7 @@ export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
 
 /** Per-game snapshot. Shared for 15 minutes. */
 export function getGameLiveStats(slug: string): Promise<EntityLiveStats> {
-  return unstable_cache(() => computeGameLiveStats(slug), ["live-activity-game", slug], {
+  return unstable_cache(() => withLiveActivityPermit(() => computeGameLiveStats(slug)), ["live-activity-game", slug], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity", `live-activity-game-${slug}`],
   })();
@@ -639,7 +640,7 @@ export function getEditionLiveStats(
   editionSlug: string
 ): Promise<EntityLiveStats> {
   return unstable_cache(
-    () => computeEditionLiveStats(gameSlug, editionSlug),
+    () => withLiveActivityPermit(() => computeEditionLiveStats(gameSlug, editionSlug)),
     ["live-activity-edition", gameSlug, editionSlug],
     {
       revalidate: CACHE_SECONDS,
@@ -650,7 +651,7 @@ export function getEditionLiveStats(
 
 /** Per-mod snapshot. Shared for 15 minutes. */
 export function getModLiveStats(modSlug: string): Promise<EntityLiveStats> {
-  return unstable_cache(() => computeModLiveStats(modSlug), ["live-activity-mod", modSlug], {
+  return unstable_cache(() => withLiveActivityPermit(() => computeModLiveStats(modSlug)), ["live-activity-mod", modSlug], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity", `live-activity-mod-${modSlug}`],
   })();

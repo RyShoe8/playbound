@@ -83,6 +83,32 @@ import { fetchUnturnedServers, fetchUnturnedPlayerCount } from "./providers/untu
 import { isUpstreamTimeout } from "./errors";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
+// A broken upstream must not be hammered by every game page and catalog
+// refresh. This is per warm serverless instance; hosted rooms remain visible.
+const FAILED_SOURCE_RETRY_MS = 60_000;
+const failedSources = new Map<string, { until: number; message: string }>();
+const inFlightSources = new Map<string, Promise<GameServer[]>>();
+
+function fetchSourceOnce(slug: string, provider: ServerProvider): Promise<GameServer[]> {
+  const running = inFlightSources.get(slug);
+  if (running) return running;
+  const request = Promise.resolve().then(() => provider.fetchServers()).finally(() => {
+    inFlightSources.delete(slug);
+  });
+  inFlightSources.set(slug, request);
+  return request;
+}
+
+function reportSourceFailure(slug: string, error: unknown): string {
+  const message = error instanceof Error ? error.message : "Failed to load servers";
+  if (isUpstreamTimeout(error) || /returned (?:4\d\d|5\d\d)|unavailable|ECONNREFUSED|aborted due to timeout/i.test(message)) {
+    console.warn(`[servers] ${slug}: upstream server list unavailable (${message})`);
+  } else {
+    console.error(`[servers] ${slug}:`, error);
+  }
+  return message;
+}
+
 // Counting semantics, source priority, and zero-vs-unknown rules are documented
 // in platform/docs/player-counts.md. Read that policy before adding a provider.
 
@@ -533,21 +559,19 @@ export async function listServersForGame(
   if (!provider) return hosted.length
     ? { supported: true, servers: hosted, updatedAt: new Date().toISOString() }
     : { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
+  const failed = failedSources.get(slug);
+  if (failed && Date.now() < failed.until) {
+    return { supported: true, servers: hosted, updatedAt: new Date().toISOString(), error: failed.message };
+  }
   try {
-    const servers: GameServer[] = await provider.fetchServers();
+    const servers = await fetchSourceOnce(slug, provider);
+    failedSources.delete(slug);
     const ownedAddresses = new Set(hosted.map((s) => `${s.host}:${s.port}`));
     // A registered PlayBound room may also appear on the game's public master.
     return { supported: true, servers: [...hosted, ...servers.filter((s) => !ownedAddresses.has(`${s.host}:${s.port}`))], updatedAt: new Date().toISOString() };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load servers";
-    if (isUpstreamTimeout(err)) {
-      // Upstream population feeds are best-effort. Keep the response honest
-      // (unavailable, not a false zero) without dumping every DOMException
-      // constant into the production error log.
-      console.info(`[servers] ${slug}: upstream request timed out; server list unavailable`);
-    } else {
-      console.error(`[servers] ${slug}:`, err);
-    }
+    const message = reportSourceFailure(slug, err);
+    failedSources.set(slug, { until: Date.now() + FAILED_SOURCE_RETRY_MS, message });
     return { supported: true, servers: hosted, updatedAt: new Date().toISOString(), error: message };
   }
 }

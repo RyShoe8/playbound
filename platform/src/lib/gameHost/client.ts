@@ -35,7 +35,19 @@ export async function installationUpdatesOnHost(input?: {
 
 export async function fetchRimworldBrowser(): Promise<unknown[]> {
   const response = await hostFetch("/server-browser/rimworld", { method: "GET" }, 20_000);
-  if (!response?.ok) throw new Error("RimWorld server browser is unavailable");
+  if (!response?.ok) {
+    const body = await response?.json().catch(() => null) as { error?: unknown } | null;
+    const reason = typeof body?.error === "string" ? body.error : "";
+    // The agent distinguishes a missing install from a failed browser query.
+    // Keep diagnostics useful without reflecting arbitrary process output into
+    // a public server-list response.
+    if (reason === "RimWorld Together is not installed" ||
+        reason === "RimWorld browser did not return a listing" ||
+        reason === "Invalid RimWorld browser listing") {
+      throw new Error(reason);
+    }
+    throw new Error("RimWorld server browser is unavailable");
+  }
   const data = await response.json() as { servers?: unknown[] };
   if (!Array.isArray(data.servers)) throw new Error("Invalid RimWorld server listing");
   return data.servers;

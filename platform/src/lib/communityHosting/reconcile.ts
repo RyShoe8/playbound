@@ -199,7 +199,7 @@ async function acquireLease(now: Date): Promise<string | null> {
     const result = await CommunityHostingLease.findOneAndUpdate(
       { key: "fleet", $or: [{ leaseUntil: { $lt: now } }, { leaseUntil: null }] },
       { $set: { leaseUntil: new Date(now.getTime() + LEASE_MS), owner }, $setOnInsert: { key: "fleet" } },
-      { new: true, upsert: true }
+      { returnDocument: "after", upsert: true }
     );
     return result?.owner === owner ? owner : null;
   } catch (error) {
@@ -630,7 +630,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           lastReconciledAt: now,
           ...(warmupSettings ? { settings: warmupSettings, maxPlayerCount: warmupSettings.maxPlayers } : {}),
         },
-      }, { upsert: true, new: true });
+      }, { upsert: true, returnDocument: "after" });
       const id = String(server._id);
       due.communityServerId = server._id;
       due.state = "active";
@@ -718,7 +718,7 @@ export async function reconcileCommunityHosting(now = new Date()): Promise<{ act
           lastReconciledAt: now,
           ...(candidateSettings ? { settings: candidateSettings, maxPlayerCount: candidateSettings.maxPlayers } : {}),
         },
-      }, { upsert: true, new: true });
+      }, { upsert: true, returnDocument: "after" });
       const id = String(server._id);
       const started = await requestManagedHostRoom({
         communityServerId: id,

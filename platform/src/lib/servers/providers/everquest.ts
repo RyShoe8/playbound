@@ -18,6 +18,8 @@ import { MAX_SERVERS } from "../types";
 const CENSUS_URL =
   "https://census.daybreakgames.com/json/get/global/game_server_status?game_code=eq&c:limit=100";
 const EQEMU_LIST_URL = "https://www.eqemulator.org/index.php?pageid=serverlist";
+const SOURCE_RETRY_MS = 60_000;
+const failedSources = new Map<string, number>();
 
 /** Conservative midpoints for Daybreak status bands (documented for UI/FAQ). */
 const LOAD_BAND_PLAYERS: Record<string, number> = {
@@ -61,7 +63,7 @@ async function fetchOfficialLiveServers(): Promise<GameServer[]> {
   const res = await fetch(CENSUS_URL, {
     headers: { "user-agent": "PlayBound/1.0", accept: "application/json" },
     next: { revalidate: 60 },
-    signal: AbortSignal.timeout(12_000),
+    signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) throw new Error(`Daybreak Census returned ${res.status}`);
   const data = (await res.json()) as { game_server_status_list?: CensusRow[] };
@@ -142,7 +144,7 @@ async function fetchCommunityServers(): Promise<GameServer[]> {
   const res = await fetch(EQEMU_LIST_URL, {
     headers: { "user-agent": "PlayBound/1.0", accept: "text/html" },
     next: { revalidate: 60 },
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) throw new Error(`EQEmulator server list returned ${res.status}`);
   const html = await res.text();
@@ -189,12 +191,27 @@ async function fetchCommunityServers(): Promise<GameServer[]> {
   return mapped;
 }
 
+async function pollSource(name: string, fetchRows: () => Promise<GameServer[]>): Promise<{ rows: GameServer[]; failed: boolean }> {
+  if (Date.now() < (failedSources.get(name) ?? 0)) return { rows: [], failed: true };
+  try {
+    const rows = await fetchRows();
+    failedSources.delete(name);
+    return { rows, failed: false };
+  } catch (error) {
+    failedSources.set(name, Date.now() + SOURCE_RETRY_MS);
+    console.warn(`[servers] everquest ${name} unavailable:`, error instanceof Error ? error.message : error);
+    return { rows: [], failed: true };
+  }
+}
+
 export async function fetchEverQuestServers(): Promise<GameServer[]> {
-  const settled = await Promise.allSettled([fetchOfficialLiveServers(), fetchCommunityServers()]);
-  const out: GameServer[] = [];
-  for (const r of settled) {
-    if (r.status === "fulfilled") out.push(...r.value);
-    else console.warn("[servers] everquest source failed:", r.reason?.message || r.reason);
+  const [official, community] = await Promise.all([
+    pollSource("official", fetchOfficialLiveServers),
+    pollSource("community", fetchCommunityServers),
+  ]);
+  const out = [...official.rows, ...community.rows];
+  if (out.length === 0 && (official.failed || community.failed)) {
+    throw new Error("EverQuest server lists are unavailable");
   }
   out.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   return out.slice(0, MAX_SERVERS);
