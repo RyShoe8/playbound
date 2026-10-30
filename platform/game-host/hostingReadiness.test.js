@@ -57,7 +57,7 @@ test("games that passed protected-restore acceptance are operator rollout, never
 test("DST candidate stays blocked before cluster acceptance",()=>{assert.equal(hostingReadiness("dont-starve-together").isolation,"blocked");assert.equal(hostingReadiness("dont-starve-together").executableContentEnabled,false);});
 
 test("new native family candidates cannot claim accepted isolation",()=>{
-  for(const game of ["dont-starve-together","counter-strike-2","trackmania","unturned"]){
+  for(const game of ["dont-starve-together","counter-strike-2","unturned"]){
     const value=hostingReadiness(game);
     assert.equal(value.isolation,"blocked",game);
     assert.equal(value.identityProfile,`${game}-unix-v1`);
@@ -75,8 +75,8 @@ test("unimplemented legacy/display/special supervisors have explicit limitations
     assert.match(value.reason,/Wine|32-bit|Xvfb|shared service/);
   }
   const bombsquad=hostingReadiness("bombsquad");
-  assert.equal(bombsquad.isolation,"blocked");
-  assert.match(bombsquad.reason,/transport startup failed/);
+  assert.equal(bombsquad.isolation,"operator_rollout");
+  assert.match(bombsquad.reason,/no world data/);
 });
 
 test("Core Keeper is operator rollout: lifecycle and settings are its only controls", () => {
@@ -115,4 +115,12 @@ test("guarded i386 Source-family games are operator rollout only with the per-UI
     assert.match(value.reason, /no world data/, key);
   }
   for (const key of ["counter-strike-source", "open-fortress"]) assert.match(hostingReadiness(key).reason, /RCON .*answered as the private UID/, key);
+});
+
+test("Trackmania is operator rollout with its per-server Nadeo account stated", () => {
+  const value = hostingReadiness("trackmania");
+  assert.equal(value.isolation, "operator_rollout");
+  assert.equal(value.executableContentEnabled, false);
+  assert.match(value.reason, /Nadeo dedicated-server account/);
+  assert.match(value.reason, /restore/);
 });

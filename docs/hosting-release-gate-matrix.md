@@ -5,8 +5,8 @@ files on the VPS. The release gate (plan step 7) needs every row to have saved a
 evidence or an explicit surfaced limitation; this table shows which do. Regenerate it after
 each acceptance instead of editing it by hand.
 
-Targets: 52. Isolation: operator_rollout 44, pending 3, blocked 5. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 43, none 8, recorded blocker 1. World backups: yes 37, no 15.
+Targets: 52. Isolation: operator_rollout 46, pending 3, blocked 3. Updates: manual (declared) 15, automatic 37.
+Acceptance evidence: accepted 45, none 7. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -20,7 +20,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Barotrauma (`barotrauma`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Battle for Wesnoth (reviewed 1.18 server) (`battle-for-wesnoth`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Battlefield 1942 (reviewed static engine) (`battlefield-1942-anthology`) | manual (declared) | implemented | operator_rollout | accepted | no | Requires offline enrollment with the per-UID AppArmor profile loaded (i386 socketcall is admitted only inside it). Isolated start with sealed stock settings, query, same-process agent restart and stop passed on the VPS w… |
-| BombSquad (paired controller and game distribution) (`bombsquad`) | automatic | implemented | blocked | recorded blocker | no | Local paired Python/controller namespace candidate implemented; the previous isolated transport startup failed. Native transport, controller shutdown, recovery and restore acceptance remain required. Do not enroll custom… |
+| BombSquad (paired controller and game distribution) (`bombsquad`) | automatic | implemented | operator_rollout | accepted | no | Requires offline enrollment. Isolated start of the paired Python server manager and headless engine, query, same-process agent restart and stop passed on the VPS (2026-10-30); the earlier transport startup failure no lon… |
 | BZFlag (reviewed Ubuntu native server) (`bzflag`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | OpenRA · Combined Arms (`combined-arms`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Core Keeper (`core-keeper`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment with its per-UID AppArmor display policy loaded. Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. Core Keeper has… |
@@ -57,25 +57,22 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Teeworlds (reviewed Ubuntu native server) (`teeworlds`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Terraria (reviewed 1.4.5.8 Linux server) (`terraria`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment and a root-published matching native loader, assembly and libraries. Private world creation/reload, connection-based occupancy, same-process recovery, scoped graceful stop and snapshot restore… |
 | OpenRA · Tiberian Dawn HD (`tiberian-dawn-hd`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
-| Trackmania (paired dedicated engine and Packs) (`trackmania`) | automatic | implemented | blocked | accepted | yes | Isolated start with a Nadeo dedicated-server account, map load, same-process agent restart, stop and migration rollback passed on the VPS. Each server still needs its own customer-supplied dedicated-server account; prote… |
+| Trackmania (paired dedicated engine and Packs) (`trackmania`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and a customer-supplied Nadeo dedicated-server account for each server. Isolated start with that account, map load, protected backup/restore with a pre-restore copy, restart on the restored da… |
 | TripleA (reviewed Java 25 headless server) (`triplea`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Unturned (`unturned`) | automatic | implemented | blocked | none | yes | Local pinned Unity candidate with namespace-only private Servers binding and private GSLT implemented; startup, Unity data-path behavior, console, recovery and restore acceptance remain required. |
-| Unvanquished (engine and game packages) (`unvanquished`) | automatic | implemented | operator_rollout | none | yes | Requires offline enrollment with the per-UID AppArmor profile loaded (Unix stream sockets for its singleton and NaCl seqpacket pairs are admitted only inside it). Runs with -nocrashhandler and a 128 GiB address-space cap… |
+| Unvanquished (engine and game packages) (`unvanquished`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment with the per-UID AppArmor profile loaded (Unix stream sockets for its singleton and NaCl seqpacket pairs are admitted only inside it). Runs with -nocrashhandler and a 128 GiB address-space cap… |
 | Veloren (paired weekly engine and assets) (`veloren`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Warzone 2100 (paired official engine and game data) (`warzone-2100`) | automatic | implemented | operator_rollout | accepted | no | Requires offline enrollment and root-promoted paired engine/assets. Typed autohost settings, connection-based occupancy, same-process agent recovery, stop and data rollback passed. Executable mod installation remains dis… |
 | Wolfenstein: Enemy Territory (ET: Legacy) (`wolfenstein-enemy-territory`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment, root-promoted 2.85.0 engine/assets and the original short-ID save path. Native query, restart and rollback passed. Omni-bot and public listing remain disabled in the isolated profile pending … |
 | Xonotic (reviewed 0.8.6 dedicated engine) (`xonotic`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment, a root-promoted engine and immutable pinned 0.8.6 asset copy. Native player query, restart adoption and rollback passed. New isolated engine/assets require operator review after updates. |
 | YSoccer (PlayBound dedicated Java server) (`ysoccer`) | automatic | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 
-## Still open (10)
+## Still open (7)
 
 - **ANEURISM IV** — pending, evidence: none
-- **BombSquad (paired controller and game distribution)** — blocked, evidence: recorded blocker
 - **Counter-Strike 2** — blocked, evidence: none
 - **Deus Ex GOTY (HX)** — pending, evidence: none
 - **Don't Starve Together** — blocked, evidence: none
 - **GoldenEye: Source (SDK + mod)** — pending, evidence: none
 - **Open Fortress (SDK + mod)** — operator_rollout, evidence: none
-- **Trackmania (paired dedicated engine and Packs)** — blocked, evidence: accepted
 - **Unturned** — blocked, evidence: none
-- **Unvanquished (engine and game packages)** — operator_rollout, evidence: none
