@@ -8,6 +8,8 @@ import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { getLookingToPartyCounts } from "@/lib/playTogether/lookingToParty";
 import { countActivePlatformPlayersByGame } from "@/lib/liveActivity";
 import { getPlayerCountForGame } from "@/lib/servers/registry";
+import { listAllJoinableCommunityServers } from "@/lib/communityHosting/discovery";
+import type { GameServer } from "@/lib/servers/types";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
 import { OPEN_PARTY_STATUSES } from "@/lib/playTogether/party/serialize";
 import { PARTY_MAX_SIZE } from "@/lib/playTogether/types";
@@ -57,8 +59,11 @@ function isMmoGame(game: { tags?: string[]; features?: string[]; genre?: string;
  */
 const PROVIDER_DEADLINE_MS = 4000;
 const lastKnownCounts = new Map<string, { players: number; servers: number }>();
-async function playerCountWithinDeadline(slug: string): Promise<{ players: number; servers: number }> {
-  const fresh = getPlayerCountForGame(slug).then((counts) => {
+async function playerCountWithinDeadline(
+  slug: string,
+  hostedSnapshot?: readonly GameServer[]
+): Promise<{ players: number; servers: number }> {
+  const fresh = getPlayerCountForGame(slug, hostedSnapshot).then((counts) => {
     lastKnownCounts.set(slug, counts);
     return counts;
   });
@@ -127,10 +132,17 @@ async function computeMultiplayerActivitySnapshot(): Promise<MultiplayerActivity
   // Public server counts must not depend on install-history queries succeeding.
   // Read presence once instead of launching several DB queries for every game.
   const platformByGame = hasDb ? await countActivePlatformPlayersByGame().catch(() => new Map<string, number>()) : new Map<string, number>();
+  /*
+   * One read of PlayBound's community servers for every game. Without it each
+   * game ran its own CommunityServer query and agent call — ~60 at once per
+   * recompute — which exhausted the Mongo pool (MongoWaitQueueTimeoutError)
+   * and made unrelated pages fall back to seed.
+   */
+  const hostedSnapshot = hasDb ? await listAllJoinableCommunityServers().catch(() => undefined) : undefined;
   const statsResults = await Promise.all(
     multiplayerGames.map(async (g) => {
       try {
-        const counts = await playerCountWithinDeadline(g.slug);
+        const counts = await playerCountWithinDeadline(g.slug, hostedSnapshot);
         const stats = { multiplayerPlayers: counts.players, serverCount: counts.servers, platformPlayers: platformByGame.get(g.slug) ?? 0 };
         return { slug: g.slug, stats };
       } catch {

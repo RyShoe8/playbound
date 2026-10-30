@@ -24,7 +24,10 @@ function attr(tag: string, name: string): string | null {
 }
 
 export async function fetchSuperTuxKartServers(): Promise<GameServer[]> {
-  const res = await fetch("https://online.supertuxkart.net/api/v2/server/get-all", {
+  // POST to the trailing-slash path: the bare path now answers GET with 500
+  // and POST with a 308 to this URL (checked 2026-10-29: 44 servers listed).
+  const res = await fetch("https://online.supertuxkart.net/api/v2/server/get-all/", {
+    method: "POST",
     headers: { "user-agent": "PlayBound/1.0", accept: "application/xml,text/xml,*/*" },
     next: { revalidate: 30 },
     // Catalog live stats have an 8.5s upstream budget. Abort this request

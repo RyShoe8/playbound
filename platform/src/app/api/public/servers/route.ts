@@ -1,5 +1,6 @@
 import { listGames } from "@/lib/catalog";
 import { listServersForGame } from "@/lib/servers/registry";
+import { listAllJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 import { SITE_URL } from "@/lib/site";
 
 type GameServerSummary = {
@@ -23,10 +24,12 @@ type GameServerSummary = {
 export async function GET() {
   const games = await listGames();
   const multiplayer = games.filter((g) => g.launchMethods.includes("server"));
+  // One community-server read for the whole list, not one query per game.
+  const hostedSnapshot = await listAllJoinableCommunityServers().catch(() => undefined);
 
   const settled = await Promise.allSettled(
     multiplayer.map(async (game): Promise<GameServerSummary> => {
-      const result = await listServersForGame(game.slug);
+      const result = await listServersForGame(game.slug, hostedSnapshot);
       const servers = result.servers ?? [];
       return {
         slug: game.slug,

@@ -12,6 +12,7 @@ import { supportsCustomerIdentity } from "./customerIdentityProfiles.js";
  */
 
 import { isAgentGetPath } from "./agentRoutes.js";
+import { pollHedgewars } from "./masterHedgewars.js";
 import http from "node:http";
 import net from "node:net";
 import dgram from "node:dgram";
@@ -1829,6 +1830,16 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/server-browser/hedgewars") {
+      // netserver.hedgewars.org refuses the Render-hosted master adapter.
+      try {
+        json(res, 200, { servers: await pollHedgewars() });
+      } catch (error) {
+        json(res, 502, { error: "Hedgewars lobby did not answer" });
+        console.warn("[hedgewars] lobby query failed:", error?.message || error);
+      }
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/server-browser/rimworld") {
       try {
         const binary = resolveRecipe("rimworld-together", {})?.binary;

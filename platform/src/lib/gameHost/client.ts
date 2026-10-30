@@ -33,6 +33,17 @@ export async function installationUpdatesOnHost(input?: {
   return data;
 }
 
+/** Official Hedgewars lobby rooms, queried from the VPS (the lobby refuses Render). */
+export async function fetchHedgewarsBrowser(): Promise<unknown[]> {
+  const response = await hostFetch("/server-browser/hedgewars", { method: "GET" }, 15_000);
+  if (!response) throw new Error("Game host is not configured");
+  const data = (await response.json().catch(() => null)) as { servers?: unknown; error?: unknown } | null;
+  if (!response.ok || !Array.isArray(data?.servers)) {
+    throw new Error(typeof data?.error === "string" ? data.error : "Hedgewars lobby unavailable");
+  }
+  return data.servers;
+}
+
 export async function fetchRimworldBrowser(): Promise<unknown[]> {
   const response = await hostFetch("/server-browser/rimworld", { method: "GET" }, 20_000);
   if (!response?.ok) {

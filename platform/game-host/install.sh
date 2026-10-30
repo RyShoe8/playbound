@@ -211,7 +211,7 @@ echo "==> copy agent"
 # rather than a glob, so a newly added file stays invisible until someone adds
 # it — and the agent then dies at startup importing a module that was never
 # copied. platform/src/lib/gameHost/chain.test.ts checks the two agree.
-cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" \
+cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/masterHedgewars.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" \
   "$AGENT_SRC/deusExHx.js" \
   "$AGENT_SRC/hxRuntimeFiles.js" \
   "$AGENT_SRC/crystallizedNexusUpdates.js" \

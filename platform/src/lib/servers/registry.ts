@@ -9,7 +9,7 @@ import { fetchHurryCurryServers } from "./providers/hurry-curry";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenArenaServers } from "./providers/openarena";
 import { fetchOpenRaPlayerCount, fetchOpenRaServers } from "./providers/openra";
-import { fetchRemoteMaster, fetchViaAdapterOrDirect } from "./providers/remote";
+import { fetchHedgewarsServers, fetchRemoteMaster, fetchViaAdapterOrDirect } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeeworldsServers } from "./providers/teeworlds";
 import {
@@ -138,7 +138,7 @@ const providers: Record<string, ServerProvider> = {
   xonotic: { slug: "xonotic", fetchServers: () => fetchRemoteMaster("xonotic") },
   unvanquished: { slug: "unvanquished", fetchServers: () => fetchRemoteMaster("unvanquished") },
   mindustry: { slug: "mindustry", fetchServers: () => fetchRemoteMaster("mindustry") },
-  hedgewars: { slug: "hedgewars", fetchServers: () => fetchRemoteMaster("hedgewars") },
+  hedgewars: { slug: "hedgewars", fetchServers: fetchHedgewarsServers },
   "battle-for-wesnoth": {
     slug: "battle-for-wesnoth",
     fetchServers: () => fetchRemoteWithLobbyAuth("battle-for-wesnoth"),

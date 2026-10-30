@@ -22,16 +22,13 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
   // independently, so the layout's opt-out does not cover this page.
   await connection();
   const { slug } = await params;
+  // Connect before the parallel reads: bufferCommands is off, so the bare
+  // CatalogGame.find below threw on a cold instance whenever it started
+  // before the connection the findOne branch was still opening.
+  await dbConnect();
   const [game, doc, developers, allGames, catalogTiers] = await Promise.all([
     getGame(slug, { includeUnpublished: true }),
-    (async () => {
-      try {
-        await dbConnect();
-        return await CatalogGame.findOne({ slug }).lean();
-      } catch {
-        return null;
-      }
-    })(),
+    CatalogGame.findOne({ slug }).lean().catch(() => null),
     listDevelopers(),
     CatalogGame.find({}).select("slug title access.priceType").sort({ title: 1 }).lean(),
     gameAccessTiers(),
