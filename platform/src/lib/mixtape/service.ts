@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import MultiplayerSession from "@/lib/models/MultiplayerSession";
 import { MixtapeTrack, MixtapeProfile, MixtapeMatch, MixtapeSettings } from "@/lib/models/Mixtape";
 import { starterPack, validateDeck, confirmedWinner, catalogComplete, deckSize } from "./rules";
+import { rateMatch } from "@/lib/hyperdisc/ranked";
 
 export async function catalog() {
   await dbConnect();
@@ -59,12 +60,17 @@ export async function registerMatch(userId: string, body: Record<string, unknown
   const hashes = role === "host" ? [session?.hostTokenHash] : session?.clientTokenHashes || [];
   if (!session || !hashes.includes(hash)) throw new Error("Room membership required");
   const p = await player(userId);
-  validateDeck(p.deck, p.inventory, p.tracks.map(t => t.id));
+  // Every signed-in online match counts for ranked play; only a valid deck can be dubbed from.
+  let deck: string[] = [];
+  try {
+    validateDeck(p.deck, p.inventory, p.tracks.map(t => t.id));
+    deck = p.deck;
+  } catch { /* no valid deck: the match still counts, with nothing to dub */ }
   await MixtapeMatch.updateOne({ matchId }, { $setOnInsert: { matchId, sessionId, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } }, { upsert: true });
   const existing = await MixtapeMatch.findOne({ matchId, sessionId }).lean();
   if (existing?.[String(role)] === userId) return { matchId, decks: existing.decks, players: { host: existing.host, client: existing.client } };
   const other = role === "host" ? "client" : "host";
-  const m = await MixtapeMatch.findOneAndUpdate({ matchId, sessionId, [other]: { $ne: userId }, [String(role)]: "", [`reports.${userId}`]: { $exists: false } }, { $set: { [String(role)]: userId, [`decks.${userId}`]: p.deck } }, { returnDocument: "after" }).lean();
+  const m = await MixtapeMatch.findOneAndUpdate({ matchId, sessionId, [other]: { $ne: userId }, [String(role)]: "", [`reports.${userId}`]: { $exists: false } }, { $set: { [String(role)]: userId, [`decks.${userId}`]: deck } }, { returnDocument: "after" }).lean();
   if (!m) throw new Error("Match seat already occupied");
   return { matchId, decks: m.decks, players: { host: m.host, client: m.client } };
 }
@@ -72,7 +78,7 @@ export async function matchState(userId: string, matchId: string) {
   const m = await MixtapeMatch.findOne({ matchId, $or: [{ host: userId }, { client: userId }], expiresAt: { $gt: new Date() } }).lean();
   if (!m) throw new Error("Match not found");
   const winner = confirmedWinner(m.reports, [m.host, m.client]);
-  return { matchId, decks: m.decks, players: { host: m.host, client: m.client }, winner, dubTrack: m.dubTrack };
+  return { matchId, decks: m.decks, players: { host: m.host, client: m.client }, winner, dubTrack: m.dubTrack, ratingChange: m.ratingChange || null };
 }
 export async function reportMatch(userId: string, body: Record<string, unknown>) {
   const matchId = String(body.matchId || ""), winner = String(body.winner || ""), checksum = String(body.checksum || "");
@@ -80,7 +86,11 @@ export async function reportMatch(userId: string, body: Record<string, unknown>)
   if (![m.players.host, m.players.client].includes(winner) || !/^-?\d{1,20}$/.test(checksum)) throw new Error("Invalid result");
   // A submitted result is immutable. Conflicting retries cannot rewrite history.
   await MixtapeMatch.updateOne({ matchId, [`reports.${userId}`]: { $exists: false } }, { $set: { [`reports.${userId}`]: { winner, checksum } } });
-  return matchState(userId, matchId);
+  const state = await matchState(userId, matchId);
+  if (state.winner && !state.ratingChange) {
+    return { ...state, ratingChange: await rateMatch(matchId) };
+  }
+  return state;
 }
 export async function dub(userId: string, body: Record<string, unknown>) {
   const matchId = String(body.matchId || ""), trackId = String(body.trackId || "");

@@ -25,6 +25,8 @@ const match = new Schema({
   host: { type: String, default: "" }, client: { type: String, default: "" },
   decks: { type: Schema.Types.Mixed, default: {} }, reports: { type: Schema.Types.Mixed, default: {} },
   dubTrack: { type: String, default: "" }, expiresAt: { type: Date, required: true },
+  // HyperDisc ranked play: set once both reports agree (see lib/hyperdisc/ranked.ts).
+  rated: { type: Boolean, default: false }, ratingChange: { type: Schema.Types.Mixed, default: null },
 }, { timestamps: true });
 match.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const MixtapeTrack = models.MixtapeTrack || model("MixtapeTrack", track);

@@ -59,6 +59,7 @@ import '@/lib/models/MirrorJob';
 import '@/lib/models/MirrorSettings';
 import '@/lib/models/MirrorSource';
 import '@/lib/models/Mixtape';
+import '@/lib/models/HyperdiscRanked';
 import '@/lib/models/MixtapeUpload';
 import '@/lib/models/ModClassification';
 import '@/lib/models/ModeratorAuditLog';
