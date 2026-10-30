@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ trackFind: vi.fn(), settingsFind: vi.fn(), profileFind: vi.fn(), profileUpdate: vi.fn(), matchFind: vi.fn(), matchUpdate: vi.fn(), matchClaim: vi.fn(), trackExists: vi.fn(), sessionFind: vi.fn() }));
+const mocks = vi.hoisted(() => ({ trackFind: vi.fn(), settingsFind: vi.fn(), profileFind: vi.fn(), profileUpdate: vi.fn(), matchFind: vi.fn(), matchUpdate: vi.fn(), matchClaim: vi.fn(), trackExists: vi.fn(), sessionFind: vi.fn(), rateMatch: vi.fn() }));
 const chain = (value: unknown) => ({ lean: async () => value, select: () => ({ lean: async () => value }) });
 vi.mock("@/lib/db", () => ({ default: async () => {} }));
+vi.mock("@/lib/hyperdisc/ranked", () => ({ rateMatch: mocks.rateMatch }));
 vi.mock("@/lib/models/MultiplayerSession", () => ({ default: { findOne: mocks.sessionFind } }));
 vi.mock("@/lib/models/Mixtape", () => ({
   MixtapeTrack: { find: () => ({ sort: () => ({ lean: mocks.trackFind }) }), exists: mocks.trackExists },
@@ -44,6 +45,12 @@ describe("Mixtape awards", () => {
     mocks.sessionFind.mockReturnValue(chain(null));
     await expect(registerMatch("a", { matchId: row.matchId, sessionId: "room", role: "host", sessionToken: "wrong" })).rejects.toThrow();
     expect(mocks.matchUpdate).not.toHaveBeenCalled();
+  });
+  it("rates a match once both players confirm the winner", async () => {
+    mocks.rateMatch.mockResolvedValue({ a: 16, b: -16 });
+    const state = await reportMatch("b", { matchId: row.matchId, winner: "a", checksum: "123" });
+    expect(mocks.rateMatch).toHaveBeenCalledWith(row.matchId);
+    expect(state.ratingChange).toEqual({ a: 16, b: -16 });
   });
   it("does not allow result overwrites", async () => {
     await reportMatch("a", { matchId: row.matchId, winner: "b", checksum: "999" });
