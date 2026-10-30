@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { attachDbDiagnostics } from "@/lib/dbDiagnostics";
+
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
@@ -40,6 +42,8 @@ async function connectOnce() {
       // Fail fast rather than piling up waiters behind an unhealthy cluster.
       serverSelectionTimeoutMS: 5_000,
       waitQueueTimeoutMS: 10_000,
+      // Emits per-command timings for the slow-query log in dbDiagnostics.
+      monitorCommands: true,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts);
@@ -47,6 +51,12 @@ async function connectOnce() {
 
   try {
     cached.conn = await cached.promise;
+    try {
+      const client = cached.conn.connection.getClient();
+      attachDbDiagnostics(client, client.options?.maxPoolSize ?? 0);
+    } catch {
+      /* diagnostics must never break a connection */
+    }
   } catch (e) {
     cached.promise = null;
     cached.conn = null;
