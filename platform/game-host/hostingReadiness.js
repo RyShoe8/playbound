@@ -17,6 +17,25 @@ const PENDING_BOUNDARIES = Object.freeze({
   "aneurism-iv": "The existing network namespace supervisor still launches under the shared service identity. A private UID/filesystem handoff that preserves Steam identity, credentials and saves is not implemented.",
 });
 
+// Passed protected-restore acceptance on the VPS on 2026-10-30 (staging fixture
+// ffff…f1): isolated start, stop, world backup, restore with a pre-restore
+// copy and baseline retained, restored data owned by the private UID, restart
+// on the restored data, same-process agent-restart adoption, stop, cleanup.
+// Evidence: native-identity-acceptance/<game>.json → protectedRestoreAcceptance.
+// Not covered: in-game console/RCON driven as the private UID.
+const RESTORE_ACCEPTED = Object.freeze({
+  "necesse": "",
+  "morrowind": " The own-port UDP self-test firewall rule stays required.",
+  "openhv": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
+  "openra": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space). The OpenRA spin-off editions are not covered by this acceptance.",
+  "earth-2140-trilogy": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
+  "space-station-14": " Accepted at a 4 GiB allocation.",
+  "rimworld-together": "",
+  "triplea": " Map installation is not covered.",
+  "barotrauma": "",
+  "veloren": "",
+});
+
 export function hostingReadiness(key) {
   if (!Object.hasOwn(INSTALLATION_TARGETS,key)) throw new Error("Unknown hosting installation");
   const target=INSTALLATION_TARGETS[key];
@@ -36,7 +55,7 @@ export function hostingReadiness(key) {
   if (key==="warzone-2100") reason="Requires offline enrollment and root-promoted paired engine/assets. Typed autohost settings, connection-based occupancy, same-process agent recovery, stop and data rollback passed. Executable mod installation remains disabled.";
   if (key==="freeciv") reason="Requires offline enrollment and root-promoted paired engine/libraries/rulesets. Native query, same-process agent recovery, stop and data rollback passed. Executable ruleset/plugin installation remains disabled.";
   if (key==="freedoom") reason="Only the explicit Zandronum edition with the pinned Freedoom 2 IWAD is supported by this identity profile. Requires offline enrollment and a root-promoted engine/assets. Native query, restart and rollback passed; base/other Doom engines are excluded.";
-  if (key==="factorio") { isolation="blocked"; reason="Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (2 GiB envelope). Fenced world creation/restore and customer control acceptance are still required before enrollment."; }
+  if (key==="factorio") reason="Requires offline enrollment and at least a 2 GiB memory allocation (1 GiB fails world generation under the address-space cap). Isolated start, protected backup/restore with a pre-restore copy, restart on the restored world, same-process agent recovery and stop passed on the VPS. In-game console control as the private UID is not yet verified.";
   if (key==="unvanquished") { isolation="blocked"; reason="Local identity candidate needs NaCl sandbox startup, recovery and snapshot acceptance before customer enrollment."; }
   if (["openra","openhv","earth-2140-trilogy","combined-arms","romanovs-vengeance","tiberian-dawn-hd","crystallized-nexus"].includes(key)) { isolation="blocked"; reason="Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment."; }
   if (["openra","openhv","earth-2140-trilogy"].includes(key)) { isolation="blocked"; reason="Isolated start, same-process agent restart, stop and migration rollback passed on the VPS (4 GiB envelope, 12 GiB address space). Protected restore and customer control acceptance are still required before enrollment."; }
@@ -67,5 +86,9 @@ export function hostingReadiness(key) {
     reason = "Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. UID-aware controls remain unverified; customer enrollment remains unavailable.";
   }
   if (key==="luanti") contentReason="Executable mods remain disabled: the pinned LuaJIT engine predates GHSA-g596-mf82-w8c3's fix. Engine mitigation/upgrade and content acceptance are required.";
+  if (Object.hasOwn(RESTORE_ACCEPTED,key)) {
+    isolation = "operator_rollout";
+    reason = "Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as the private UID is not yet verified." + RESTORE_ACCEPTED[key];
+  }
   return {isolation,identityProfile:profile||null,reason,executableContentEnabled:false,contentReason};
 }

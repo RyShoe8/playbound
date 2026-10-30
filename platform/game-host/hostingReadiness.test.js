@@ -24,37 +24,40 @@ test("isolated engine implementations cannot claim automatic enrollment or safe 
   assert.equal(hostingReadiness("counter-strike-2").isolation,"blocked");
 });
 
-test("Factorio candidate cannot be advertised as accepted isolation",()=>{
-  assert.equal(hostingReadiness("factorio").isolation,"blocked");
-  assert.equal(hostingReadiness("factorio").executableContentEnabled,false);
-  assert.match(hostingReadiness("factorio").reason,/acceptance/);
+test("Factorio is operator rollout after protected-restore acceptance, with its memory floor stated",()=>{
+  const value=hostingReadiness("factorio");
+  assert.equal(value.isolation,"operator_rollout");
+  assert.equal(value.executableContentEnabled,false);
+  assert.match(value.reason,/2 GiB/);
+  assert.match(value.reason,/restore/);
 });
 
 test("Unvanquished candidate stays blocked before fenced NaCl acceptance",()=>{assert.equal(hostingReadiness("unvanquished").isolation,"blocked");assert.equal(hostingReadiness("unvanquished").executableContentEnabled,false);});
 
 
-test("seven OpenRA engine-family candidates remain blocked until runtime acceptance",()=>{
-  for(const key of ["openra","openhv","combined-arms","earth-2140-trilogy","romanovs-vengeance","tiberian-dawn-hd","crystallized-nexus"]){
+test("OpenRA spin-off editions stay blocked until their own runtime acceptance",()=>{
+  for(const key of ["combined-arms","romanovs-vengeance","tiberian-dawn-hd","crystallized-nexus"]){
     assert.equal(hostingReadiness(key).isolation,"blocked",key);
     assert.equal(hostingReadiness(key).executableContentEnabled,false,key);
     assert.ok(hostingReadiness(key).identityProfile,key);
   }
 });
 
-test("new .NET identity candidates cannot be enrolled as accepted",()=>{for(const key of ["rimworld-together","space-station-14"]){assert.equal(hostingReadiness(key).isolation,"blocked");assert.equal(hostingReadiness(key).executableContentEnabled,false);}});
+test("games that passed protected-restore acceptance are operator rollout, never executable content",()=>{
+  for(const key of ["openra","openhv","earth-2140-trilogy","rimworld-together","space-station-14","triplea","necesse","barotrauma","morrowind","veloren"]){
+    const value=hostingReadiness(key);
+    assert.equal(value.isolation,"operator_rollout",key);
+    assert.equal(value.executableContentEnabled,false,key);
+    assert.match(value.reason,/restore/,key);
+    assert.match(value.reason,/console control as the private UID is not yet verified/,key);
+  }
+});
 
-test("TripleA Java25 candidate stays blocked pending runtime acceptance",()=>{assert.equal(hostingReadiness("triplea").isolation,"blocked");assert.equal(hostingReadiness("triplea").executableContentEnabled,false);});
-
-test("Necesse paired-Java candidate stays blocked pending runtime acceptance",()=>{assert.equal(hostingReadiness("necesse").isolation,"blocked");assert.equal(hostingReadiness("necesse").executableContentEnabled,false);});
-
-test("Veloren native/assets candidate stays blocked pending world acceptance",()=>{assert.equal(hostingReadiness("veloren").isolation,"blocked");assert.equal(hostingReadiness("veloren").executableContentEnabled,false);});
-
-test("Barotrauma candidate remains blocked before engine acceptance",()=>{assert.equal(hostingReadiness("barotrauma").isolation,"blocked");assert.equal(hostingReadiness("barotrauma").executableContentEnabled,false);});
 
 test("DST candidate stays blocked before cluster acceptance",()=>{assert.equal(hostingReadiness("dont-starve-together").isolation,"blocked");assert.equal(hostingReadiness("dont-starve-together").executableContentEnabled,false);});
 
 test("new native family candidates cannot claim accepted isolation",()=>{
-  for(const game of ["barotrauma","dont-starve-together","morrowind","team-fortress-2","counter-strike-2","trackmania","unturned"]){
+  for(const game of ["dont-starve-together","team-fortress-2","counter-strike-2","trackmania","unturned"]){
     const value=hostingReadiness(game);
     assert.equal(value.isolation,"blocked",game);
     assert.equal(value.identityProfile,`${game}-unix-v1`);
