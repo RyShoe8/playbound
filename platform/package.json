@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && npm run check:auth-urls",
+    "db:ensure-indexes": "tsx scripts/ensure-indexes.ts",
+    "db:ensure-indexes:apply": "tsx scripts/ensure-indexes.ts --apply",
     "start": "next start",
     "lint": "eslint",
     "load-test:polling": "tsx scripts/load-test-polling.ts",

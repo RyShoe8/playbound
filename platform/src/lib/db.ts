@@ -29,13 +29,22 @@ async function connectOnce() {
   }
 
   if (!cached.promise) {
-    // Keep per-instance pools small: serverless instances each own a pool.
+    // Per-instance pools stay bounded: serverless instances each own a pool.
+    // 20 since the cluster upgrade (Oct 2026) raised the connection limit; 10
+    // left page queries waiting behind each other on busy instances.
     // A TLS alert can also reflect a transient server/network failure; it does
     // not, by itself, establish that the database exhausted its connections.
     const opts = {
       bufferCommands: false,
-      maxPoolSize: 10,
+      maxPoolSize: 20,
       minPoolSize: 0,
+      // The driver opens 2 connections at a time by default; a cold instance
+      // serving a burst needs more without waiting on each TLS handshake.
+      maxConnecting: 4,
+      // Never build indexes from a live request: every cold instance sent
+      // createIndexes for every model, holding connections for minutes.
+      // The hourly cron api/cron/ensure-indexes creates missing ones instead.
+      autoIndex: process.env.NODE_ENV !== "production" || process.env.MONGO_AUTO_INDEX === "1",
       // Return a connection to the pool quickly; idle lambdas should not sit on
       // sockets the rest of the fleet could be using.
       maxIdleTimeMS: 60_000,

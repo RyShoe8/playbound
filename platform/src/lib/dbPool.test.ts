@@ -27,8 +27,15 @@ describe("mongo connection options", () => {
     const max = numericOption("maxPoolSize");
     expect(max, "maxPoolSize must be set explicitly").not.toBeNull();
     // 100 is the default that caused this; anything near it defeats the point.
-    expect(max!).toBeLessThanOrEqual(10);
+    // Raised from 10 to 20 after the cluster upgrade raised its connection limit.
+    expect(max!).toBeLessThanOrEqual(25);
     expect(max!).toBeGreaterThan(0);
+  });
+
+  it("never builds indexes from live production requests", () => {
+    // autoIndex made every cold instance send createIndexes for every model,
+    // holding pooled connections for minutes. Deploys create indexes instead.
+    expect(SOURCE).toMatch(/autoIndex:\s*process\.env\.NODE_ENV !== "production"/);
   });
 
   it("does not hold idle sockets open indefinitely", () => {
