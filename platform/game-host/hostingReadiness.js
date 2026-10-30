@@ -27,13 +27,17 @@ const RESTORE_ACCEPTED = Object.freeze({
   "necesse": "",
   "morrowind": " The own-port UDP self-test firewall rule stays required.",
   "openhv": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
-  "openra": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space). The OpenRA spin-off editions are not covered by this acceptance.",
+  "openra": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
   "earth-2140-trilogy": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
   "space-station-14": " Accepted at a 4 GiB allocation.",
   "rimworld-together": "",
   "triplea": " Map installation is not covered.",
   "barotrauma": "",
   "veloren": "",
+  "combined-arms": " Needs the 2 GiB allocation; verified running its own mod (ca).",
+  "romanovs-vengeance": " Needs the 2 GiB allocation; verified running its own mod (rv).",
+  "tiberian-dawn-hd": " Needs the 2 GiB allocation; verified running its own mod (cnc).",
+  "crystallized-nexus": " Needs the 2 GiB allocation; verified running its own mod (cn).",
 });
 
 export function hostingReadiness(key) {

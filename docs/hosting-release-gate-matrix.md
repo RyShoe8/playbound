@@ -5,8 +5,8 @@ files on the VPS. The release gate (plan step 7) needs every row to have saved a
 evidence or an explicit surfaced limitation; this table shows which do. Regenerate it after
 each acceptance instead of editing it by hand.
 
-Targets: 52. Isolation: operator_rollout 34, pending 3, blocked 15. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 39, none 12, recorded blocker 1. World backups: yes 37, no 15.
+Targets: 52. Isolation: operator_rollout 38, pending 3, blocked 11. Updates: manual (declared) 15, automatic 37.
+Acceptance evidence: accepted 43, none 8, recorded blocker 1. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -22,11 +22,11 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Battlefield 1942 (reviewed static engine) (`battlefield-1942-anthology`) | manual (declared) | implemented | blocked | accepted | no | Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), sealed stock settings, same-process agent restart, stop and migration rollback passed on the VPS. Protected restore and customer c… |
 | BombSquad (paired controller and game distribution) (`bombsquad`) | automatic | implemented | blocked | recorded blocker | no | Local paired Python/controller namespace candidate implemented; the previous isolated transport startup failed. Native transport, controller shutdown, recovery and restore acceptance remain required. Do not enroll custom… |
 | BZFlag (reviewed Ubuntu native server) (`bzflag`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
-| OpenRA · Combined Arms (`combined-arms`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| OpenRA · Combined Arms (`combined-arms`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Core Keeper (`core-keeper`) | automatic | implemented | blocked | accepted | yes | Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. UID-aware controls remain unverified; customer enrollment remains unavailable. |
 | Counter-Strike 2 (`counter-strike-2`) | automatic | implemented | blocked | none | no | Local native 64-bit Source candidate with pinned depots and private config/log overlays implemented; storage publication, startup, RCON, recovery and restore acceptance remain required. |
 | Counter-Strike: Source (`counter-strike-source`) | automatic | implemented | blocked | accepted | no | Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), port bind, same-process agent restart, stop and migration rollback passed on the VPS. RCON, protected restore and customer control… |
-| OpenRA · Crystallized Nexus (`crystallized-nexus`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| OpenRA · Crystallized Nexus (`crystallized-nexus`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Deus Ex GOTY (HX) (`deus-ex`) | automatic | none | pending | none | no | HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable. |
 | Don't Starve Together (`dont-starve-together`) | automatic | implemented | blocked | none | yes | Local pinned 64-bit native candidate with private cluster and fenced Steam ports implemented; startup, controls, recovery and restore acceptance remain required. |
 | Earth 2140 Trilogy (OpenE2140) (`earth-2140-trilogy`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
@@ -50,13 +50,13 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | OpenTTD (reviewed Ubuntu native server) (`openttd`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | RVGL (reviewed Linux engine) (`re-volt-rvgl`) | automatic | implemented | operator_rollout | accepted | no | Fresh private-UID provisioning, root-managed lobby start, live capture/navigation, same-process agent restart and stop passed on the VPS. Enrollment requires an explicit tier selection. A complete race remains unverified… |
 | RimWorld Together (reviewed PlayBound source build) (`rimworld-together`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
-| OpenRA · Romanov's Vengeance (RA2) (`romanovs-vengeance`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| OpenRA · Romanov's Vengeance (RA2) (`romanovs-vengeance`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Space Station 14 (paired Robust engine and content) (`space-station-14`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | SuperTuxKart (reviewed Ubuntu native server) (`supertuxkart`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires the root-promoted adapted engine and an allocated gameplay/discovery port pair. Query, restart adoption and rollback passed; each server still needs explicit offline enrollment. |
 | Team Fortress 2 (`team-fortress-2`) | automatic | implemented | blocked | accepted | no | Isolated start with the pinned 14 GiB depot bundle, A2S query, same-process agent restart, stop and migration rollback passed on the VPS. RCON, protected restore and customer control acceptance are still required before … |
 | Teeworlds (reviewed Ubuntu native server) (`teeworlds`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Terraria (reviewed 1.4.5.8 Linux server) (`terraria`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment and a root-published matching native loader, assembly and libraries. Private world creation/reload, connection-based occupancy, same-process recovery, scoped graceful stop and snapshot restore… |
-| OpenRA · Tiberian Dawn HD (`tiberian-dawn-hd`) | automatic | none | blocked | none | no | Local typed engine-family candidate implemented; private .NET/AppImage startup, recovery and protected restore acceptance are required before enrollment. |
+| OpenRA · Tiberian Dawn HD (`tiberian-dawn-hd`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Trackmania (paired dedicated engine and Packs) (`trackmania`) | automatic | implemented | blocked | accepted | yes | Isolated start with a Nadeo dedicated-server account, map load, same-process agent restart, stop and migration rollback passed on the VPS. Each server still needs its own customer-supplied dedicated-server account; prote… |
 | TripleA (reviewed Java 25 headless server) (`triplea`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Unturned (`unturned`) | automatic | implemented | blocked | none | yes | Local pinned Unity candidate with namespace-only private Servers binding and private GSLT implemented; startup, Unity data-path behavior, console, recovery and restore acceptance remain required. |
@@ -67,23 +67,19 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Xonotic (reviewed 0.8.6 dedicated engine) (`xonotic`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment, a root-promoted engine and immutable pinned 0.8.6 asset copy. Native player query, restart adoption and rollback passed. New isolated engine/assets require operator review after updates. |
 | YSoccer (PlayBound dedicated Java server) (`ysoccer`) | automatic | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 
-## Still open (18)
+## Still open (14)
 
 - **ANEURISM IV** — pending, evidence: none
 - **Battlefield 1942 (reviewed static engine)** — blocked, evidence: accepted
 - **BombSquad (paired controller and game distribution)** — blocked, evidence: recorded blocker
-- **OpenRA · Combined Arms** — blocked, evidence: none
 - **Core Keeper** — blocked, evidence: accepted
 - **Counter-Strike 2** — blocked, evidence: none
 - **Counter-Strike: Source** — blocked, evidence: accepted
-- **OpenRA · Crystallized Nexus** — blocked, evidence: none
 - **Deus Ex GOTY (HX)** — pending, evidence: none
 - **Don't Starve Together** — blocked, evidence: none
 - **GoldenEye: Source (SDK + mod)** — pending, evidence: none
 - **Open Fortress (SDK + mod)** — blocked, evidence: none
-- **OpenRA · Romanov's Vengeance (RA2)** — blocked, evidence: none
 - **Team Fortress 2** — blocked, evidence: accepted
-- **OpenRA · Tiberian Dawn HD** — blocked, evidence: none
 - **Trackmania (paired dedicated engine and Packs)** — blocked, evidence: accepted
 - **Unturned** — blocked, evidence: none
 - **Unvanquished (engine and game packages)** — blocked, evidence: none

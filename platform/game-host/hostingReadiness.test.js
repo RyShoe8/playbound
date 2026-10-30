@@ -35,9 +35,9 @@ test("Factorio is operator rollout after protected-restore acceptance, with its 
 test("Unvanquished candidate stays blocked before fenced NaCl acceptance",()=>{assert.equal(hostingReadiness("unvanquished").isolation,"blocked");assert.equal(hostingReadiness("unvanquished").executableContentEnabled,false);});
 
 
-test("OpenRA spin-off editions stay blocked until their own runtime acceptance",()=>{
+test("OpenRA spin-off editions are accepted against their own mods",()=>{
   for(const key of ["combined-arms","romanovs-vengeance","tiberian-dawn-hd","crystallized-nexus"]){
-    assert.equal(hostingReadiness(key).isolation,"blocked",key);
+    assert.equal(hostingReadiness(key).isolation,"operator_rollout",key);
     assert.equal(hostingReadiness(key).executableContentEnabled,false,key);
     assert.ok(hostingReadiness(key).identityProfile,key);
   }
