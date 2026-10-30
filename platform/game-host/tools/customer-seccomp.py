@@ -16,18 +16,24 @@ DENIED = (
 )
 
 
-def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False, guarded_x86=False):
+def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False, guarded_x86=False, guarded_streams=False):
     """guarded_x86: a 32-bit engine whose sockets go through the socketcall multiplexer.
 
     socketcall cannot be argument-filtered, so it is admitted only inside the
     enforced per-UID AppArmor policy, which limits Unix sockets to same-label
     peers (host abstract sockets stay unreachable). `ipc` stays denied.
+
+    guarded_streams: the NaCl seqpacket-pair profile plus AF_UNIX stream sockets,
+    admitted only inside that same enforced AppArmor policy. Daemon (Unvanquished)
+    always opens a filesystem singleton socket in $TMPDIR and has no flag to skip it.
     """
     if (type(private_display) is not bool or type(seqpacket_pairs) is not bool or type(guarded_x86) is not bool
+            or type(guarded_streams) is not bool
+            or (guarded_streams and (private_display or legacy_x86 or guarded_x86 or seqpacket_pairs))
             or (seqpacket_pairs and (private_display or legacy_x86 or guarded_x86))
             or (guarded_x86 and (private_display or legacy_x86))):
         raise ValueError('Invalid private display policy')
-    if private_display or guarded_x86:
+    if private_display or guarded_x86 or guarded_streams:
         uid = os.getuid()
         if legacy_x86 or not 40000 <= uid <= 40255:
             raise ValueError('Reviewed private display identity required')
@@ -78,7 +84,7 @@ def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False
         syscall=library.seccomp_syscall_resolve_name(b'socket')
         if syscall < 0:
             raise ValueError('Native Unix socket boundary is unavailable')
-        if private_display or guarded_x86:
+        if private_display or guarded_x86 or guarded_streams:
             # Only stream sockets are admitted, and only after entering the
             # accepted per-UID AppArmor peer boundary. No datagram reconnects.
             for kind in range(16):
@@ -93,7 +99,7 @@ def sealed_filter(legacy_x86=False, private_display=False, seqpacket_pairs=False
         if pair < 0 or library.seccomp_rule_add_array(context,0x00050000|errno.EPERM,pair,1,ctypes.byref(non_unix)) != 0:
             raise ValueError('Private stream IPC boundary is unavailable')
         for kind in range(16):
-            if kind == 1 or (private_display and kind == 2) or (seqpacket_pairs and kind == 5): continue  # streams; guarded same-label datagram pairs; anonymous connected seqpacket pairs for the NaCl loader
+            if kind == 1 or (private_display and kind == 2) or ((seqpacket_pairs or guarded_streams) and kind == 5): continue  # streams; guarded same-label datagram pairs; anonymous connected seqpacket pairs for the NaCl loader
             arguments=(Argument*2)(family,Argument(arg=1,op=7,a=15,b=kind))  # MASKED_EQ
             if library.seccomp_rule_add_array(context,0x00050000|errno.EPERM,pair,2,arguments) != 0:
                 raise ValueError('Private stream IPC type boundary is unavailable')

@@ -216,6 +216,9 @@ class RuntimeBoundaries(unittest.TestCase):
             guarded = module.private_display_handoff(args, 40000, 20, 21, guarded_x86=True)
             self.assertEqual(guarded[7:13], ['/usr/bin/python3', '-I', '/proc/self/fd/20', '21', '--guarded-x86', '--unshare-user'])
             self.assertIn('counter-strike-source', module.GUARDED_X86_GAMES)
+            streams = module.private_display_handoff(args, 40000, 20, 21, guarded_streams=True)
+            self.assertEqual(streams[7:13], ['/usr/bin/python3', '-I', '/proc/self/fd/20', '21', '--guarded-streams', '--unshare-user'])
+            self.assertEqual(module.GUARDED_STREAM_GAMES, ('unvanquished',))
             with self.assertRaises(ValueError):
                 module.private_display_handoff(['/usr/bin/bwrap', '--seccomp', '22', '--', '/fixed'], 40000, 20, 21)
             policy.verify_enforced.side_effect = ValueError('missing enforced policy')

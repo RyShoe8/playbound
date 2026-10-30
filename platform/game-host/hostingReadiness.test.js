@@ -32,7 +32,7 @@ test("Factorio is operator rollout after protected-restore acceptance, with its 
   assert.match(value.reason,/restore/);
 });
 
-test("Unvanquished candidate stays blocked before fenced NaCl acceptance",()=>{assert.equal(hostingReadiness("unvanquished").isolation,"blocked");assert.equal(hostingReadiness("unvanquished").executableContentEnabled,false);});
+test("Unvanquished is operator rollout only with the per-UID AppArmor profile",()=>{assert.equal(hostingReadiness("unvanquished").isolation,"operator_rollout");assert.match(hostingReadiness("unvanquished").reason,/AppArmor profile loaded/);assert.equal(hostingReadiness("unvanquished").executableContentEnabled,false);});
 
 
 test("OpenRA spin-off editions are accepted against their own mods",()=>{
@@ -57,7 +57,7 @@ test("games that passed protected-restore acceptance are operator rollout, never
 test("DST candidate stays blocked before cluster acceptance",()=>{assert.equal(hostingReadiness("dont-starve-together").isolation,"blocked");assert.equal(hostingReadiness("dont-starve-together").executableContentEnabled,false);});
 
 test("new native family candidates cannot claim accepted isolation",()=>{
-  for(const game of ["dont-starve-together","team-fortress-2","counter-strike-2","trackmania","unturned"]){
+  for(const game of ["dont-starve-together","counter-strike-2","trackmania","unturned"]){
     const value=hostingReadiness(game);
     assert.equal(value.isolation,"blocked",game);
     assert.equal(value.identityProfile,`${game}-unix-v1`);
@@ -96,4 +96,23 @@ test("RVGL identity is available for explicit operator rollout after fresh lifec
   assert.equal(value.executableContentEnabled,false);
   assert.match(value.reason,/Fresh private-UID provisioning/);
   assert.doesNotMatch(value.reason,/human Join/i);
+});
+
+test("TF2 is operator rollout with RCON verified and no world backups", () => {
+  const value = hostingReadiness("team-fortress-2");
+  assert.equal(value.isolation, "operator_rollout");
+  assert.equal(value.executableContentEnabled, false);
+  assert.match(value.reason, /RCON .*answered as the private UID/);
+  assert.match(value.reason, /no world data/);
+});
+
+test("guarded i386 Source-family games are operator rollout only with the per-UID AppArmor profile", () => {
+  for (const key of ["counter-strike-source", "open-fortress", "battlefield-1942-anthology"]) {
+    const value = hostingReadiness(key);
+    assert.equal(value.isolation, "operator_rollout", key);
+    assert.equal(value.executableContentEnabled, false, key);
+    assert.match(value.reason, /per-UID AppArmor profile loaded/, key);
+    assert.match(value.reason, /no world data/, key);
+  }
+  for (const key of ["counter-strike-source", "open-fortress"]) assert.match(hostingReadiness(key).reason, /RCON .*answered as the private UID/, key);
 });

@@ -425,7 +425,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
     if GAME == 'openarena': game_args = ['+set','com_basegame','baseoa','+set','fs_basepath','/usr/lib/openarena-server','+set','fs_homepath','/server','+set','com_legacyprotocol','71','+set','com_protocol','71','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oa_dm1']
     if GAME == 'flightgear': game_args = ['-p',str(port),'-a',str(port+1),'-b','0','-d']
     if GAME in ('openra','openhv','earth-2140-trilogy'):target,game_args=trusted_module('pb_openra','playbound-customer-openra').arguments(settings,port)
-    if GAME=='unvanquished':game_args=['-homepath','/server','-pakpath','/game-data/pkg','-set','net_port',str(port),'-set','sv_hostname',settings['name'],'-set','sv_maxclients',str(settings['maxPlayers']),'-set','g_bot_defaultFill',str(settings['botFill']),'+map',settings['map']]
+    if GAME=='unvanquished':game_args=['-nocrashhandler','-homepath','/server','-pakpath','/game-data/pkg','-set','net_port',str(port),'-set','sv_hostname',settings['name'],'-set','sv_maxclients',str(settings['maxPlayers']),'-set','g_bot_defaultFill',str(settings['botFill']),'+map',settings['map']]
     if GAME=='re-volt-rvgl':game_args=['-I','/rvgl-bootstrap.py']
     if GAME=='core-keeper':game_args=['-I','/corekeeper-bootstrap.py']
     if GAME=='dont-starve-together':game_args=['-I','/dst-bootstrap.py']
@@ -460,7 +460,7 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
     if GAME == 'battle-for-wesnoth': game_args = ['-c','/server/server.cfg','-p',str(port)]
     if GAME == 'openttd': game_args = ['-D','0.0.0.0:'+str(port),'-c','/server/server.cfg']
     if GAME == 'luanti': game_args = ['--port',str(port),'--world','/server/world','--gameid','minetest','--config','/server/server.cfg','--logfile','/server/minetest.log']
-    return ['/usr/bin/prlimit', '--as=' + str(max(16 * 1024 ** 3 if GAME == 'core-keeper' else 1024 ** 3, memory * (3 if GAME in ('openra','openhv','earth-2140-trilogy') else 2) * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
+    return ['/usr/bin/prlimit', '--as=' + str(max(16 * 1024 ** 3 if GAME == 'core-keeper' else 128 * 1024 ** 3 if GAME == 'unvanquished' else 1024 ** 3, memory * (3 if GAME in ('openra','openhv','earth-2140-trilogy') else 2) * 1024 ** 2)), '--nofile=1024', '--core=0', '--', '/usr/bin/bwrap',
             *(['--seccomp', str(seccomp_fd)] if seccomp_fd is not None else []),
             '--unshare-user', '--unshare-pid', '--unshare-ipc', '--unshare-uts', '--unshare-cgroup', '--disable-userns', '--cap-drop', 'ALL', '--die-with-parent',
             '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64', '--symlink', 'usr/bin', '/bin',
@@ -527,9 +527,12 @@ def verify_supervisor_scope(scope):
 # 32-bit engines that open sockets through the socketcall multiplexer. They run inside
 # the enforced per-UID AppArmor profile, which keeps Unix sockets to same-label peers.
 GUARDED_X86_GAMES = ('counter-strike-source', 'open-fortress', 'battlefield-1942-anthology')
+# Native engines that need AF_UNIX stream sockets (Daemon's singleton socket), admitted
+# only inside the same enforced per-UID AppArmor profile.
+GUARDED_STREAM_GAMES = ('unvanquished',)
 
 
-def private_display_handoff(arguments, uid, entry_fd, source_fd, guarded_x86=False):
+def private_display_handoff(arguments, uid, entry_fd, source_fd, guarded_x86=False, guarded_streams=False):
     """Internal root-built command; identity is dropped by Popen before exec."""
     policy = trusted_module('pb_display_policy', 'playbound-customer-display-policy')
     label = policy.verify_enforced(uid)
@@ -541,7 +544,7 @@ def private_display_handoff(arguments, uid, entry_fd, source_fd, guarded_x86=Fal
         raise ValueError('Display filter must be constructed after identity drop')
     return ['/usr/bin/aa-exec', '-p', label, '--', *arguments[:position],
             '/usr/bin/python3', '-I', '/proc/self/fd/'+str(entry_fd), str(source_fd),
-            *(['--guarded-x86'] if guarded_x86 else []),
+            *(['--guarded-x86'] if guarded_x86 else ['--guarded-streams'] if guarded_streams else []),
             *arguments[position+1:]]
 
 
@@ -912,11 +915,11 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             if GAME=='bombsquad':python_directory=trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game='bombsquad-python')
             if GAME in ('hurry-curry','assaultcube','freedoom'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets(game=GAME)
             syscalls = trusted_module('pb_syscalls', 'playbound-customer-seccomp')
-            if GAME in ('core-keeper','re-volt-rvgl') or GAME in GUARDED_X86_GAMES:
+            if GAME in ('core-keeper','re-volt-rvgl') or GAME in GUARDED_X86_GAMES or GAME in GUARDED_STREAM_GAMES:
                 display_entry_fd = os.open('/usr/local/libexec/playbound-customer-display-entry', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
                 display_source_fd = os.open('/usr/local/libexec/playbound-customer-seccomp', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
             else:
-                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter(seqpacket_pairs=True) if GAME=='unvanquished' else syscalls.sealed_filter()
+                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter()
             inherited = tuple(descriptor for descriptor in (fd,engine_fd,seccomp_fd,dns_fd,display_entry_fd,display_source_fd) if descriptor is not None)
             inherited += tuple(descriptor for descriptor, _ in identity_files)
             inherited += tuple(descriptor for descriptor,_ in assets)
@@ -927,8 +930,8 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             arguments = command(root / 'data', fd, port, memory, engine_fd, json.loads(text) if GAME != 'teeworlds' else None, seccomp_fd, dns_fd, assets, asset_directory, identity_fd, python_directory, dependency_directory, identity_files)
             delimiter = arguments.index('--',arguments.index('/usr/bin/bwrap'))
             expected_command = arguments[delimiter+1:]
-            if GAME in ('core-keeper','re-volt-rvgl') or GAME in GUARDED_X86_GAMES:
-                arguments = private_display_handoff(arguments, account['uid'], display_entry_fd, display_source_fd, guarded_x86=GAME in GUARDED_X86_GAMES)
+            if GAME in ('core-keeper','re-volt-rvgl') or GAME in GUARDED_X86_GAMES or GAME in GUARDED_STREAM_GAMES:
+                arguments = private_display_handoff(arguments, account['uid'], display_entry_fd, display_source_fd, guarded_x86=GAME in GUARDED_X86_GAMES, guarded_streams=GAME in GUARDED_STREAM_GAMES)
             child = subprocess.Popen(arguments, user=account['uid'], group=account['gid'], extra_groups=[], env=ENV, cwd='/', stdin=subprocess.PIPE if GAME in ('terraria','rimworld-together') else subprocess.DEVNULL, pass_fds=inherited)
             wrapper_identity = game_identity(child.pid)
             control = {}

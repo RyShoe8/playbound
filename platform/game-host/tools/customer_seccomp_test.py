@@ -177,6 +177,46 @@ print('seqpacket-filter-passed')
         result = subprocess.run(['/usr/bin/python3', '-I', '-c', code, str(descriptor)], pass_fds=(descriptor,), capture_output=True, text=True, timeout=10, check=True)
         self.assertEqual(result.stdout.strip(), 'seqpacket-filter-passed')
 
+    def test_guarded_streams_require_the_enforced_label_and_are_exclusive(self):
+        for kwargs in ({'private_display': True}, {'legacy_x86': True}, {'guarded_x86': True}, {'seqpacket_pairs': True}):
+            with patch.object(module.os, 'getuid', return_value=40000), self.assertRaises(ValueError):
+                module.sealed_filter(guarded_streams=True, **kwargs)
+        with self.assertRaises(ValueError):
+            module.sealed_filter(guarded_streams=1)
+        with patch.object(module.os, 'getuid', return_value=1000), self.assertRaises(ValueError):
+            module.sealed_filter(guarded_streams=True)
+        for label in ('unconfined', 'playbound-customer-ipc-40001 (enforce)', 'playbound-customer-ipc-40000 (complain)'):
+            with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value=label):
+                with self.subTest(label=label), self.assertRaises(ValueError):
+                    module.sealed_filter(guarded_streams=True)
+
+    def test_guarded_streams_admit_unix_streams_and_seqpacket_pairs_only_in_real_kernel(self):
+        with patch.object(module.os, 'getuid', return_value=40000), patch.object(module.Path, 'read_text', return_value='playbound-customer-ipc-40000 (enforce)'):
+            descriptor = module.sealed_filter(guarded_streams=True)
+        self.addCleanup(os.close, descriptor)
+        code = '''import ctypes, errno, os, socket, sys
+raw=os.read(int(sys.argv[1]),32768)
+class Instruction(ctypes.Structure):
+ _fields_=[('code',ctypes.c_ushort),('jt',ctypes.c_ubyte),('jf',ctypes.c_ubyte),('k',ctypes.c_uint)]
+class Program(ctypes.Structure):
+ _fields_=[('length',ctypes.c_ushort),('filter',ctypes.POINTER(Instruction))]
+instructions=(Instruction*(len(raw)//8)).from_buffer_copy(raw)
+program=Program(len(instructions),instructions)
+libc=ctypes.CDLL(None,use_errno=True)
+assert libc.prctl(38,1,0,0,0)==0
+assert libc.syscall(317,1,0,ctypes.byref(program))==0
+socket.socket(socket.AF_UNIX,socket.SOCK_STREAM).close()
+left,right=socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)
+left.send(b'loader');assert right.recv(32)==b'loader'
+for call in (lambda: socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM),lambda: socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET),lambda: socket.socketpair(socket.AF_UNIX,socket.SOCK_DGRAM)):
+ try: call()
+ except OSError as error: assert error.errno==errno.EPERM
+ else: raise AssertionError('unreviewed Unix socket was allowed')
+print('guarded-streams-passed')
+'''
+        result = subprocess.run(['/usr/bin/python3', '-I', '-c', code, str(descriptor)], pass_fds=(descriptor,), capture_output=True, text=True, timeout=10, check=True)
+        self.assertEqual(result.stdout.strip(), 'guarded-streams-passed')
+
     def test_filter_is_bounded_sealed_and_cannot_be_modified(self):
         descriptor = module.sealed_filter()
         try:
