@@ -79,13 +79,14 @@ test("unimplemented legacy/display/special supervisors have explicit limitations
   assert.match(bombsquad.reason,/transport startup failed/);
 });
 
-test("Core Keeper handoff stays blocked after isolated lifecycle acceptance", () => {
+test("Core Keeper is operator rollout: lifecycle and settings are its only controls", () => {
   const value = hostingReadiness("core-keeper");
   assert.equal(value.identityProfile, "core-keeper-unix-v1");
-  assert.equal(value.isolation, "blocked");
+  assert.equal(value.isolation, "operator_rollout");
   assert.equal(value.executableContentEnabled, false);
   assert.doesNotMatch(value.reason, /Human Join/i);
-  assert.match(value.reason, /UID-aware controls/);
+  assert.match(value.reason, /AppArmor display policy/);
+  assert.match(value.reason, /no in-game console/);
 });
 
 test("RVGL identity is available for explicit operator rollout after fresh lifecycle acceptance", () => {

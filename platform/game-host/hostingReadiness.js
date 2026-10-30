@@ -86,8 +86,12 @@ export function hostingReadiness(key) {
     reason = "Fresh private-UID provisioning, root-managed lobby start, live capture/navigation, same-process agent restart and stop passed on the VPS. Enrollment requires an explicit tier selection. A complete race remains unverified; RVGL has no world-data backup support or enforced lobby player cap.";
   }
   if (key === "core-keeper") {
-    isolation = "blocked";
-    reason = "Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. UID-aware controls remain unverified; customer enrollment remains unavailable.";
+    // PlayBound exposes no in-game console/RCON for Core Keeper: customers get
+    // typed settings (ServerConfig.json) and start/stop/restart, all exercised
+    // by the accepted run. The earlier "UID-aware controls" gate named
+    // controls this game does not have.
+    isolation = "operator_rollout";
+    reason = "Requires offline enrollment with its per-UID AppArmor display policy loaded. Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. Core Keeper has no in-game console controls; settings and lifecycle controls are what customers get.";
   }
   if (key==="luanti") contentReason="Executable mods remain disabled: the pinned LuaJIT engine predates GHSA-g596-mf82-w8c3's fix. Engine mitigation/upgrade and content acceptance are required.";
   if (Object.hasOwn(RESTORE_ACCEPTED,key)) {

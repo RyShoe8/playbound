@@ -5,7 +5,7 @@ files on the VPS. The release gate (plan step 7) needs every row to have saved a
 evidence or an explicit surfaced limitation; this table shows which do. Regenerate it after
 each acceptance instead of editing it by hand.
 
-Targets: 52. Isolation: operator_rollout 38, pending 3, blocked 11. Updates: manual (declared) 15, automatic 37.
+Targets: 52. Isolation: operator_rollout 39, pending 3, blocked 10. Updates: manual (declared) 15, automatic 37.
 Acceptance evidence: accepted 43, none 8, recorded blocker 1. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
@@ -23,7 +23,7 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | BombSquad (paired controller and game distribution) (`bombsquad`) | automatic | implemented | blocked | recorded blocker | no | Local paired Python/controller namespace candidate implemented; the previous isolated transport startup failed. Native transport, controller shutdown, recovery and restore acceptance remain required. Do not enroll custom… |
 | BZFlag (reviewed Ubuntu native server) (`bzflag`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | OpenRA · Combined Arms (`combined-arms`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
-| Core Keeper (`core-keeper`) | automatic | implemented | blocked | accepted | yes | Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. UID-aware controls remain unverified; customer enrollment remains unavailable. |
+| Core Keeper (`core-keeper`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment with its per-UID AppArmor display policy loaded. Isolated root-managed start, native query, same-process agent-restart adoption, stop and saved-world restore passed on the VPS. Core Keeper has… |
 | Counter-Strike 2 (`counter-strike-2`) | automatic | implemented | blocked | none | no | Local native 64-bit Source candidate with pinned depots and private config/log overlays implemented; storage publication, startup, RCON, recovery and restore acceptance remain required. |
 | Counter-Strike: Source (`counter-strike-source`) | automatic | implemented | blocked | accepted | no | Isolated start inside the per-UID AppArmor profile (i386 socketcall admitted only there), port bind, same-process agent restart, stop and migration rollback passed on the VPS. RCON, protected restore and customer control… |
 | OpenRA · Crystallized Nexus (`crystallized-nexus`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
@@ -67,12 +67,11 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Xonotic (reviewed 0.8.6 dedicated engine) (`xonotic`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment, a root-promoted engine and immutable pinned 0.8.6 asset copy. Native player query, restart adoption and rollback passed. New isolated engine/assets require operator review after updates. |
 | YSoccer (PlayBound dedicated Java server) (`ysoccer`) | automatic | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 
-## Still open (14)
+## Still open (13)
 
 - **ANEURISM IV** — pending, evidence: none
 - **Battlefield 1942 (reviewed static engine)** — blocked, evidence: accepted
 - **BombSquad (paired controller and game distribution)** — blocked, evidence: recorded blocker
-- **Core Keeper** — blocked, evidence: accepted
 - **Counter-Strike 2** — blocked, evidence: none
 - **Counter-Strike: Source** — blocked, evidence: accepted
 - **Deus Ex GOTY (HX)** — pending, evidence: none
