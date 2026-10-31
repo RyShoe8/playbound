@@ -12,7 +12,7 @@ OPENRA_BINARIES = {'openra':'OpenRA.Server','openhv':'OpenHV.Server','combined-a
 SOURCE_EMPTY_DIRS = {'counter-strike-source':('cstrike/cfg','cstrike/logs'), 'team-fortress-2': ('tf/cfg','tf/logs'), 'counter-strike-2': ('game/csgo/cfg','game/csgo/logs')}
 ROOT = Path('/usr/local/libexec/playbound-isolated-xonotic-data-086')
 CACHE_ROOT = Path('/var/lib/playbound-customer-runtime/asset-verification-cache')
-CACHED_FAMILIES = frozenset(('open-fortress', 'team-fortress-2'))
+CACHED_FAMILIES = frozenset(('open-fortress', 'team-fortress-2', 'goldeneye-source'))
 
 
 def asset_stamp(info):
@@ -75,7 +75,7 @@ def write_asset_cache(directory, game, root, profile_digest, files):
 
 def open_assets(root=None, game='xonotic', cache_root=None):
     fixed_root = root is None
-    if game not in OPENRA_BINARIES and game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','bombsquad','bombsquad-python','terraria','factorio','unvanquished','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv'):raise ValueError('Unsupported immutable asset family')
+    if game not in OPENRA_BINARIES and game not in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','bombsquad','bombsquad-python','terraria','factorio','unvanquished','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','goldeneye-source','deus-ex-goty-edition','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv'):raise ValueError('Unsupported immutable asset family')
     if root is None and game in OPENRA_BINARIES:
         root=Path('/usr/local/libexec/playbound-isolated-'+game+'-data-v1')
     if root is None:
@@ -92,6 +92,8 @@ def open_assets(root=None, game='xonotic', cache_root=None):
                    'core-keeper':'/usr/local/libexec/playbound-isolated-corekeeper-data-v1',
                    'battlefield-1942-anthology':'/usr/local/libexec/playbound-isolated-battlefield-data-v1',
                    'open-fortress':'/usr/local/libexec/playbound-isolated-openfortress-data-v1',
+                   'goldeneye-source':'/usr/local/libexec/playbound-isolated-goldeneye-data-v1',
+                   'deus-ex-goty-edition':'/usr/local/libexec/playbound-isolated-deusex-data-v1',
                    'counter-strike-source':'/usr/local/libexec/playbound-isolated-css-data-v1',
                    'team-fortress-2':'/usr/local/libexec/playbound-isolated-tf2-data-v1',
                    'counter-strike-2':'/usr/local/libexec/playbound-isolated-cs2-data-v1',
@@ -123,6 +125,8 @@ def open_assets(root=None, game='xonotic', cache_root=None):
     if game=='core-keeper':pattern=r'(?:CoreKeeperServer|UnityPlayer\.so|steamclient\.so|libsteamwebrtc\.so|libdecor-0\.so\.0|libdecor-cairo\.so|(?:CoreKeeperServer_Data|linux64|localization)/(?:[A-Za-z0-9_+.,@ ()-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,120})'
     if game=='battlefield-1942-anthology':pattern=r'(?:bf1942_lnxded\.static|bf1942_lnxded|settings-seed/(?:[A-Za-z0-9_.-]{1,100}/){0,3}[A-Za-z0-9_.-]{1,100}|mods/bf1942/(?!settings/)(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
     if game=='open-fortress':pattern=r'(?:open_fortress/materials/(?:[A-Za-z0-9_+.,@ ()!&~{-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&~{-]{1,120}|srcds_linux|sdk-build\.json|(?:bin|hl2|platform|open_fortress|defaults)/(?:[A-Za-z0-9_+.,@ ()!&-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&-]{1,120})'
+    if game=='goldeneye-source':pattern=r"(?:srcds\.exe|steam\.dll|steamclient\.dll|tier0_s\.dll|vstdlib_s\.dll|sdk-build\.json|(?:bin|hl2|platform|sourcetest|gesource|defaults)/(?:[A-Za-z0-9_+.,@ ()!&~{}#=;'\[\]-]{1,120}/){0,15}[A-Za-z0-9_+.,@ ()!&~{}#=;'\[\]-]{1,120})"
+    if game=='deus-ex-goty-edition':pattern=r'(?:installscript\.vdf|(?:GOTY_1|Help|Manual|Maps|Music|Sounds|System|Textures)/(?:[A-Za-z0-9_+.,@ ()!&-]{1,120}/){0,6}[A-Za-z0-9_+.,@ ()!&-]{1,120})'
     if game=='trackmania':pattern=r'(?:TrackmaniaServer|Packs/[A-Za-z0-9_+.-]{1,100}\.(?:pak|Gbx)|UserData/Maps/(?:Campaigns/Training|MatchSettings)/[A-Za-z0-9_ .-]{1,100}|UserData/Config/dedicated_cfg\.default\.txt)'
     if game=='morrowind':pattern=r'(?:tes3mp-server\.x86_64|tes3mp-server-default\.cfg|lib/libboost_[A-Za-z0-9_]+\.so\.1\.67\.0|server/data/requiredDataFiles\.json|(?:resources|server/scripts|server/lib/lua)/(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
     if game=='barotrauma':pattern=r'(?:DedicatedServer|[A-Za-z0-9_+.-]{1,100}\.(?:dll|so|pdb|exe|dylib|deps\.json|runtimeconfig\.json)|[A-Za-z0-9_+.-]{1,100}_LICENSE|hintmanager\.xml|Facepunch\.Steamworks\.Posix64\.xml|Icon\.ico|changelog\.txt|daedalic_privacypolicy\.txt|(?:Content|linux64)/(?:[A-Za-z0-9_+.,@ ()-]{1,100}/){0,15}[A-Za-z0-9_+.,@ ()-]{1,100})'
@@ -170,12 +174,12 @@ def open_assets(root=None, game='xonotic', cache_root=None):
                 after=os.fstat(source.fileno())
                 if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Asset changed')
                 return before.st_size,cached_digest if use_cache else digest.hexdigest(),content,stamp
-        _,profile_digest,content,_=read_file('profile.json',8*1024*1024 if game=='open-fortress' else 4*1024*1024 if game in ('veloren','dont-starve-together','unturned') else 1024*1024 if game in ('factorio','openra','space-station-14','barotrauma','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 512*1024 if game in ('freeciv','warzone-2100','bombsquad','bombsquad-python') else 32768)
+        _,profile_digest,content,_=read_file('profile.json',16*1024*1024 if game=='goldeneye-source' else 64*1024 if game=='deus-ex-goty-edition' else 8*1024*1024 if game=='open-fortress' else 4*1024*1024 if game in ('veloren','dont-starve-together','unturned') else 1024*1024 if game in ('factorio','openra','space-station-14','barotrauma','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 512*1024 if game in ('freeciv','warzone-2100','bombsquad','bombsquad-python') else 32768)
         rows=json.loads(content)['files']
         cache_directory=Path(cache_root) if cache_root is not None else CACHE_ROOT if fixed_root and game in CACHED_FAMILIES else None
         cached=read_asset_cache(cache_directory,game,root,profile_digest) if cache_directory is not None else None
         new_cache={} if cache_directory is not None else None
-        if not isinstance(rows,list) or not 1<=len(rows)<=(32768 if game=='open-fortress' else 16384 if game in ('veloren','dont-starve-together','unturned') else 128 if game in ('battlefield-1942-anthology','aneurism-iv') else 64 if game=='trackmania' else 512 if game=='morrowind' else 256 if game in ('triplea','necesse') else 4096 if game in ('space-station-14','barotrauma','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 1 if game=='rimworld-together' else 4096 if game=='openra' else 1 if game in OPENRA_BINARIES else 128 if game=='unvanquished' else 4096 if game=='factorio' else 2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 64 if game=='terraria' else 16):raise ValueError('Invalid immutable asset inventory')
+        if not isinstance(rows,list) or not 1<=len(rows)<=(65536 if game=='goldeneye-source' else 512 if game=='deus-ex-goty-edition' else 32768 if game=='open-fortress' else 16384 if game in ('veloren','dont-starve-together','unturned') else 128 if game in ('battlefield-1942-anthology','aneurism-iv') else 64 if game=='trackmania' else 512 if game=='morrowind' else 256 if game in ('triplea','necesse') else 4096 if game in ('space-station-14','barotrauma','team-fortress-2','counter-strike-2','trackmania','unturned','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl','aneurism-iv') else 1 if game=='rimworld-together' else 4096 if game=='openra' else 1 if game in OPENRA_BINARIES else 128 if game=='unvanquished' else 4096 if game=='factorio' else 2048 if game in ('bombsquad','bombsquad-python') else 1024 if game in ('freeciv','warzone-2100') else 64 if game=='terraria' else 16):raise ValueError('Invalid immutable asset inventory')
         seen={'profile.json'};total=0
         for row in rows:
             name=row.get('path')
@@ -184,7 +188,7 @@ def open_assets(root=None, game='xonotic', cache_root=None):
             seen.add(name)
             size,digest,_,stamp=read_file(name,(1024 if game in SOURCE_EMPTY_DIRS else 768)*1024**2,
                 cached.get(name) if cached is not None else None,row.get('sha256') if cached is not None else None);total+=size
-            if total>(80 if game=='counter-strike-2' else 20 if game=='team-fortress-2' else 8 if game=='open-fortress' else 4 if game=='counter-strike-source' else 8 if game=='dont-starve-together' else 2)*1024**3 or size!=row.get('bytes') or digest!=row.get('sha256'):raise ValueError('Immutable assets differ from reviewed pins')
+            if total>(80 if game=='counter-strike-2' else 20 if game=='team-fortress-2' else 8 if game in ('open-fortress','goldeneye-source') else 4 if game=='counter-strike-source' else 8 if game=='dont-starve-together' else 2)*1024**3 or size!=row.get('bytes') or digest!=row.get('sha256'):raise ValueError('Immutable assets differ from reviewed pins')
             if new_cache is not None:new_cache[name]=stamp
         if game=='core-keeper':
             for name in ('GameInfo.txt','GameID.txt'):

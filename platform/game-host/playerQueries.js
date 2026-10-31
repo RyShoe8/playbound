@@ -10,7 +10,7 @@ import net from "node:net";
 import fs from "node:fs";
 import path from "node:path";
 import { queryA2sOccupancy } from "./a2sQuery.js";
-import { rimworldSnapshot } from "./rimworldControl.js";
+import { rimworldOccupancy } from "./rimworldControl.js";
 import { queryAnivOccupancy } from "./anivControl.js";
 
 const TIMEOUT_MS = 2500;
@@ -710,7 +710,7 @@ export async function queryRoomOccupancy(room) {
   if (slug === "soldier-of-fortune-platinum-edition") return room.editionSlug === "openmerc" ? queryOpenMerc(room.port) : null;
   if (slug === "aneurism-iv") return queryAnivOccupancy(room);
   if (slug === "rimworld-together") {
-    const snapshot = rimworldSnapshot(room);
+    const snapshot = await rimworldOccupancy(room);
     return snapshot ? { players: snapshot.players.length, maxPlayers: snapshot.maxPlayers, bots: 0 } : null;
   }
   if (A2S_GAMES.has(slug)) {

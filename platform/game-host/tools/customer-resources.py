@@ -51,6 +51,9 @@ PROFILES = {
     'bombsquad': (1, 1024 ** 3, 128),
     'counter-strike-source': (1, 1024 ** 3, 128),
     'open-fortress': (1, 1024 ** 3, 128),
+    # Wine runs about a dozen processes and 60+ tasks before the engine adds its own.
+    'goldeneye-source': (1, 1024 ** 3, 256),
+    'deus-ex-goty-edition': (1, 1024 ** 3, 256),
     'battlefield-1942-anthology': (1, 1024 ** 3, 128),
     'unturned': (1, 1024 ** 3, 128),
     'trackmania': (1, 1024 ** 3, 128),
@@ -85,7 +88,8 @@ def allocation(game, limits=None):
     cpu_millis, memory_mib = limits
     if not 250 <= cpu_millis <= 6000 or not 256 <= memory_mib <= 8192:
         raise ValueError('Resource allocation exceeds rollout bounds')
-    return cpu_millis / 1000, memory_mib * 1024 ** 2, 128
+    # Wine's process tree needs its profile's task budget; every other engine keeps 128.
+    return cpu_millis / 1000, memory_mib * 1024 ** 2, PROFILES[game][2] if game in ('goldeneye-source', 'deus-ex-goty-edition') else 128
 
 
 def verify_process(pid, identity, uid):

@@ -59,6 +59,8 @@ NATIVE_GAMES = {
     'bombsquad': ('bombsquad-servers',43210,43230),
     'counter-strike-source': ('counter-strike-source-servers',27060,27070),
     'open-fortress': ('open-fortress-servers',27150,27169),
+    'goldeneye-source': ('goldeneye-source-servers',27120,27139),
+    'deus-ex-goty-edition': ('deus-ex-servers',7790,7850),
     'battlefield-1942-anthology': ('battlefield-1942-anthology-servers',14567,14586),
     'unturned': ('unturned-servers',27075,27099),
     'trackmania': ('trackmania-servers',23520,23538),
@@ -135,6 +137,7 @@ def request(args):
         if GAME == 'trackmania' and (port-23520)%2:raise ValueError('Invalid Trackmania port pair')
         if GAME == 'unturned' and (port-27075)%3:raise ValueError('Invalid Unturned port triple')
         if GAME == 'barotrauma' and (port-27220)%2:raise ValueError('Invalid Barotrauma port pair')
+        if GAME == 'deus-ex-goty-edition' and (port-7790)%3:raise ValueError('Invalid Deus Ex port triple')
         if GAME == 'assaultcube' and port % 2 != 1: raise ValueError('Invalid AssaultCube port pair')
         if GAME == 'flightgear' and port % 2: raise ValueError('Invalid FlightGear port stride')
         if GAME == 'supertuxkart' and (port % 2 != 1 or port > 2777): raise ValueError('Invalid SuperTuxKart port pair')
@@ -157,6 +160,12 @@ def config_bytes(text, port):
             return text.encode()
         if GAME=='dont-starve-together':
             value=trusted_module('pb_dst','playbound-customer-dst').settings(text,port)
+            return json.dumps({'configuration':value,'port':port}).encode()
+        if GAME=='deus-ex-goty-edition':
+            value=trusted_module('pb_deusex','playbound-customer-deusex').settings(text,port)
+            return json.dumps({'configuration':value,'port':port}).encode()
+        if GAME=='goldeneye-source':
+            value=trusted_module('pb_goldeneye','playbound-customer-goldeneye').settings(text,port)
             return json.dumps({'configuration':value,'port':port}).encode()
         if GAME in ('team-fortress-2','counter-strike-2','counter-strike-source','open-fortress'):
             value=trusted_module('pb_source','playbound-customer-source').settings(text,port,GAME)
@@ -374,7 +383,7 @@ def verify_scope(resources, server_id, pid, identity, cpu, memory):
     scope = scope_path(server_id, pid)
     if (Path('/proc') / str(pid) / 'cgroup').read_text().strip() != '0::/system.slice/' + scope.name: raise ValueError('Gate is not placed')
     quota, period = (scope / 'cpu.max').read_text().split()
-    if quota == 'max' or int(quota) * 1000 != cpu * int(period) or (scope / 'memory.max').read_text().strip() != str(memory * 1024 ** 2) or (scope / 'memory.swap.max').read_text().strip() != '0' or (scope / 'pids.max').read_text().strip() != '128' or (scope / 'memory.oom.group').read_text().strip() != '1': raise ValueError('Runtime allocation differs')
+    if quota == 'max' or int(quota) * 1000 != cpu * int(period) or (scope / 'memory.max').read_text().strip() != str(memory * 1024 ** 2) or (scope / 'memory.swap.max').read_text().strip() != '0' or (scope / 'pids.max').read_text().strip() != ('256' if GAME in ('goldeneye-source','deus-ex-goty-edition') else '128') or (scope / 'memory.oom.group').read_text().strip() != '1': raise ValueError('Runtime allocation differs')
     return scope
 
 
@@ -419,9 +428,9 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
                 or {name for _, name in identity_files} != {'GameID.txt', 'GameInfo.txt'}
                 or any(type(descriptor) is not int or descriptor < 3 for descriptor, _ in identity_files)):
             raise ValueError('Pinned Core Keeper assets and identity mounts required')
-    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native','xonotic':'/engine-native','wolfenstein-enemy-territory':'/engine-native','medal-of-honor-allied-assault':'/engine-native','freedoom':'/game-data/zandronum-server','freeciv':'/engine-native','warzone-2100':'/engine-native','hypersomnia':'/engine-native','terraria':'/game-data/TerrariaServer.bin.x86_64','factorio':'/usr/bin/python3','unvanquished':'/game-data/daemonded','openra':'/game-data/OpenRA.Server','openhv':'/game-data/OpenHV.Server','earth-2140-trilogy':'/game-data/OpenE2140','rimworld-together':'/usr/bin/python3','space-station-14':'/usr/bin/python3','triplea':'/game-data/jre/temurin-25/bin/java','necesse':'/game-data/jre/bin/java','veloren':'/usr/bin/python3','barotrauma':'/usr/bin/python3','morrowind':'/usr/bin/python3','bombsquad':'/usr/bin/python3','counter-strike-source':'/usr/bin/python3','open-fortress':'/usr/bin/python3','battlefield-1942-anthology':'/usr/bin/python3','unturned':'/usr/bin/python3','trackmania':'/usr/bin/python3','team-fortress-2':'/usr/bin/python3','counter-strike-2':'/usr/bin/python3','dont-starve-together':'/usr/bin/python3','core-keeper':'/usr/bin/python3','re-volt-rvgl':'/usr/bin/python3'}[GAME]
+    target = {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/engine-native','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/engine-native','assaultcube':'/engine-native','xonotic':'/engine-native','wolfenstein-enemy-territory':'/engine-native','medal-of-honor-allied-assault':'/engine-native','freedoom':'/game-data/zandronum-server','freeciv':'/engine-native','warzone-2100':'/engine-native','hypersomnia':'/engine-native','terraria':'/game-data/TerrariaServer.bin.x86_64','factorio':'/usr/bin/python3','unvanquished':'/game-data/daemonded','openra':'/game-data/OpenRA.Server','openhv':'/game-data/OpenHV.Server','earth-2140-trilogy':'/game-data/OpenE2140','rimworld-together':'/usr/bin/python3','space-station-14':'/usr/bin/python3','triplea':'/game-data/jre/temurin-25/bin/java','necesse':'/game-data/jre/bin/java','veloren':'/usr/bin/python3','barotrauma':'/usr/bin/python3','morrowind':'/usr/bin/python3','bombsquad':'/usr/bin/python3','counter-strike-source':'/usr/bin/python3','open-fortress':'/usr/bin/python3','goldeneye-source':'/usr/bin/python3','deus-ex-goty-edition':'/usr/bin/python3','battlefield-1942-anthology':'/usr/bin/python3','unturned':'/usr/bin/python3','trackmania':'/usr/bin/python3','team-fortress-2':'/usr/bin/python3','counter-strike-2':'/usr/bin/python3','dont-starve-together':'/usr/bin/python3','core-keeper':'/usr/bin/python3','re-volt-rvgl':'/usr/bin/python3'}[GAME]
     settings = native_settings or {}
-    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube','xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freedoom','freeciv','warzone-2100','hypersomnia','terraria','factorio','unvanquished','openra','openhv','earth-2140-trilogy','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','bombsquad','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
+    game_args = ['-f','server.cfg','sv_port '+str(port)] if GAME == 'teeworlds' else ['-p',str(port)] if GAME == 'hedgewars' else [] if GAME in ('openttd','luanti','openarena','battle-for-wesnoth','supertuxkart','0-ad','ysoccer','flightgear','mindustry','hurry-curry','assaultcube','xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freedoom','freeciv','warzone-2100','hypersomnia','terraria','factorio','unvanquished','openra','openhv','earth-2140-trilogy','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','bombsquad','counter-strike-source','open-fortress','goldeneye-source','deus-ex-goty-edition','battlefield-1942-anthology','core-keeper','re-volt-rvgl') else ['-p',str(port),'-offa','-q','-j','+r','+s',str(settings['scoreLimit']),'-mp',str(settings['maxPlayers'])]
     if GAME == 'openarena': game_args = ['+set','com_basegame','baseoa','+set','fs_basepath','/usr/lib/openarena-server','+set','fs_homepath','/server','+set','com_legacyprotocol','71','+set','com_protocol','71','+set','dedicated','1','+set','net_port',str(port),'+exec','playbound.cfg','+map','oa_dm1']
     if GAME == 'flightgear': game_args = ['-p',str(port),'-a',str(port+1),'-b','0','-d']
     if GAME in ('openra','openhv','earth-2140-trilogy'):target,game_args=trusted_module('pb_openra','playbound-customer-openra').arguments(settings,port)
@@ -433,6 +442,8 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
     if GAME=='trackmania':game_args=['-I','/trackmania-bootstrap.py']
     if GAME=='unturned':game_args=['-I','/unturned-bootstrap.py']
     if GAME=='open-fortress':game_args=['-I','/openfortress-bootstrap.py']
+    if GAME=='goldeneye-source':game_args=['-I','/goldeneye-bootstrap.py']
+    if GAME=='deus-ex-goty-edition':game_args=['-I','/deusex-bootstrap.py']
     if GAME=='battlefield-1942-anthology':game_args=['-I','/battlefield-bootstrap.py']
     if GAME=='bombsquad':game_args=['-I','/bombsquad-bootstrap.py']
     if GAME=='morrowind':game_args=['-I','/morrowind-bootstrap.py']
@@ -491,6 +502,9 @@ def command(data, fd, port, memory, engine_fd=None, native_settings=None, seccom
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory),'/runtime','--bind',str(data),'/runtime/Servers/PlayBound','--bind',str(data),'/game-data/Servers/PlayBound','--ro-bind','/proc/self/fd/'+str(asset_directory)+'/linux64/steamclient.so','/server/.steam/sdk64/steamclient.so'] if GAME=='unturned' else []),
             *(trusted_module('pb_rvgl','playbound-customer-rvgl').mounts(asset_directory) if GAME=='re-volt-rvgl' else []),
             *(trusted_module('pb_openfortress','playbound-customer-openfortress').mounts(asset_directory) if GAME=='open-fortress' else []),
+            # Wine resolves through /etc/alternatives; Xvfb needs the font config.
+            *(['--ro-bind','/usr/local/libexec/playbound-customer-goldeneye','/goldeneye-bootstrap.py','--ro-bind','/etc/alternatives','/etc/alternatives','--ro-bind','/etc/fonts','/etc/fonts','--ro-bind','/etc/ld.so.cache','/etc/ld.so.cache',*trusted_module('pb_goldeneye','playbound-customer-goldeneye').mounts(asset_directory)] if GAME=='goldeneye-source' else []),
+            *(['--ro-bind','/usr/local/libexec/playbound-customer-deusex','/deusex-bootstrap.py','--ro-bind','/etc/alternatives','/etc/alternatives','--ro-bind','/etc/ld.so.cache','/etc/ld.so.cache',*trusted_module('pb_deusex','playbound-customer-deusex').mounts(asset_directory)] if GAME=='deus-ex-goty-edition' else []),
             *(['--ro-bind','/proc/self/fd/'+str(asset_directory)+'/bin/steamclient.so','/server/.steam/sdk32/steamclient.so'] if GAME=='open-fortress' else []),
             *[part for filename in ['/etc/protocols','/etc/services','/etc/hosts','/etc/resolv.conf','/etc/ssl/certs'] if Path(filename).exists() for part in ['--ro-bind',filename,filename]],
             *(['--ro-bind','/etc/java-21-openjdk','/etc/java-21-openjdk'] if GAME == 'mindustry' else []),
@@ -526,7 +540,7 @@ def verify_supervisor_scope(scope):
 
 # 32-bit engines that open sockets through the socketcall multiplexer. They run inside
 # the enforced per-UID AppArmor profile, which keeps Unix sockets to same-label peers.
-GUARDED_X86_GAMES = ('counter-strike-source', 'open-fortress', 'battlefield-1942-anthology')
+GUARDED_X86_GAMES = ('counter-strike-source', 'open-fortress', 'battlefield-1942-anthology', 'goldeneye-source', 'deus-ex-goty-edition')
 # Native engines that need AF_UNIX stream sockets (Daemon's singleton socket), admitted
 # only inside the same enforced per-UID AppArmor profile.
 GUARDED_STREAM_GAMES = ('unvanquished',)
@@ -843,6 +857,14 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
                 trusted_module('pb_unturned','playbound-customer-unturned')
                 for name in ('.steam','.steam/sdk64'):
                     directory(root/'data'/name,uid=account['uid'],mode=0o700)
+            if GAME=='deus-ex-goty-edition':
+                trusted_module('pb_deusex','playbound-customer-deusex')
+                for name in ('room','room/System','room/Save','room/CoopSave','room/Cache','wineprefix'):
+                    directory(root/'data'/name,uid=account['uid'],mode=0o700)
+            if GAME=='goldeneye-source':
+                trusted_module('pb_goldeneye','playbound-customer-goldeneye')
+                for name in ('runtime','runtime/gesource','runtime/gesource/maps','runtime/gesource/maps/graphs','runtime/gesource/python','wineprefix'):
+                    directory(root/'data'/name,uid=account['uid'],mode=0o700)
             if GAME=='open-fortress':
                 trusted_module('pb_openfortress','playbound-customer-openfortress')
                 for name in ('runtime','runtime/bin','runtime/open_fortress','runtime/open_fortress/bin','runtime/open_fortress/maps','runtime/open_fortress/maps/graphs','.steam/sdk32'):
@@ -898,19 +920,19 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
             host_guard.install(account['uid'], self_udp=port if GAME == 'morrowind' else None)
             guard_installed = True
             binder = trusted_module('pb_bind', 'playbound-customer-bind-policy')
-            bind_programs = binder.apply_current(port,stk_discovery=True) if GAME == 'supertuxkart' else binder.apply_current(port,flightgear_status=True) if GAME == 'flightgear' else binder.apply_current(port,assaultcube_query=True) if GAME == 'assaultcube' else binder.apply_current(port,auxiliary_profile=GAME) if GAME in ('veloren','barotrauma','dont-starve-together','team-fortress-2','trackmania','unturned','counter-strike-source','open-fortress','core-keeper') else binder.apply_current(port)
+            bind_programs = binder.apply_current(port,stk_discovery=True) if GAME == 'supertuxkart' else binder.apply_current(port,flightgear_status=True) if GAME == 'flightgear' else binder.apply_current(port,assaultcube_query=True) if GAME == 'assaultcube' else binder.apply_current(port,auxiliary_profile=GAME) if GAME in ('veloren','barotrauma','dont-starve-together','team-fortress-2','trackmania','unturned','counter-strike-source','open-fortress','goldeneye-source','deus-ex-goty-edition','core-keeper') else binder.apply_current(port)
             dns_fd = os.memfd_create('pb-public-dns',os.MFD_CLOEXEC|os.MFD_ALLOW_SEALING)
             os.write(dns_fd,b'nameserver 1.1.1.1\nnameserver 1.0.0.1\noptions timeout:2 attempts:2\n')
             os.lseek(dns_fd,0,os.SEEK_SET)
             fcntl.fcntl(dns_fd,fcntl.F_ADD_SEALS,fcntl.F_SEAL_WRITE|fcntl.F_SEAL_GROW|fcntl.F_SEAL_SHRINK|fcntl.F_SEAL_SEAL)
-            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server','xonotic':'/usr/local/libexec/playbound-isolated-xonotic/xonotic-linux64-dedicated','wolfenstein-enemy-territory':'/usr/local/libexec/playbound-isolated-etlegacy/etlded.x86_64','medal-of-honor-allied-assault':'/usr/local/libexec/playbound-isolated-openmohaa/omohaaded','freedoom':'/usr/local/libexec/playbound-isolated-freedoom/zandronum-server','freeciv':'/usr/local/libexec/playbound-isolated-freeciv/freeciv-server','warzone-2100':'/usr/local/libexec/playbound-isolated-warzone/warzone2100','hypersomnia':'/usr/local/libexec/playbound-isolated-hypersomnia/Hypersomnia-Headless.AppImage','terraria':'/usr/local/libexec/playbound-isolated-terraria-data-1458/TerrariaServer.bin.x86_64','factorio':'/usr/bin/python3','unvanquished':'/usr/local/libexec/playbound-isolated-unvanquished-data-0562/daemonded','openra':'/usr/bin/bwrap','openhv':'/usr/bin/bwrap','earth-2140-trilogy':'/usr/bin/bwrap','rimworld-together':'/usr/bin/python3','space-station-14':'/usr/bin/python3','triplea':'/usr/bin/bwrap','necesse':'/usr/bin/bwrap','veloren':'/usr/bin/python3','barotrauma':'/usr/bin/python3','morrowind':'/usr/bin/python3','bombsquad':'/usr/bin/python3','counter-strike-source':'/usr/bin/python3','open-fortress':'/usr/bin/python3','battlefield-1942-anthology':'/usr/bin/python3','unturned':'/usr/bin/python3','trackmania':'/usr/bin/python3','team-fortress-2':'/usr/bin/python3','counter-strike-2':'/usr/bin/python3','dont-starve-together':'/usr/bin/python3','core-keeper':'/usr/bin/python3','re-volt-rvgl':'/usr/bin/python3'}[GAME]]:
+            for binary in ['/usr/bin/prlimit', '/usr/bin/bwrap', {'teeworlds':'/usr/games/teeworlds-server','bzflag':'/usr/games/bzfs','hedgewars':'/usr/lib/hedgewars/bin/hedgewars-server','openttd':'/usr/games/openttd','luanti':'/usr/games/minetestserver','openarena':'/usr/lib/ioquake3/ioq3ded','battle-for-wesnoth':'/usr/games/wesnothd-1.18','supertuxkart':'/usr/games/supertuxkart','0-ad':'/usr/games/pyrogenesis','ysoccer':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','flightgear':'/usr/local/libexec/playbound-isolated-flightgear/fgms','mindustry':'/usr/lib/jvm/java-21-openjdk-amd64/bin/java','hurry-curry':'/usr/local/libexec/playbound-isolated-hurry/hurrycurry-server','assaultcube':'/usr/local/libexec/playbound-isolated-assaultcube/linux_64_server','xonotic':'/usr/local/libexec/playbound-isolated-xonotic/xonotic-linux64-dedicated','wolfenstein-enemy-territory':'/usr/local/libexec/playbound-isolated-etlegacy/etlded.x86_64','medal-of-honor-allied-assault':'/usr/local/libexec/playbound-isolated-openmohaa/omohaaded','freedoom':'/usr/local/libexec/playbound-isolated-freedoom/zandronum-server','freeciv':'/usr/local/libexec/playbound-isolated-freeciv/freeciv-server','warzone-2100':'/usr/local/libexec/playbound-isolated-warzone/warzone2100','hypersomnia':'/usr/local/libexec/playbound-isolated-hypersomnia/Hypersomnia-Headless.AppImage','terraria':'/usr/local/libexec/playbound-isolated-terraria-data-1458/TerrariaServer.bin.x86_64','factorio':'/usr/bin/python3','unvanquished':'/usr/local/libexec/playbound-isolated-unvanquished-data-0562/daemonded','openra':'/usr/bin/bwrap','openhv':'/usr/bin/bwrap','earth-2140-trilogy':'/usr/bin/bwrap','rimworld-together':'/usr/bin/python3','space-station-14':'/usr/bin/python3','triplea':'/usr/bin/bwrap','necesse':'/usr/bin/bwrap','veloren':'/usr/bin/python3','barotrauma':'/usr/bin/python3','morrowind':'/usr/bin/python3','bombsquad':'/usr/bin/python3','counter-strike-source':'/usr/bin/python3','open-fortress':'/usr/bin/python3','goldeneye-source':'/usr/bin/python3','deus-ex-goty-edition':'/usr/bin/python3','battlefield-1942-anthology':'/usr/bin/python3','unturned':'/usr/bin/python3','trackmania':'/usr/bin/python3','team-fortress-2':'/usr/bin/python3','counter-strike-2':'/usr/bin/python3','dont-starve-together':'/usr/bin/python3','core-keeper':'/usr/bin/python3','re-volt-rvgl':'/usr/bin/python3'}[GAME]]:
                 info = Path(binary).stat()
                 if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: raise ValueError('Untrusted runtime executable')
             engines = trusted_module('pb_native_engine', 'playbound-customer-native-engine')
             engine_fd, _target = engines.sealed_engine_for(GAME)
             if GAME in ('openra','openhv','earth-2140-trilogy'):
                 asset_directory=trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game=json.loads(text)['family'])
-            if GAME in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','terraria','factorio','unvanquished','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','bombsquad','counter-strike-source','open-fortress','battlefield-1942-anthology','core-keeper','re-volt-rvgl'): asset_directory = trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game=GAME)
+            if GAME in ('xonotic','wolfenstein-enemy-territory','medal-of-honor-allied-assault','freeciv','warzone-2100','terraria','factorio','unvanquished','rimworld-together','space-station-14','triplea','necesse','veloren','barotrauma','dont-starve-together','morrowind','team-fortress-2','counter-strike-2','trackmania','unturned','bombsquad','counter-strike-source','open-fortress','goldeneye-source','deus-ex-goty-edition','battlefield-1942-anthology','core-keeper','re-volt-rvgl'): asset_directory = trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game=GAME)
             if GAME=='open-fortress':dependency_directory=trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game='team-fortress-2')
             if GAME=='bombsquad':python_directory=trusted_module('pb_assets','playbound-customer-xonotic-assets').open_assets(game='bombsquad-python')
             if GAME in ('hurry-curry','assaultcube','freedoom'): assets = trusted_module('pb_assets','playbound-customer-game-assets').seal_assets(game=GAME)
@@ -919,7 +941,7 @@ def run_runtime(identities, resources, server_id, pid, identity, extra, text):
                 display_entry_fd = os.open('/usr/local/libexec/playbound-customer-display-entry', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
                 display_source_fd = os.open('/usr/local/libexec/playbound-customer-seccomp', os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
             else:
-                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology') else syscalls.sealed_filter()
+                seccomp_fd = syscalls.sealed_filter(legacy_x86=True) if GAME in ('counter-strike-source','open-fortress','battlefield-1942-anthology','goldeneye-source') else syscalls.sealed_filter()
             inherited = tuple(descriptor for descriptor in (fd,engine_fd,seccomp_fd,dns_fd,display_entry_fd,display_source_fd) if descriptor is not None)
             inherited += tuple(descriptor for descriptor, _ in identity_files)
             inherited += tuple(descriptor for descriptor,_ in assets)

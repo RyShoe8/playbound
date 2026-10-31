@@ -5,8 +5,8 @@ files on the VPS. The release gate (plan step 7) needs every row to have saved a
 evidence or an explicit surfaced limitation; this table shows which do. Regenerate it after
 each acceptance instead of editing it by hand.
 
-Targets: 52. Isolation: operator_rollout 46, pending 3, blocked 3. Updates: manual (declared) 15, automatic 37.
-Acceptance evidence: accepted 45, none 7. World backups: yes 37, no 15.
+Targets: 52. Isolation: operator_rollout 48, pending 1, blocked 3. Updates: manual (declared) 15, automatic 37.
+Acceptance evidence: accepted 47, none 5. World backups: yes 37, no 15.
 
 `operator_rollout` means the identity handoff is implemented and accepted but each server still needs
 explicit offline enrollment; it is not customer-wide isolation. `blocked` and `pending` rows surface
@@ -27,14 +27,14 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Counter-Strike 2 (`counter-strike-2`) | automatic | implemented | blocked | none | no | Local native 64-bit Source candidate with pinned depots and private config/log overlays implemented; storage publication, startup, RCON, recovery and restore acceptance remain required. |
 | Counter-Strike: Source (`counter-strike-source`) | automatic | implemented | operator_rollout | accepted | no | Requires offline enrollment with the per-UID AppArmor profile loaded (i386 socketcall is admitted only inside it). Isolated start, query, same-process agent restart and stop passed on the VPS with that profile (2026-10-3… |
 | OpenRA · Crystallized Nexus (`crystallized-nexus`) | automatic | none | operator_rollout | accepted | no | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
-| Deus Ex GOTY (HX) (`deus-ex`) | automatic | none | pending | none | no | HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable. |
+| Deus Ex GOTY (HX) (`deus-ex`) | automatic | implemented | operator_rollout | accepted | no | Requires offline enrollment with the per-UID AppArmor profile loaded; applies to the HX co-op server. Runs under Wine as the private UID with the guarded i386 filter and a private Wine prefix, from a sealed 295-file bund… |
 | Don't Starve Together (`dont-starve-together`) | automatic | implemented | blocked | none | yes | Local pinned 64-bit native candidate with private cluster and fenced Steam ports implemented; startup, controls, recovery and restore acceptance remain required. |
 | Earth 2140 Trilogy (OpenE2140) (`earth-2140-trilogy`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as… |
 | Factorio (stable headless) (`factorio`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and at least a 2 GiB memory allocation (1 GiB fails world generation under the address-space cap). Isolated start, protected backup/restore with a pre-restore copy, restart on the restored wor… |
 | FlightGear (reviewed fgms relay) (`flightgear`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Freeciv (matching reviewed engine, library and rulesets) (`freeciv`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and root-promoted paired engine/libraries/rulesets. Native query, same-process agent recovery, stop and data rollback passed. Executable ruleset/plugin installation remains disabled. |
 | Freedoom + Zandronum (reviewed dedicated engine) (`freedoom`) | automatic | implemented | operator_rollout | accepted | yes | Only the explicit Zandronum edition with the pinned Freedoom 2 IWAD is supported by this identity profile. Requires offline enrollment and a root-promoted engine/assets. Native query, restart and rollback passed; base/ot… |
-| GoldenEye: Source (SDK + mod) (`goldeneye-source`) | automatic | none | pending | none | no | The installed server uses Wine/Xvfb. A private Wine prefix, isolated display/Unix sockets and reviewed Windows engine boundary are not implemented; customer enrollment remains unavailable. |
+| GoldenEye: Source (SDK + mod) (`goldeneye-source`) | automatic | implemented | operator_rollout | accepted | no | Requires offline enrollment with the per-UID AppArmor profile loaded. Runs under Wine as the private UID with the guarded i386 filter, a private Wine prefix and a private Xvfb display, from a sealed 54,034-file bundle. I… |
 | Hedgewars (reviewed Ubuntu native server) (`hedgewars`) | manual (declared) | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 | Hurry Curry (reviewed patched Rust source) (`hurry-curry`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment, the root-promoted engine and pinned sealed YAML assets. Startup/restart/rollback passed; the isolated fixture stays unregistered. Public discovery and UID-aware controls remain pending. |
 | Hypersomnia (`hypersomnia`) | automatic | implemented | operator_rollout | accepted | yes | Requires offline enrollment and a root-promoted sealed headless AppImage. Bounded extraction, port fence, same-process recovery, stop and data rollback passed. |
@@ -67,12 +67,10 @@ their specific missing boundary in the admin hosting readiness view (the reason 
 | Xonotic (reviewed 0.8.6 dedicated engine) (`xonotic`) | manual (declared) | implemented | operator_rollout | accepted | yes | Requires offline enrollment, a root-promoted engine and immutable pinned 0.8.6 asset copy. Native player query, restart adoption and rollback passed. New isolated engine/assets require operator review after updates. |
 | YSoccer (PlayBound dedicated Java server) (`ysoccer`) | automatic | implemented | operator_rollout | accepted | yes | Identity handoff implemented. Each server still needs explicit offline enrollment; installation alone does not isolate it. |
 
-## Still open (7)
+## Still open (5)
 
 - **ANEURISM IV** — pending, evidence: none
 - **Counter-Strike 2** — blocked, evidence: none
-- **Deus Ex GOTY (HX)** — pending, evidence: none
 - **Don't Starve Together** — blocked, evidence: none
-- **GoldenEye: Source (SDK + mod)** — pending, evidence: none
 - **Open Fortress (SDK + mod)** — operator_rollout, evidence: none
 - **Unturned** — blocked, evidence: none

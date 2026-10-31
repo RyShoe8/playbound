@@ -67,7 +67,7 @@ test("new native family candidates cannot claim accepted isolation",()=>{
 });
 
 test("unimplemented legacy/display/special supervisors have explicit limitations",()=>{
-  for(const game of ["goldeneye-source","deus-ex","aneurism-iv"]){
+  for(const game of ["aneurism-iv"]){
     const value=hostingReadiness(game);
     assert.equal(value.isolation,"pending",game);
     assert.equal(value.identityProfile,null);
@@ -123,4 +123,22 @@ test("Trackmania is operator rollout with its per-server Nadeo account stated", 
   assert.equal(value.executableContentEnabled, false);
   assert.match(value.reason, /Nadeo dedicated-server account/);
   assert.match(value.reason, /restore/);
+});
+
+test("GoldenEye: Source is operator rollout under Wine with the per-UID AppArmor profile", () => {
+  const value = hostingReadiness("goldeneye-source");
+  assert.equal(value.isolation, "operator_rollout");
+  assert.equal(value.identityProfile, "goldeneye-source-unix-v1");
+  assert.equal(value.executableContentEnabled, false);
+  assert.match(value.reason, /AppArmor profile loaded/);
+  assert.match(value.reason, /RCON \(status\) answered as the private UID/);
+});
+
+test("Deus Ex HX is operator rollout under Wine with downloads and uplink off", () => {
+  const value = hostingReadiness("deus-ex");
+  assert.equal(value.isolation, "operator_rollout");
+  assert.equal(value.identityProfile, "deus-ex-goty-edition-unix-v1");
+  assert.equal(value.executableContentEnabled, false);
+  assert.match(value.reason, /AppArmor profile loaded/);
+  assert.match(value.reason, /downloads and the master-server uplink stay off/);
 });

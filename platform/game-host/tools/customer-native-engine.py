@@ -59,6 +59,10 @@ def sealed_engine_for(game):
         return None, '/game-data/bf1942_lnxded.static'
     if game=='open-fortress':
         return None, '/game-data/srcds_linux'
+    if game=='goldeneye-source':
+        return None, '/game-data/srcds.exe'
+    if game=='deus-ex-goty-edition':
+        return None, '/game-data/System/HCC.exe'
     if game=='counter-strike-source':
         return None, '/game-data/srcds_linux'
     if game=='bombsquad':

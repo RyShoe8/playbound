@@ -12,8 +12,6 @@ const IDENTITY_PROFILES = Object.freeze(Object.fromEntries(
 // These installations exist, but cannot use the native x86_64 tenant boundary.
 // Explain the specific missing boundary instead of suggesting a generic retry.
 const PENDING_BOUNDARIES = Object.freeze({
-  "goldeneye-source": "The installed server uses Wine/Xvfb. A private Wine prefix, isolated display/Unix sockets and reviewed Windows engine boundary are not implemented; customer enrollment remains unavailable.",
-  "deus-ex": "HX runs through Wine. Private Wine/display sockets, per-server Unreal data/config and the edition-specific process boundary are not implemented; customer enrollment remains unavailable.",
   "aneurism-iv": "The existing network namespace supervisor still launches under the shared service identity. A private UID/filesystem handoff that preserves Steam identity, credentials and saves is not implemented.",
 });
 
@@ -30,7 +28,7 @@ const RESTORE_ACCEPTED = Object.freeze({
   "openra": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
   "earth-2140-trilogy": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
   "space-station-14": " Accepted at a 4 GiB allocation.",
-  "rimworld-together": "",
+  "rimworld-together": " Under isolation the agent cannot reach the server's status file or console pipe in the private data folder, so live player counts and console commands do not work yet; a root relay is required.",
   "triplea": " Map installation is not covered.",
   "barotrauma": "",
   "veloren": "",
@@ -78,6 +76,8 @@ export function hostingReadiness(key) {
   if (key==="bombsquad") { isolation="operator_rollout"; reason="Requires offline enrollment. Isolated start of the paired Python server manager and headless engine, query, same-process agent restart and stop passed on the VPS (2026-10-30); the earlier transport startup failure no longer reproduces. BombSquad keeps no world data, so there is nothing to back up or restore. In-game control as the private UID is not yet verified."; }
   if (Object.hasOwn(PENDING_BOUNDARIES,key)) reason=PENDING_BOUNDARIES[key];
   if (key==="counter-strike-source") { isolation="operator_rollout"; reason="Requires offline enrollment with the per-UID AppArmor profile loaded (i386 socketcall is admitted only inside it). Isolated start, query, same-process agent restart and stop passed on the VPS with that profile (2026-10-30), and RCON (status, sv_cheats) answered as the private UID through the agent. CSS keeps no world data, so there is nothing to back up or restore."; }
+  if (key==="deus-ex") { isolation="operator_rollout"; reason="Requires offline enrollment with the per-UID AppArmor profile loaded; applies to the HX co-op server. Runs under Wine as the private UID with the guarded i386 filter and a private Wine prefix, from a sealed 295-file bundle; only the System ini/log files and the save and cache folders are private, and downloads and the master-server uplink stay off. Isolated start, query, same-process agent restart, stop and migration rollback passed on the VPS (2026-10-31). Saves are not yet covered by world-data backups, and in-game admin control as the private UID is not yet verified."; }
+  if (key==="goldeneye-source") { isolation="operator_rollout"; reason="Requires offline enrollment with the per-UID AppArmor profile loaded. Runs under Wine as the private UID with the guarded i386 filter, a private Wine prefix and a private Xvfb display, from a sealed 54,034-file bundle. Isolated start, query, same-process agent restart, stop and migration rollback passed on the VPS (2026-10-31), and RCON (status) answered as the private UID about 30 seconds after start; a fresh Wine prefix adds about 35 seconds to the first start. GoldenEye keeps no world data, so there is nothing to back up or restore."; }
   if (key==="open-fortress") { isolation="operator_rollout"; reason="Requires offline enrollment with the per-UID AppArmor profile loaded (i386 socketcall is admitted only inside it). Isolated managed-room start, query, same-process agent restart and stop passed on the VPS with that profile (2026-10-30), and RCON (status, sv_cheats) answered as the private UID through the agent, about 28 seconds after the port first answers. Open Fortress keeps no world data, so there is nothing to back up or restore."; }
   if (key==="battlefield-1942-anthology") { isolation="operator_rollout"; reason="Requires offline enrollment with the per-UID AppArmor profile loaded (i386 socketcall is admitted only inside it). Isolated start with sealed stock settings, query, same-process agent restart and stop passed on the VPS with that profile (2026-10-30). Battlefield 1942 keeps no world data, so there is nothing to back up or restore. In-game remote console control as the private UID is not yet verified."; }
   let contentReason="Plugin and Workshop installation remains disabled until this game's tenant boundary and its content source/compatibility/rollback path pass acceptance.";

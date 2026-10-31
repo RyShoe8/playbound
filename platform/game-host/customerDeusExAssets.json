@@ -1,0 +1,1479 @@
+{
+  "files": [
+    {
+      "path": "GOTY_1/Textures/Palettes.utx",
+      "bytes": 421024,
+      "sha256": "3433145468a72f36e303036811b8d3be61aebd4f68f6c6ae1eb25a9ba2507bec"
+    },
+    {
+      "path": "Help/DeusEx.ico",
+      "bytes": 3310,
+      "sha256": "0ce1bc07692c4195d9fd59c013dfa13c3435d1c91f4c107d2a26d76ead38ade5"
+    },
+    {
+      "path": "Help/HX/Changelog.txt",
+      "bytes": 15763,
+      "sha256": "84295b7fa1c2414c2bde885c3debf176bcdee4ec18e498340ce092f73591ce33"
+    },
+    {
+      "path": "Help/HX/Cheats.txt",
+      "bytes": 4905,
+      "sha256": "c2a9b18ff8d3ae2698621a40ed306bed10d3e349702c86fcee71f4d87513adf6"
+    },
+    {
+      "path": "Help/HX/Ports.txt",
+      "bytes": 700,
+      "sha256": "8cbb27b1918e565c95bf07be4a59a6502d734c347b71219cb7621796fe3900b0"
+    },
+    {
+      "path": "Help/HX/Readme.txt",
+      "bytes": 112,
+      "sha256": "480127500a58cf5c1cc99d6f7e7b03e195dfd94cdd6060988676a289069c7fb9"
+    },
+    {
+      "path": "Help/HX/ShutTheFuckUpAndTakeMyMoney.txt",
+      "bytes": 252,
+      "sha256": "ad246b35e085d3e592b5a82d76fc8a77829a2c58c0260817bcbc079798688878"
+    },
+    {
+      "path": "Help/Logo.bmp",
+      "bytes": 211000,
+      "sha256": "c9a3db2be08e068f433308db90f383b3803195d02a4d6cd4c8040c12b31dc1b8"
+    },
+    {
+      "path": "Help/LogoSmall.bmp",
+      "bytes": 39580,
+      "sha256": "4bb6fa07d9badeeb342e6f73512fc6e69bc75c1bffa4ace282e26be15dc61542"
+    },
+    {
+      "path": "Help/MPAdmin.htm",
+      "bytes": 1992,
+      "sha256": "aa6e0076d971b4949d1793ff4588ea01f7757ac6c7122588d7c0ba7ad1fd07c6"
+    },
+    {
+      "path": "Help/MPMap.htm",
+      "bytes": 3950,
+      "sha256": "5e8542939aeeb9d716104862a97eb983ee5b470d08f8a7a127f66235503fa4f2"
+    },
+    {
+      "path": "Help/PatchFix.htm",
+      "bytes": 7695,
+      "sha256": "13afcdb90deb3316cffaf66870eb875c8aa31021864450a26a843b3077c68540"
+    },
+    {
+      "path": "Help/ReadMe.htm",
+      "bytes": 37898,
+      "sha256": "d3ec0141710f2621e4781598e4bd469177fdd6a4fa52383212a7dba09f25e360"
+    },
+    {
+      "path": "Help/ReadMeMPStrategy.htm",
+      "bytes": 75113,
+      "sha256": "c794971663c83c87979372b9ea006a8127bbce6ce4bb78ccd673548f32f4ffb5"
+    },
+    {
+      "path": "Help/ReadMeMultiplayer.htm",
+      "bytes": 31315,
+      "sha256": "2760df45c824af4a06f37c3272d341f1f22907216f50c6a3e6e64fedbac4f9af"
+    },
+    {
+      "path": "Help/ReadMePatch1.htm",
+      "bytes": 8606,
+      "sha256": "c7dd4fa59aabbcc3ccf5eb66151b657ffa6cbdcbe937c593e55bab8797c67faf"
+    },
+    {
+      "path": "Manual/Deus EX newspaper v2.pdf",
+      "bytes": 138186,
+      "sha256": "cc2cabd55d56673c83e703d5c3311a1fb0a4afeed30cd2c5a0b987598db60650"
+    },
+    {
+      "path": "Manual/Deus Ex Manual v6.pdf",
+      "bytes": 714479,
+      "sha256": "6a25c375e1a53ac17cdf320f27cf38ae203f4537fa009444bd6a2b6fd851d718"
+    },
+    {
+      "path": "Manual/Manual Cover v.5.pdf",
+      "bytes": 1291446,
+      "sha256": "9ab8899aa79b5d3e05fbd6eecbb35842888c641e9223283ff6515289f0b2a485"
+    },
+    {
+      "path": "Manual/ar405eng.exe",
+      "bytes": 5762256,
+      "sha256": "ec44a3ecbd663d7bcb996dc9ea14606aeab8155b74a5ff3abdc9c16782d2644a"
+    },
+    {
+      "path": "Maps/00_Intro.dx",
+      "bytes": 4702437,
+      "sha256": "3889c3f7deec607dc8dfca34de9d1208eeaa787d0f7c8a9e9f7c9ae65ed51f9e"
+    },
+    {
+      "path": "Maps/00_Training.dx",
+      "bytes": 4431551,
+      "sha256": "bb66d95aafc6aae4179f8444e98661f3d5d27dab06d13d7dde7f4b5f4e24068d"
+    },
+    {
+      "path": "Maps/00_TrainingCombat.dx",
+      "bytes": 2297793,
+      "sha256": "80404b659c948321f3f633202ad2c78f0ba79cb24180a65ad7213738a2934479"
+    },
+    {
+      "path": "Maps/00_TrainingFinal.dx",
+      "bytes": 3769371,
+      "sha256": "f3e6539d9ed950dcf1dfb5929040e2da07b37f263727c360fdf2de63e2e73d27"
+    },
+    {
+      "path": "Maps/01_NYC_UNATCOHQ.dx",
+      "bytes": 2579635,
+      "sha256": "7d59d5ba2ad2a3db0a55cd2e80ad3fb7f4aba99d5831c48fb53e1fe6ae44a61a"
+    },
+    {
+      "path": "Maps/01_NYC_UNATCOIsland.dx",
+      "bytes": 9411740,
+      "sha256": "1297fbbf0e7fc970337b2b58fffa500e429dd6f3a677bd8eec9b900f6c9ae04c"
+    },
+    {
+      "path": "Maps/02_NYC_Bar.dx",
+      "bytes": 627588,
+      "sha256": "98709448e062fa874397bd850b48354eda86b17b709c1d652127ed92482f43e2"
+    },
+    {
+      "path": "Maps/02_NYC_BatteryPark.dx",
+      "bytes": 5104749,
+      "sha256": "333aaed87a847ac890a921f484a26df286339d9ce3b562a8f8438921040a42c7"
+    },
+    {
+      "path": "Maps/02_NYC_FreeClinic.dx",
+      "bytes": 1073976,
+      "sha256": "cf3c6fc9c09b74120b57ec0408fdd20a922c4edcaf29842804cfe3b7a4865870"
+    },
+    {
+      "path": "Maps/02_NYC_Hotel.dx",
+      "bytes": 1827517,
+      "sha256": "949d366d5c7212da492a8bebaeb7ca29aa2b60bc9479f2ccc0e38365b06f40eb"
+    },
+    {
+      "path": "Maps/02_NYC_Smug.dx",
+      "bytes": 1029743,
+      "sha256": "c94eedeccf21d3b87b8aab06b18c28c17dfbb8696d7bc0d551511087a04121c6"
+    },
+    {
+      "path": "Maps/02_NYC_Street.dx",
+      "bytes": 5431692,
+      "sha256": "a34266a382863c671176aab4e3e1ab38eaa0d3ed9fc4db8f659dd003714aeaa4"
+    },
+    {
+      "path": "Maps/02_NYC_Underground.dx",
+      "bytes": 1677442,
+      "sha256": "3d7da4cd87c446fbb4f9724f88e3fe17bc725ff33466b67544ce10e6cc4678b1"
+    },
+    {
+      "path": "Maps/02_NYC_Warehouse.dx",
+      "bytes": 4835505,
+      "sha256": "2333b0d8a137d0da1ae22ecc24942cd881f9bba7d1e95546e4451a7100b2892c"
+    },
+    {
+      "path": "Maps/03_NYC_747.dx",
+      "bytes": 1462124,
+      "sha256": "3c2fa42895d171d2453f62a38ade7e6be33247f29def5fa335bd2e70e9d1c953"
+    },
+    {
+      "path": "Maps/03_NYC_Airfield.dx",
+      "bytes": 6488338,
+      "sha256": "00605f21e8e43b27050d9fde68d31c06b0654486ebedd237e88569adb4da93df"
+    },
+    {
+      "path": "Maps/03_NYC_AirfieldHeliBase.dx",
+      "bytes": 4444272,
+      "sha256": "ece119b1900283180d4fb0463c43d274b43d9df494fd44220e2cb2e633d40340"
+    },
+    {
+      "path": "Maps/03_NYC_BatteryPark.dx",
+      "bytes": 3496125,
+      "sha256": "0e4cac69abf68e9a52a24b9cf918b0c2d3c489dccb8f1c2bc9b9b4750e2b6a02"
+    },
+    {
+      "path": "Maps/03_NYC_BrooklynBridgeStation.dx",
+      "bytes": 3884113,
+      "sha256": "d264617eb5417371a67351da48eac06c2cf0deb25af98d678279037f34e45cd9"
+    },
+    {
+      "path": "Maps/03_NYC_Hangar.dx",
+      "bytes": 1800796,
+      "sha256": "8d0402db136940977742c28bd6e1f601bef4ceeeec0d4c7f5cf671b28b4212e6"
+    },
+    {
+      "path": "Maps/03_NYC_MolePeople.dx",
+      "bytes": 2046632,
+      "sha256": "be9dc36b6f71d28ecdcd891383813651e67acc1992496cefc798eb02f69dfb1b"
+    },
+    {
+      "path": "Maps/03_NYC_UNATCOHQ.dx",
+      "bytes": 2626230,
+      "sha256": "485ea1fd396ec8306b89e719ebb1c46af53c7ee6316446a3a0600ff33dd0da00"
+    },
+    {
+      "path": "Maps/03_NYC_UNATCOIsland.dx",
+      "bytes": 2528418,
+      "sha256": "a088262537a2fd9770b2e22c77cc07676b2e46cc20d3c4c2500a0514e1a3db41"
+    },
+    {
+      "path": "Maps/04_NYC_Bar.dx",
+      "bytes": 611916,
+      "sha256": "43a8efd0e4788d8e28f8b202beb0dd9a23c148a2629aef2fbf6c2d06a2cde640"
+    },
+    {
+      "path": "Maps/04_NYC_BatteryPark.dx",
+      "bytes": 3285325,
+      "sha256": "3f7df8d9631294d8811994ffa88abdd016cc73f14ebda1ff316d9cbebf9b83df"
+    },
+    {
+      "path": "Maps/04_NYC_Hotel.dx",
+      "bytes": 1852100,
+      "sha256": "9f2f695eba0313f0fe5f92c2c800bb2445e1f58c4aa88dfa8695a75ca3753b51"
+    },
+    {
+      "path": "Maps/04_NYC_NSFHQ.dx",
+      "bytes": 3614575,
+      "sha256": "867996c11f03f1b371d74895e9817721d34a546fd79158b8d105a01420adc5c6"
+    },
+    {
+      "path": "Maps/04_NYC_Smug.dx",
+      "bytes": 1028562,
+      "sha256": "301f39b7948aec77b2e31845758a2cb57ed6fa39e83275ffe3920274a004b7f1"
+    },
+    {
+      "path": "Maps/04_NYC_Street.dx",
+      "bytes": 5474857,
+      "sha256": "59ef73b7678457a517822574fd29f9d0dde695dd333ead2655763f3e6f268c77"
+    },
+    {
+      "path": "Maps/04_NYC_UNATCOHQ.dx",
+      "bytes": 2658401,
+      "sha256": "d688cadfe5cd6e9bb9bdcbb48211913885f8d7554a8ad229811994b48306c6c9"
+    },
+    {
+      "path": "Maps/04_NYC_UNATCOIsland.dx",
+      "bytes": 2561087,
+      "sha256": "7fa2fed2241192c449491d22730afd5c6aa13fe395c63b5d606c150e78d08048"
+    },
+    {
+      "path": "Maps/04_NYC_Underground.dx",
+      "bytes": 658498,
+      "sha256": "e8724690df3debd3c996119fdcf12ffc03ba4504c80fc9b5ec65d6f8e79852c1"
+    },
+    {
+      "path": "Maps/05_NYC_UNATCOHQ.dx",
+      "bytes": 2600903,
+      "sha256": "994b6e8f76ff56466cf14c00f844424e0643c6a302ab544ea2b506a942fca590"
+    },
+    {
+      "path": "Maps/05_NYC_UNATCOIsland.dx",
+      "bytes": 2860534,
+      "sha256": "f2f39f57eaab51d3fe0a0b95d4f993b96384932d3ee7be3fe0ffa6fda2e15136"
+    },
+    {
+      "path": "Maps/05_NYC_UNATCOMJ12lab.dx",
+      "bytes": 7441258,
+      "sha256": "7da3f1b936bdcf7add8c5bce64db918d105e236960f90a0f2ecd50ff7cdf36d1"
+    },
+    {
+      "path": "Maps/06_HongKong_Helibase.dx",
+      "bytes": 4363990,
+      "sha256": "2ab21d4f7b3f3150d72f356f543b1889e54de5f4d671bcf993818935ec2c8b5a"
+    },
+    {
+      "path": "Maps/06_HongKong_MJ12lab.dx",
+      "bytes": 4517287,
+      "sha256": "712f7dcd21717a49b88271869d0378623fa38da6ec12be7b610f36766d20141b"
+    },
+    {
+      "path": "Maps/06_HongKong_Storage.dx",
+      "bytes": 3282126,
+      "sha256": "c59c3925590a2b72c94412414a58fff58060ab04b75f7bb21504763c142526b3"
+    },
+    {
+      "path": "Maps/06_HongKong_TongBase.dx",
+      "bytes": 1115481,
+      "sha256": "b7ad4872be979787811f257a5c75053901c05c30d110aff37c19e7aa883f027f"
+    },
+    {
+      "path": "Maps/06_HongKong_VersaLife.dx",
+      "bytes": 3439321,
+      "sha256": "be3ca7953ad103504fd769dfe84849fbd5df27a498cd73e4ef57a607fa210210"
+    },
+    {
+      "path": "Maps/06_HongKong_WanChai_Canal.dx",
+      "bytes": 6826446,
+      "sha256": "085a035a9a59aa65ae5bbd09f2925bfce0b2f242b5b3e84cf76f2300508d9cf1"
+    },
+    {
+      "path": "Maps/06_HongKong_WanChai_Garage.dx",
+      "bytes": 815838,
+      "sha256": "21326d2b4c841cc3e3e2424699c2f5f07f1b9daa41eefbd4efa00bf9bf30af1e"
+    },
+    {
+      "path": "Maps/06_HongKong_WanChai_Market.dx",
+      "bytes": 3942560,
+      "sha256": "0ee8d2b48d3c881ad7d93bc44e7c122dc006d1115fe937b6e4700510028ef79f"
+    },
+    {
+      "path": "Maps/06_HongKong_WanChai_Street.dx",
+      "bytes": 4558865,
+      "sha256": "35df22e57117efd8c10879d761f4fc959df9f2733ce00f17c586bd0af5800f32"
+    },
+    {
+      "path": "Maps/06_HongKong_WanChai_Underworld.dx",
+      "bytes": 3253900,
+      "sha256": "55c9d7a127203705c1d3502f6090744da4b3e907fc1f953779b3516be0533cbf"
+    },
+    {
+      "path": "Maps/08_NYC_Bar.dx",
+      "bytes": 610113,
+      "sha256": "101298b0eedbc038663a90731b052c566bd74f477d6d4f554a53cf47fd6905e4"
+    },
+    {
+      "path": "Maps/08_NYC_FreeClinic.dx",
+      "bytes": 1069748,
+      "sha256": "4dfc7aa95f5982ca20a22d80863a7308c75486eed86919c836e224efb8b6968d"
+    },
+    {
+      "path": "Maps/08_NYC_Hotel.dx",
+      "bytes": 1835044,
+      "sha256": "3c3612dfedb8eb0525fde0376d8ba0acbb13323c1ec4aed84972be4fc683a937"
+    },
+    {
+      "path": "Maps/08_NYC_Smug.dx",
+      "bytes": 1029316,
+      "sha256": "c13c2b2612ca26b0729990675d5d58559f534e71e35bbb3b3a8aeb64a623c49f"
+    },
+    {
+      "path": "Maps/08_NYC_Street.dx",
+      "bytes": 3488054,
+      "sha256": "f9544c07ef5087aa371e8f80466f1462289c787b448bf4abac2ead9b8b2257cc"
+    },
+    {
+      "path": "Maps/08_NYC_Underground.dx",
+      "bytes": 740333,
+      "sha256": "5732305b8aff58d4c85564d585afd430fabd8bff3303e76e4015869866b08098"
+    },
+    {
+      "path": "Maps/09_NYC_Dockyard.dx",
+      "bytes": 4809553,
+      "sha256": "170a99d4a31598daba792921d7194942393900b765b78a836701c6c80b22f03d"
+    },
+    {
+      "path": "Maps/09_NYC_Graveyard.dx",
+      "bytes": 1562570,
+      "sha256": "381d0b5c177cfde5063f10b7d0044aa3da89a76224dcb1f817861aef3a512160"
+    },
+    {
+      "path": "Maps/09_NYC_Ship.dx",
+      "bytes": 6085529,
+      "sha256": "d0220a7139f92cde0e993ca882e229929e61a943c8aae75b98238cbf4abd05fd"
+    },
+    {
+      "path": "Maps/09_NYC_ShipBelow.dx",
+      "bytes": 4974361,
+      "sha256": "42b2e15e876c35b5217b4fe316af089b881f507a8ee6feeba6945dd3dbeeb7fc"
+    },
+    {
+      "path": "Maps/09_NYC_ShipFan.dx",
+      "bytes": 634986,
+      "sha256": "67177aed45e664402fa59dc08eeb221a5947f99439904f442eaa187c4fcce483"
+    },
+    {
+      "path": "Maps/10_Paris_Catacombs.dx",
+      "bytes": 5529951,
+      "sha256": "d7bf4fe5fe5abb596039e556f7050b3b530c94538a7cdb042bd532dd9f543818"
+    },
+    {
+      "path": "Maps/10_Paris_Catacombs_Tunnels.dx",
+      "bytes": 2666508,
+      "sha256": "e965b4858b6e8d128264adff7a5daba92184f4ff0b2655fb2553a283272d6e1e"
+    },
+    {
+      "path": "Maps/10_Paris_Chateau.dx",
+      "bytes": 4024643,
+      "sha256": "d82147860cc8d995ff93c06142613321f3d84d29b518454d2f4a536b98e1b9c2"
+    },
+    {
+      "path": "Maps/10_Paris_Club.dx",
+      "bytes": 1143640,
+      "sha256": "0c509a6a5dd4aa843f88a8685deafaf35e7bc6f2e147e96d40857082090c3536"
+    },
+    {
+      "path": "Maps/10_Paris_Metro.dx",
+      "bytes": 6069454,
+      "sha256": "04860d9f9139644ef2e24cb40c59eda5ddf7f38fc1480844e558ded83129d854"
+    },
+    {
+      "path": "Maps/11_Paris_Cathedral.dx",
+      "bytes": 5975041,
+      "sha256": "8f3457940710a09c1177765351477a72722252808cf33d9ed94032015c898158"
+    },
+    {
+      "path": "Maps/11_Paris_Everett.dx",
+      "bytes": 3049981,
+      "sha256": "17055fa9f72a45204e700fbcaa500254383804c0be883900c095335c6d23d3f3"
+    },
+    {
+      "path": "Maps/11_Paris_Underground.dx",
+      "bytes": 1172475,
+      "sha256": "bdf66b5dc02df008a53f5018b5aeab950cf13481c2a49bd0f683dd714429c718"
+    },
+    {
+      "path": "Maps/12_Vandenberg_Cmd.dx",
+      "bytes": 7800236,
+      "sha256": "abb14a38d8f01cbbe4484ba4b1742042f4687c6ace565748dcc31a5d7ab15dbd"
+    },
+    {
+      "path": "Maps/12_Vandenberg_Computer.dx",
+      "bytes": 2814631,
+      "sha256": "331912cfbb80f0b41aca7428197d56ef690e7753bc6a0ce2e2540a0f7209cbfc"
+    },
+    {
+      "path": "Maps/12_Vandenberg_Gas.dx",
+      "bytes": 3445072,
+      "sha256": "7d06dd6155e5daa7c78e76ed19a66068852973670d1c56dddd9628b2ca393c13"
+    },
+    {
+      "path": "Maps/12_Vandenberg_Tunnels.dx",
+      "bytes": 4544536,
+      "sha256": "3132860082a4b4768e5a1aedef8244806530e71492a44d69f235c1aed1593bb9"
+    },
+    {
+      "path": "Maps/14_OceanLab_Lab.dx",
+      "bytes": 8210244,
+      "sha256": "4e3757c3f3b2144f3750084db83cdbbc8bd4412047aadffa17c0494f4fa51a39"
+    },
+    {
+      "path": "Maps/14_OceanLab_UC.dx",
+      "bytes": 4716412,
+      "sha256": "483c0afd7873734f9d494435a064a78f2725193e696450992dfb1fb2e497a45a"
+    },
+    {
+      "path": "Maps/14_Oceanlab_Silo.dx",
+      "bytes": 7974873,
+      "sha256": "eda90a744e3ce7d78b5234ae51f3cc8412a66ada52004793b40d0eae21981d3c"
+    },
+    {
+      "path": "Maps/14_Vandenberg_Sub.dx",
+      "bytes": 7167768,
+      "sha256": "b7dc0d796c548614301f8f1d74c0455483e9551578d2c4af6e05850d98fbc3a2"
+    },
+    {
+      "path": "Maps/15_Area51_Bunker.dx",
+      "bytes": 6492528,
+      "sha256": "e2bd9c5c7424d8b0dba5bae8c90a436dae985df99348de687109917a959d75e3"
+    },
+    {
+      "path": "Maps/15_Area51_Entrance.dx",
+      "bytes": 4413974,
+      "sha256": "65b9261c371bdf8573cb7bf9128a3f6664b14d2ac360ef6fbfd4a0d292986ece"
+    },
+    {
+      "path": "Maps/15_Area51_Final.dx",
+      "bytes": 7504867,
+      "sha256": "8edbcd8492d39c6cc8d0c6947c4a2482b0cd4ce5902fa4090d289ab9972be778"
+    },
+    {
+      "path": "Maps/15_Area51_Page.dx",
+      "bytes": 8961143,
+      "sha256": "7abf1432ef9a86fb97634551095779d8da1e9e9e0ce436dc7a67ab68aaaa5cd7"
+    },
+    {
+      "path": "Maps/99_Endgame1.dx",
+      "bytes": 2574822,
+      "sha256": "31cceafc7a8b66bec7c55e45e2d0b0f7709f8febbdd8d158728f5358519080e2"
+    },
+    {
+      "path": "Maps/99_Endgame2.dx",
+      "bytes": 3042122,
+      "sha256": "def25b54608fdd8b0bc493aca7f350b793e5e93621ea2a00eec64ef52159a74e"
+    },
+    {
+      "path": "Maps/99_Endgame3.dx",
+      "bytes": 3096965,
+      "sha256": "43b31510dd801b252e85bb679923795c16249a084aee83c46e28ba287309fe8c"
+    },
+    {
+      "path": "Maps/99_Endgame4.dx",
+      "bytes": 23374,
+      "sha256": "203b55b68268b4f807fcd34b42d6d342b913c7f5db0fe8ee847fe712e896f03f"
+    },
+    {
+      "path": "Maps/DX.dx",
+      "bytes": 17459,
+      "sha256": "39ce756a02e8c5cbf3a348387f9e64e6e9b0e48539ca891022ea3fa45ac4bc3a"
+    },
+    {
+      "path": "Maps/DXMP_Area51Bunker.dx",
+      "bytes": 3351021,
+      "sha256": "7dbeb05c00adba87e44e16326f9919c80093470a0e967b3369a552aca73b4f6d"
+    },
+    {
+      "path": "Maps/DXMP_CMD.dx",
+      "bytes": 4262223,
+      "sha256": "2ef55ffbd0b79ef19125b163443b715f975c2b9b893f2bc19bf707d6af7b4b01"
+    },
+    {
+      "path": "Maps/DXMP_Cathedral.dx",
+      "bytes": 3319297,
+      "sha256": "f321327db333974145ee5e94e174a7684e030c71bb59858d72e8b18028fa2a0f"
+    },
+    {
+      "path": "Maps/DXMP_Silo.dx",
+      "bytes": 3630082,
+      "sha256": "dd71e4fd1a65ae57a684e939dbfc059f433e37b22677eb8e74d46cf5bc893971"
+    },
+    {
+      "path": "Maps/DXMP_Smuggler.dx",
+      "bytes": 2119446,
+      "sha256": "232a559448fef062aff887fddea4feb657ef6eb15666dcefd8bc5e72306604f4"
+    },
+    {
+      "path": "Maps/DXOnly.dx",
+      "bytes": 6035,
+      "sha256": "9ef8cf4b2f9a4467b1a6e05f454f1e1104d84c4e5d1976f4132b3b117f1f8f80"
+    },
+    {
+      "path": "Maps/Entry.dx",
+      "bytes": 13745,
+      "sha256": "dfacb34140c3864830e2e95d9187627857e593d7cefb455b2567c8131e22c9aa"
+    },
+    {
+      "path": "Music/Area51Bunker_Music.umx",
+      "bytes": 1642028,
+      "sha256": "293858ba93c4c63931b6ebfc72c0f6c4f22a2ce2c41c8bcf88a9950135dfb533"
+    },
+    {
+      "path": "Music/Area51_Music.umx",
+      "bytes": 1807010,
+      "sha256": "c9fb44018b4b71bdb1f1520b440658edb76a52e8ed2107c7e95c021898f357d3"
+    },
+    {
+      "path": "Music/BatteryPark_Music.umx",
+      "bytes": 1803702,
+      "sha256": "ae838d14a6e6e04504338a15483d68e0530c3cb053fb2bcf03929a6f0e16355d"
+    },
+    {
+      "path": "Music/Credits_Music.umx",
+      "bytes": 1992028,
+      "sha256": "27fed955c8c676e27b3926b5c0932257a2b7e8ca5debf4a0c912b65bc4cb1428"
+    },
+    {
+      "path": "Music/DeusExDanceMix_Music.umx",
+      "bytes": 1738728,
+      "sha256": "27d1f01367fdd040e67acf12caedd1c5090ea405b585c2411c0ef0649f467da4"
+    },
+    {
+      "path": "Music/Endgame1_Music.umx",
+      "bytes": 1407139,
+      "sha256": "d68144a9289569f7ad78ca5514a25d234d8a0a16d8bea82dbf606e85c6d92609"
+    },
+    {
+      "path": "Music/Endgame2_Music.umx",
+      "bytes": 1169570,
+      "sha256": "dfc607fa67710dbe7585b1c9eca42dabb3534f166bb18b892a19d9e9e5197493"
+    },
+    {
+      "path": "Music/Endgame3_Music.umx",
+      "bytes": 1954069,
+      "sha256": "c57f06e73623901519efd4704cb9fa6eac43511e1af346f0ed3d333dd3483b50"
+    },
+    {
+      "path": "Music/HKClub2_Music.umx",
+      "bytes": 1475935,
+      "sha256": "cf6828203219ce9e308d2da01698e5c0a50264761f44df057d29dfe421e6970c"
+    },
+    {
+      "path": "Music/HKClub_Music.umx",
+      "bytes": 1255472,
+      "sha256": "e33ced0fbca37e161bf5ead06b82cb18b0663bf66a25f46d7bad2c0577e431ec"
+    },
+    {
+      "path": "Music/HongKongCanal_Music.umx",
+      "bytes": 1147546,
+      "sha256": "1f4703ced844b171fd681aeb90543712a0a3a26dc15ba1423fa792cd9fcfe82c"
+    },
+    {
+      "path": "Music/HongKongHelipad_Music.umx",
+      "bytes": 1578818,
+      "sha256": "87f822577d78365bee6bd58889d4e051b1df9530d90ac6a101ab328a7625e25e"
+    },
+    {
+      "path": "Music/HongKong_Music.umx",
+      "bytes": 1399423,
+      "sha256": "b0ddde522384570f4982690c5f5993a3ebd432a0781d58b44965fd259f9e2e13"
+    },
+    {
+      "path": "Music/Intro_Music.umx",
+      "bytes": 1843428,
+      "sha256": "4b476e319dcc08ced640517bb0ec685953198321f8ad3d0d75a4c3496e4c0d27"
+    },
+    {
+      "path": "Music/Lebedev_Music.umx",
+      "bytes": 1478323,
+      "sha256": "b6dc1e7288c2c3eaa87ac4b6d0a2b936741e14ac5473e463e19ecd35e6956bba"
+    },
+    {
+      "path": "Music/LibertyIsland_Music.umx",
+      "bytes": 1645423,
+      "sha256": "1271e41fa304e4db8a44b5b875b438ef5f31f87d4fbf1b1140630ce348f60c4c"
+    },
+    {
+      "path": "Music/MJ12_Music.umx",
+      "bytes": 1533344,
+      "sha256": "8c124c173c35967dd07cfdc9374c7f64c80faec9f9ccc1b8b34fd139cf4525bf"
+    },
+    {
+      "path": "Music/NYCBar2_Music.umx",
+      "bytes": 1226857,
+      "sha256": "b615ea1ffc200a06769b06ff2850666402850cc4231ead39411dae87665b13cd"
+    },
+    {
+      "path": "Music/NYCStreets2_Music.umx",
+      "bytes": 1406663,
+      "sha256": "7b3b6e53febd5f7fbeac41ebeba975feac505747cbbb8b33c634da141d9a1f9c"
+    },
+    {
+      "path": "Music/NYCStreets_Music.umx",
+      "bytes": 1565835,
+      "sha256": "059a02e19c3c8ad6190214bfa2917a604cfcc8a529ddb28413d1d3c2e1cfe829"
+    },
+    {
+      "path": "Music/NavalBase_Music.umx",
+      "bytes": 1743155,
+      "sha256": "2e9854e4d582f5a975f09925e098dafbaf7ced5fe3ccf29ea3d8417f14feaaab"
+    },
+    {
+      "path": "Music/OceanLab2_Music.umx",
+      "bytes": 1455787,
+      "sha256": "1a4a190edd7f77ba95723e6c9aa39ed70c504facfb4df0e081ee330c1dc8da2b"
+    },
+    {
+      "path": "Music/OceanLab_Music.umx",
+      "bytes": 1461714,
+      "sha256": "b357c29fb5271a738bc70ffbd6c2ec97b6772be036c061a98810dabc43186b43"
+    },
+    {
+      "path": "Music/ParisCathedral_Music.umx",
+      "bytes": 1603351,
+      "sha256": "ef47702f61694df4f4a4ded79c3663f6eada1a8e245017d77d8b5fd2440cbaf2"
+    },
+    {
+      "path": "Music/ParisChateau_Music.umx",
+      "bytes": 1660479,
+      "sha256": "e6c5e7e1e346f213251bfb497fba86262870e93e7fae822627c65076b9ee8da6"
+    },
+    {
+      "path": "Music/ParisClub2_Music.umx",
+      "bytes": 1431970,
+      "sha256": "8750257d6fedb8b8f20644a2ed949a5a1693290be64706bc50d7b9c81c4d0292"
+    },
+    {
+      "path": "Music/ParisClub_Music.umx",
+      "bytes": 1404746,
+      "sha256": "d8b0bfbb8ff8929419b9f71c970e75c414635fc9dc14dd14ecc7fa37f7411d5e"
+    },
+    {
+      "path": "Music/Quotes_Music.umx",
+      "bytes": 705383,
+      "sha256": "4c51ddf6f07804a780cf555c8f109eef2615c407a6733a48bb8f7e5da026cb69"
+    },
+    {
+      "path": "Music/Title_Music.umx",
+      "bytes": 1976678,
+      "sha256": "9148980a91fe019169823a218d8354632d62fc55ac1a27309beaf110bb8204fe"
+    },
+    {
+      "path": "Music/Training_Music.umx",
+      "bytes": 1450137,
+      "sha256": "0215e4b6c157eb7e011fa02f6a781efe61ff658bec7e0e399d2c54e1a440a5aa"
+    },
+    {
+      "path": "Music/Tunnels_Music.umx",
+      "bytes": 1868459,
+      "sha256": "48fb36e920bcbe6e1f85ea10f74841c8a2e3435131758177cd7156abcabad734"
+    },
+    {
+      "path": "Music/UNATCOReturn_Music.umx",
+      "bytes": 1776043,
+      "sha256": "7c7605b6924f03e5146438215cedc403292221b77b89f81ccbbc26b8d50f5084"
+    },
+    {
+      "path": "Music/UNATCO_Music.umx",
+      "bytes": 1617090,
+      "sha256": "847f8c5ac79b46fa32d67466256d7511c7bd6ab61248be51275b7c6bd513d0e4"
+    },
+    {
+      "path": "Music/Vandenberg_Music.umx",
+      "bytes": 2042058,
+      "sha256": "949486111d4b5b8f1def2bb0cc17a2149d9ee333ae97a614ef636588ee528ed6"
+    },
+    {
+      "path": "Music/VersaLife_Music.umx",
+      "bytes": 1699529,
+      "sha256": "4d89306d33565314e796371ec47063ba7359190edcd45296990c5b323f4da7b0"
+    },
+    {
+      "path": "Sounds/Ambient.uax",
+      "bytes": 9748357,
+      "sha256": "d70ac9739d4a45e6e3cd0814d826e703aabdb10ebd16b7cea35984a00a833a4e"
+    },
+    {
+      "path": "Sounds/MoverSFX.uax",
+      "bytes": 3987934,
+      "sha256": "cca601120f64ec8da0bd66f59523ecfd795bc556bad9876a08b4cfadbaa8b64d"
+    },
+    {
+      "path": "System/ConSys.dll",
+      "bytes": 135168,
+      "sha256": "f20c4d8904d17057318999c18673d82e2ccc3f7c1041eb3c0327eb731b3a8efa"
+    },
+    {
+      "path": "System/ConSys.u",
+      "bytes": 94794,
+      "sha256": "3e9b10d48d5578ca7495e71a3c97540c693ac8dcc02393afe6633ba35b4c0ada"
+    },
+    {
+      "path": "System/Core.dll",
+      "bytes": 790528,
+      "sha256": "8bf3039e14f849942ee70a95bdf26cf1f636245926e30106bbe58b7097eba7e4"
+    },
+    {
+      "path": "System/Core.int",
+      "bytes": 3282,
+      "sha256": "3d5b6135e012dcc8a72e97ed45b9aa84defaed0fc0364a318400c61382d60de9"
+    },
+    {
+      "path": "System/Core.u",
+      "bytes": 60531,
+      "sha256": "4fb22ee4e3a6868dfabb2b46b15fad8e5094f5fda5927a14ff11670a744ec36c"
+    },
+    {
+      "path": "System/D3DDrv.dll",
+      "bytes": 212992,
+      "sha256": "9e0f8a4293de6edb4f88b1ba9972fe98b4e80a1115f9667e57f8ef3d51d8ac9f"
+    },
+    {
+      "path": "System/D3DDrv.int",
+      "bytes": 374,
+      "sha256": "f1472e84479d5fc86ad3efe2d7f9e822494da193d0706172626e482cabeecbb6"
+    },
+    {
+      "path": "System/DefUser.ini",
+      "bytes": 5959,
+      "sha256": "a276e5261238631a1def4ac769a35ff934f0a61877273f2d8ac331e0c478b531"
+    },
+    {
+      "path": "System/Default.ini",
+      "bytes": 7255,
+      "sha256": "b6538ef8ed23e518fcfd88f0108c6b59adf59fdc7ac3831463ad2a7e94f2aecc"
+    },
+    {
+      "path": "System/DeusEx.dll",
+      "bytes": 245760,
+      "sha256": "b91002f3e7658c0562d28bccc887cf9db79a47a19f5e09e8be460c9d0c0bee04"
+    },
+    {
+      "path": "System/DeusEx.exe",
+      "bytes": 64000,
+      "sha256": "e7217090c435c7ae01f875a08fa25c10303cd56203c25a29c6e77fb041b992a2"
+    },
+    {
+      "path": "System/DeusEx.ini",
+      "bytes": 7255,
+      "sha256": "b6538ef8ed23e518fcfd88f0108c6b59adf59fdc7ac3831463ad2a7e94f2aecc"
+    },
+    {
+      "path": "System/DeusEx.int",
+      "bytes": 113023,
+      "sha256": "096e1fa67de6e1559e66493389e970707485b92ef699a72afdb618bd3c185b6c"
+    },
+    {
+      "path": "System/DeusEx.u",
+      "bytes": 5386972,
+      "sha256": "257f5c166739b3d13884a8b8e98a47dda458b325fa929b3b3b99be056cb74480"
+    },
+    {
+      "path": "System/DeusExCharacters.u",
+      "bytes": 27310840,
+      "sha256": "bc9911e4e35440aef12d27c6239c596eef28673e3360d8e6b18fcdffdfbdc32d"
+    },
+    {
+      "path": "System/DeusExConAudioAIBarks.u",
+      "bytes": 14756574,
+      "sha256": "94ab0e1128c92b3d19b6707d3139196cce878c606e6dd4cad52e6d3e9a9b0b6e"
+    },
+    {
+      "path": "System/DeusExConAudioEndGame.u",
+      "bytes": 1329928,
+      "sha256": "9ad02f2110822c38d160f5ee14e53613ad1a90adaa5f01912fa72188bf8fd776"
+    },
+    {
+      "path": "System/DeusExConAudioHK_Shared.u",
+      "bytes": 31697212,
+      "sha256": "87037e05db9adc6d243294de0bb070210dd7abbfb9ab18942773cae680d6190f"
+    },
+    {
+      "path": "System/DeusExConAudioIntro.u",
+      "bytes": 730907,
+      "sha256": "3b62a22fc644ad62c418d008c5e02284245e63541cf4421fc6bdcc26069c5031"
+    },
+    {
+      "path": "System/DeusExConAudioMission00.u",
+      "bytes": 5151373,
+      "sha256": "6a3f1c0fb5a69274b79ef9ce91d373814eec4881b465423e00f65b854db9c81d"
+    },
+    {
+      "path": "System/DeusExConAudioMission01.u",
+      "bytes": 12444736,
+      "sha256": "f4e76874e925553dab60edb2a4c3ee4882bf049659ce6d8df1b48fa912688283"
+    },
+    {
+      "path": "System/DeusExConAudioMission02.u",
+      "bytes": 17804434,
+      "sha256": "5e363d930a8ef36333c0d7cb2afb41c5814f010811b1cab7889a52e2dcfbe84b"
+    },
+    {
+      "path": "System/DeusExConAudioMission03.u",
+      "bytes": 20125905,
+      "sha256": "af03799ba0af77330b6564ad5f95b1355001597ecfba2d603493c9347e13a6c1"
+    },
+    {
+      "path": "System/DeusExConAudioMission04.u",
+      "bytes": 14758230,
+      "sha256": "63b700dcfbfb77f55a96028fdf0f238d1393a5262e8e6947d8fe947b600eb85b"
+    },
+    {
+      "path": "System/DeusExConAudioMission05.u",
+      "bytes": 6553799,
+      "sha256": "3a549419fe6dc94eb66bb84c66e65d9fa1c94467f19ada89cce3afeb49c4e459"
+    },
+    {
+      "path": "System/DeusExConAudioMission08.u",
+      "bytes": 7618539,
+      "sha256": "5c6c6a0b1cfc32c076b711322df56bd717d759e9517b461264dad776697889e0"
+    },
+    {
+      "path": "System/DeusExConAudioMission09.u",
+      "bytes": 6665875,
+      "sha256": "1242fdff6cf6811b891d976b66107592665849a190ddfb2fea2aaebd4b9029e9"
+    },
+    {
+      "path": "System/DeusExConAudioMission10.u",
+      "bytes": 20437859,
+      "sha256": "ecbe22eb88d1e0d4abfd6cf6262ab483d4653fff736fc7e6f32e90e3abd19a82"
+    },
+    {
+      "path": "System/DeusExConAudioMission11.u",
+      "bytes": 8928313,
+      "sha256": "38dd2af7038606cc361a2338d2d81d7041ec3b75640091711a0d924d5233b5e1"
+    },
+    {
+      "path": "System/DeusExConAudioMission12.u",
+      "bytes": 7396547,
+      "sha256": "686e511b1f1c8ca2b051b1500862086d76f6578c5485093cc9d68e6649e144c8"
+    },
+    {
+      "path": "System/DeusExConAudioMission14.u",
+      "bytes": 4068239,
+      "sha256": "7e763d48424b80b96cd3e0d6dbacbad3fc36a40499a1fc9c7c9b92830b64771b"
+    },
+    {
+      "path": "System/DeusExConAudioMission15.u",
+      "bytes": 8454459,
+      "sha256": "6ef3fb314d01762aec0e684899d9b5dc7ae3ece8c09cd4027fe25b5ad94fb63b"
+    },
+    {
+      "path": "System/DeusExConAudioNYShared.u",
+      "bytes": 2375589,
+      "sha256": "e5414d7f8b914cdd416244e7f0856617f829259c19b670646a1dba1653205ff5"
+    },
+    {
+      "path": "System/DeusExConText.u",
+      "bytes": 3945489,
+      "sha256": "848590a0b66e92920094b6533928821d51a1f54bc9723f6923823c8be021e574"
+    },
+    {
+      "path": "System/DeusExConversations.u",
+      "bytes": 2292,
+      "sha256": "d3c0580f17477e3a28bb46c38ce3ec8e9b95eb656337fed3616189f165e9703e"
+    },
+    {
+      "path": "System/DeusExDeco.u",
+      "bytes": 9840776,
+      "sha256": "1acf34abac96ad371881c617ba69a6df529b3e1c343277ced55329ac272bcb71"
+    },
+    {
+      "path": "System/DeusExItems.u",
+      "bytes": 5829328,
+      "sha256": "f7114c5228248fcbe9e89e9c6408abcce1e41566207a5abb7c7e58cc4d9beaaa"
+    },
+    {
+      "path": "System/DeusExSounds.u",
+      "bytes": 17596150,
+      "sha256": "647b5e60e272318841a7708401af0d8ffa3d8925f92fc7d1318fe306b42710a2"
+    },
+    {
+      "path": "System/DeusExText.dll",
+      "bytes": 49152,
+      "sha256": "5f64ff6be5e44a276906e72325a25e1a27406314267076c2b5ad061b4a339aa1"
+    },
+    {
+      "path": "System/DeusExText.u",
+      "bytes": 371251,
+      "sha256": "cc570ddb88ac0eb79095ae35f769620041541933a0cf91fb4fff91b976a1950b"
+    },
+    {
+      "path": "System/DeusExUI.u",
+      "bytes": 27378034,
+      "sha256": "7f6139f32c1fe16954b8f8e7c48494771380539e5389811a62e93ef87db7c617"
+    },
+    {
+      "path": "System/Editor.dll",
+      "bytes": 1253376,
+      "sha256": "93e31b3e401880ab17ab4561c3fd4d2baa530fbe25ccb5154911ebad60fff035"
+    },
+    {
+      "path": "System/Editor.int",
+      "bytes": 3403,
+      "sha256": "7756be53e3d5a7d59e9a0942c26e383ec4840f2d4c4c8215fcd129bb4d004c34"
+    },
+    {
+      "path": "System/Editor.u",
+      "bytes": 98657,
+      "sha256": "aa0869e23d8b1514e10eb73f27129a7621d756205f509c798c474423174edce2"
+    },
+    {
+      "path": "System/Engine.dll",
+      "bytes": 1732608,
+      "sha256": "0c3a8b18239ca98ae132506a1bd966cb5d91c6852e650e179cb15860832c20b4"
+    },
+    {
+      "path": "System/Engine.int",
+      "bytes": 4993,
+      "sha256": "6d9b6faede5504cd30fb8a03db7f6946f1c73b8f04fbd875d3a07fd3dd688636"
+    },
+    {
+      "path": "System/Engine.u",
+      "bytes": 1406778,
+      "sha256": "1742d16f49492a02391fa6a9ca25887f0cc4f30ec9964925226217d8858737da"
+    },
+    {
+      "path": "System/Extension.dll",
+      "bytes": 675840,
+      "sha256": "93c35502d3c6fe61ecbecc7dba526d09281a9fbce16ee045061b1a4d8b916d9c"
+    },
+    {
+      "path": "System/Extension.u",
+      "bytes": 368327,
+      "sha256": "9984faeda55fb2100b1a15a37bfeb8cdb4878248b39aff832002a799f1d787f7"
+    },
+    {
+      "path": "System/Fire.dll",
+      "bytes": 106496,
+      "sha256": "64bdcd86329f205fbae1a1bbc55dfcc8d14de23be9b9c35331ff06ff03644d28"
+    },
+    {
+      "path": "System/Fire.u",
+      "bytes": 14926,
+      "sha256": "37346d809734188d7628115b12fb38280dc61f89b35e285d0cf39d3898183070"
+    },
+    {
+      "path": "System/Galaxy.dll",
+      "bytes": 360448,
+      "sha256": "606e71d13bbd3c4db2460aabcf60d87b1c79bb49d77725cf9e087513c7d06353"
+    },
+    {
+      "path": "System/Galaxy.int",
+      "bytes": 273,
+      "sha256": "3b1ede84365c5412a8d68730c47d479f00a959b3e3e966fb48a291c1c5de51c9"
+    },
+    {
+      "path": "System/GlideDrv.dll",
+      "bytes": 86016,
+      "sha256": "50b9f142700ca928ea688e7cce34d3064d39ccbe0b5056c826b413bd842cfe4c"
+    },
+    {
+      "path": "System/GlideDrv.int",
+      "bytes": 451,
+      "sha256": "9a0f25d23b5a5823c33854b24e8c085c2e4d3f84f291b1b93967cbc2bcd74747"
+    },
+    {
+      "path": "System/HCC.exe",
+      "bytes": 212992,
+      "sha256": "97b4e9bc657860cc486d7160be038f61675aededae12b6fecdcf438777458495"
+    },
+    {
+      "path": "System/HCC.ini",
+      "bytes": 84,
+      "sha256": "87af5197efc41787f997b0ca94fc5e82da7fc79c91c7046ff5dece9995b8b073"
+    },
+    {
+      "path": "System/HX.dll",
+      "bytes": 638976,
+      "sha256": "f6f3af72a468c2a801cdcdfea0d2d63a9ad686b0654d895883c5fec71b89182d"
+    },
+    {
+      "path": "System/HX.exe",
+      "bytes": 385024,
+      "sha256": "d8bd4d62a9ef591ad623295b963ec1f3ad2cfedaee77f267d880935784da0c95"
+    },
+    {
+      "path": "System/HX.int",
+      "bytes": 13109,
+      "sha256": "f609027b191987d7c66b86a32d8d645cf2779e95c6149e6fd00a941f7fc996c1"
+    },
+    {
+      "path": "System/HX.u",
+      "bytes": 8520845,
+      "sha256": "7485fa7374853165a5d95f4f44d6d3f31c54aae5a8bafc16162dacdf289cb3eb"
+    },
+    {
+      "path": "System/HXDefUser.ini",
+      "bytes": 6227,
+      "sha256": "7fb091a5c0fa12b5279b57a186d0c96e5957d25e33e659c48d1cf3c2258871b2"
+    },
+    {
+      "path": "System/HXDefault.ini",
+      "bytes": 8851,
+      "sha256": "6e2557d7f7adbb45d660af3c33ae37aaf2fe01c7d113a904b8e501f5822538ed"
+    },
+    {
+      "path": "System/IpDrv.dll",
+      "bytes": 184320,
+      "sha256": "865a64086378a2d018359ae578ae7489be4632abc0d0036ceee638cea8b98ed5"
+    },
+    {
+      "path": "System/IpDrv.int",
+      "bytes": 1153,
+      "sha256": "4cebb0c101e7cba41bcdafffd185069992b1d4535ef15b59bd8226a381a9e5db"
+    },
+    {
+      "path": "System/IpDrv.u",
+      "bytes": 19849,
+      "sha256": "25d3b94a28a8eecd360c864d8109a2571d6780869db856fa9a1d6e533f9f1dac"
+    },
+    {
+      "path": "System/IpServer.int",
+      "bytes": 301,
+      "sha256": "ee3ae6a5e272926ce3837e994278db064f6c9c9cad34f8e8aaeffe026d38e6fb"
+    },
+    {
+      "path": "System/IpServer.u",
+      "bytes": 29321,
+      "sha256": "2195c3b610563a0b31eb3f390cbc845d8521f262a8992079dd73721f6b6ddf35"
+    },
+    {
+      "path": "System/MPCharacters.u",
+      "bytes": 1200984,
+      "sha256": "9a507fb08566bfa22103ca6659f9384751ec94455e555409c302a16e5f8c4626"
+    },
+    {
+      "path": "System/MSVCRT.dll",
+      "bytes": 277776,
+      "sha256": "e390b0529fb9ee1214bb68302a4658b578134d92ab76bc5eb48f3badd843d210"
+    },
+    {
+      "path": "System/Manifest.ini",
+      "bytes": 21069,
+      "sha256": "6f31bb73bafba03a533b8d0f24b049d51e03db539bff45d1de898b245ca72ed5"
+    },
+    {
+      "path": "System/MeTaLDrv.dll",
+      "bytes": 53248,
+      "sha256": "d78e953a43a97ad03e0190462ec91f67d94d1f319e146c66f3be32b4ce0d31fc"
+    },
+    {
+      "path": "System/MeTaLDrv.int",
+      "bytes": 455,
+      "sha256": "114d90de918c73b18633a27e37412c6540a4ece117e3aba4c20fe9660cfc2a19"
+    },
+    {
+      "path": "System/OpenGlDrv.dll",
+      "bytes": 110592,
+      "sha256": "3f9d083bd47135d887fe9a008f199584589b68375c9de6861574945f25de547f"
+    },
+    {
+      "path": "System/OpenGlDrv.ini",
+      "bytes": 1160,
+      "sha256": "881d3a4762daae6360be9198f29bcf1dd7bab801851fe7997a643291d89c2d81"
+    },
+    {
+      "path": "System/OpenGlDrv.int",
+      "bytes": 596,
+      "sha256": "d7fc6eb3586f4ee18075fb9fa747fcab0ed16e0478d2d74753f579404de0e1dd"
+    },
+    {
+      "path": "System/Render.dll",
+      "bytes": 233472,
+      "sha256": "607f1077c5cd3e25f8a4cde1ffacf4cf9260aebc92a72be40721cd6955bd75d1"
+    },
+    {
+      "path": "System/SGLDrv.dll",
+      "bytes": 94208,
+      "sha256": "dba24421b1104f8932a79ed9b7baa1d24696c0b089a51d4608f57a45662e715d"
+    },
+    {
+      "path": "System/SGLDrv.int",
+      "bytes": 451,
+      "sha256": "1bbdad156ae1e871f0da4b0cf75086ab6cf0ac22f85d4680fdc1bfbf56a00f42"
+    },
+    {
+      "path": "System/Setup.exe",
+      "bytes": 299008,
+      "sha256": "7ac215dc35af5dd9bbd58d9d4ef9e3327509e6b2a4aa15a89fc0d651e3da30e1"
+    },
+    {
+      "path": "System/Setup.int",
+      "bytes": 7594,
+      "sha256": "2adf4ce1e40cc777b983ca691eedcc687ffcf66119c9870b7e63a79bfac8a95f"
+    },
+    {
+      "path": "System/SoftDrv.dll",
+      "bytes": 393216,
+      "sha256": "05657246870df3dac44826240845b5021d26af765a5bb625f8642cc47782cd30"
+    },
+    {
+      "path": "System/SoftDrv.int",
+      "bytes": 329,
+      "sha256": "0bc6a91285ecb27c06dc1c1289f05e305304224694730ad7274fccb4a666040d"
+    },
+    {
+      "path": "System/Startup.int",
+      "bytes": 4239,
+      "sha256": "60b6f7954954eeb72075446dfad86e17997925c84e750bd93f5062e25604f592"
+    },
+    {
+      "path": "System/UBrowser.u",
+      "bytes": 325317,
+      "sha256": "0da1d0f792ddfb0aa649c7b6f5fc6dc5f03753f9c610b6cdb1f8f27765aad131"
+    },
+    {
+      "path": "System/UWindow.u",
+      "bytes": 644206,
+      "sha256": "f4708312e630feda063f044c64d70cc85dd72bb9d58ee099bebd7f694fb10074"
+    },
+    {
+      "path": "System/User.ini",
+      "bytes": 5959,
+      "sha256": "a276e5261238631a1def4ac769a35ff934f0a61877273f2d8ac331e0c478b531"
+    },
+    {
+      "path": "System/WinDrv.dll",
+      "bytes": 159744,
+      "sha256": "9cf2861ca66dabf21db97e44e328aa0a42d85289a35dbad090271c0611f94e1f"
+    },
+    {
+      "path": "System/WinDrv.int",
+      "bytes": 681,
+      "sha256": "2817d1521d5bb9fa833f7e1a8d8c91263dd61373d3011b6ba8778c4696161aa3"
+    },
+    {
+      "path": "System/Window.dll",
+      "bytes": 397312,
+      "sha256": "3d40db1dd7467d94c17bf4ef0fa4cafd1a9d699ac7df7a5526b3961b4642e59d"
+    },
+    {
+      "path": "System/Window.int",
+      "bytes": 2095,
+      "sha256": "3218e03199f352781af3974590a3fb5e483211610f3346f4ed9ba0fd9fd7e7e6"
+    },
+    {
+      "path": "System/runme.dat",
+      "bytes": 12,
+      "sha256": "5276f54f5e6a67afca3fac1dba05a3cf6eed73c8e1b36d4b292da6852bbf2a5f"
+    },
+    {
+      "path": "System/runme.exe",
+      "bytes": 40960,
+      "sha256": "e07f112452240049472ced6c4487b5d9b53ad567b3e7cc7603b2e2740a22bafd"
+    },
+    {
+      "path": "Textures/Airfield.utx",
+      "bytes": 3802215,
+      "sha256": "665f1c342876f765b0de323b286a7906db67c82fead18b169cf6c1ebd8cdbcde"
+    },
+    {
+      "path": "Textures/BatteryPark.utx",
+      "bytes": 2980734,
+      "sha256": "7e9943bcf372441b62957efaa7b36a2a64e4abe34d357fa206454baa30c55b82"
+    },
+    {
+      "path": "Textures/BobPage.utx",
+      "bytes": 10122,
+      "sha256": "cad0098f31a023b781bf1b0b02b9970ee4bdf2744c01d3e0418b3b191a28e627"
+    },
+    {
+      "path": "Textures/Catacombs.utx",
+      "bytes": 1557535,
+      "sha256": "4ea4bf19df0d09389f397f86b23b18f49171041bb09dc1af873892826ea27a3c"
+    },
+    {
+      "path": "Textures/Cmd_tunnels.utx",
+      "bytes": 389982,
+      "sha256": "c0a0f78370fdfb70313f876c84b7dc1ffca7a64cd47582da60899f55616be77e"
+    },
+    {
+      "path": "Textures/Constructor.utx",
+      "bytes": 201485,
+      "sha256": "7ae9a675fa327a20346cc737613ca25828686b7924123da8a23892c079ad414c"
+    },
+    {
+      "path": "Textures/CoreTexBrick.utx",
+      "bytes": 523868,
+      "sha256": "02519ae08a870407fb8d9b26f961b1a02ff859f07810081963971a15880118c7"
+    },
+    {
+      "path": "Textures/CoreTexCeramic.utx",
+      "bytes": 149500,
+      "sha256": "9197aaa99bdab19ad29b9691013f3ecb2901dc36ca27a16bc6bc28ec5303693b"
+    },
+    {
+      "path": "Textures/CoreTexConcrete.utx",
+      "bytes": 1130768,
+      "sha256": "13a4ba354d6c62e5d715eabe67533e344c3ed53a6ce8b391fb75e43f1a91185a"
+    },
+    {
+      "path": "Textures/CoreTexDetail.utx",
+      "bytes": 283939,
+      "sha256": "193bd319aa85f1b126cfdee1f458ec01dcdc86b9a6fe6215f3690818b4b363a1"
+    },
+    {
+      "path": "Textures/CoreTexEarth.utx",
+      "bytes": 355984,
+      "sha256": "61ecb3e5f5f39cd43c966af3a550bb8d996947b884cc001decaae9dcb92da58a"
+    },
+    {
+      "path": "Textures/CoreTexFoliage.utx",
+      "bytes": 199841,
+      "sha256": "16f6a2ad1d6ae0e26d7c72d30c2ac97e0e875cef5676e06e650107d69d2e00a8"
+    },
+    {
+      "path": "Textures/CoreTexGlass.utx",
+      "bytes": 450742,
+      "sha256": "9b0f72cdfc6c85d16aa9cab6591068ad40d398f12c47097f5d019d29dfca77c7"
+    },
+    {
+      "path": "Textures/CoreTexMetal.utx",
+      "bytes": 5586282,
+      "sha256": "0a57d4a194bf6cb65e2a508d968a41196dd370a3f6703d38b870f48c96600bed"
+    },
+    {
+      "path": "Textures/CoreTexMisc.utx",
+      "bytes": 6031976,
+      "sha256": "8e794df3dc501065641f0651cd4f157ca921c0bca9ed95b6f3230a03c616b0aa"
+    },
+    {
+      "path": "Textures/CoreTexPaper.utx",
+      "bytes": 109872,
+      "sha256": "cb95c3fe512102640dd3031eec0e3fe2863adbab8eb1b674cd1066c1cfc4c13b"
+    },
+    {
+      "path": "Textures/CoreTexSky.utx",
+      "bytes": 1720642,
+      "sha256": "40e7dc0001babd5aab8320446e302179c69078148fe005adeabbe0863b9eb6d6"
+    },
+    {
+      "path": "Textures/CoreTexStone.utx",
+      "bytes": 777807,
+      "sha256": "101396a689d43fd58bc7f7f73ec5f619a1e4005f13d101b2426286f9d96d1866"
+    },
+    {
+      "path": "Textures/CoreTexStucco.utx",
+      "bytes": 90751,
+      "sha256": "131f5daa00fe0e168674d6e115ee4959f2845e815541d2ac15c31ee2807bb39c"
+    },
+    {
+      "path": "Textures/CoreTexTextile.utx",
+      "bytes": 95985,
+      "sha256": "e43126c92d59a80aa08876ee3a68b85fa785c9694d1903ad095bcc0e873224c5"
+    },
+    {
+      "path": "Textures/CoreTexTiles.utx",
+      "bytes": 187987,
+      "sha256": "91d655c25bf065254edf3e2ba586aa65756b3c57b93c734dc580fa64a70bb4a1"
+    },
+    {
+      "path": "Textures/CoreTexWallObj.utx",
+      "bytes": 689106,
+      "sha256": "66a7066570665ec96f6bd60dffe953e11f8d0528fbafe2f235e48a8d28da8c0e"
+    },
+    {
+      "path": "Textures/CoreTexWater.utx",
+      "bytes": 176547,
+      "sha256": "0cfff8cab69b97d3bd9922b65b67b196dd0bda5f8d9d6c387c683ffdf689387c"
+    },
+    {
+      "path": "Textures/CoreTexWood.utx",
+      "bytes": 1920647,
+      "sha256": "52543a945f3817e5253c768a940920837ce1afe6862ac2c4300756aabad5babb"
+    },
+    {
+      "path": "Textures/DXFonts.utx",
+      "bytes": 273241,
+      "sha256": "065bac3493a1d281818ed9b3c328b648b9817bc3b060908d173f11a7cb297661"
+    },
+    {
+      "path": "Textures/Dockyard.utx",
+      "bytes": 1468754,
+      "sha256": "2cff3c0b4602f063d5a6e3acac084b1f39469e5052b469d4ad39b86c73be8cb9"
+    },
+    {
+      "path": "Textures/Effects.utx",
+      "bytes": 678784,
+      "sha256": "bc6a7ac2be658fcf771a144bc42d832b06275ebd73a4d924504ba165366bd516"
+    },
+    {
+      "path": "Textures/Extras.utx",
+      "bytes": 887346,
+      "sha256": "477932bbdb3b11747bf1c3c8e42f8ba7e12f001911ca565ef10c1cb5a510d2a4"
+    },
+    {
+      "path": "Textures/FreeClinic.utx",
+      "bytes": 503442,
+      "sha256": "2aadd12ddac763541088c14950d7f56918e38fa2d9d104cf6ea9d4b4558b9778"
+    },
+    {
+      "path": "Textures/G_Station.utx",
+      "bytes": 561195,
+      "sha256": "b164fa03f2f40afc1cd15246a35cba8b149719ce1485f8ecca5fdf3080216f74"
+    },
+    {
+      "path": "Textures/HK_BuildingExt.utx",
+      "bytes": 712401,
+      "sha256": "82ec557b11da4ce920ccbb4d8981da49a796e878a856e63df722476692d93ef7"
+    },
+    {
+      "path": "Textures/HK_Decorations.utx",
+      "bytes": 548193,
+      "sha256": "f3ff9f76693f263ff1e6217c16a1b1a7d8b26c79c351081cb37c4633df61f79c"
+    },
+    {
+      "path": "Textures/HK_Helibase.utx",
+      "bytes": 430181,
+      "sha256": "1d08cee37efd5681ff159cb011f48e7457dadb51bd2edeba6ad45963af66ba6c"
+    },
+    {
+      "path": "Textures/HK_Interior.utx",
+      "bytes": 1029980,
+      "sha256": "054840c322b9cb6f696fee05a0412b0cd074ed36fdafe0ff0489412225aec7f1"
+    },
+    {
+      "path": "Textures/HK_MJ12Lab.utx",
+      "bytes": 579400,
+      "sha256": "23fbff30c3a75385229c3bff859a5421d965f059c4b18710b7b0d6c0d60dd59d"
+    },
+    {
+      "path": "Textures/HK_Signs.utx",
+      "bytes": 557689,
+      "sha256": "746f0da2e6c43057f25c9a4c838a5256c79aa6e2deb7edeb09e856bc0998e664"
+    },
+    {
+      "path": "Textures/HK_VersaLife.utx",
+      "bytes": 424128,
+      "sha256": "55d57282ccb5cb44e72ca5829c020d4a4f1dde3b7de372d0dcf31627745319a8"
+    },
+    {
+      "path": "Textures/Hangar18.utx",
+      "bytes": 176631,
+      "sha256": "f1f57b5ef35505f57a71029867f7c121c5f3720e3962ab77489a639454bd242d"
+    },
+    {
+      "path": "Textures/InfoPortraits.utx",
+      "bytes": 110821,
+      "sha256": "dbc9001202d4e130f9a996897ebfe00d5ef6d34a5873c8799f25e653bc57dff0"
+    },
+    {
+      "path": "Textures/MJ12_lab.utx",
+      "bytes": 560858,
+      "sha256": "47036466a8202016a2f2ed10d5f53c6de69a7e53cafa89f062b25e02f9b4ccfb"
+    },
+    {
+      "path": "Textures/Mobile_Camp.utx",
+      "bytes": 437592,
+      "sha256": "ec69b070b21ad8f6093a6ffa3146eb96c6fa41cbcc9a6e3bc5fcd7f099d24729"
+    },
+    {
+      "path": "Textures/MolePeople.utx",
+      "bytes": 4744445,
+      "sha256": "a0f00debcc0412d47efa99c5188a55c4765b64d6e14d850a8fa4297528d8f6a7"
+    },
+    {
+      "path": "Textures/Moon.utx",
+      "bytes": 648185,
+      "sha256": "6287f43180db8cc5cd68f76d51f3558c5b5220c9a2817fa0bc397e12ba57110c"
+    },
+    {
+      "path": "Textures/NYCBar.utx",
+      "bytes": 952219,
+      "sha256": "90b8875ee90dc05b3b7d0010e627134eba46c2b18666ef2a8058c7d8432d084f"
+    },
+    {
+      "path": "Textures/NewYorkCity.utx",
+      "bytes": 6590004,
+      "sha256": "06032643432770cb8fc320a4fb29c3d9085659e91e1efbc3bad52d1b58a54535"
+    },
+    {
+      "path": "Textures/OceanLab.utx",
+      "bytes": 1083486,
+      "sha256": "ec5da5a0306287301db317e0a280ea04621f7c1fbe43a8b2d731432c2aae3808"
+    },
+    {
+      "path": "Textures/Palettes.utx",
+      "bytes": 421024,
+      "sha256": "3433145468a72f36e303036811b8d3be61aebd4f68f6c6ae1eb25a9ba2507bec"
+    },
+    {
+      "path": "Textures/Paris.utx",
+      "bytes": 2797050,
+      "sha256": "0bcb153113f50e2bb23a9bf5b504a0e5e078aa74b8ec1e72c517000bfee31e09"
+    },
+    {
+      "path": "Textures/Render.utx",
+      "bytes": 88914,
+      "sha256": "16734cc9710fcdcf78598d23aa8025240b72b5b4a50078ba826e176c6a2da4a4"
+    },
+    {
+      "path": "Textures/Rocket.utx",
+      "bytes": 2443671,
+      "sha256": "a58a3a5fbeff5b037250d929e5be2c1e3d6d295c39fe0f666a7758e8bad4d8ab"
+    },
+    {
+      "path": "Textures/SubBase.utx",
+      "bytes": 644839,
+      "sha256": "c6c13204c6c0b884e530b8e867251ec0177d5b9671c51ba0e44d872cd704c0d4"
+    },
+    {
+      "path": "Textures/Supertanker.utx",
+      "bytes": 2727799,
+      "sha256": "32ba901ee08d68fafe5b9d39ac32b3f5abd18be4fd54535cffa11f30b0144edd"
+    },
+    {
+      "path": "Textures/UNATCO.utx",
+      "bytes": 4406928,
+      "sha256": "b74fdbe77fa7893409fab586a1e58e6dc4e738e577eeb812e4087a35c38077b9"
+    },
+    {
+      "path": "Textures/V_Com_Center.utx",
+      "bytes": 1496835,
+      "sha256": "3180185f39828ecb6e44e297e6703f29c7dbc334690eadd213567bec7551a73a"
+    },
+    {
+      "path": "Textures/area51textures.utx",
+      "bytes": 3025133,
+      "sha256": "6e41fa7b3ce3dce1a5891e7583ab40167086f832b527d2b152df9b0c49145dde"
+    },
+    {
+      "path": "Textures/subway.utx",
+      "bytes": 218433,
+      "sha256": "7b8b4368348c43336e661b3f479c1b09bca7b10c109e1fd8764e1bb7080d0c11"
+    },
+    {
+      "path": "installscript.vdf",
+      "bytes": 207,
+      "sha256": "8ea54f47c3152d9a761292b6ad858f15da7cd68d6f8a62105ae954c265a2e553"
+    }
+  ]
+}

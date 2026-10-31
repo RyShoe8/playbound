@@ -64,6 +64,8 @@ AUXILIARY_PROFILES = {
     'team-fortress-2': (27015,27025,1,((1000,socket.IPPROTO_UDP),)),
     'open-fortress': (27150,27169,1,((1000,socket.IPPROTO_UDP),)),
     'goldeneye-source': (27120,27139,1,((1000,socket.IPPROTO_UDP),)),
+    # HX: game port, then its query and (disabled) uplink sockets.
+    'deus-ex-goty-edition': (7790,7850,3,((1,socket.IPPROTO_UDP),(2,socket.IPPROTO_UDP))),
 }
 
 

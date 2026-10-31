@@ -268,6 +268,21 @@ export function openFortressIdentityConfiguration(args,startupPort,serverName,rc
     return {name:serverName,maxPlayers,map:values["+map"],botFill,timeLimit,rconPassword:rconPassword??""};
 }
 
+/** The shared GoldenEye recipe's exact argv, reduced to the root helper's contract. */
+export function goldenEyeIdentityConfiguration(args,startupPort,serverName,rconPassword) {
+  if(!Array.isArray(args)||args.length>32||!Number.isInteger(startupPort)||startupPort<27120||startupPort>27139)throw new Error("Invalid GoldenEye allocation");
+  const flags=new Set(),values=Object.create(null),flagNames=new Set(["-console","-strictportbind","-norestart"]),valueNames=new Set(["-game","-ip","-port","+map","-maxplayers","+mp_timelimit","+exec"]);
+  for(let i=0;i<args.length;i++){
+    const key=args[i];
+    if(flagNames.has(key)){if(flags.has(key))throw new Error("Repeated GoldenEye flag");flags.add(key);continue;}
+    if(!valueNames.has(key)||Object.hasOwn(values,key)||typeof args[i+1]!=="string")throw new Error("Unexpected GoldenEye argument");
+    values[key]=args[++i];
+  }
+  const maxPlayers=Number(values["-maxplayers"]),timeLimit=Number(values["+mp_timelimit"]);
+  if(flags.size!==3||values["-game"]!=="gesource"||values["-ip"]!=="0.0.0.0"||values["-port"]!==String(startupPort)||values["+exec"]!=="pb-managed.cfg"||!/^[A-Za-z0-9_-]{1,64}$/.test(values["+map"]??"")||!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>32||!Number.isInteger(timeLimit)||timeLimit<0||timeLimit>600||typeof serverName!=="string"||!serverName.length||serverName.length>100||/[ -"\;]/.test(serverName)||typeof rconPassword!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(rconPassword))throw new Error("Invalid GoldenEye settings");
+  return {name:serverName,maxPlayers,map:values["+map"],timeLimit,rconPassword};
+}
+
 export function rvglIdentityConfiguration(args, port) {
   if (!Number.isInteger(port) || port < 2310 || port > 2330 || !Array.isArray(args)) throw new Error("Invalid RVGL allocation");
   const expected = ["-n",String(port),"-f",`/var/lib/playbound-host/rvgl-displays/${port}.xauth`,
@@ -299,6 +314,17 @@ function nativeIsolationLaunch({ gameSlug, communityServerId: id, binary, args, 
     const configuration={name:serverName,maxPlayers:Math.min(64,settings?.maxPlayers??12),map:settings?.map??"berlin",gameMode:settings?.gameMode??"GPM_CQ",botSkill:settings?.botSkill??75};
     if(binary!=="/opt/playbound-host/games/battlefield-1942-anthology/bf1942_lnxded.static"||identityProfile!=="battlefield-1942-anthology-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join("\0")!==["+overlayPath",path.join(home,"battlefield-1942-anthology-servers",`pb-${id}`)].join("\0")||!Number.isInteger(startupPort)||startupPort<14567||startupPort>14586||typeof serverName!=="string"||!serverName.length||serverName.length>80||/[\x00-\x1f\x7f"\\;]/.test(serverName)||!Number.isInteger(configuration.maxPlayers)||configuration.maxPlayers<2||typeof configuration.map!=="string"||!/^[A-Za-z0-9_]{1,64}$/.test(configuration.map)||!["GPM_CQ","GPM_COOP"].includes(configuration.gameMode)||!Number.isInteger(configuration.botSkill)||configuration.botSkill<1||configuration.botSkill>100)throw new Error("Unexpected Battlefield identity contract");
     return {profile:"battlefield-1942-anthology-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="deus-ex-goty-edition") {
+    const expected=["server","01_NYC_UNATCOIsland","-ini=HX.ini","-userini=HXUser.ini","-log=HXServer.log"];
+    if(binary!=="/opt/playbound-host/games/deus-ex/System/HCC.exe"||identityProfile!=="deus-ex-goty-edition-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||args.join(" ")!==expected.join(" ")||!Number.isInteger(startupPort)||startupPort<7790||startupPort>7850||(startupPort-7790)%3)throw new Error("Unexpected Deus Ex identity contract");
+    const configuration={maxPlayers:Math.min(8,Math.max(2,Number.isInteger(settings?.maxPlayers)?settings.maxPlayers:8))};
+    return {profile:"deus-ex-goty-edition-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
+  }
+  if(gameSlug==="goldeneye-source") {
+    if(binary!=="/opt/playbound-host/games/goldeneye-source/runtime/srcds.exe"||identityProfile!=="goldeneye-source-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile)throw new Error("Unexpected GoldenEye identity contract");
+    const configuration=goldenEyeIdentityConfiguration(args,startupPort,serverName,rconPassword);
+    return {profile:"goldeneye-source-bwrap-v1",resourceLimits,identityProfile,identityRuntime:{gameSlug,port:startupPort,config:JSON.stringify(configuration)},binary:"/usr/bin/prlimit",args:[],cwd:"/",env:{PATH:"/usr/bin:/usr/games",LANG:"C.UTF-8"}};
   }
   if(gameSlug==="open-fortress") {
     if(binary!=="/opt/playbound-host/games/open-fortress/runtime/srcds_linux"||identityProfile!=="open-fortress-unix-v1"||identityMigrationMetadata(id,home)?.identityProfile!==identityProfile||!Number.isInteger(startupPort)||startupPort<27150||startupPort>27169)throw new Error("Unexpected Open Fortress identity contract");

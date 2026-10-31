@@ -72,6 +72,9 @@ printf '%s\n' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-rvgl-lobby capture *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-rvgl-lobby input *' >> "$rule"
 printf '%s\n' \
+  'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-rimworld-console status *' \
+  'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-rimworld-console command *' >> "$rule"
+printf '%s\n' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-world-backups list *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-world-backups create *' \
   'playbound ALL=(root) NOPASSWD: /usr/local/libexec/playbound-customer-world-backups restore *' \
@@ -90,6 +93,8 @@ install -o root -g root -m 755 "$source_dir/customer-openra.py" /usr/local/libex
 python3 -m py_compile "$source_dir/customer-rimworld.py" "$source_dir/customer-rimworld-bootstrap.py"
 install -o root -g root -m 755 "$source_dir/customer-rimworld.py" /usr/local/libexec/playbound-customer-rimworld
 install -o root -g root -m 755 "$source_dir/customer-rimworld-bootstrap.py" /usr/local/libexec/playbound-customer-rimworld-bootstrap
+python3 -m py_compile "$source_dir/customer-rimworld-console.py"
+install -o root -g root -m 755 "$source_dir/customer-rimworld-console.py" /usr/local/libexec/playbound-customer-rimworld-console
 
 python3 -m py_compile "$source_dir/customer-ss14.py"
 install -o root -g root -m 755 "$source_dir/customer-ss14.py" /usr/local/libexec/playbound-customer-ss14

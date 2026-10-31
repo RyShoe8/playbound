@@ -196,3 +196,18 @@ export async function sendRoomRcon(room, command, { udp = sendRcon } = {}) {
     return `bot_minplayers verified: ${value[1]}`;
   }
 }
+
+/*
+ * Source servers accept the RCON TCP connection well before they service it:
+ * on the VPS TF2 answered about 14 s and Open Fortress about 28 s after their
+ * port first replied to a query. A command sent in that window is "still
+ * loading", not a broken control password or a dead server.
+ */
+export const RCON_STARTUP_GRACE_MS = 90_000;
+
+export function rconStillLoading(room, error, now = Date.now()) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  if (!/rcon timed out|ECONNREFUSED|ECONNRESET/.test(message)) return false;
+  const started = room?.processStartedAt || room?.createdAt;
+  return Number.isFinite(started) && now - started < RCON_STARTUP_GRACE_MS;
+}

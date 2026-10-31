@@ -262,6 +262,8 @@ export function createDedicatedRecipes(deps) {
       rcon: "source",
       binaries: gameBin("goldeneye-source", ["run-server.sh"]),
       resolveBinary: (candidates, ctx) => {
+        // Isolated servers run the sealed bundle's engine; nothing in a host home.
+        if (ctx?.identityProfile === "goldeneye-source-unix-v1") return firstExisting([path.join(GAMES_ROOT, "goldeneye-source", "runtime", "srcds.exe")]);
         if (ctx) {
           const runtime = path.join(serverDir("goldeneye-source-servers", ctx), "runtime", "run-server.sh");
           if (fs.existsSync(runtime)) return runtime;
@@ -270,7 +272,10 @@ export function createDedicatedRecipes(deps) {
       },
       cwd: (_port, ctx) => path.join(serverDir("goldeneye-source-servers", ctx), "runtime"),
       startupReadyTimeoutMs: 90_000,
+      // A fresh private Wine prefix is built on first start (about 35 s on the VPS).
+      identityStartupReadyTimeoutMs: 240_000,
       spawnEnv: (_port, ctx) => {
+        if (ctx?.identityProfile === "goldeneye-source-unix-v1") return {};
         const home = serverDir("goldeneye-source-servers", ctx);
         return { HOME: home, WINEPREFIX: path.join(home, "wineprefix"), WINEDEBUG: "-all", PYTHONDONTWRITEBYTECODE: "1" };
       },

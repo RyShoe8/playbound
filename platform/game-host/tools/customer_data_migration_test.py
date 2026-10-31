@@ -128,6 +128,29 @@ class DataCheckpoint(unittest.TestCase):
         finally:
             module.select_game(previous)
 
+    def test_goldeneye_wine_prefix_is_disposable_and_only_at_the_top(self):
+        prefix = self.source / 'wineprefix' / 'dosdevices'
+        prefix.mkdir(parents=True, mode=0o700)
+        (prefix / 'z:').symlink_to('/')
+        (self.source / 'runtime').mkdir(mode=0o700)
+        with self.assertRaises(ValueError):
+            self.scan()
+        previous = module.GAME
+        module.select_game('goldeneye-source')
+        try:
+            destination = self.base / 'copy'
+            destination.mkdir(mode=0o700)
+            self.scan(destination)
+            self.assertFalse((destination / 'wineprefix').exists())
+            self.assertTrue((destination / 'runtime').is_dir())
+            nested = self.source / 'runtime' / 'wineprefix'
+            nested.mkdir(mode=0o700)
+            (nested / 'z:').symlink_to('/')
+            with self.assertRaises(ValueError):
+                self.scan()
+        finally:
+            module.select_game(previous)
+
     def test_intermediate_directory_symlinks_rejected(self):
         (self.base / 'link').symlink_to(self.source, target_is_directory=True)
         with self.assertRaises(OSError):

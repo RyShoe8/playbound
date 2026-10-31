@@ -584,8 +584,11 @@ export const recipes = {
     portSpan: 3, // gameplay, query, and uplink all bind UDP sockets
     protocol: "udp",
     binaries: [path.join(HX_BASE, "run-server")],
+    // Isolated servers run the sealed bundle's console server; no host room.
+    resolveBinary: (candidates, ctx) => ctx?.identityProfile === "deus-ex-goty-edition-unix-v1" ? firstExisting([path.join(HX_BASE, "System", "HCC.exe")]) : firstExisting(candidates),
+    identityStartupReadyTimeoutMs: 240_000,
     cwd: (_port, ctx) => path.join(hxRoomDir(ctx), "System"),
-    spawnEnv: (_port, ctx) => ({
+    spawnEnv: (_port, ctx) => ctx?.identityProfile === "deus-ex-goty-edition-unix-v1" ? {} : ({
       WINEPREFIX: path.join(hxRoomDir(ctx), ".wine"),
       WINEDEBUG: "-all",
     }),

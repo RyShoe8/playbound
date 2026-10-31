@@ -35,3 +35,13 @@ test("other commands, engines and authentication failures are not retried", asyn
     assert.equal(count,1);
   }
 });
+
+test("a timeout just after start is reported as still loading, later ones are real failures", async () => {
+  const { rconStillLoading, RCON_STARTUP_GRACE_MS } = await import("./rcon.js");
+  const room = { createdAt: 1_000_000 };
+  assert.equal(rconStillLoading(room, new Error("rcon timed out"), 1_000_000 + 14_000), true);
+  assert.equal(rconStillLoading(room, new Error("rcon timed out"), 1_000_000 + RCON_STARTUP_GRACE_MS + 1), false);
+  assert.equal(rconStillLoading(room, new Error("Bad password"), 1_000_000 + 1_000), false);
+  assert.equal(rconStillLoading({ processStartedAt: 5, createdAt: 1 }, new Error("connect ECONNREFUSED"), 10), true);
+  assert.equal(rconStillLoading({}, new Error("rcon timed out")), false);
+});
