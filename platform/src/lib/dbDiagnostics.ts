@@ -1,4 +1,5 @@
 import type { MongoClient } from "mongodb";
+import { monitorEventLoopDelay } from "node:perf_hooks";
 
 /**
  * Slow-query and slow-checkout logging for the shared Mongo connection.
@@ -17,6 +18,31 @@ import type { MongoClient } from "mongodb";
 
 export const SLOW_QUERY_MS = 1_500;
 export const SLOW_CHECKOUT_MS = 1_000;
+/** Event-loop stalls longer than this are logged, at most once per window. */
+export const EVENT_LOOP_LAG_MS = 1_000;
+const EVENT_LOOP_WINDOW_MS = 30_000;
+
+/*
+ * A command's duration runs from send to reply *processing*, so a blocked
+ * event loop inflates it: two unrelated queries "taking" 11 s and finishing in
+ * the same millisecond is a stall, not slow Mongo. inUse at a slow checkout
+ * separates the two: a wait with the pool not full means the loop was busy.
+ */
+let eventLoopMonitorStarted = false;
+export function startEventLoopLagLog(): void {
+  if (eventLoopMonitorStarted) return;
+  eventLoopMonitorStarted = true;
+  const histogram = monitorEventLoopDelay({ resolution: 50 });
+  histogram.enable();
+  const timer = setInterval(() => {
+    const maxMs = histogram.max / 1e6;
+    if (maxMs >= EVENT_LOOP_LAG_MS) {
+      console.warn(`[event-loop] stalled up to ${Math.round(maxMs)}ms (p99 ${Math.round(histogram.percentile(99) / 1e6)}ms) in the last ${EVENT_LOOP_WINDOW_MS / 1000}s`);
+    }
+    histogram.reset();
+  }, EVENT_LOOP_WINDOW_MS);
+  timer.unref?.();
+}
 
 /** Commands whose duration says nothing about query cost. */
 const IGNORED_COMMANDS = new Set(["hello", "ismaster", "isMaster", "ping", "saslStart", "saslContinue", "endSessions", "getMore", "killCursors"]);
@@ -48,6 +74,9 @@ export function attachDbDiagnostics(client: MongoClient, maxPoolSize: number): v
 
   // requestId -> description; bounded so a lost "succeeded" event cannot leak.
   const inFlight = new Map<number, Started>();
+  // Connections currently checked out of this client's pool.
+  let inUse = 0;
+  startEventLoopLagLog();
 
   client.on("commandStarted", (event) => {
     const described = describeCommand(event.commandName, event.command as Record<string, unknown>);
@@ -68,13 +97,15 @@ export function attachDbDiagnostics(client: MongoClient, maxPoolSize: number): v
   client.on("commandFailed", (event) => finish(event, true));
 
   client.on("connectionCheckedOut", (event) => {
+    inUse += 1;
     const waited = (event as { durationMS?: number }).durationMS ?? 0;
     if (waited >= SLOW_CHECKOUT_MS) {
-      console.warn(`[db:slow-checkout] waited ${Math.round(waited)}ms (pool max ${maxPoolSize})`);
+      console.warn(`[db:slow-checkout] waited ${Math.round(waited)}ms (inUse ${inUse}/${maxPoolSize})`);
     }
   });
+  client.on("connectionCheckedIn", () => { inUse = Math.max(0, inUse - 1); });
   client.on("connectionCheckOutFailed", (event) => {
     const waited = (event as { durationMS?: number }).durationMS ?? 0;
-    console.warn(`[db:checkout-failed] ${event.reason} after ${Math.round(waited)}ms (pool max ${maxPoolSize})`);
+    console.warn(`[db:checkout-failed] ${event.reason} after ${Math.round(waited)}ms (inUse ${inUse}/${maxPoolSize})`);
   });
 }

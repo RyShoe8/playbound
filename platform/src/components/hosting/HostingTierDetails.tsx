@@ -3,7 +3,7 @@ import { Check, Gamepad2, Server, SlidersHorizontal, Users } from "lucide-react"
 import { BasicSlotPicker } from "./BasicSlotPicker";
 import { HostingGameTile } from "./HostingGameTile";
 import { HostingRegionMap } from "./HostingRegionMap";
-import { mostPopularGames } from "@/lib/catalog";
+import { mostPopularGameSlugs } from "@/lib/catalog";
 import { hostingGameArt } from "@/lib/dedicatedHosting/publicGameArt";
 import { loadHostingInventory } from "@/lib/dedicatedHosting/inventory";
 import { rankedHostingGames } from "@/lib/dedicatedHosting/publicLineup";
@@ -24,10 +24,10 @@ const FEATURES = [
 
 export async function HostingTierDetails({ tierKey }: { tierKey: HostingTierKey }) {
   const [{ tier, live }, inventory, popular] = await Promise.all([
-    loadPublicTier(tierKey), loadHostingInventory(), mostPopularGames(1000).catch(() => []),
+    loadPublicTier(tierKey), loadHostingInventory(), mostPopularGameSlugs(1000).catch(() => [] as string[]),
   ]);
   const name = tierKey === "basic" ? "Basic" : tierKey === "pro" ? "Pro" : "Extreme";
-  const games = rankedHostingGames(publicGames(tier), inventory, popular.map((game) => game.slug));
+  const games = rankedHostingGames(publicGames(tier), inventory, popular);
   const artBySlug = await hostingGameArt(games.map((game) => game.gameSlug));
   const packages = [...tier.packages].filter((pkg) => pkg.enabled !== false).sort((a, b) => a.order - b.order);
   const salesRegion = tier.regions.find((entry) => entry.salesEnabled);

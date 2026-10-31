@@ -960,6 +960,19 @@ export async function mostPopularGames(limit = 12, days?: number): Promise<Game[
   )();
 }
 
+/**
+ * Popularity order as slugs only. The hosting pages rank by slug, and caching
+ * 1,000 full Game objects (about 2.1 MB) went over Next's 2 MB data-cache
+ * limit, so the all-time telemetry aggregation reran on every request.
+ */
+export async function mostPopularGameSlugs(limit = 1000, days?: number): Promise<string[]> {
+  return unstable_cache(
+    async () => (await computeMostPopularGames(limit, days)).map((game) => game.slug),
+    ["catalog-most-popular-slugs-v1", String(limit), String(days ?? "all")],
+    { revalidate: 900, tags: ["catalog", "live-activity"] }
+  )();
+}
+
 async function computeMostPopularGames(limit: number, days?: number): Promise<Game[]> {
   const published = await listGames();
   if (!published.length) return [];

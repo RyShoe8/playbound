@@ -5,7 +5,7 @@ import { Check, Server } from "lucide-react";
 import { BasicSlotPicker } from "@/components/hosting/BasicSlotPicker";
 import { HostingGameTile } from "@/components/hosting/HostingGameTile";
 import { HostingRegionMap } from "@/components/hosting/HostingRegionMap";
-import { mostPopularGames } from "@/lib/catalog";
+import { mostPopularGameSlugs } from "@/lib/catalog";
 import { loadPublicTier, publicGames } from "@/lib/dedicatedHosting/publicTier";
 import { hostingGameArt } from "@/lib/dedicatedHosting/publicGameArt";
 import { loadHostingInventory } from "@/lib/dedicatedHosting/inventory";
@@ -42,10 +42,10 @@ export default async function HostingPage() {
   const [basic, inventory, popular] = await Promise.all([
     loadPublicTier("basic"),
     loadHostingInventory(),
-    mostPopularGames(1000).catch(() => []),
+    mostPopularGameSlugs(1000).catch(() => [] as string[]),
   ]);
   const tiers = [basic];
-  const popularSlugs = popular.map((game) => game.slug);
+  const popularSlugs = popular;
   const ranked = tiers.map(({ tier }) => rankedHostingGames(publicGames(tier), inventory, popularSlugs));
   const artBySlug = await hostingGameArt([...new Set(ranked.flatMap((games) => games.slice(0, 10).map((game) => game.gameSlug)))]);
   const packages = [...basic.tier.packages].filter((pkg) => pkg.enabled !== false).sort((a, b) => a.order - b.order);

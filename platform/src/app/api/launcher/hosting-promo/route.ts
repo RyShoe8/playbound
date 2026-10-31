@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { CONTIGUOUS_US_STATE_PATHS } from "@/components/hosting/usStates";
 import { regionMapPoint } from "@/components/hosting/HostingRegionMap";
-import { mostPopularGames } from "@/lib/catalog";
+import { mostPopularGameSlugs } from "@/lib/catalog";
 import { hostingGameArt } from "@/lib/dedicatedHosting/publicGameArt";
 import { loadHostingInventory } from "@/lib/dedicatedHosting/inventory";
 import { rankedHostingGames } from "@/lib/dedicatedHosting/publicLineup";
@@ -35,9 +35,9 @@ export async function GET(req: Request) {
   const [basic, inventory, popular] = await Promise.all([
     loadPublicTier("basic"),
     loadHostingInventory(),
-    mostPopularGames(1000).catch(() => []),
+    mostPopularGameSlugs(1000).catch(() => [] as string[]),
   ]);
-  const games = rankedHostingGames(publicGames(basic.tier), inventory, popular.map((game) => game.slug));
+  const games = rankedHostingGames(publicGames(basic.tier), inventory, popular);
   const art = await hostingGameArt(games.slice(0, 10).map((game) => game.gameSlug));
   const packages = [...basic.tier.packages].filter((pkg) => pkg.enabled !== false).sort((a, b) => a.order - b.order);
   const salesRegion = basic.tier.regions.find((region) => region.salesEnabled);
