@@ -1,5 +1,6 @@
 import type { MongoClient } from "mongodb";
 import { monitorEventLoopDelay } from "node:perf_hooks";
+import { Session } from "node:inspector";
 
 /**
  * Slow-query and slow-checkout logging for the shared Mongo connection.
@@ -48,10 +49,65 @@ export function startEventLoopLagLog(): void {
     const cpuMs = (cpu.user + cpu.system) / 1000;
     if (maxMs >= EVENT_LOOP_LAG_MS && cpuMs >= maxMs / 2) {
       console.warn(`[event-loop] stalled up to ${Math.round(maxMs)}ms (p99 ${Math.round(histogram.percentile(99) / 1e6)}ms, cpu ${Math.round(cpuMs)}ms) in the last ${EVENT_LOOP_WINDOW_MS / 1000}s`);
+      profileHotFunctions();
     }
     histogram.reset();
   }, EVENT_LOOP_WINDOW_MS);
   timer.unref?.();
+}
+
+/*
+ * Real stalls (CPU-backed, after the freeze filter above) recur on unrelated
+ * pages, and the log alone cannot say what code burns the CPU. After one, the
+ * instance samples itself for a while and logs the functions with the most
+ * self time — names and file:line only, never arguments or data. At most once
+ * per instance per PROFILE_COOLDOWN_MS so the sampler cannot become the load.
+ */
+const PROFILE_DURATION_MS = 20_000;
+const PROFILE_COOLDOWN_MS = 15 * 60_000;
+let lastProfileAt = 0;
+
+type ProfileNode = { id: number; callFrame: { functionName: string; url: string; lineNumber: number }; hitCount?: number };
+
+function profileHotFunctions(): void {
+  const now = Date.now();
+  if (now - lastProfileAt < PROFILE_COOLDOWN_MS) return;
+  lastProfileAt = now;
+  let session: Session;
+  try {
+    session = new Session();
+    session.connect();
+  } catch {
+    return;
+  }
+  const done = () => { try { session.disconnect(); } catch { /* already closed */ } };
+  session.post("Profiler.enable", () => {
+    session.post("Profiler.setSamplingInterval", { interval: 1000 }, () => {
+      session.post("Profiler.start", () => {
+        const timer = setTimeout(() => {
+          session.post("Profiler.stop", (err, result) => {
+            done();
+            if (err || !result?.profile) return;
+            const nodes = result.profile.nodes as ProfileNode[];
+            const intervalMs = (result.profile.endTime - result.profile.startTime) / 1000 / Math.max(1, result.profile.samples?.length ?? 1);
+            const byFrame = new Map<string, number>();
+            for (const n of nodes) {
+              const hits = n.hitCount ?? 0;
+              const { functionName, url, lineNumber } = n.callFrame;
+              if (!hits || functionName === "(idle)" || functionName === "(program)") continue;
+              const file = url.replace(/^.*\/(\.next|node_modules)\//, "$1/");
+              const key = `${functionName || "(anonymous)"} ${file}:${lineNumber + 1}`;
+              byFrame.set(key, (byFrame.get(key) ?? 0) + hits);
+            }
+            const top = [...byFrame.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)
+              .map(([k, h]) => `${Math.round(h * intervalMs)}ms ${k}`);
+            console.warn(`[event-loop:profile] top self time over ${PROFILE_DURATION_MS / 1000}s: ${top.join(" | ")}`);
+          });
+        }, PROFILE_DURATION_MS);
+        timer.unref?.();
+      });
+    });
+  });
 }
 
 /** Commands whose duration says nothing about query cost. */
