@@ -10,6 +10,7 @@
 export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
   "battlefield-1942-anthology",
   "aneurism-iv",
+  "star-wars-fate-of-the-galaxy",
   "stardew-valley",
   "starbound",
   "necesse",

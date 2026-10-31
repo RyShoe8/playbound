@@ -139,6 +139,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     tier: "tier1_improved", adapterType: "virtual-lan", protocol: "udp",
     virtualLan: { inGameSteps: ["Host: create a LAN game", "Friends: find the match in Battlefield 1942's LAN browser"] },
   },
+  // FreeSpace Open's LAN games are found by UDP broadcast on 7808, so the
+  // party needs the L2 overlay; FotG ships no dedicated server.
+  "star-wars-fate-of-the-galaxy": {
+    gameSlug: "star-wars-fate-of-the-galaxy", title: "Star Wars: Fate of the Galaxy", tier: "tier1_improved",
+    adapterType: "virtual-lan", protocol: "udp",
+    virtualLan: {
+      requiresBroadcast: true,
+      hostPort: 7808,
+      inGameSteps: [
+        "Everyone: select a pilot, then open Multiplayer from the main hall and choose LAN",
+        "Host: create a game and pick the mission",
+        "Friends: the host's game appears in the LAN game list; select it and join",
+      ],
+    },
+    notes: "LAN only. Every player needs the same Fate of the Galaxy version from Knossos.",
+  },
   "aneurism-iv": {
     gameSlug: "aneurism-iv", title: "ANEURISM IV", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "udp",
