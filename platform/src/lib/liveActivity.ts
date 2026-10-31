@@ -247,7 +247,8 @@ async function countActivePlatformPlayers(scope: Scope = {}): Promise<number> {
   const looseStarts = await TelemetryEvent.find({
     event: "game_started",
     createdAt: { $gte: since },
-    $or: [{ sessionId: null }, { sessionId: "" }, { sessionId: { $exists: false } }],
+    // `null` also matches a missing field, so one $in replaces the old $or.
+    sessionId: { $in: [null, ""] },
     ...prop,
   })
     .select("userId anonymousId")
@@ -340,7 +341,8 @@ export async function countActivePlatformPlayersByGame(): Promise<Map<string, nu
   const looseStarts = await TelemetryEvent.find({
     event: "game_started",
     createdAt: { $gte: since },
-    $or: [{ sessionId: null }, { sessionId: "" }, { sessionId: { $exists: false } }],
+    // `null` also matches a missing field, so one $in replaces the old $or.
+    sessionId: { $in: [null, ""] },
     "properties.gameSlug": { $nin: [null, ""] },
   })
     .select("userId anonymousId properties.gameSlug")

@@ -352,7 +352,9 @@ PartySchema.index({ gameSlug: 1, status: 1 });
 // One active party per leader (prevent duplicates).
 PartySchema.index(
   { leaderId: 1 },
-  { unique: true, partialFilterExpression: { status: { $nin: ["ended"] } } }
+  // Partial indexes cannot use $nin, so the open statuses are listed instead;
+  // keep in step with PARTY_STATUSES.
+  { unique: true, partialFilterExpression: { status: { $in: ["forming", "ready", "launching", "playing"] } } }
 );
 
 // Event-linked parties (4K).

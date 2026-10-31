@@ -894,6 +894,9 @@ export async function getEditionById(rawId: string): Promise<Edition | undefined
     const s = seedEditions.find((x) => x.gameSlug === gSlug && x.slug === eSlug);
     return s ? seedToEdition(s) : undefined;
   }
+  // A slug such as "official" (the synthesized base edition) is not an id;
+  // asking Mongo to cast it only produced a CastError log per lookup.
+  if (!/^[0-9a-f]{24}$/i.test(id)) return undefined;
   try {
     await dbConnect();
     const doc = await EditionModel.findById(id).lean();
