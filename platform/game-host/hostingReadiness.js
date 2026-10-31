@@ -21,6 +21,8 @@ const PENDING_BOUNDARIES = Object.freeze({
 // on the restored data, same-process agent-restart adoption, stop, cleanup.
 // Evidence: native-identity-acceptance/<game>.json → protectedRestoreAcceptance.
 // Not covered: in-game console/RCON driven as the private UID.
+// Console control verified as the private UID, so the shared caveat does not apply.
+const CONSOLE_VERIFIED = new Set(["rimworld-together"]);
 const RESTORE_ACCEPTED = Object.freeze({
   "necesse": "",
   "morrowind": " The own-port UDP self-test firewall rule stays required.",
@@ -28,7 +30,7 @@ const RESTORE_ACCEPTED = Object.freeze({
   "openra": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
   "earth-2140-trilogy": " Needs the 2 GiB allocation (4 GiB envelope, 12 GiB address space).",
   "space-station-14": " Accepted at a 4 GiB allocation.",
-  "rimworld-together": " Under isolation the agent cannot reach the server's status file or console pipe in the private data folder, so live player counts and console commands do not work yet; a root relay is required.",
+  "rimworld-together": " Live player counts and console commands go through the root RimWorld console relay (status and command only, bound to the running process identity); both answered as the private UID on 2026-10-31. The relay needs the agent deploy that carries rimworldControl.js.",
   "triplea": " Map installation is not covered.",
   "barotrauma": "",
   "veloren": "",
@@ -96,7 +98,7 @@ export function hostingReadiness(key) {
   if (key==="luanti") contentReason="Executable mods remain disabled: the pinned LuaJIT engine predates GHSA-g596-mf82-w8c3's fix. Engine mitigation/upgrade and content acceptance are required.";
   if (Object.hasOwn(RESTORE_ACCEPTED,key)) {
     isolation = "operator_rollout";
-    reason = "Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30). In-game console control as the private UID is not yet verified." + RESTORE_ACCEPTED[key];
+    reason = "Requires offline enrollment. Isolated start, protected backup/restore with a pre-restore copy, restart on the restored data, same-process agent recovery and stop passed on the VPS (2026-10-30)." + (CONSOLE_VERIFIED.has(key) ? "" : " In-game console control as the private UID is not yet verified.") + RESTORE_ACCEPTED[key];
   }
   return {isolation,identityProfile:profile||null,reason,executableContentEnabled:false,contentReason};
 }

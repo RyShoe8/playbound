@@ -44,7 +44,7 @@ test("OpenRA spin-off editions are accepted against their own mods",()=>{
 });
 
 test("games that passed protected-restore acceptance are operator rollout, never executable content",()=>{
-  for(const key of ["openra","openhv","earth-2140-trilogy","rimworld-together","space-station-14","triplea","necesse","barotrauma","morrowind","veloren"]){
+  for(const key of ["openra","openhv","earth-2140-trilogy","space-station-14","triplea","necesse","barotrauma","morrowind","veloren"]){
     const value=hostingReadiness(key);
     assert.equal(value.isolation,"operator_rollout",key);
     assert.equal(value.executableContentEnabled,false,key);
@@ -141,4 +141,11 @@ test("Deus Ex HX is operator rollout under Wine with downloads and uplink off", 
   assert.equal(value.executableContentEnabled, false);
   assert.match(value.reason, /AppArmor profile loaded/);
   assert.match(value.reason, /downloads and the master-server uplink stay off/);
+});
+
+test("RimWorld Together reports its console relay instead of the unverified-console caveat", () => {
+  const value = hostingReadiness("rimworld-together");
+  assert.equal(value.isolation, "operator_rollout");
+  assert.match(value.reason, /console relay/);
+  assert.doesNotMatch(value.reason, /console control as the private UID is not yet verified/);
 });
