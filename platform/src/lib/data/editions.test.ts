@@ -235,7 +235,9 @@ describe("edition seed integrity", () => {
     expect(ashes.installConfig?.playbound_installer?.kind).toBe("direct-zip");
     expect(ashes.installConfig?.playbound_installer?.fileName).toBe("AshesStandalone_V1_51.zip");
     expect(ashes.isDefault).toBe(false);
-    expect(editions.find((e) => e.gameSlug === "freedoom" && e.isDefault)?.slug).toBe("zandronum");
+    // Regular single-player Freedoom is the default; Zandronum is the party edition.
+    expect(editions.find((e) => e.gameSlug === "freedoom" && e.isDefault)?.slug).toBe("gzdoom");
+    expect(editions.find((e) => e.gameSlug === "freedoom" && e.slug === "zandronum")?.isDefault).toBe(false);
 
     const ca = editions.find((e) => e.gameSlug === "openra" && e.slug === "combined-arms")!;
     expect(ca.isDefault).toBe(false);

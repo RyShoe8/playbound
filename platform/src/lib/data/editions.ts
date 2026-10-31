@@ -1702,9 +1702,11 @@ export const editions: EditionSeed[] = [
     shortDescription: "Modern OpenGL/Vulkan source port with dynamic lighting and mouselook.",
     description:
       "The recommended way to experience Freedoom: Phase 1, Phase 2, and FreeDM in singleplayer. Bundled with GZDoom for uncapped framerates, widescreen 4K resolutions, ambient lighting, and controller support.",
+    // The default Freedoom install is the regular single-player game. Parties
+    // pick the Zandronum edition explicitly (it is the only client/server one).
     type: "community",
-    isDefault: false,
-    sortOrder: 20,
+    isDefault: true,
+    sortOrder: 10,
     links: {
       website: "https://freedoom.github.io",
       github: "https://github.com/freedoom/freedoom",
@@ -1729,13 +1731,13 @@ export const editions: EditionSeed[] = [
   {
     gameSlug: "freedoom",
     slug: "zandronum",
-    name: "Freedoom + Zandronum (Multiplayer & Default)",
+    name: "Freedoom + Zandronum (Multiplayer)",
     shortDescription: "Leading multiplayer Doom engine supporting up to 64 players with client/server netcode, co-op, survival, and deathmatch.",
     description:
       "Zandronum brings robust client/server multiplayer netcode to Freedoom, supporting up to 64 players with minimal lag, spectator modes, and built-in voting. Perfect for online parties playing co-op campaigns, survival waves, capture the flag, invasion, and classic deathmatch.\n\nPre-configured with Freedoom Phase 1, Phase 2, and FreeDM IWADs, native controller/gamepad support, uncapped framerates, and instant PlayBound party connect.",
-    type: "official",
-    isDefault: true,
-    sortOrder: 10,
+    type: "community",
+    isDefault: false,
+    sortOrder: 15,
     links: {
       website: "https://zandronum.com/",
       wiki: "https://wiki.zandronum.com/",
