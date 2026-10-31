@@ -15,6 +15,7 @@ const TIMEOUT_MS = 12_000;
  * finds the worker awake.
  */
 const PATIENT_TIMEOUT_MS = 30_000;
+const RECONCILE_TIMEOUT_MS = 240_000;
 
 let warnedMissing = false;
 
@@ -114,7 +115,9 @@ export async function requestDiscordProvisionAll(): Promise<unknown> {
 export async function requestDiscordReconcile(
   opts: { dryRun?: boolean } = {}
 ): Promise<unknown> {
-  return postBot("/reconcile", { dryRun: Boolean(opts.dryRun) });
+  // The bot answers only after walking every channel with rate-limit pauses,
+  // which takes far longer than the 12s default; the cron has 300s.
+  return postBotOnce("/reconcile", { dryRun: Boolean(opts.dryRun) }, RECONCILE_TIMEOUT_MS);
 }
 
 export function hasPlayboundDiscordChannel(doc: {

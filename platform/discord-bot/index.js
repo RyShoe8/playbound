@@ -60,6 +60,29 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 });
 const mongo = new MongoClient(MONGODB_URI);
+/*
+ * After an Atlas reconfiguration the new primary can carry a lower electionId
+ * than the one this long-lived client remembers. The driver then marks every
+ * primary stale and the topology stays "ReplicaSetNoPrimary" for good: every
+ * provision and announce failed with a 500 for days until a manual restart.
+ * If no primary is seen for a few minutes, exit and let Docker's restart
+ * policy bring the bot back with a fresh client.
+ */
+const NO_PRIMARY_EXIT_MS = 3 * 60_000;
+let noPrimarySince = 0;
+mongo.on("topologyDescriptionChanged", ({ newDescription }) => {
+  if (newDescription.type !== "ReplicaSetNoPrimary") {
+    noPrimarySince = 0;
+    return;
+  }
+  if (!noPrimarySince) noPrimarySince = Date.now();
+});
+setInterval(() => {
+  if (noPrimarySince && Date.now() - noPrimarySince > NO_PRIMARY_EXIT_MS) {
+    console.error(`[mongo] no primary for ${Math.round((Date.now() - noPrimarySince) / 1000)}s; exiting for a fresh client`);
+    process.exit(1);
+  }
+}, 30_000).unref();
 let games;
 let editions;
 let backfillRunning = false;
