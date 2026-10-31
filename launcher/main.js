@@ -2600,6 +2600,63 @@ async function extractArchive(archivePath, destDir) {
   }
   repairUnixExtractedBinaries(destDir);
   await unpackNestedArchives(destDir);
+  await unpackLoneInnerArchive(archivePath, destDir);
+}
+
+/** First file called `name` (case-insensitive) under `root`, breadth-first, at most `maxDepth` levels down. */
+function findFileNamed(root, name, maxDepth) {
+  const wanted = String(name).toLowerCase();
+  let level = [root];
+  for (let depth = 0; depth <= maxDepth && level.length; depth++) {
+    const next = [];
+    for (const dir of level) {
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const e of entries) {
+        const full = path.join(dir, e.name);
+        if (e.isFile() && e.name.toLowerCase() === wanted) return full;
+        if (e.isDirectory()) next.push(full);
+      }
+    }
+    level = next;
+  }
+  return null;
+}
+
+/**
+ * A zip whose only content is the real package for this OS.
+ *
+ * Visual Pinball X ships its Mac build as a zip holding one .dmg, and its Linux
+ * build as a zip holding one .tar.gz, so a single extraction left nothing to
+ * run. When the outer archive unpacks to exactly one disk image or tarball,
+ * unpack that too and drop it. Only one level, and only for those formats, so
+ * a game that legitimately ships data archives is left alone.
+ */
+async function unpackLoneInnerArchive(archivePath, destDir) {
+  if (!/\.zip$/i.test(String(archivePath || ""))) return;
+  let names;
+  try {
+    names = fs.readdirSync(destDir).filter((n) => !n.startsWith(".") && n !== "__MACOSX");
+  } catch {
+    return;
+  }
+  if (names.length !== 1) return;
+  const inner = path.join(destDir, names[0]);
+  const lower = names[0].toLowerCase();
+  if (!(lower.endsWith(".dmg") || isTarball(lower))) return;
+  if (lower.endsWith(".dmg") && process.platform !== "darwin") return;
+  if (isTarball(lower) && process.platform === "win32") return;
+  try {
+    if (!fs.statSync(inner).isFile()) return;
+  } catch {
+    return;
+  }
+  await extractArchive(inner, destDir);
+  await fsp.rm(inner, { force: true });
 }
 
 /* ── executable discovery ──────────────────────────────────── */
@@ -6954,11 +7011,17 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
    */
   if (!exeOnDisk(info)) {
     const message = editionSlug ? "That edition is not installed" : "Not installed";
+    // Mindustry reported this mid-session, with the game installed and being
+    // played; record what the launcher actually had so the next report says
+    // whether the record, the edition key or the file on disk was missing.
+    const recordedExe = info?.exe || game.exe || null;
+    const editionKeys = Object.keys(game.editions || {}).join(",") || "none";
     void telemetry.launchFailed({
       ...launchInfo(),
       code: "NOT_INSTALLED",
-      message,
+      message: `${message} (record: ${state[slug] ? "yes" : "no"}; editions: ${editionKeys}; requested: ${editionSlug || "default"}; exe: ${recordedExe ? "missing on disk" : "none recorded"})`,
       phase: "resolve-install",
+      exeBasename: recordedExe ? path.basename(String(recordedExe)) : undefined,
     });
     const notInstalledErr = new Error(message);
     notInstalledErr.__launchFailedReported = true;
@@ -7187,6 +7250,18 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       : [];
   // Strip any unresolved template tokens from static launchArgs
   args = args.filter((a) => !/\{host\}|\{port\}/i.test(String(a)));
+
+  /*
+   * Visual Pinball X opens its table editor when started bare. Play should
+   * mean a table, so start the bundled example table in play mode. It sits
+   * in assets/ on Windows and Linux and inside the .app bundle on a Mac, so
+   * find it rather than hard-coding a path.
+   */
+  if (slug === "visual-pinball-x" && !args.includes("-play")) {
+    const root = info.dir || (info.exe ? path.dirname(info.exe) : null);
+    const table = root ? findFileNamed(root, "exampleTable.vpx", 6) : null;
+    if (table) args.push("-play", table);
+  }
 
   const resolvedPort = Number(join?.port) || defaultGamePort(slug) || Number(entry?.port) || 0;
   let resolvedJoin = join?.host ? { ...join, port: resolvedPort } : null;

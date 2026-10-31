@@ -39,6 +39,7 @@ export type Genre =
   | "Immersive Sim"
   | "MOBA"
   | "Party Game"
+  | "Pinball"
   | "Fantasy";
 
 export interface GameArt {

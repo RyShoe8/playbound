@@ -53,6 +53,7 @@ export const GENRES = [
   "Horror",
   "MOBA",
   "Party Game",
+  "Pinball",
   "Fantasy",
 ];
 

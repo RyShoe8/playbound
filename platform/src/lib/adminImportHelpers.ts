@@ -39,6 +39,7 @@ const GENRE_ALIASES: Record<string, (typeof GENRES)[number]> = {
   "tower defence": "Tower Defense",
   space: "Space",
   arcade: "Arcade",
+  pinball: "Pinball",
   casual: "Arcade",
   pirate: "Adventure",
   mmo: "MMO",

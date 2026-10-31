@@ -57,6 +57,7 @@ export const GENRES = [
    * that prompted it.
    */
   "Party Game",
+  "Pinball",
   "Fantasy",
 ] as const;
 
@@ -341,6 +342,7 @@ const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> =
   "Tower Defense": { from: "#7c2d12", to: "#fb923c", icon: "Landmark" },
   Space: { from: "#0f172a", to: "#6366f1", icon: "Rocket" },
   Arcade: { from: "#831843", to: "#f472b6", icon: "Target" },
+  Pinball: { from: "#3f0d4a", to: "#f59e0b", icon: "Zap" },
   Pirate: { from: "#0c4a6e", to: "#f59e0b", icon: "Flag" },
   Stealth: { from: "#020617", to: "#475569", icon: "Eye" },
   "Immersive Sim": { from: "#172554", to: "#0f766e", icon: "Blocks" },

@@ -36,6 +36,21 @@ function deepLinkJobKey(ctx) {
 
 function renderDeepLinkView(ctx) {
   if (!ctx) return;
+  /*
+   * A Play or Join link from the site for a game this machine does not have
+   * went straight to playGame and failed with NOT_INSTALLED (Mindustry,
+   * twice in one morning). Install it instead; Play or Join from the game page
+   * once it is done.
+   */
+  if ((ctx.action === "play" || ctx.action === "join") && ctx.slug && !ctx.installChecked) {
+    Promise.resolve(window.playbound.getInstalled?.())
+      .catch(() => null)
+      .then((list) => {
+        const installed = !Array.isArray(list) || list.some((g) => g?.slug === ctx.slug);
+        renderDeepLinkView(installed ? { ...ctx, installChecked: true } : { ...ctx, action: "install", installChecked: true });
+      });
+    return;
+  }
   if (ctx.returnView === "friends" && ctx.slug) {
     state.returnToFriendsParty = true;
     state.partyInstallReturnSlug = ctx.slug;
