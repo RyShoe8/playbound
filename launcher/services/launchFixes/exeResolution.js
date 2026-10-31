@@ -241,4 +241,19 @@ const ysoccer = {
   },
 };
 
-module.exports = [tesArena, unvanquished, xonotic, freedoomZandronum, shatteredPixelDungeon, ysoccer];
+/*
+ * Solarus pauses the whole simulation, timers included, whenever its window
+ * loses focus. Book of Mudora's file menu fades to black and starts the game
+ * from a 700 ms timer, so anything that takes focus at that moment (the
+ * overlay, a controller bridge) left players on a black screen until they
+ * clicked back into the window. Keep running while unfocused.
+ */
+const solarus = {
+  slugs: ["the-legend-of-zelda-book-of-mudora", "the-legend-of-zelda-xd2-mercuris-chess"],
+  resolve(state) {
+    const args = (state.args || []).filter((a) => !/^-suspend-unfocused=/.test(a));
+    return { ...state, args: ["-suspend-unfocused=no", ...args] };
+  },
+};
+
+module.exports = [tesArena, unvanquished, xonotic, freedoomZandronum, shatteredPixelDungeon, ysoccer, solarus];

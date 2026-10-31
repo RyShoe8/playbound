@@ -143,3 +143,11 @@ test("Shattered Pixel Dungeon: native launcher on Windows only", () => {
   assert.equal(resolveLaunch("shattered-pixel-dungeon", state, { ...h, platform: "win32" }).launchPath, "C:/s/Shattered Pixel Dungeon.exe");
   assert.equal(resolveLaunch("shattered-pixel-dungeon", state, { ...h, platform: "linux" }).launchPath, "C:/s/game.jar");
 });
+
+test("Solarus Zelda games keep running when their window loses focus", () => {
+  const { resolveLaunch } = require("./index");
+  for (const slug of ["the-legend-of-zelda-book-of-mudora", "the-legend-of-zelda-xd2-mercuris-chess"]) {
+    const out = resolveLaunch(slug, { launchPath: "solarus-run.exe", args: ["-suspend-unfocused=yes"], info: {} }, {});
+    assert.deepStrictEqual(out.args, ["-suspend-unfocused=no"]);
+  }
+});
