@@ -224,6 +224,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official", protocol: "official",
     client: { inGameJoinPrompt: true, inGameSteps: ["Open Daggerfall Online and join the server your party is using from its server list"] },
   },
+  /*
+   * Project Celeste revives Age of Empires Online on the Celeste team's own
+   * servers; nothing is self-hostable. Like Daggerfall Online, PlayBound's part
+   * is party launch and presence, and the in-game friends list does the rest.
+   */
+  "project-celeste": {
+    gameSlug: "project-celeste", title: "Project Celeste", tier: "tier3_official",
+    adapterType: "official", protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Everyone: sign in to your own free Project Celeste account in the Celeste launcher",
+        "Leader: add your party as friends in-game, then invite them to a co-op quest or a PvP match",
+      ],
+    },
+  },
   trackmania: {
     gameSlug: "trackmania", title: "Trackmania", tier: "tier3_official",
     adapterType: "official", protocol: "official",

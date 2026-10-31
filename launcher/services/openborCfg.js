@@ -150,7 +150,57 @@ function playersShareJoyPort(buf) {
   return port1 >= 0 && port2 >= 0 && port1 === port2;
 }
 
+/*
+ * The pad OpenBOR itself saw on its last run, from Logs/OpenBorLog.txt:
+ *   "1 joystick(s) found!" then "<name> - 6 axes, 15 buttons, 1 hat(s)".
+ * Only the most recent session counts, and only joystick 0 (P1's port).
+ */
+function parseOpenBorPad(logText) {
+  const text = String(logText || "");
+  const start = text.lastIndexOf("joystick(s) found!");
+  if (start < 0) return null;
+  const m = /^(.*?) - (\d+) axes, (\d+) buttons, (\d+) hat\(s\)/m.exec(text.slice(start));
+  if (!m) return null;
+  return { name: m[1].trim(), axes: Number(m[2]), buttons: Number(m[3]), hats: Number(m[4]) };
+}
+
+function readOpenBorPad(gameDir) {
+  try {
+    return parseOpenBorPad(require("fs").readFileSync(require("path").join(gameDir, "Logs", "OpenBorLog.txt"), "latin1"));
+  } catch {
+    return null;
+  }
+}
+
+/*
+ * Any other pad: left stick to move, computed from its own counts, because the
+ * stick's input numbers move with the button count. A cheap PC/Switch pad with
+ * 13 buttons given the DualSense numbers had down mapped to the stick's up and
+ * no way to reach Options → Control. Face buttons follow DirectInput order;
+ * Start is button 9 on nearly every generic pad.
+ */
+function genericP1Keys(pad) {
+  const b = pad.buttons;
+  const at = (i) => JOY_LIST_FIRST + Math.min(i, b - 1);
+  return [
+    JOY_LIST_FIRST + b + 3, JOY_LIST_FIRST + b + 4, // up down (axis 1 - / +)
+    JOY_LIST_FIRST + b + 1, JOY_LIST_FIRST + b + 2, // left right (axis 0 - / +)
+    at(2), at(1), at(0), at(4), // attack, attack2, attack3, attack4
+    at(3), at(5), // jump, special
+    at(9), at(8), // start, screenshot
+  ];
+}
+
+/** A pad whose layout matches neither captured template. */
+function isGenericPad(profile) {
+  const pad = profile?.openborPad;
+  if (!pad || !(pad.buttons > 0) || pad.axes < 2) return false;
+  if (String(profile?.family || "") === "xbox") return false;
+  return pad.buttons !== 15 || pad.axes !== 6;
+}
+
 function keysForProfile(profile) {
+  if (isGenericPad(profile)) return genericP1Keys(profile.openborPad);
   const family = String(profile?.family || "");
   if (family === "xbox") return XBOX_P1_KEYS;
   return DUALSENSE_P1_KEYS;
@@ -168,11 +218,13 @@ function applyOpenBorP1Keys(buf, profile) {
     p1StillKeyboard(buf) ||
     playersShareJoyPort(buf) ||
     (family !== "xbox" && (p1HasBrokenDualSenseSpecial(buf) || p1HasOldDualSenseTemplate(buf))) ||
+    // The DualSense numbers PlayBound wrote for a pad that is not a DualSense.
+    (isGenericPad(profile) && readP1Keys(buf).every((key, index) => key === DUALSENSE_P1_KEYS[index])) ||
     (family === "xbox" && (p1HasDualSenseHatOnXbox(buf) ||
       readP1Keys(buf).every((key,index) => key === XMEN_DUALSENSE_P1_KEYS[index]) ||
       readP1Keys(buf).every((key,index) => key === DUALSENSE_P1_KEYS[index])));
   if (!shouldFix) return null;
-  const p1Keys = buf.length === 352 && family !== "xbox" ? XMEN_DUALSENSE_P1_KEYS : keysForProfile(profile);
+  const p1Keys = buf.length === 352 && family !== "xbox" && !isGenericPad(profile) ? XMEN_DUALSENSE_P1_KEYS : keysForProfile(profile);
   const next = Buffer.from(buf);
   for (let player = 0; player < 4; player += 1) {
     const keys = shiftJoyKeysToPort(p1Keys, player);
@@ -278,4 +330,7 @@ module.exports = {
   p1HasOldDualSenseTemplate,
   playersShareJoyPort,
   applyOpenBorP1Keys,
+  parseOpenBorPad,
+  readOpenBorPad,
+  genericP1Keys,
 };

@@ -303,6 +303,10 @@ Follow it so every game ends up with the same completeness.
   `/admin/games/<slug>/edit`, join the `self.__next_f.push` chunks, take the
   `"initial":{...}` object and resolve `"$NN"` references (long strings are
   sent as separate `NN:T<len>,` rows). `"$undefined"` means unset.
+  `<len>` is hex and counts **UTF-8 bytes**, not characters: slice the
+  encoded bytes, then decode. Slicing the JS string instead over-reads into the
+  next row whenever the text has an em-dash or other multi-byte character, and
+  a PATCH of that read appends the garbage to the live field.
 - **Create** with `POST /api/admin/games` (full payload). A `409 Slug already
   exists` means a placeholder row is there already — read it, then `PATCH`.
 - **Update** with `PATCH /api/admin/games/<slug>` using the *entire* payload

@@ -30,7 +30,7 @@ function prepare(slug, info, {streaming=false, profile=null} = {}) {
   if (!files.length) return null;
   const restores = sessions.get(slug) || [];
   for (const {file,data} of files) {
-    let next = profile ? cfg.applyOpenBorP1Keys(data,profile) || data : data;
+    let next = profile ? cfg.applyOpenBorP1Keys(data,{...profile,openborPad:cfg.readOpenBorPad(path.dirname(path.dirname(file)))}) || data : data;
     if (streaming) {
       const offset = data.length-28;
       if (!restores.some(row => row.file === file)) restores.push({file,size:data.length,version:data.readUInt32LE(0),fullscreen:data.readInt32LE(offset)});

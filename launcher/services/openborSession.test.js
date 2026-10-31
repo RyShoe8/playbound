@@ -40,3 +40,17 @@ test("unrelated configs and custom mappings remain untouched",t=>{
   session.prepare("custom",{dir},{profile:{family:"xbox"}});
   assert.deepEqual(fs.readFileSync(file),data);
 });
+
+test("a non-DualSense pad gets left-stick numbers from its own OpenBOR log", () => {
+  const cfg = require("./openborCfg");
+  const pad = cfg.parseOpenBorPad("1 joystick(s) found!\nUSB Gamepad - 4 axes, 13 buttons, 1 hat(s)\n");
+  assert.deepStrictEqual(pad, { name: "USB Gamepad", axes: 4, buttons: 13, hats: 1 });
+  const buf = Buffer.alloc(348);
+  buf.writeUInt32LE(cfg.OPENBOR_CFG_VERSION, 0);
+  for (let p = 0; p < 4; p += 1) cfg.shiftJoyKeysToPort(cfg.DUALSENSE_P1_KEYS, p).forEach((k, i) => buf.writeInt32LE(k, cfg.playerKeysOffset(p) + i * 4));
+  const out = cfg.applyOpenBorP1Keys(buf, { family: "generic", openborPad: pad });
+  assert.deepStrictEqual(cfg.readP1Keys(out).slice(0, 4), [616, 617, 614, 615]);
+  // A real DualSense keeps the play-tested template, and the formula agrees with it.
+  assert.deepStrictEqual(cfg.genericP1Keys({ buttons: 15, axes: 6 }).slice(0, 4), cfg.DUALSENSE_P1_KEYS.slice(0, 4));
+  assert.strictEqual(cfg.applyOpenBorP1Keys(buf, { family: "generic", openborPad: { buttons: 15, axes: 6, hats: 1 } }), null);
+});

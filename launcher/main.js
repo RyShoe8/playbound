@@ -3937,7 +3937,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
   const entry = gameControllerConfig.GAMES[slug];
   const binary = Boolean(openborConfig || entry?.binary);
   const applyGameProfile = (data, profile) => openborConfig
-    ? require("./services/openborCfg").applyOpenBorP1Keys(data,profile)
+    ? require("./services/openborCfg").applyOpenBorP1Keys(data,{...profile,openborPad:require("./services/openborCfg").readOpenBorPad(path.dirname(path.dirname(configPath)))})
     : gameControllerConfig.applyProfile(slug,data,profile);
   const userDataPath = app.getPath("userData");
 

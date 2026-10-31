@@ -179,3 +179,17 @@ describe("edition-driven party games", () => {
     expect(supportsMultiplayer({ ...game, editions: [{ features: ["Singleplayer"] }] } as never)).toBe(false);
   });
 });
+
+describe("Project Celeste", () => {
+  it("is a launcher party game with official-server join steps", async () => {
+    const { MULTIPLAYER_ADAPTERS } = await import("./adapters");
+    const game = {
+      slug: "project-celeste", isMultiplayer: true, features: [],
+      launcherInstall: { enabled: true, kind: "github-installer" },
+    };
+    expect(supportsLauncherParty(game)).toBe(true);
+    const adapter = MULTIPLAYER_ADAPTERS["project-celeste"];
+    expect(adapter.adapterType).toBe("official");
+    expect(adapter.client?.inGameSteps?.length).toBeGreaterThanOrEqual(2);
+  });
+});
