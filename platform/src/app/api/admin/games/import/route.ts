@@ -32,8 +32,7 @@ import {
   steamReleaseYear,
 } from "@/lib/adminImportHelpers";
 import {
-  extractEpicProduct,
-  fetchEpicProduct,
+  fetchEpicProductExtract,
   parseEpicProductSlug,
 } from "@/lib/epicStore";
 import { pickSteamAppEntry } from "@/lib/steamAppDetails";
@@ -215,8 +214,8 @@ async function fromSteam(
 async function fromEpic(
   productSlug: string
 ): Promise<{ draft: GamePayload; extras: ImportExtras }> {
-  const product = await fetchEpicProduct(productSlug);
-  const epic = extractEpicProduct(product, productSlug);
+  // Epic's content API, then egdata.app for self-published store pages.
+  const epic = await fetchEpicProductExtract(productSlug);
 
   const mapped = mapLabelsToGenresAndTags(epic.tags);
   const genres = asGenres(mapped.genres);

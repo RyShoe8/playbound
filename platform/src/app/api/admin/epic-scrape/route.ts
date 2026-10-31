@@ -6,6 +6,7 @@ import { canViewAdmin } from "@/lib/adminAccess";
 import { assertPublicHttpUrl } from "@/lib/pageMeta";
 import {
   extractEpicProduct,
+  fetchEgdataProductBySlug,
   fetchEpicFreeGameByPageSlug,
   fetchEpicProductWithFallback,
   parseEpicProductSlug,
@@ -88,6 +89,20 @@ export async function POST(req: Request) {
         { error: message || "Epic store lookup failed" },
         { status: 400 }
       );
+    }
+
+    try {
+      // Self-published store pages have no content-API record; egdata.app mirrors them.
+      const mirrored = await fetchEgdataProductBySlug(slug);
+      if (mirrored) {
+        return NextResponse.json({
+          title: mirrored.title,
+          description: (mirrored.shortDescription || mirrored.description || "").slice(0, 280),
+          imageUrl: mirrored.coverImage || "",
+        });
+      }
+    } catch (err) {
+      console.error("egdata.app lookup failed:", err);
     }
 
     return NextResponse.json({ error: "Epic product not found" }, { status: 404 });

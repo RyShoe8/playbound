@@ -443,3 +443,117 @@ export async function fetchEpicStoreMedia(slug: string): Promise<{
     videos: extracted.videos,
   };
 }
+
+/*
+ * Self-published (SPT) products such as /p/fountains-87e36d have a live store
+ * page but no store-content record, and the store's own page and GraphQL sit
+ * behind bot protection. egdata.app mirrors Epic's catalog, including SPT
+ * offers, with the store's own image and video URLs. Match on the exact page
+ * slug so a same-titled product is never imported by mistake.
+ */
+const EGDATA_API = "https://api.egdata.app";
+
+type EgdataOffer = {
+  id?: string;
+  title?: string;
+  description?: string;
+  longDescription?: string;
+  developerDisplayName?: string;
+  publisherDisplayName?: string;
+  seller?: { name?: string };
+  releaseDate?: string;
+  keyImages?: { type?: string; url?: string }[];
+  tags?: { name?: string }[];
+  offerMappings?: { pageSlug?: string; pageType?: string }[];
+  catalogNs?: { mappings?: { pageSlug?: string }[] };
+};
+
+async function egdataJson<T>(pathname: string): Promise<T | null> {
+  const res = await fetch(`${EGDATA_API}${pathname}`, {
+    headers: { "user-agent": "PlayBoundAdmin/1.0" },
+    next: { revalidate: 0 },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`egdata.app request failed (${res.status})`);
+  return (await res.json()) as T;
+}
+
+function egdataOfferMatchesSlug(offer: EgdataOffer, slug: string): boolean {
+  const mappings = [...(offer.offerMappings ?? []), ...(offer.catalogNs?.mappings ?? [])];
+  return mappings.some((m) => epicPageSlugEquals(m.pageSlug, slug));
+}
+
+export function extractEgdataOffer(
+  offer: EgdataOffer,
+  media: { images?: { src?: string }[]; videos?: { outputs?: { url?: string; contentType?: string }[] }[] } | null,
+  slug: string
+): EpicProductExtract {
+  const tags = (offer.tags ?? []).map((t) => String(t.name || "").trim()).filter(Boolean);
+  const platforms: string[] = [...new Set(tags.map((t) => mapEpicPlatform(t.replace(/\s+/g, ""))).filter((p): p is string => Boolean(p)))];
+  if (platforms.length === 0) platforms.push("Windows");
+  const keyImages = offer.keyImages ?? [];
+  const pick = (type: string) => keyImages.find((img) => img.type === type && img.url)?.url ?? null;
+  const coverImage = pick("OfferImageWide") || pick("DieselStoreFrontWide") || pick("OfferImageTall") || pick("Thumbnail");
+  const screenshots: string[] = [];
+  for (const image of media?.images ?? []) pushUnique(screenshots, image.src);
+  for (const image of keyImages) if (image.type === "featuredMedia") pushUnique(screenshots, image.url);
+  const videos: string[] = [];
+  for (const video of media?.videos ?? []) {
+    const outputs = video.outputs ?? [];
+    const playable = outputs.find((o) => /video\//i.test(o.contentType || "") && /\.(mp4|webm)(\?|$)/i.test(o.url || ""))
+      || outputs.find((o) => /\.m3u8(\?|$)/i.test(o.url || ""));
+    if (playable?.url) pushUnique(videos, normalizeVideoUrl(playable.url));
+  }
+  const year = String(offer.releaseDate || "").match(/\b(19|20)\d{2}\b/);
+  const shortDescription = stripHtml(String(offer.description || "")).slice(0, 500);
+  // longDescription is Epic's markdown-with-comments; drop the comment markers.
+  const longRaw = String(offer.longDescription || "").replace(/<!--[\s\S]*?-->/g, "").replace(/^#{1,6}\s+/gm, "");
+  return {
+    slug,
+    title: String(offer.title || slug).trim() || slug,
+    shortDescription,
+    description: stripHtml(longRaw).slice(0, 8000) || shortDescription,
+    developers: offer.developerDisplayName ? [offer.developerDisplayName] : [],
+    publishers: [offer.publisherDisplayName || offer.seller?.name].filter((v): v is string => Boolean(v)),
+    platforms,
+    tags: tags.map(humanizeEpicTag),
+    releaseYear: year ? parseInt(year[0], 10) : new Date().getFullYear(),
+    storeUrl: epicStoreProductUrl(slug),
+    homepageUrl: null,
+    discordInviteUrl: null,
+    coverImage,
+    screenshots: screenshots.filter((url) => url !== coverImage).slice(0, MAX_SCREENSHOTS),
+    videos: videos.slice(0, MAX_VIDEOS),
+    systemRequirements: { min: "See Epic Games Store", recommended: "See Epic Games Store" },
+  };
+}
+
+/** Find a product on egdata.app by its exact store page slug. */
+export async function fetchEgdataProductBySlug(slug: string): Promise<EpicProductExtract | null> {
+  const words = (slugWithoutOfferSuffix(slug) || slug).replace(/-/g, " ").trim();
+  if (!words) return null;
+  const found = await egdataJson<{ elements?: EgdataOffer[] }>(`/autocomplete?query=${encodeURIComponent(words)}`);
+  const hit = (found?.elements ?? []).find((offer) => egdataOfferMatchesSlug(offer, slug));
+  if (!hit?.id) return null;
+  const [offer, media] = await Promise.all([
+    egdataJson<EgdataOffer>(`/offers/${encodeURIComponent(hit.id)}`),
+    egdataJson<{ images?: { src?: string }[]; videos?: { outputs?: { url?: string; contentType?: string }[] }[] }>(`/offers/${encodeURIComponent(hit.id)}/media`).catch(() => null),
+  ]);
+  return extractEgdataOffer(offer || hit, media, slug);
+}
+
+/**
+ * Everything an import needs for one store page: Epic's own content API first,
+ * then egdata.app for self-published products the content API never lists.
+ */
+export async function fetchEpicProductExtract(slug: string): Promise<EpicProductExtract> {
+  try {
+    return extractEpicProduct(await fetchEpicProductWithFallback(slug), slug);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!/not found/i.test(message) && !/\(404\)/.test(message)) throw err;
+    const mirrored = await fetchEgdataProductBySlug(slug);
+    if (mirrored) return mirrored;
+    throw err;
+  }
+}
