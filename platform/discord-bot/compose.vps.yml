@@ -6,6 +6,12 @@ services:
       - /etc/playbound-discord-bot.env
     environment:
       PORT: "8787"
+    # The host's resolvers include NetBird's, and lookups of the Atlas hosts
+    # intermittently failed with EAI_AGAIN through it. Public resolvers for
+    # outside names; Docker's embedded DNS still answers container names.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     networks:
       - netbird
     labels:
