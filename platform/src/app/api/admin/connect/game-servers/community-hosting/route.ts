@@ -9,7 +9,7 @@ import { hostingSettingsSchema } from "@/lib/communityHosting/settings";
 import { fetchGameHostHealth, fetchGameHostMetrics, listManagedHostRooms } from "@/lib/gameHost/client";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
-import { HOSTABLE_SLUG_ALIASES } from "@/lib/gameHost/catalog";
+import { HOSTABLE_SLUG_ALIASES, getPartyHostableGame } from "@/lib/gameHost/catalog";
 import { profileRecipeSlug } from "@/lib/communityHosting/profileRecipe";
 import { communityRuntimeReservation, getEffectiveEnvelope, managedRoomSettings } from "@/lib/communityHosting/reconcile";
 import { populationPeriods, populationReading } from "@/lib/communityHosting/population";
@@ -96,15 +96,16 @@ export async function GET() {
   // Community selection is drawn from the live catalog and VPS state, never
   // seed editions or profiles for unpublished / uninstalled games.
   const readySlugs = readyGameHostSlugs(health.configured ? health.health.gameStatus : undefined, HOSTABLE_SLUG_ALIASES);
-  const [titleRows, editionRows] = await Promise.all([
-    CatalogGame.find({ slug: { $in: [...readySlugs] } })
-      .select({ slug: 1, title: 1, status: 1, published: 1 }).lean(),
-    Edition.find({
-      gameSlug: { $in: [...readySlugs] },
-      status: { $ne: "archived" },
-      visibility: { $ne: "hidden" },
-    }).select({ gameSlug: 1, slug: 1, name: 1, features: 1, isDefault: 1, suppressesSeed: 1 }).lean(),
-  ]);
+  // An edition can carry its own server under its own recipe slug (RimWorld
+  // Together runs as "rimworld-together"), so its parent game is not itself a
+  // ready slug and has to be reached through the edition.
+  const editionRows = await Edition.find({
+    $or: [{ gameSlug: { $in: [...readySlugs] } }, { slug: { $in: [...readySlugs] } }],
+    status: { $ne: "archived" },
+    visibility: { $ne: "hidden" },
+  }).select({ gameSlug: 1, slug: 1, name: 1, features: 1, isDefault: 1, suppressesSeed: 1 }).lean();
+  const titleRows = await CatalogGame.find({ slug: { $in: [...new Set([...readySlugs, ...editionRows.map((e) => e.gameSlug)])] } })
+    .select({ slug: 1, title: 1, status: 1, published: 1 }).lean();
 
   const eligible = readyPublishedHostableCatalog(titleRows, editionRows.filter((e) => !e.suppressesSeed), profiles, readySlugs);
   const titles: Record<string, string> = Object.fromEntries(eligible.games.map((g) => [g.slug, g.title]));
@@ -144,7 +145,9 @@ export async function GET() {
         sampleCount: 0,
       } as unknown as (typeof profiles)[number];
     }
-    finalProfilesMap.set(baseProfile.key, baseProfile);
+    // Games whose only server is an edition's (RimWorld Together, Deus Ex HX)
+    // have no base recipe to host.
+    if (getPartyHostableGame(slug, null)) finalProfilesMap.set(baseProfile.key, baseProfile);
 
     // Editions for this game
     for (const ed of allEditionsMap.values()) {
