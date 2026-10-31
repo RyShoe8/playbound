@@ -34,10 +34,20 @@ export function startEventLoopLagLog(): void {
   eventLoopMonitorStarted = true;
   const histogram = monitorEventLoopDelay({ resolution: 50 });
   histogram.enable();
+  /*
+   * A Vercel instance is frozen between invocations, and the histogram counts
+   * the freeze as one long "delay": a 314 s stall that exactly matched a 314 s
+   * telemetry query was the instance asleep mid-query, not the loop busy. A
+   * busy loop burns CPU for the whole stall; a frozen one burns almost none.
+   */
+  let cpuBefore = process.cpuUsage();
   const timer = setInterval(() => {
     const maxMs = histogram.max / 1e6;
-    if (maxMs >= EVENT_LOOP_LAG_MS) {
-      console.warn(`[event-loop] stalled up to ${Math.round(maxMs)}ms (p99 ${Math.round(histogram.percentile(99) / 1e6)}ms) in the last ${EVENT_LOOP_WINDOW_MS / 1000}s`);
+    const cpu = process.cpuUsage(cpuBefore);
+    cpuBefore = process.cpuUsage();
+    const cpuMs = (cpu.user + cpu.system) / 1000;
+    if (maxMs >= EVENT_LOOP_LAG_MS && cpuMs >= maxMs / 2) {
+      console.warn(`[event-loop] stalled up to ${Math.round(maxMs)}ms (p99 ${Math.round(histogram.percentile(99) / 1e6)}ms, cpu ${Math.round(cpuMs)}ms) in the last ${EVENT_LOOP_WINDOW_MS / 1000}s`);
     }
     histogram.reset();
   }, EVENT_LOOP_WINDOW_MS);
