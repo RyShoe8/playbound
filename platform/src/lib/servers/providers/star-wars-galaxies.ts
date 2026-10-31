@@ -18,7 +18,7 @@ import type { GameServer } from "../types";
  * than as "Star Wars Galaxies", because 908 is Legends' population and not the
  * game's. If another shard starts publishing a real figure, add it here.
  *
- * The host is synthetic, following the EverQuest provider: these are not
+ * The host is synthetic, a convention the retired EverQuest provider started: these are not
  * joinable endpoints, and each emulator needs its own launcher.
  */
 

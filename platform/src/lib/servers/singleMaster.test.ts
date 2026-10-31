@@ -49,7 +49,7 @@ describe("single-master games", () => {
   });
 
   it("keeps every multi-server game browsable", () => {
-    for (const slug of ["openra", "luanti", "everquest", "old-school-runescape", "space-station-14"]) {
+    for (const slug of ["openra", "luanti", "old-school-runescape", "space-station-14"]) {
       expect(hasServerBrowser(slug), `${slug} should stay`).toBe(true);
     }
   });

@@ -2,7 +2,6 @@ import { fetchSrb2Servers, fetchSrb2PlayerCount, fetchSrb2KartServers, fetchSrb2
 import { getServerLobbyAuth } from "@/lib/catalog";
 import { listJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
-import { fetchEverQuestServers } from "./providers/everquest";
 import { fetchFlightGearServers } from "./providers/flightgear";
 import { fetchFreecivServers } from "./providers/freeciv";
 import { fetchHurryCurryServers } from "./providers/hurry-curry";
@@ -152,7 +151,6 @@ const providers: Record<string, ServerProvider> = {
     fetchServers: fetchZeroKServers,
   },
   "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
-  everquest: { slug: "everquest", fetchServers: fetchEverQuestServers },
   "asherons-call": {
     slug: "asherons-call",
     fetchServers: fetchAsheronsCallServers,

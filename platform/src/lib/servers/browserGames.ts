@@ -25,7 +25,6 @@ const DEDICATED_SERVER_GAMES: ReadonlySet<string> = new Set([
   "warzone-2100",
   "zero-k",
   "0ad",
-  "everquest",
   "asherons-call",
   "space-station-14",
   "starcraft",
