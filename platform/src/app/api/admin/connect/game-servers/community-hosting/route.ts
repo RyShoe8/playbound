@@ -144,8 +144,7 @@ export async function GET() {
         sampleCount: 0,
       } as unknown as (typeof profiles)[number];
     }
-    // The stock Platinum client cannot connect to the openMERC server.
-    if (slug !== "soldier-of-fortune-platinum-edition") finalProfilesMap.set(baseProfile.key, baseProfile);
+    finalProfilesMap.set(baseProfile.key, baseProfile);
 
     // Editions for this game
     for (const ed of allEditionsMap.values()) {
