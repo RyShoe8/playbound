@@ -344,7 +344,7 @@ export const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
 export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
   "open-fortress": { slug: "open-fortress", title: "Open Fortress", defaultPort: 27150, portEnd: 27169, protocol: "udp" },
   "battlefield-1942-anthology": { slug: "battlefield-1942-anthology", title: "Battlefield 1942 Anthology", defaultPort: 14567, portEnd: 14586, protocol: "udp" },
-  "soldier-of-fortune-platinum-edition": { slug: "soldier-of-fortune-platinum-edition", title: "Soldier of Fortune: openMERC", defaultPort: 28910, portEnd: 28949, protocol: "udp" },
+  "soldier-of-fortune-platinum-edition": { slug: "soldier-of-fortune-platinum-edition", title: "Soldier of Fortune: Platinum Edition", defaultPort: 28910, portEnd: 28949, protocol: "udp" },
   "counter-strike-source": { slug: "counter-strike-source", title: "Counter-Strike: Source", defaultPort: 27060, portEnd: 27070, protocol: "udp" },
   "goldeneye-source": { slug: "goldeneye-source", title: "GoldenEye: Source", defaultPort: 27120, portEnd: 27139, protocol: "udp" },
   terraria: { slug: "terraria", title: "Terraria", defaultPort: 7870, portEnd: 7890, protocol: "tcp" },
@@ -399,8 +399,9 @@ export function getPartyHostableGame(gameSlug: string, editionSlug?: string | nu
     return editionSlug === "rimworld-together" ? getHostableGame("rimworld-together") : null;
   }
   if (gameSlug === "deus-ex-goty-edition" && editionSlug !== "playbound-hx-coop") return null;
-  // The original Platinum client cannot join openMERC servers.
-  if (gameSlug === "soldier-of-fortune-platinum-edition" && editionSlug !== "openmerc") return null;
+  // The original Platinum 1.07f client and openMERC each get their own server
+  // (Wine-hosted SoF.exe or openMerc-ded); they cannot join each other.
+  if (gameSlug === "soldier-of-fortune-platinum-edition" && editionSlug && !["openmerc", "official", "base"].includes(editionSlug)) return null;
   return getHostableGame(gameSlug);
 }
 

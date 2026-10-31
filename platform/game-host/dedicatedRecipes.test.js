@@ -257,3 +257,22 @@ test("OpenRA identity preparation never creates service-owned customer homes",()
   assert.deepEqual(recipes.openhv.spawnEnv(1255,{...ctx,identityProfile:"openhv-unix-v1"}),{});
   assert.deepEqual(recipes["earth-2140-trilogy"].spawnEnv(1275,{...ctx,identityProfile:"earth-2140-trilogy-unix-v1"}),{});
 });
+
+test("Soldier of Fortune base-game rooms run the Platinum SoF.exe under Wine with private base data", async () => {
+  const { prepareSofBaseRuntime } = await import("./sofRuntime.js");
+  const fsm = await import("node:fs"); const os = await import("node:os"); const pathm = await import("node:path");
+  const root = fsm.mkdtempSync(pathm.join(os.tmpdir(), "pb-sof-"));
+  const source = pathm.join(root, "win107f"), home = pathm.join(root, "room");
+  fsm.mkdirSync(pathm.join(source, "base"), { recursive: true });
+  for (const name of ["SoF.exe", "ref_gl.dll", "base/gamex86.dll", "base/player.dll", "base/pak0.pak"]) fsm.writeFileSync(pathm.join(source, name), "x");
+  const runtime = prepareSofBaseRuntime(source, home);
+  assert.equal(fsm.readlinkSync(pathm.join(runtime, "SoF.exe")), pathm.join(source, "SoF.exe"));
+  assert.equal(fsm.lstatSync(pathm.join(runtime, "base")).isDirectory(), true);
+  assert.equal(fsm.lstatSync(pathm.join(runtime, "base")).isSymbolicLink(), false);
+  assert.equal(fsm.readlinkSync(pathm.join(runtime, "base", "pak0.pak")), pathm.join(source, "base", "pak0.pak"));
+  assert.match(fsm.readFileSync(pathm.join(runtime, "run-server.sh"), "utf8"), /exec \/usr\/bin\/wine SoF\.exe "\$@"/);
+  assert.equal(prepareSofBaseRuntime(source, home), runtime, "a second start reuses the room");
+  fsm.rmSync(pathm.join(source, "base", "player.dll"));
+  assert.throws(() => prepareSofBaseRuntime(source, pathm.join(root, "other")), /incomplete: base\/player\.dll/);
+  fsm.rmSync(root, { recursive: true, force: true });
+});

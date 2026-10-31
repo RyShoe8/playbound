@@ -31,6 +31,7 @@ import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 import { prepareTrackmaniaPackage } from "./trackmaniaRuntime.js";
 import { openFortressHome, prepareOpenFortressRuntime } from "./openFortressRuntime.js";
 import { prepareGoldenEyeRuntime } from "./goldenEyeRuntime.js";
+import { isSofBase, prepareSofBaseRuntime } from "./sofRuntime.js";
 const rimworldDifficulty = createRequire(import.meta.url)("./rimworldDifficulty.json");
 
 /**
@@ -117,12 +118,23 @@ export function createDedicatedRecipes(deps) {
       portSpan: 2,
       protocol: "udp",
       binaries: gameBin("soldier-of-fortune-platinum-edition", ["openMerc-ded"]),
-      resolveBinary: (candidates, ctx) => ctx?.partyId
-        ? firstExisting([path.join(serverDir("openmerc-servers", ctx), "runtime", "openMerc-ded")])
-        : firstExisting(candidates),
-      cwd: (_port, ctx) => path.join(serverDir("openmerc-servers", ctx), "runtime"),
-      spawnEnv: isolatedHomeEnv("openmerc-servers"),
+      // Two servers share these ports: openMERC (openMerc-ded) for the openMERC
+      // edition, and the original Platinum 1.07f SoF.exe under Wine for the base
+      // game. Neither client can join the other's server.
+      resolveBinary: (candidates, ctx) => !ctx?.partyId
+        ? firstExisting(candidates)
+        : isSofBase(ctx)
+          // startRoom checks for a binary before prepareSpawn builds the room, then
+          // resolves again; the shared engine stands in until the wrapper exists.
+          ? firstExisting([path.join(serverDir("sof-servers", ctx), "runtime", "run-server.sh"), path.join(GAMES_ROOT, "soldier-of-fortune-platinum-edition", "win107f", "SoF.exe")])
+          : firstExisting([path.join(serverDir("openmerc-servers", ctx), "runtime", "openMerc-ded")]),
+      cwd: (_port, ctx) => path.join(serverDir(isSofBase(ctx) ? "sof-servers" : "openmerc-servers", ctx), "runtime"),
+      spawnEnv: (port, ctx) => isSofBase(ctx)
+        ? { HOME: serverDir("sof-servers", ctx), WINEPREFIX: path.join(serverDir("sof-servers", ctx), "wineprefix"), WINEDEBUG: "-all" }
+        : isolatedHomeEnv("openmerc-servers")(port, ctx),
+      startupReadyTimeoutMs: 120_000, // a fresh Wine prefix takes about 30 s
       prepareSpawn: async (_port, ctx) => {
+        if (isSofBase(ctx)) return prepareSofBaseRuntime(path.join(GAMES_ROOT, "soldier-of-fortune-platinum-edition", "win107f"), serverDir("sof-servers", ctx));
         if (ctx.editionSlug !== "openmerc") throw new Error("The openMERC server requires the openMERC edition");
         const source = path.join(GAMES_ROOT, "soldier-of-fortune-platinum-edition");
         for (const required of ["openMerc-ded", "openmerc/gamex86.so", "openmerc/player.so", "openmerc/zz_openmerc.pak", "base/pak0.pak"]) {
@@ -142,6 +154,7 @@ export function createDedicatedRecipes(deps) {
         if (!fs.existsSync(data)) fs.symlinkSync(path.join(source, "base"), data, "dir");
       },
       args: (port, ctx) => [
+        ...(isSofBase(ctx) ? ["+set", "dedicated", "1"] : []),
         "+set", "port", String(port),
         "+set", "gamespyport", String(port + 1),
         "+set", "public", "0",
@@ -149,7 +162,7 @@ export function createDedicatedRecipes(deps) {
         "+set", "deathmatch", "1",
         "+map", settingToken("soldier-of-fortune-platinum-edition", ctx, "map", "dm/nycdm1"),
         // openMERC's config.cfg loads after early +set; apply the name last.
-        "+set", "hostname", serverName(ctx, "PlayBound openMERC"),
+        "+set", "hostname", serverName(ctx, isSofBase(ctx) ? "PlayBound Soldier of Fortune" : "PlayBound openMERC"),
       ],
     },
     "open-fortress": {

@@ -2810,7 +2810,7 @@ export function getVirtualLanConfig(gameSlug: string): VirtualLanConfig | null {
 /** In-game clicks still required after Connect joins a managed-server title. */
 export function getHostedInGameSteps(gameSlug: string): string[] {
   if (gameSlug === "soldier-of-fortune-platinum-edition") {
-    return ["Launch the openMERC edition", "Open Multiplayer and connect to the PlayBound server address and port shown in this party"];
+    return ["Launch the same edition as the party's server: the Platinum 1.07f game or openMERC", "Open Multiplayer and connect to the PlayBound server address and port shown in this party"];
   }
   const adapter = getMultiplayerAdapter(gameSlug);
   return adapter.client?.inGameSteps || [];

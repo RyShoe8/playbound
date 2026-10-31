@@ -126,7 +126,7 @@ export async function createServer(
   if (!name) return fail(`Server name must be 2–${SERVER_NAME_MAX} characters.`);
   const visibility = VISIBILITIES.includes(input.visibility as Visibility) ? (input.visibility as Visibility) : "public";
   if (gameSlug === "soldier-of-fortune-platinum-edition" && visibility !== "public") {
-    return fail("openMERC currently supports public PlayBound hosting only; private access is not configured yet.");
+    return fail("Soldier of Fortune currently supports public PlayBound hosting only; private access is not configured yet.");
   }
   const saved = await CommunityServer.countDocuments({ ownerType: "user", dedicatedSubscriptionId: sub._id });
   if (saved >= tier.maxSavedServers) {
@@ -181,7 +181,7 @@ export async function updateServer(
   if (input.visibility !== undefined) {
     if (!VISIBILITIES.includes(input.visibility as Visibility)) return fail("Unknown visibility");
     if (server.gameSlug === "soldier-of-fortune-platinum-edition" && input.visibility !== "public") {
-      return fail("openMERC currently supports public PlayBound hosting only; private access is not configured yet.");
+      return fail("Soldier of Fortune currently supports public PlayBound hosting only; private access is not configured yet.");
     }
     if (server.visibility !== input.visibility) changes.push(`visibility ${server.visibility} → ${input.visibility}`);
     server.visibility = input.visibility;

@@ -71,8 +71,9 @@ export function hostableProfileStubs(stored: StoredProfileRef[], editions: Editi
     stubs.push({ key, gameSlug, editionSlug, recipeSlug: getPartyHostableGame(gameSlug, editionSlug)?.slug || gameSlug });
   };
   for (const slug of slugs) {
-    if (!["rimworld", "deus-ex-goty-edition", "soldier-of-fortune-platinum-edition"].includes(slug)) add(slug, null);
-    for (const edition of editions) if (edition.gameSlug === slug && (!["deus-ex-goty-edition", "soldier-of-fortune-platinum-edition"].includes(slug) || getPartyHostableGame(slug, edition.slug))) add(slug, edition.slug);
+    if (!["rimworld", "deus-ex-goty-edition"].includes(slug)) add(slug, null);
+    // "official"/"base" editions are the base game, already added above.
+    for (const edition of editions) if (edition.gameSlug === slug && edition.slug !== "official" && edition.slug !== "base" && (!["deus-ex-goty-edition", "soldier-of-fortune-platinum-edition"].includes(slug) || getPartyHostableGame(slug, edition.slug))) add(slug, edition.slug);
   }
   return stubs;
 }
