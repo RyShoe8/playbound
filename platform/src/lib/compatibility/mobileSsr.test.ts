@@ -35,19 +35,12 @@ describe("the attribute the stylesheet keys on", () => {
 });
 
 describe("the stylesheet", () => {
-  it("hides incompatible games below the mobile breakpoint", () => {
+  it("hides incompatible games below the breakpoint only for viewers who chose This Device", () => {
+    // Phones default to all games, so first paint hides nothing; CSS cannot
+    // read the preference, so the client mirrors it onto <html>.
     expect(CSS).toMatch(/@media \(max-width: 767px\)/);
-    expect(CSS).toMatch(/\[data-mobile-compat="false"\]\s*\{\s*display:\s*none;/);
-  });
-
-  it("gives them back to a viewer who chose to see all games", () => {
-    /*
-     * "Compatible only" is the default, so hiding is right for a first paint.
-     * Someone who opted into all games must not be silently filtered — CSS
-     * cannot read that preference, so the client mirrors it onto <html>.
-     */
-    expect(CSS).toMatch(/html\.compat-show-all \[data-mobile-compat="false"\]/);
-    expect(FILTER).toMatch(/classList\.toggle\("compat-show-all", mode === "all"\)/);
+    expect(CSS).toMatch(/html\.compat-only \[data-mobile-compat="false"\]\s*\{\s*display:\s*none;/);
+    expect(FILTER).toMatch(/classList\.toggle\("compat-only", mode === "compatible"\)/);
   });
 
   it("switches the hero rather than hiding it", () => {

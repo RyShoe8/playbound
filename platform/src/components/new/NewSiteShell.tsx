@@ -35,6 +35,7 @@ export function NewSiteShell() {
  {session?.user?<><Link href="/profile">Account settings</Link><SignOutButton/></>:<Link href="/login?callbackUrl=/">Sign in</Link>}
  </div>
  </details>
- <form action="/search" role="search"><Search size={17}/><input name="q" type="search" aria-label="Search games and developers" placeholder="Find your next game"/></form><div>{session?.user?<><NotificationBell/><Link href="/profile" className="new-avatar" aria-label="Your profile">{initials}</Link></>:<Link href="/login?callbackUrl=/">Sign in</Link>}</div></header>
+ {/* /search has its own box that keeps the filters; two boxes, one empty, was confusing. */}
+ {pathname!=="/search"&&<form action="/search" role="search"><Search size={17}/><input name="q" type="search" aria-label="Search games and developers" placeholder="Find your next game"/></form>}<div>{session?.user?<><NotificationBell/><Link href="/profile" className="new-avatar" aria-label="Your profile">{initials}</Link></>:<Link href="/login?callbackUrl=/">Sign in</Link>}</div></header>
  </div>;
 }

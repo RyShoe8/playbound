@@ -208,17 +208,13 @@ body.is-popout .shell-main {
    the mobile HTML entirely, costing their internal links under mobile-first
    indexing. Hiding keeps the links and the prerender.
 
-   The breakpoint matches the mobile check in useDevice. "Compatible only" is
-   the default preference, so this is right for a first paint; a viewer who
-   has chosen "all games" gets them back when the client adds compat-show-all.
+   The breakpoint matches the mobile check in useDevice. Phones default to all
+   games, so nothing is hidden until the client adds compat-only for a viewer
+   who chose "This Device".
    ───────────────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
-  [data-mobile-compat="false"] {
+  html.compat-only [data-mobile-compat="false"] {
     display: none;
-  }
-
-  html.compat-show-all [data-mobile-compat="false"] {
-    display: flex;
   }
 }
 

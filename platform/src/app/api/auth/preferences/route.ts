@@ -36,7 +36,8 @@ type PrefsLean = {
 function serializePrefs(prefs: PrefsLean["preferences"] | undefined) {
   const raw = prefs?.discoveryMode;
   return {
-    compatibilityFilter: prefs?.compatibilityFilter ?? "compatible",
+    // Unset stays unset so the client can apply its per-device default.
+    compatibilityFilter: prefs?.compatibilityFilter,
     discoveryMode: raw === "FREE" || raw === "ALL" ? raw : undefined,
   };
 }

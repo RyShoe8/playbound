@@ -250,6 +250,8 @@ describe("coverage of the games PlayBound hosts", () => {
    * needs in order to close it.
    */
   const UNASSESSED: Record<string, string> = {
+    // New in the SRB2Kart dedicated-server commit; its kartserv.cfg profile is not written yet.
+    "sonic-robo-blast-2-kart": "settings profile not yet written",
     /*
      * The last one, and it is blocked rather than unexamined. Mindustry is
      * configured over stdin with `host <map> <mode>`, and the mode cannot be
