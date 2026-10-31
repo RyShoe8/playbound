@@ -16,8 +16,18 @@
  */
 const entries = new Map<string, { at: number; value: Promise<unknown> }>();
 
+/*
+ * Monotonic milliseconds. Not Date.now(): with Cache Components a prerender may
+ * not read the current time before real data, and this runs first on /about's
+ * catalog read, which failed the build.
+ */
+function nowMs(): number {
+  const [s, ns] = process.hrtime();
+  return s * 1000 + ns / 1e6;
+}
+
 export function instanceMemo<T>(key: string, ttlMs: number, read: () => Promise<T>): Promise<T> {
-  const now = Date.now();
+  const now = nowMs();
   const hit = entries.get(key);
   if (hit && now - hit.at < ttlMs) return hit.value as Promise<T>;
   const value = read();
