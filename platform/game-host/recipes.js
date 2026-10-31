@@ -241,7 +241,7 @@ RECIPE_SETTING_TYPES["soldier-of-fortune-platinum-edition"] = { map: "string" };
 for (const field of rimworldDifficulty) RECIPE_SETTING_TYPES["rimworld-together"][`difficulty.${field.key}`] = typeof field.default;
 // slot setting below. Party-room settings remain independent.
 for (const slug of [
-  "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry", "deus-ex-goty-edition",
+  "morrowind", "teeworlds", "openttd", "assaultcube", "medal-of-honor-allied-assault", "mindustry", "hurry-curry", "deus-ex-goty-edition", "sonic-robo-blast-2-kart",
   "warzone-2100", "bzflag", "supertuxkart", "xonotic", "openarena",
   "0-ad", "0ad", "bombsquad", "wolfenstein-enemy-territory", "team-fortress-2",
   "unvanquished", "hedgewars", "freedoom", "veloren", "freeciv",
@@ -312,6 +312,11 @@ export function botFillCount(slug, ctx) {
   const value = acceptedSettingsFor(slug, ctx?.settings).botFill;
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return Math.max(0, Math.min(63, Math.round(value)));
+}
+
+function srb2kartHome(ctx) {
+  const id = String(ctx?.partyId || "default").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64) || "default";
+  return path.join(HOST_HOME, "srb2kart-servers", `pb-${id}`);
 }
 
 function managedPlayerLimit(ctx, fallback = 16) {
@@ -1043,6 +1048,30 @@ export const recipes = {
    * to the public registry at registry.hurrycurry.org would spam a
    * community list with rooms nobody outside the party can use.
    */
+  /*
+   * SRB2Kart v1.6, built from the official STJr/Kart-Public v1.6 source with
+   * the release's Linux asset pack (players install the same v1.6 release).
+   * One UDP port per room. -home keeps each room's config and log apart.
+   */
+  "sonic-robo-blast-2-kart": {
+    portStart: 5029,
+    portEnd: 5049,
+    protocol: "udp",
+    binaries: gameBin("sonic-robo-blast-2-kart", ["srb2kart"]),
+    cwd: () => path.join(GAMES_ROOT, "sonic-robo-blast-2-kart"),
+    startupReadyTimeoutMs: 45_000,
+    prepareSpawn: async (_port, ctx) => {
+      fs.mkdirSync(srb2kartHome(ctx), { recursive: true, mode: 0o700 });
+    },
+    args: (port, ctx) => [
+      "-dedicated",
+      "-port", String(port),
+      "-home", srb2kartHome(ctx),
+      "+servername", String(ctx.name || "PlayBound Kart").replace(/[^\w .!'-]/g, "").slice(0, 31) || "PlayBound Kart",
+      "+maxplayers", String(ctx.managed ? Math.min(16, managedPlayerLimit(ctx, 8)) : 8),
+      "+advertise", "0",
+    ],
+  },
   "hurry-curry": {
     portStart: 27032,
     portEnd: 27052,
@@ -2053,6 +2082,7 @@ const HOST_TITLES = {
   bombsquad: "BombSquad",
   freedoom: "Freedoom",
   "hurry-curry": "Hurry Curry!",
+  "sonic-robo-blast-2-kart": "Sonic Robo Blast 2 Kart",
   "wolfenstein-enemy-territory": "Wolfenstein: Enemy Territory",
   ysoccer: "YSoccer",
 };

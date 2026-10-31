@@ -88,6 +88,8 @@ const CLIENT_CONNECT_ARGS = {
    * this file exists to record.
    */
   hypersomnia: ["--connect", "{host}:{port}"],
+  // SRB2Kart's -connect parameter takes host:port as the next argument.
+  "sonic-robo-blast-2-kart": ["-connect", "{host}:{port}"],
   teeworlds: ['"connect {host}:{port}"'],
   ddnet: ['"connect {host}:{port}"'],
   /*
@@ -325,6 +327,7 @@ const DEFAULT_GAME_PORTS = {
   openhv: 1255,
   hypersomnia: 8412,
   teeworlds: 8303,
+  "sonic-robo-blast-2-kart": 5029,
   bombsquad: 43210,
   assaultcube: 28763,
   "medal-of-honor-allied-assault": 12203,

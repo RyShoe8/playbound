@@ -220,6 +220,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/masterHedgew
   "$AGENT_SRC/goldenEyeUpdates.js" \
   "$AGENT_SRC/goldenEyePackage.py" \
   "$AGENT_SRC/goldenEyeRuntime.js" \
+  "$AGENT_SRC/sofRuntime.js" \
   "$AGENT_SRC/hxUpdates.js" \
   "$AGENT_SRC/hxArchive.py" \
   "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" "$AGENT_SRC/spawnTests.js" \

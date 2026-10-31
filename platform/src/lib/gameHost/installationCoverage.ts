@@ -7,6 +7,7 @@ const ARCHIVE: Gap = { category: "archive", reason: "Needs a verified archive ha
 const GAPS: Record<string, Gap> = {
   "vintage-story": ARCHIVE,
   "deus-ex-goty-edition": { category: "custom-build", reason: "Needs a Wine/HX package handler that preserves the game assets and PlayBound co-op integration." },
+  "sonic-robo-blast-2-kart": { category: "custom-build", reason: "Built from the official STJr/Kart-Public v1.6 source with the v1.6 Linux assets; players must run the same v1.6 release, so a new version needs a rebuild and a matching client update." },
   "goldeneye-source": { category: "private-runtime", reason: "Needs coordinated Source SDK base and GoldenEye mod updates, including private runtime refresh and retained settings." },
   "soldier-of-fortune-platinum-edition": { category: "private-runtime", reason: "The openMERC engine can be updated only with a reviewed compatibility and rollback plan; preserve each server's private licensed PAK files and writable state." },
 };

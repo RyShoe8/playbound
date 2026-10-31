@@ -2573,6 +2573,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Ultima VII engine recreation with local party and shared controller play.",
   },
 
+  /*
+   * SRB2Kart v1.6: PlayBound runs the dedicated server (built from the
+   * official v1.6 source). Clients must be the same v1.6 release.
+   */
+  "sonic-robo-blast-2-kart": {
+    gameSlug: "sonic-robo-blast-2-kart",
+    title: "Sonic Robo Blast 2 Kart",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: { port: 5029, protocol: "udp", binaryHint: "srb2kart" },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+      inGameSteps: ["If the game opens at its menu, choose Multiplayer → Join Game and enter the PlayBound server address and port"],
+    },
+  },
   "hurry-curry": {
     gameSlug: "hurry-curry",
     title: "Hurry Curry!",

@@ -104,6 +104,7 @@ export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
   "gemrb",
   "exult",
   "hurry-curry",
+  "sonic-robo-blast-2-kart",
   "hyperdisc-arena",
 ]);
 

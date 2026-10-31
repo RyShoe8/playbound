@@ -81,6 +81,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
    * map-editor services, so the room range starts above them to avoid
    * colliding with anything the server itself might bind.
    */
+  "sonic-robo-blast-2-kart": {
+    slug: "sonic-robo-blast-2-kart",
+    title: "Sonic Robo Blast 2 Kart",
+    defaultPort: 5029,
+    portEnd: 5049,
+    protocol: "udp",
+  },
   "hurry-curry": {
     slug: "hurry-curry",
     title: "Hurry Curry!",
