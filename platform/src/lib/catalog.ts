@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { instanceMemo } from "@/lib/instanceMemo";
 import { withAccurateMultiplayerFaq } from "@/lib/multiplayerFaq";
 import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
@@ -608,8 +609,11 @@ async function readCachedVisibleGames(includeTesting: boolean): Promise<Game[]> 
   return shards.flat().sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? 1 : 0);
 }
 
-const loadPublishedGames = cache(() => readCachedVisibleGames(false));
-const loadPublishedAndTestingGames = cache(() => readCachedVisibleGames(true));
+// Copied per call so a caller sorting the list in place cannot reorder it for
+// every other request sharing the instance memo.
+const CATALOG_MEMO_MS = 20_000;
+const loadPublishedGames = cache(async () => [...await instanceMemo("catalog:published", CATALOG_MEMO_MS, () => readCachedVisibleGames(false))]);
+const loadPublishedAndTestingGames = cache(async () => [...await instanceMemo("catalog:with-testing", CATALOG_MEMO_MS, () => readCachedVisibleGames(true))]);
 
 /** Visible catalog. Pass `includeTesting` for admin viewers (published + testing + ready). */
 export async function listGames(opts?: { includeTesting?: boolean }): Promise<Game[]> {

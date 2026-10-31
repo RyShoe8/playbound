@@ -1,4 +1,5 @@
 import { listGames } from "@/lib/catalog";
+import { settleWithLimit } from "@/lib/settleWithLimit";
 import { listServersForGame } from "@/lib/servers/registry";
 import { listAllJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 import { SITE_URL } from "@/lib/site";
@@ -27,8 +28,9 @@ export async function GET() {
   // One community-server read for the whole list, not one query per game.
   const hostedSnapshot = await listAllJoinableCommunityServers().catch(() => undefined);
 
-  const settled = await Promise.allSettled(
-    multiplayer.map(async (game): Promise<GameServerSummary> => {
+  // A few upstream lists at a time; all at once expired every timeout together.
+  const settled = await settleWithLimit(multiplayer, 6,
+    async (game): Promise<GameServerSummary> => {
       const result = await listServersForGame(game.slug, hostedSnapshot);
       const servers = result.servers ?? [];
       return {
@@ -40,7 +42,7 @@ export async function GET() {
         license: game.license,
         url: `${SITE_URL}/games/${game.slug}/servers`,
       };
-    })
+    }
   );
 
   const rows: GameServerSummary[] = [];

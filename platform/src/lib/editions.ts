@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { instanceMemo } from "@/lib/instanceMemo";
 import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
@@ -614,10 +615,10 @@ async function readStoredEditionSnapshot(): Promise<Record<string, StoredEdition
 }
 
 function loadStoredEditionSnapshot(): Promise<Record<string, StoredEditionState>> {
-  return unstable_cache(readStoredEditionSnapshot, ["stored-editions-snapshot"], {
+  return instanceMemo("stored-editions-snapshot", 20_000, () => unstable_cache(readStoredEditionSnapshot, ["stored-editions-snapshot"], {
     revalidate: 120,
     tags: ["editions"],
-  })();
+  })());
 }
 
 /** Stored editions plus seed slugs deliberately deleted through admin. */

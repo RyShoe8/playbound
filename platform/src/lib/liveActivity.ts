@@ -6,6 +6,7 @@
  */
 
 import { unstable_cache } from "next/cache";
+import { settleWithLimit } from "@/lib/settleWithLimit";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { editions as seedEditions } from "@/lib/data/editions";
@@ -44,6 +45,15 @@ const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
  * poll is a rounding error in that sum. A twelve-second homepage is not.
  */
 const MULTIPLAYER_FANOUT_MS = 8500;
+/*
+ * Every multiplayer game's server list used to be requested in the same tick
+ * and parsed together. One event-loop stall then expired all ~60 timeouts in
+ * the same millisecond ("aborted due to timeout" for every provider on one
+ * /deals request), and the parsing itself was part of the stall. A few at a
+ * time keeps each timeout measuring its own request.
+ */
+const SERVER_LIST_CONCURRENCY = 6;
+
 
 export type CatalogPopularGame = {
   slug: string;
@@ -432,12 +442,14 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
   );
 
   const [settled, platformByGame, editionCountBySlug, externalEntries] = await Promise.all([
-    hostedSnapshot.then((hosted) => Promise.allSettled(
-      multiplayer.map((game) => withTimeout(
+    hostedSnapshot.then((hosted) => settleWithLimit(
+      multiplayer,
+      SERVER_LIST_CONCURRENCY,
+      (game) => withTimeout(
         multiplayerForGame(game.slug, hosted),
         MULTIPLAYER_FANOUT_MS,
         { players: 0, servers: 0 }
-      ))
+      )
     )),
     countActivePlatformPlayersByGame(),
     publicEditionCountsByGame(),

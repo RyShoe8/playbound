@@ -20,13 +20,19 @@ export async function computeAnalyticsSummary(includeBots: boolean, timeZone = "
     ]);
     return rows[0]?.count ?? 0;
   };
-  const [counts, uniqueSessions7d, identifiedUsers7d, uniqueSessions7dPrev,
-    identifiedUsers7dPrev, topEvents, dailyVolume] = await Promise.all([
-    periodDocumentCounts(TelemetryEvent, botCondition, tz),
+  // Two at a time rather than seven: each of these scans the telemetry
+  // collection, and seven together held seven pooled connections for up to
+  // 80s while public pages waited behind them.
+  const counts = await periodDocumentCounts(TelemetryEvent, botCondition, tz);
+  const [uniqueSessions7d, identifiedUsers7d] = await Promise.all([
     distinctCount("sessionId", { $gte: d7 }),
     distinctCount("userId", { $gte: d7 }),
+  ]);
+  const [uniqueSessions7dPrev, identifiedUsers7dPrev] = await Promise.all([
     distinctCount("sessionId", { $gte: d14, $lt: d7 }),
     distinctCount("userId", { $gte: d14, $lt: d7 }),
+  ]);
+  const [topEvents, dailyVolume] = await Promise.all([
     TelemetryEvent.aggregate<{ _id: string; count: number }>([
       { $match: { ...botCondition, createdAt: { $gte: d7 } } },
       { $group: { _id: "$event", count: { $sum: 1 } } },
@@ -49,6 +55,6 @@ export async function computeAnalyticsSummary(includeBots: boolean, timeZone = "
 }
 
 export const loadAnalyticsSummary = unstable_cache(
-  computeAnalyticsSummary, ["admin-analytics-summary-v2"], { revalidate: 60 }
+  computeAnalyticsSummary, ["admin-analytics-summary-v2"], { revalidate: 900 }
 );
 

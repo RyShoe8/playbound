@@ -39,7 +39,7 @@ interface TelemetryDoc {
 
 /**
  * Every event name we collect, with 90-day volume, for the filter dropdown.
- * Cached for five minutes: the list changes only when new instrumentation
+ * Cached for thirty minutes: the list changes only when new instrumentation
  * ships, and the grouping is not free on a large collection.
  */
 const loadEventNames = unstable_cache(
@@ -54,7 +54,7 @@ const loadEventNames = unstable_cache(
     return rows.filter((r) => typeof r._id === "string" && r._id).map((r) => ({ name: r._id, count: r.count }));
   },
   ["admin-analytics-event-names-v1"],
-  { revalidate: 300 }
+  { revalidate: 1800 }
 );
 
 async function loadAnalytics(filters: {
