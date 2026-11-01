@@ -16,6 +16,8 @@
  *   2. Prefer exactOrSubdomain() over hand-written endsWith chains.
  */
 
+const { isEpicLauncherStoreLink } = require("./epicLauncher");
+
 /** Exact host, or any subdomain of it. The safe default for an allowlist. */
 function exactOrSubdomain(host, domain) {
   return host === domain || host.endsWith("." + domain);
@@ -296,6 +298,11 @@ function createSecurity({ isPackaged, getApiBase }) {
       !u.search &&
       !u.hash
     ) {
+      return u.toString();
+    }
+    // Epic store pages in the Epic Games Launcher, and nothing else that
+    // protocol handler can do (launch, install). See services/epicLauncher.js.
+    if (isEpicLauncherStoreLink(u)) {
       return u.toString();
     }
     throw new Error(`Blocked external URL scheme: ${proto}`);

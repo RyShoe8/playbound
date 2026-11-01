@@ -131,6 +131,7 @@ const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
 const { CATALOG_LIVE_STATS_TTL_MS, CATALOG_TTL_MS, DEFAULT_API_BASE, DEFAULT_EDITION_SLUG, DEFAULT_GAMES_DIR, INSTALLED_SLUG_ALIASES, PROTOCOL, UPDATER_FEED_URL, apiFetch, assertDownloadUrl, assertOpenExternalUrl, catalogEntryFromEdition, cloudSaves, collectHardwareProfile, configureYoutubeEmbedIdentity, editionInstallDir, ensureGameInstallRecord, ensureUnixExecutable, exeOnDisk, expandWinPath, extract7z, extractDmg, extractLinkHandoff, extractPkg, extractZip, fetchCatalogLiveStats, fetchControlProfile, fetchLauncherEditions, findExecutable, findInstallerInDir, findNamedPortableExe, findYSoccerOnlineJar, gamesRoot, getApiBase, getAvailableDiskSpace, getRemoteDeviceId, getRemoteDeviceName, httpStatusFromInstallError, installErrorCode, installQueue, isAllowedApiBase, launcherApiHeaders, launcherJson, listEditionEntries, listFixedDriveRoots, liveStatsDisk, loadCachedCatalog, loadCachedCatalogFile, loadSettings, loadState, normalizeFsPath, normalizeProcessImageName, parseDeepLink, pathUnderRoot, playableExePath, probeServerLatency, promoteStagingDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, registerCatalogEntryHosts, registerDownloadHostFromUrl, rememberLocatedRoot, repairUnixExtractedBinaries, reportInstall, resolveDownload, resolveEditionForInstall, resolveEventMedia, resolveMediaUrl, resolveModDownload, runLibrarySync, safeOpenExternal, saveCatalogCache, saveData, saveLiveStatsDiskCache, saveSettings, saveState, sevenZipBinary, shouldSkipScanDir, shouldSyncHardwareProfile, steamAppIdForEntry, stripRegQuotes, syncGameInstallSummary, uninstallExeCache, unpackNestedArchives, unwrapSingleRootDirectory, verifyChecksumMd5, verifyChecksumSha256, writeJarLauncher } = require("./services/main/core");
 const { ensureSteamRunning, isDiscordUrl, parseDiscordInviteCode, steamAppIdFor, steamBaseDir } = require("./services/main/steam");
+const { epicStoreOpenUrl } = require("./services/epicLauncher");
 const { SOLARUS_REPAIR_SLUGS, elevationRemembered, findDirContainingFile, flattenWadFiles, flightGearAddonLaunchArgs, isAuriePatched, isBaseGameReady, isExecutableLocked, isFlightGearAircraftMod, listUninstallRegistryDump, looksLikeElevationRefusal, maybeRepairWolfensteinEtInstall, maybeRepairZeldaMudoraInstall, modUsesUserDataFolder, persistEditionExe, prepareClassicDosInstall, rememberElevation, removeEditionModPatch, resolveInsideGameDir, resolveModTargetDir, runAuriePatcher } = require("./services/main/gameFixes");
 const { hintProcessNames, isAnyImageRunning, killGameImageNames, killProcessesUnderDirs, probeImagesRunning, saveContextFor, snapshotSavesAfterPlay } = require("./services/main/processes");
 const { collectGameUninstallDirs, findUninstallerBinary, healFormerGamesDirsFromInstalls, isBaseGameInstallDir, isCatalogKnownInstallDir, isPlayBoundManagedInstallDir, isPlayBoundManagedModDir, isProtectedSaveDirectory, isUnsafeUninstallDir, listModSlugsForBaseGame, playBoundGamesRoots, rememberFormerGamesDir, removeDirWithRetries, removeFileWithRetries, resolveEditionUninstallDir, sameFsPath } = require("./services/main/uninstall");
@@ -2603,6 +2604,37 @@ async function extractArchive(archivePath, destDir) {
   await unpackLoneInnerArchive(archivePath, destDir);
 }
 
+/**
+ * The table file in an installed VPX table's folder: the shallowest .vpx,
+ * and among equals the largest, so a table beats a stray test or backup file.
+ */
+function findFirstVpxTable(root) {
+  let level = [root];
+  for (let depth = 0; depth <= 4 && level.length; depth++) {
+    const next = [];
+    const found = [];
+    for (const dir of level) {
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const e of entries) {
+        const full = path.join(dir, e.name);
+        if (e.isFile() && /\.vpx$/i.test(e.name)) found.push(full);
+        else if (e.isDirectory()) next.push(full);
+      }
+    }
+    if (found.length) {
+      const size = (p) => { try { return fs.statSync(p).size; } catch { return 0; } };
+      return found.sort((a, b) => size(b) - size(a))[0];
+    }
+    level = next;
+  }
+  return null;
+}
+
 /** First file called `name` (case-insensitive) under `root`, breadth-first, at most `maxDepth` levels down. */
 function findFileNamed(root, name, maxDepth) {
   const wanted = String(name).toLowerCase();
@@ -5048,7 +5080,8 @@ async function openInstallerPath(installerPath, gameSlug, opts = {}) {
  * button appeared to do nothing. Both paths go through here now.
  */
 async function openExternalInstallHandoff(rawUrl, slug) {
-  const openUrl = steamDeepLinkFor(rawUrl) || rawUrl;
+  // An Epic store page opens in the Epic Games Launcher when it is installed.
+  const openUrl = steamDeepLinkFor(rawUrl) || (await epicStoreOpenUrl(rawUrl).catch(() => null)) || rawUrl;
   if (String(openUrl || "").startsWith("steam://")) {
     await ensureSteamRunning();
   }
@@ -7283,8 +7316,10 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
    * find it rather than hard-coding a path.
    */
   if (slug === "visual-pinball-x" && !args.includes("-play")) {
+    // A table chosen from the library (playMod) wins over the bundled example.
+    const chosen = opts?.vpxTable && fs.existsSync(opts.vpxTable) ? opts.vpxTable : null;
     const root = info.dir || (info.exe ? path.dirname(info.exe) : null);
-    const table = root ? findFileNamed(root, "exampleTable.vpx", 6) : null;
+    const table = chosen || (root ? findFileNamed(root, "exampleTable.vpx", 6) : null);
     if (table) args.push("-play", table);
   }
 
@@ -8935,6 +8970,18 @@ async function playMod(slug) {
   const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
   const info = mods[slug];
   if (!info || typeof info !== "object") throw new Error("Mod is not installed");
+
+  /*
+   * A Visual Pinball X table is data for the base game, never a program of
+   * its own, even when its archive ships helper EXEs (Blood Machines carries
+   * Scorbit and QR tools). Play the table itself: start VPX on its .vpx.
+   */
+  if (info.baseGameSlug === "visual-pinball-x") {
+    const table = info.dir ? findFirstVpxTable(info.dir) : null;
+    if (!table) throw new Error("This table's .vpx file is missing. Reinstall the table.");
+    const result = await playGame("visual-pinball-x", null, null, { vpxTable: table });
+    return { ...result, portable: false, baseGameSlug: "visual-pinball-x", slug, title: info.title || result?.title || slug };
+  }
 
   let exe = exeOnDisk(info);
   if (!exe && info.dir && fs.existsSync(info.dir)) {

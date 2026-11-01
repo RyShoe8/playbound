@@ -549,7 +549,29 @@ const SOLARUS_REPAIR_SLUGS = new Set([
  * more, through the new full-rebuild path, without anyone needing to
  * manually reinstall.
  */
-const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v4";
+/*
+ * v5: bindings are only filled in when a command has none (or only a Solarus 1
+ * "button 0" style string that Solarus 2 cannot read), so a remap made in the
+ * options menu survives the next game start; v4 overwrote it on every start.
+ * The bump also re-runs patchZeldaMudoraAxisRepeat on pause.lua and warp.lua.
+ */
+const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v5";
+
+/*
+ * pause.lua and warp.lua install a game-wide on_joypad_axis_moved that
+ * swallows an axis event equal to the last one seen, keyed by `axis % 2`.
+ * Solarus 2 names its axes ("left_x"), so the earlier crash fix
+ * `(tonumber(axis) or 0) % 2` put X and Y in one slot: letting go of the
+ * stick could look like a repeat of the other axis, the release was
+ * swallowed, and Link kept walking. Keying by the axis itself keeps the
+ * repeat filter per axis, so a return to centre always gets through.
+ */
+function patchZeldaMudoraAxisRepeat(code) {
+  return String(code)
+    .replace(/joy_avoid_repeat\[\(tonumber\(axis\) or 0\) % 2\]/g, "joy_avoid_repeat[axis]")
+    .replace(/joy_avoid_repeat\[axis % 2\]/g, "joy_avoid_repeat[axis]")
+    .replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
+}
 /*
  * v5: v4's replacements ended in `end` while their match stopped right before
  * the next `function`, gluing them into `endfunction` — a Lua syntax error
@@ -857,17 +879,22 @@ function patchZeldaMudoraGameManager(code) {
   // injected block before adding the start-time handler below.
   code = code.replace(/-- PlayBound Solarus 2 controller repair v3[\s\S]*?(?=-- This script handles global properties)/, "");
 
+  // v4's block, if present, is replaced rather than stacked under v5's.
+  code = code.replace(/-- PlayBound Solarus 2 controller repair v4[\s\S]*?pb_active_hat_cmds = next_set\r?\n  return true\r?\nend\r?\n\r?\n/, "");
+
   const bindings = `${ZBOM_REPAIR_MARKER}
+local pb_default_bindings = {
+  action = "a", attack = "b", item_1 = "x", item_2 = "y", pause = "start",
+  up = "left_y -", down = "left_y +", left = "left_x -", right = "left_x +",
+}
 game:register_event("on_started", function(game)
-game:set_command_joypad_binding("action", "a")
-game:set_command_joypad_binding("attack", "b")
-game:set_command_joypad_binding("item_1", "x")
-game:set_command_joypad_binding("item_2", "y")
-game:set_command_joypad_binding("pause", "start")
-game:set_command_joypad_binding("up", "left_y -")
-game:set_command_joypad_binding("down", "left_y +")
-game:set_command_joypad_binding("left", "left_x -")
-game:set_command_joypad_binding("right", "left_x +")
+  for command, binding in pairs(pb_default_bindings) do
+    local current = game:get_command_joypad_binding(command)
+    -- Keep a player's own remap; replace only nothing or a Solarus 1 string.
+    if current == nil or current == "" or current:find("^button ") or current:find("^axis ") or current:find("^hat ") then
+      game:set_command_joypad_binding(command, binding)
+    end
+  end
 end)
 
 local pb_dpad_buttons = {
@@ -1043,7 +1070,7 @@ async function maybeRepairZeldaMudoraInstall(slug, info) {
       if (fs.existsSync(p)) {
         let code = await fsp.readFile(p, "utf8");
         const orig = code;
-        code = code.replace(/axis % 2/g, "(tonumber(axis) or 0) % 2");
+        code = patchZeldaMudoraAxisRepeat(code);
         if (code !== orig) {
           await fsp.writeFile(p, code, "utf8");
           anyPatched = true;
@@ -1228,4 +1255,4 @@ async function maybePrepareRenegadeX(info) {
   }
 }
 
-module.exports = { listUninstallRegistryDump, isFlightGearAircraftMod, flightGearHomeAddons, findDirContainingFile, flightGearAddonLaunchArgs, resolveModTargetDir, modUsesUserDataFolder, isBaseGameReady, elevationRemembered, rememberElevation, looksLikeElevationRefusal, prepareClassicDosInstall, flattenWadFiles, resolveInsideGameDir, peHasSection, isAuriePatched, removeEditionModPatch, isExecutableLocked, runAuriePatcher, maybeRepairWolfensteinEtInstall, SOLARUS_REPAIR_SLUGS, maybeRepairZeldaMudoraInstall, patchZeldaMudoraGameManager, persistEditionExe, maybePrepareRenegadeX };
+module.exports = { listUninstallRegistryDump, isFlightGearAircraftMod, flightGearHomeAddons, findDirContainingFile, flightGearAddonLaunchArgs, resolveModTargetDir, modUsesUserDataFolder, isBaseGameReady, elevationRemembered, rememberElevation, looksLikeElevationRefusal, prepareClassicDosInstall, flattenWadFiles, resolveInsideGameDir, peHasSection, isAuriePatched, removeEditionModPatch, isExecutableLocked, runAuriePatcher, maybeRepairWolfensteinEtInstall, SOLARUS_REPAIR_SLUGS, maybeRepairZeldaMudoraInstall, patchZeldaMudoraGameManager, patchZeldaMudoraAxisRepeat, persistEditionExe, maybePrepareRenegadeX };
