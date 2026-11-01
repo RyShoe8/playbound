@@ -3230,6 +3230,7 @@ function findExeInStoreTitleDirs(entry) {
   if (process.platform !== "win32" || !entry?.title) return null;
   const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const titles = [entry.title, ...(entry.registryTitles || [])].map(normalize).filter((s) => s.length >= 6);
+  if (entry.slug === "f-e-a-r-platinum") titles.push("fearplatinumcollection");
   const bases = expectedExeBasenames(entry);
   if (!titles.length || !bases.length) return null;
   const drives = listFixedDriveRoots();
@@ -3666,7 +3667,10 @@ async function listLibraryScanCandidates() {
     if (!entry?.slug) continue;
     const existing = installed[entry.slug];
     if (exeOnDisk(existing)) continue;
-    const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry);
+    // GOG's default folder adds "Collection" to the catalog title. Find it
+    // before the broader uninstall-registry pass below.
+    const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry) ||
+      (entry.slug === "f-e-a-r-platinum" ? findExeInStoreTitleDirs(entry) : null);
     if (known) {
       found.push({
         slug: entry.slug,
@@ -3715,7 +3719,9 @@ function addScannedLibraryGames(slugs) {
 
 /**
  * One-shot: pick up games already installed via knownExePaths but missing from state.
- * Known paths and gamesDir/<slug> only — registry walks belong on Add Game, not startup.
+ * Known paths and gamesDir/<slug> are cheap startup checks. F.E.A.R. also
+ * checks GOG folders/registry because its default folder differs from the
+ * catalog title and the player explicitly needs automatic GOG pickup.
  */
 async function scanKnownInstalls() {
   const state = loadState();
@@ -3725,7 +3731,8 @@ async function scanKnownInstalls() {
     if (!entry?.slug || !entry.knownExePaths?.length) continue;
     const existing = state[entry.slug];
     if (exeOnDisk(existing)) continue;
-    const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry);
+    const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry) ||
+      (entry.slug === "f-e-a-r-platinum" ? findKnownExecutable(entry) : null);
     if (known) {
       markInstalled(entry.slug, {
         version: existing?.version || "detected",
@@ -6384,6 +6391,10 @@ async function installLocatedNsis(slug, entry, editionExtra, sourceDir) {
 }
 
 async function installLocateThenZip(slug, entry, editionExtra) {
+  const gameDir =
+    editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
+      ? editionInstallDir(slug, editionExtra.editionSlug)
+      : path.join(gamesRoot(), slug);
   const baseExeHint =
     entry.baseExeHint ||
     (/eqgame/i.test(entry.exeHint) ? "eqgame" : entry.exeHint) ||
@@ -6403,6 +6414,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     ].filter(Boolean);
 
     for (const cand of candidates) {
+      if (path.resolve(cand) === path.resolve(gameDir)) continue;
       if (fs.existsSync(cand)) {
         if (findExecutable(cand, baseExeHint)) {
           sourceDir = cand;
@@ -6509,11 +6521,6 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     throw new Error("No overlay download source configured for this edition.");
   }
 
-  const gameDir =
-    editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
-      ? editionInstallDir(slug, editionExtra.editionSlug)
-      : path.join(gamesRoot(), slug);
-
   sendProgress({ phase: "extracting" });
   await fsp.rm(gameDir, { recursive: true, force: true });
   await fsp.mkdir(path.dirname(gameDir), { recursive: true });
@@ -6532,6 +6539,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     directUrl: overlay.url,
     dest: downloadPath,
   });
+  if (entry.checksumMd5) await verifyChecksumMd5(downloadPath, entry.checksumMd5);
   sendProgress({ phase: "extracting" });
   // Merge overlay into the copied base game tree (do not delete gameDir).
   // Some overlays are game mods rather than root-level engine files. RimWorld
@@ -6579,6 +6587,17 @@ async function installLocateThenZip(slug, entry, editionExtra) {
       throw new Error("OpenMerc needs both openMerc.exe and the original SoF base/pak0.pak. Reinstall the edition from your complete GOG game folder.");
     }
     exe = openMercExe;
+  }
+  if (slug === "f-e-a-r-platinum" && editionExtra.editionSlug === "fear-evo-combat-evolved") {
+    for (const required of ["FEAR-EVO.exe", "FEARMP.exe", "rtxmod18.archcfg"]) {
+      if (!fs.existsSync(path.join(gameDir, required))) {
+        throw new Error(`FEAR EVO overlay is incomplete: ${required} is missing.`);
+      }
+    }
+    if (!fs.existsSync(path.join(gameDir, "rtxmod18_User"))) {
+      throw new Error("FEAR EVO overlay is incomplete: rtxmod18_User is missing.");
+    }
+    exe = path.join(gameDir, "FEAR-EVO.exe");
   }
 
   const version = entry.versionLabel || overlay.version || "located+overlay";
@@ -7154,6 +7173,17 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       throw new Error("F.E.A.R. multiplayer needs FEARMP.exe alongside FEAR.exe. Check that the full GOG Platinum collection is installed, then reinstall it if FEARMP.exe is missing.");
     }
     info = { ...info, exe: multiplayerExe, dir: path.dirname(multiplayerExe) };
+    if (edSlug === "fear-evo-combat-evolved") {
+      const modConfig = path.join(info.dir, "rtxmod18.archcfg");
+      const modUserDir = path.join(info.dir, "rtxmod18_User");
+      if (!fs.existsSync(modConfig) || !fs.existsSync(modUserDir)) {
+        throw new Error("FEAR EVO is missing its multiplayer mod files. Reinstall this edition to restore rtxmod18.archcfg and rtxmod18_User.");
+      }
+      info = {
+        ...info,
+        launchArgs: ["-archcfg", "rtxmod18.archcfg", "-userdirectory", "rtxmod18_User", ...(info.launchArgs || [])],
+      };
+    }
   }
 
   // Early OpenMerc installs copied the GOG data correctly but recorded SoF.exe
