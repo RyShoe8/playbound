@@ -14,6 +14,38 @@ import { createGa4Provider } from "@/lib/telemetry/providers/ga4";
 import { createMongoProvider } from "@/lib/telemetry/providers/mongodb";
 import { createConsoleProvider } from "@/lib/telemetry/providers/console";
 import { setTelemetryUserId } from "@/lib/telemetry/context";
+import { createAhrefsPageViewTracker } from "@/lib/telemetry/ahrefsPageViews";
+
+declare global {
+  interface Window {
+    AhrefsAnalytics?: { sendEvent: (event: string) => void };
+  }
+}
+
+const trackAhrefsPage = createAhrefsPageViewTracker();
+
+function AhrefsPageViewTracker({ enabled }: { enabled: boolean }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (!enabled || !pathname) return;
+    const send = () => {
+      // SDK reads window.location itself: never send a view for a stale render.
+      const query = searchParams?.toString();
+      if (window.location.pathname !== pathname || new URLSearchParams(window.location.search).toString() !== (query || "")) return;
+      trackAhrefsPage({
+        pathname,
+        search: query ? `?${query}` : "",
+        notFound: Boolean(document.querySelector('meta[name="playbound-not-found"]')),
+        send: window.AhrefsAnalytics ? () => window.AhrefsAnalytics!.sendEvent("pageview") : undefined,
+      });
+    };
+    document.addEventListener("AhrefsAnalytics-ready", send);
+    send();
+    return () => document.removeEventListener("AhrefsAnalytics-ready", send);
+  }, [enabled, pathname, searchParams]);
+  return null;
+}
 
 /**
  * Loads GA4 + Ahrefs scripts, registers providers, auto page + identify.
@@ -140,6 +172,7 @@ function TelemetryScripts({ enabled }: { enabled: boolean }) {
       <Script
         src="https://analytics.ahrefs.com/analytics.js"
         data-key={AHREFS_KEY}
+        data-no-pageview-auto="true"
         strategy="afterInteractive"
       />
     </>
@@ -172,6 +205,7 @@ export function TelemetryProvider({
       </Suspense>
       <Suspense fallback={null}>
         <PageViewTracker />
+        <AhrefsPageViewTracker enabled={gaEnabled} />
       </Suspense>
       <Suspense fallback={null}>
         <IdentifyFromSession />

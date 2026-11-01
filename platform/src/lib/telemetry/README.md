@@ -67,6 +67,13 @@ Every event receives (callers never pass these):
 
 ### Required GA4 setting
 
+Ahrefs automatic history/load page views are disabled with `data-no-pageview-auto`.
+`AhrefsPageViewTracker` sends explicit views after route commit and SDK readiness,
+deduplicates repeated effects, and excludes admin, launcher-auth and not-found
+pages even when the SDK was loaded earlier on a public route. Ahrefs automatic
+link/form interaction tracking remains vendor-managed. Visitor metrics are not
+directly comparable with GA4: Ahrefs uses daily visitor identities.
+
 `send_page_view: false` only suppresses the initial config pageview. In GA4:
 
 **Admin → Data Streams → Enhanced Measurement → Page views → advanced → uncheck “Page changes based on browser history events”**
