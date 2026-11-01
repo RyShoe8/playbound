@@ -3929,6 +3929,7 @@ function couchDisqualifiesPlayBoundControls() {
  * stuck on the Play / Multiplayer screen with no way forward.
  */
 const BUNDLED_CONTROL_PROFILES = {
+  "f-e-a-r-platinum": "./services/inputEngine/profiles/f-e-a-r-platinum.json",
   holocure: "./services/inputEngine/profiles/holocure.json",
   "wolfenstein-enemy-territory": "./services/inputEngine/profiles/wolfenstein-enemy-territory.json",
   outrun: "./services/inputEngine/profiles/outrun.json",
@@ -7141,6 +7142,18 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     const notInstalledErr = new Error(message);
     notInstalledErr.__launchFailedReported = true;
     throw notInstalledErr;
+  }
+
+  // Platinum keeps the campaign and multiplayer in separate executables. The
+  // ordinary Play button must keep FEAR.exe; a party must open FEARMP.exe from
+  // the same install instead of dropping everyone into the campaign menu.
+  if (slug === "f-e-a-r-platinum" && join) {
+    const root = info.dir || path.dirname(info.exe);
+    const multiplayerExe = findFileNamed(root, "FEARMP.exe", 3);
+    if (!multiplayerExe) {
+      throw new Error("F.E.A.R. multiplayer needs FEARMP.exe alongside FEAR.exe. Check that the full GOG Platinum collection is installed, then reinstall it if FEARMP.exe is missing.");
+    }
+    info = { ...info, exe: multiplayerExe, dir: path.dirname(multiplayerExe) };
   }
 
   // Early OpenMerc installs copied the GOG data correctly but recorded SoF.exe

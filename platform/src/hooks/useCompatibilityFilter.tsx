@@ -19,6 +19,7 @@ import type {
 import { useDevice, type DeviceInfo } from "@/hooks/useDevice";
 
 const STORAGE_KEY = "pb-compatibility-filter";
+const MOBILE_STORAGE_KEY = "pb-compatibility-filter-mobile";
 const COOKIE_KEY = "pb-compat-filter";
 const CHANGE_EVENT = "pb-compatibility-filter-change";
 
@@ -38,26 +39,26 @@ function isMode(value: string | null | undefined): value is CompatibilityFilterM
   return value === "compatible" || value === "all";
 }
 
+function isMobileViewport(): boolean {
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
 function readLocalMode(): CompatibilityFilterMode {
+  const mobile = isMobileViewport();
   try {
-    const v = localStorage.getItem(STORAGE_KEY);
+    const v = localStorage.getItem(mobile ? MOBILE_STORAGE_KEY : STORAGE_KEY);
     if (isMode(v)) return v;
   } catch {
     /* private mode */
   }
-  // Phones run only a sliver of the PC catalog, so filtering by default made the
-  // site look empty there (search "doom" found nothing). Default them to all.
-  try {
-    if (window.matchMedia("(max-width: 767px)").matches) return "all";
-  } catch {
-    /* no matchMedia */
-  }
-  return "compatible";
+  // Keep phone and desktop choices independent. A saved desktop preference
+  // must not hide the PC catalog the first time someone opens the site on a phone.
+  return mobile ? "all" : "compatible";
 }
 
 function writeLocalMode(mode: CompatibilityFilterMode) {
   try {
-    localStorage.setItem(STORAGE_KEY, mode);
+    localStorage.setItem(isMobileViewport() ? MOBILE_STORAGE_KEY : STORAGE_KEY, mode);
   } catch {
     /* ignore */
   }
@@ -72,9 +73,12 @@ function writeLocalMode(mode: CompatibilityFilterMode) {
 function subscribeLocal(onChange: () => void): () => void {
   window.addEventListener("storage", onChange);
   window.addEventListener(CHANGE_EVENT, onChange);
+  const mobileQuery = window.matchMedia("(max-width: 767px)");
+  mobileQuery.addEventListener("change", onChange);
   return () => {
     window.removeEventListener("storage", onChange);
     window.removeEventListener(CHANGE_EVENT, onChange);
+    mobileQuery.removeEventListener("change", onChange);
   };
 }
 
@@ -126,7 +130,7 @@ export function CompatibilityProvider({
     let cancelled = false;
 
     (async () => {
-      if (status !== "authenticated") {
+      if (status !== "authenticated" || device.isMobile) {
         if (!cancelled) setReady(true);
         return;
       }
@@ -151,7 +155,7 @@ export function CompatibilityProvider({
     return () => {
       cancelled = true;
     };
-  }, [status]);
+  }, [status, device.isMobile]);
 
   useEffect(() => {
     if (status === "unauthenticated") syncedUser.current = false;
@@ -171,9 +175,9 @@ export function CompatibilityProvider({
   const setMode = useCallback(
     (next: CompatibilityFilterMode) => {
       writeLocalMode(next);
-      if (status === "authenticated") void patchServerMode(next);
+      if (status === "authenticated" && !device.isMobile) void patchServerMode(next);
     },
-    [status]
+    [status, device.isMobile]
   );
 
   const value = useMemo<CompatibilityFilterContextValue>(

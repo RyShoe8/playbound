@@ -115,6 +115,13 @@ test("new peer-hosted games expose the address and port their launch path needs"
 
 test("new party dedicated games either join directly or show the server address", () => {
   assert.deepEqual(CLIENT_CONNECT_ARGS["counter-strike-source"], ["+connect", "{host}:{port}"]);
+  assert.deepEqual(CLIENT_CONNECT_ARGS["f-e-a-r-platinum"], ["+join", "{host}:{port}"]);
+  assert.equal(defaultGamePort("f-e-a-r-platinum"), 27888);
+  assert.equal(defaultGameProtocol("f-e-a-r-platinum"), "udp");
+  assert.deepEqual(
+    applyConnectTemplates(CLIENT_CONNECT_ARGS["f-e-a-r-platinum"], { host: "100.82.1.9", port: 27888 }),
+    ["+join", "100.82.1.9:27888"]
+  );
   for (const slug of ["terraria", "core-keeper", "factorio", "necesse", "barotrauma"]) {
     assert.equal(CLIENT_CONNECT_ARGS[slug], null, slug);
     assert.equal(joinsFromInGameMenu(slug), true, slug);

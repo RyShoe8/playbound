@@ -278,7 +278,7 @@ function IncompatibleCorner({ game }: { game: DiscoverListingGame }) {
   const label = useIncompatibilityLabel(game);
   if (!label) return null;
   return (
-    <span className="absolute top-2 left-2 rounded-md border border-border/80 bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+    <span className="absolute top-2 left-2 rounded-md border border-border/80 bg-black/70 px-1.5 py-0.5 text-xs font-bold text-white backdrop-blur-sm md:text-[10px]">
       {label}
     </span>
   );
@@ -328,7 +328,7 @@ export function GameCard({
       <div className="flex flex-1 flex-col justify-between gap-2 border-t border-border/70 bg-card/90 px-2.5 py-2">
         <div className="min-w-0 flex-1">
           <h3 className="new-card-title">{game.title}</h3>
-          <p className="text-[11px] font-extrabold tracking-wide text-muted-foreground">{price}</p>
+          <p className="text-xs font-extrabold tracking-wide text-muted-foreground md:text-[11px]">{price}</p>
           <CardCategoryTags
             genres={game.genres}
             features={game.features}
@@ -339,8 +339,8 @@ export function GameCard({
             className="mt-1.5 min-w-0"
           />
           {displayEditions.length > 0 ? (
-            <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
-              <span className="font-bold text-primary/75 text-[11px]">Editions:</span>
+            <div className="mt-1 flex flex-wrap items-center gap-1 text-xs md:text-[11px]">
+              <span className="font-bold text-primary/75">Editions:</span>
               {displayEditions.slice(0, 2).map((e) => (
                 <span
                   key={e.slug}
@@ -351,7 +351,7 @@ export function GameCard({
                 </span>
               ))}
               {displayEditions.length > 2 ? (
-                <span className="text-[11px] font-medium text-muted-foreground">
+                <span className="font-medium text-muted-foreground">
                   +{displayEditions.length - 2}
                 </span>
               ) : null}
@@ -359,7 +359,7 @@ export function GameCard({
           ) : null}
         </div>
         {count > 0 ? (
-          <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-[11px] font-semibold text-muted-foreground">
+          <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-xs font-semibold text-muted-foreground md:text-[11px]">
             <span className="relative flex size-1.5">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
               <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
@@ -372,7 +372,7 @@ export function GameCard({
       {supportsOnlineMultiplayer(game) && (
         <Link
           href={`/friends?game=${encodeURIComponent(game.slug)}`}
-          className="m-2.5 mt-0 rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-primary-foreground transition hover:opacity-90"
+          className="m-2.5 mt-0 rounded-lg bg-primary px-3 py-2 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90 md:text-xs"
         >
           Start Party
         </Link>

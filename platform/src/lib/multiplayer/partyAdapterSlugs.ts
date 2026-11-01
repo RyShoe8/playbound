@@ -8,6 +8,7 @@
  * say "online" (OpenTyrian plays through the virtual LAN and was missing it).
  */
 export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
+  "f-e-a-r-platinum",
   "battlefield-1942-anthology",
   "aneurism-iv",
   "star-wars-fate-of-the-galaxy",

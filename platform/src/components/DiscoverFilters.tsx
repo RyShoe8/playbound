@@ -524,7 +524,7 @@ export function DiscoverFilters({
           <span>All</span>
           <span
             className={cn(
-              "text-[11px] font-semibold tabular-nums mt-0.5",
+              "text-xs font-semibold tabular-nums mt-0.5 md:text-[11px]",
               selectedGenre === ""
                 ? "text-primary-foreground/80"
                 : "text-muted-foreground"
@@ -551,7 +551,7 @@ export function DiscoverFilters({
               <span>{name}</span>
               <span
                 className={cn(
-                  "text-[11px] font-semibold tabular-nums mt-0.5",
+                  "text-xs font-semibold tabular-nums mt-0.5 md:text-[11px]",
                   isSelected
                     ? "text-primary-foreground/80"
                     : "text-muted-foreground"
@@ -583,7 +583,7 @@ export function DiscoverFilters({
                 </span>
                 Tags
                 {selectedTags.length > 0 && (
-                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground tabular-nums">
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground tabular-nums md:text-[11px]">
                     {selectedTags.length}
                   </span>
                 )}
@@ -605,7 +605,7 @@ export function DiscoverFilters({
                 </span>
                 Features
                 {selectedFeatures.length > 0 && (
-                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground tabular-nums">
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground tabular-nums md:text-[11px]">
                     {selectedFeatures.length}
                   </span>
                 )}
@@ -642,13 +642,13 @@ export function DiscoverFilters({
           <div className="flex flex-wrap items-center gap-3.5">
             {/* Sort Dropdown with separate label */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
+              <span className="text-sm font-bold text-muted-foreground whitespace-nowrap md:text-xs">
                 Sort:
               </span>
               <PremiumSelect
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
-                className="!w-auto h-8 min-w-[130px] rounded-lg border border-border/80 bg-secondary/50 px-2.5 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
+                className="!w-auto h-9 min-w-[130px] rounded-lg border border-border/80 bg-secondary/50 px-2.5 text-sm font-semibold outline-none transition-colors hover:border-border focus:border-ring md:h-8 md:text-xs"
               >
                 <option value="name">Name (A-Z)</option>
                 <option value="players">Most Players</option>
@@ -690,7 +690,7 @@ export function DiscoverFilters({
           </div>
 
           {/* Total Games Count */}
-          <div className="ml-auto pr-1 text-xs font-bold text-muted-foreground tabular-nums">
+          <div className="ml-auto pr-1 text-sm font-bold text-muted-foreground tabular-nums md:text-xs">
             {totalDisplayCount} game{totalDisplayCount === 1 ? "" : "s"}
           </div>
         </div>

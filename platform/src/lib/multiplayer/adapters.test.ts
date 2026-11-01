@@ -29,6 +29,13 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     // leader chooses self-hosting, even when they need no game-specific file.
     expect(getVirtualLanConfig("openra")).toEqual({});
 
+    const fear = getMultiplayerAdapter("f-e-a-r-platinum");
+    expect(fear.adapterType).toBe("virtual-lan");
+    expect(getVirtualLanConfig("f-e-a-r-platinum")).toMatchObject({
+      requiresBroadcast: false,
+      hostPort: 27888,
+    });
+
     const keeper = getMultiplayerAdapter("keeperfx");
     expect(keeper.adapterType).toBe("direct-ip");
     expect(keeper.tier).toBe("tier1_improved");

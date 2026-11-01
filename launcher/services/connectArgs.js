@@ -68,6 +68,9 @@ function openRaModName(editionSlug) {
 }
 
 const CLIENT_CONNECT_ARGS = {
+  // F.E.A.R. Platinum launches FEARMP.exe for parties; its Direct IP shortcut
+  // takes +join followed by host:port. The leader opens the LAN host in-game.
+  "f-e-a-r-platinum": ["+join", "{host}:{port}"],
   // OpenRA reads Launch.Connect from its settings-style argv along with Game.Mod.
   // Without Game.Mod={mod}, OpenRA starts in modchooser or whatever mod was last open
   // and the handshake fails with "Server is running an incompatible mod".
@@ -305,6 +308,7 @@ function hasArbiterLaunch(slug) {
 }
 
 const DEFAULT_GAME_PORTS = {
+  "f-e-a-r-platinum": 27888,
   // RetroArch FBNeo netplay hosts on TCP 55435. The party's self-host probe
   // must see this listener before guests try to join over NetBird.
   "baseball-stars": 55435,
@@ -369,6 +373,7 @@ const DEFAULT_GAME_PORTS = {
  * Default "tcp" keeps the existing probe path for games we have not listed.
  */
 const DEFAULT_GAME_PROTOCOLS = {
+  "f-e-a-r-platinum": "udp",
   "re-volt-rvgl": "udp",
   revolt: "udp",
   rvgl: "udp",

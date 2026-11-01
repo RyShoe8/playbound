@@ -113,6 +113,30 @@ export interface GameMultiplayerAdapter {
 }
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
+  "f-e-a-r-platinum": {
+    gameSlug: "f-e-a-r-platinum",
+    title: "F.E.A.R. Platinum",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Leader: open FEARMP.exe and create a LAN game in F.E.A.R.",
+        "Friends: PlayBound passes the leader's address to FEARMP.exe. If that does not connect, use Direct IP in the multiplayer menu.",
+      ],
+    },
+    virtualLan: {
+      requiresBroadcast: false,
+      hostPort: 27888,
+      inGameSteps: [
+        "Everyone: install the same Platinum build. PlayBound launches FEARMP.exe for parties.",
+        "Leader: create a LAN game from Multiplayer.",
+        "Friends: enter the leader's PlayBound network address in F.E.A.R.'s Direct IP join screen; LAN browsing is optional.",
+      ],
+    },
+    notes: "GOG says its original internet multiplayer service is disabled but LAN play remains available. PlayBound supplies the virtual LAN; F.E.A.R.'s own menus host and join. This is not a managed PlayBound dedicated server, and community master-server patches are not installed automatically.",
+  },
   "soldier-of-fortune-platinum-edition": {
     gameSlug: "soldier-of-fortune-platinum-edition",
     title: "Soldier of Fortune: Platinum Edition",

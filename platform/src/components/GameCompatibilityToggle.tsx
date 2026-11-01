@@ -110,7 +110,7 @@ function TopbarControl({
         aria-label="Game compatibility filter"
         value={mode}
         onChange={(e) => setMode(e.target.value as CompatibilityFilterMode)}
-        className="h-8 appearance-none rounded-full border border-input bg-secondary/60 px-2.5 py-0 text-xs font-semibold leading-none outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+        className="h-9 appearance-none rounded-full border border-input bg-secondary/60 px-2.5 py-0 text-sm font-semibold leading-none outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 md:h-8 md:text-xs"
       >
         {OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

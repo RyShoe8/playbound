@@ -34,7 +34,7 @@ export function CardCategoryTags({
 
   const chipClass = cn(
     "rounded-md border border-border/80 bg-secondary/60 px-1.5 py-0.5 font-semibold text-muted-foreground",
-    size === "md" ? "text-[12px]" : "text-[10px]"
+    size === "md" ? "text-[13px] md:text-[12px]" : "text-[12px] md:text-[10px]"
   );
   if (variant === "mod") {
     const labels = [...new Set([...genres, ...tags].map((value) => value.trim()).filter(Boolean))].slice(0, max);
@@ -50,13 +50,13 @@ export function CardCategoryTags({
     <div className={cn("space-y-1.5", className)}>
       {genreLabels.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
-          <span className="mr-0.5 text-[10px] font-bold text-muted-foreground">Genre</span>
+          <span className="mr-0.5 text-xs font-bold text-muted-foreground md:text-[10px]">Genre</span>
           {genreLabels.map((label) => <span key={label} className={chipClass}>{label}</span>)}
         </div>
       )}
       {featureLabels.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
-          <span className="mr-0.5 text-[10px] font-bold text-muted-foreground">Features</span>
+          <span className="mr-0.5 text-xs font-bold text-muted-foreground md:text-[10px]">Features</span>
           {featureLabels.map((label) => <span key={label} className={chipClass}>{label}</span>)}
         </div>
       )}

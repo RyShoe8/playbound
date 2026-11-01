@@ -105,6 +105,21 @@ describe("supportsLauncherParty", () => {
     })).toBe(false);
   });
 
+  it("allows a located GOG F.E.A.R. Platinum copy into LAN parties", () => {
+    const game = {
+      slug: "f-e-a-r-platinum",
+      features: ["Multiplayer", "LAN Support"],
+      launcherInstall: {
+        enabled: true,
+        kind: "external",
+        url: "https://www.gog.com/en/game/fear_platinum",
+        knownExePaths: ["FEAR.exe"],
+      },
+    };
+    expect(supportsLauncherParty(game)).toBe(true);
+    expect(supportsLauncherParty({ ...game, launcherInstall: { ...game.launcherInstall, knownExePaths: [] } })).toBe(false);
+  });
+
   it("excludes a singleplayer game and a disabled recipe", () => {
     expect(supportsLauncherParty({ tags: ["Story Rich"], launcherInstall: installable })).toBe(false);
     expect(

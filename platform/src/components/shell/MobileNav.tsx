@@ -34,8 +34,8 @@ export function MobileNav() {
      * Grid, not flex, because the flex row could be pushed past the viewport.
      *
      * `flex-1` is `flex: 1 1 0%`, but a flex item keeps `min-width: auto` and
-     * so refuses to shrink below its own icon-plus-label width. At the 10px
-     * these labels are set in, the original seven still fit on a 360px screen — the
+     * so refuses to shrink below its own icon-plus-label width. Even short
+     * labels can outgrow their columns on a narrow screen — the
      * row only breaks once the text is rendered larger than asked for, which is
      * routine on a phone: Chrome for Android inflates small text via font
      * boosting, and accessibility text settings do the same. Measured on a
@@ -60,7 +60,7 @@ export function MobileNav() {
           key={href}
           href={href}
           className={cn(
-            "flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-[10px] font-semibold",
+            "flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-xs font-semibold",
             isActive(href) ? "text-primary" : "text-muted-foreground"
           )}
         >

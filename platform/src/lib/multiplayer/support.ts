@@ -138,6 +138,13 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
   const install = game.launcherInstall;
   if (!install?.enabled) return false;
   if (install.kind === "external") {
+    // GOG is the acquisition step; after the player installs Platinum and
+    // locates FEAR.exe, PlayBound starts FEARMP.exe for a LAN party.
+    if (
+      game.slug === "f-e-a-r-platinum" &&
+      /^https:\/\/www\.gog\.com\/en\/game\/fear_platinum\/?$/i.test(install.url || "") &&
+      install.knownExePaths?.some((file) => /(?:^|[\\/])fear\.exe$/i.test(file))
+    ) return true;
     if (game.slug === "rimworld" && game.editions?.some(editionSupportsPartyPlay) && install.knownExePaths?.length) return true;
     if (install.url?.startsWith("steam://")) return true;
     // GOG Galaxy is only the acquisition step for these ROMs. Once owned,

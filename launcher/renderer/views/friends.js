@@ -4481,6 +4481,12 @@ async function launchPartyGame(party) {
     };
   }
 
+  // The F.E.A.R. leader has no address to dial, but still needs the collection's
+  // separate FEARMP.exe. Mark this as a party launch so main.js selects it.
+  if (slug === "f-e-a-r-platinum" && isLeader && party.hostMode === "self") {
+    peerConnect = { partyHost: true, name: state.accountState?.username || "" };
+  }
+
   /*
    * Hedgewars' GUI can spawn this same helper from its menus, but doing it
    * here lets the host use the exact hwplay:// lobby handoff that dedicated
