@@ -455,6 +455,44 @@ const rvglEntry = {
   },
 };
 
+/*
+ * Visual Pinball X pad layout, in VPX's own button numbers (DirectInput
+ * button index + 1). An Xbox pad, real or a PlayBound virtual one, reads
+ * A B X Y LB RB Back Start LS RS as 1-10 on both of VPX's input paths. A
+ * PlayStation pad under DirectInput reads Square Cross Circle Triangle L1 R1
+ * L2 R2 Share Options instead. Shoulders flip, the bottom face button plunges,
+ * Start starts and Back/Share adds a coin; X nudges the table. Pulling the
+ * right stick down retracts the analog plunger, then releasing it launches.
+ *
+ * Cabinet nudge axes stay off. VPX axis 5 is the right-stick Y axis for
+ * XInput-style pads; the old axis 3 points at a trigger on those devices.
+ */
+const VPX_PAD_BUTTONS = {
+  xbox: {
+    JoyLFlipKey: 5, JoyRFlipKey: 6, JoyPlungerKey: 1, JoyStartGameKey: 8, JoyAddCreditKey: 7,
+    JoyRMagnaSave: 2, JoyCTiltKey: 3, JoyLTiltKey: 9, JoyRTiltKey: 10,
+    PlungerAxis: 5, LRAxis: 0, UDAxis: 0,
+  },
+  dualshock4: {
+    JoyLFlipKey: 5, JoyRFlipKey: 6, JoyPlungerKey: 2, JoyStartGameKey: 10, JoyAddCreditKey: 9,
+    JoyLMagnaSave: 1, JoyCTiltKey: 2,
+    PlungerAxis: 5, LRAxis: 0, UDAxis: 0,
+  },
+};
+VPX_PAD_BUTTONS.dualsense = VPX_PAD_BUTTONS.dualshock4;
+
+/** The text of VPX's [Player] section, up to the next section header, or null. */
+function vpxPlayerSection(text) {
+  const m = /^\[Player\][^\n]*\n[\s\S]*?(?=^\[|(?![\s\S]))/m.exec(text);
+  return m ? m[0] : null;
+}
+
+/** A [Player] value, trimmed; "" when the key is blank or absent. */
+function vpxValue(section, key) {
+  const m = new RegExp(`^${key}[ \\t]*=[ \\t]*(.*?)[ \\t]*\\r?$`, "m").exec(section);
+  return m ? m[1] : "";
+}
+
 const GAMES = {
   /**
    * OpenBOR binary Saves/*.cfg — P1 ships on keyboard until Options remap.
@@ -794,6 +832,42 @@ const GAMES = {
     },
   },
 
+  "visual-pinball-x": {
+    /*
+     * VPX keeps one settings file per user: %APPDATA%\VPinballX\VPinballX.ini
+     * on Windows, ~/.vpinball/VPinballX.ini elsewhere (VPinball::GetMyPrefPath
+     * in 10.8.0). It is copied from assets\Default_VPinballX.ini on first run,
+     * so it exists only after VPX has been opened once; we never invent it.
+     */
+    resolve: (c) =>
+      firstExisting([
+        path.join(c.appData, "VPinballX", "VPinballX.ini"),
+        path.join(c.home, ".vpinball", "VPinballX.ini"),
+      ]),
+    verified:
+      "read from a real %APPDATA%\\VPinballX\\VPinballX.ini (10.8.0, CRLF, `Key = value` with blanks meaning default); " +
+      "button numbers from pininput.cpp, where DirectInput button k fires Joy(k + 1) and the XInput path maps A..RS to buttons 0..9",
+    needsConfig(text, profile) {
+      const player = vpxPlayerSection(String(text || ""));
+      const buttons = VPX_PAD_BUTTONS[profile?.family] || (profile?.family === "generic" ? VPX_PAD_BUTTONS.xbox : null);
+      return Boolean(player && buttons && Object.keys(buttons).some((key) =>
+        new RegExp(`^${key}[ \\t]*=`, "m").test(player) && !vpxValue(player, key)
+      ));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      const player = vpxPlayerSection(original);
+      if (!player || !/^JoyLFlipKey\s*=/m.test(player)) return null;
+      const buttons = VPX_PAD_BUTTONS[profile?.family] || (profile?.deviceType === "gamepad" && profile?.family === "generic" ? VPX_PAD_BUTTONS.xbox : null);
+      if (!buttons) return null;
+      let next = player;
+      for (const [key, value] of Object.entries(buttons)) {
+        // Only fill blanks: a key someone set by hand stays theirs.
+        next = next.replace(new RegExp(`^(${key}[ \\t]*=)[ \\t]*(\\r?)$`, "m"), `$1 ${value}$2`);
+      }
+      return next === player ? null : original.replace(player, next);
+    },
+  },
   naev: {
     resolve: (c) =>
       firstExisting([

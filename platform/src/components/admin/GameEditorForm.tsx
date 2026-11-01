@@ -1065,7 +1065,7 @@ export function GameEditorForm({
         <AdminCollapsibleSection title="Cover & media" defaultOpen>
           <div>
             <p className="text-[11px] text-muted-foreground">
-              Fallback gradient art is automatic when there is no cover — no manual art colors needed.
+              Game page heroes show videos and screenshots from this section. Without either, the hero shows the cover; without a cover, it uses gradient art.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

@@ -2235,6 +2235,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "No network transport: two-player split-screen co-op only. PlayBound Connect uses couch mode and remote controllers.",
   },
 
+  "visual-pinball-x": {
+    gameSlug: "visual-pinball-x",
+    title: "Visual Pinball X",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    /*
+     * No networking in VPX: up to four players take turns on one table, as on a
+     * real machine. Couch mode carries it: the host runs the table and each
+     * friend's input arrives as a virtual Xbox pad, which the launcher's VPX
+     * controller profile maps to flippers, plunger, start and coin. Every pad
+     * drives the same flippers, so whoever's turn it is simply plays.
+     */
+    notes:
+      "Local hotseat only. PlayBound Connect uses couch mode: friends watch the host's table and take their turns on remote controllers.",
+  },
   hurrican: {
     gameSlug: "hurrican",
     title: "Hurrican",

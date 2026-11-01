@@ -90,6 +90,8 @@ contextBridge.exposeInMainWorld("playbound", {
   clipboardWrite: (text) => ipcRenderer.invoke("clipboard-write", text),
   /** Report connected gamepads so games can be auto-configured at launch. */
   reportGamepads: (pads) => ipcRenderer.invoke("report-gamepads", pads),
+  getFsoHotasDevices: () => ipcRenderer.invoke("get-fso-hotas-devices"),
+  saveFsoHotasDevices: (devices) => ipcRenderer.invoke("save-fso-hotas-devices", devices),
   startGamepadBridge: (profile) => ipcRenderer.invoke("gamepad-bridge-start", profile || {}),
   stopGamepadBridge: () => ipcRenderer.invoke("gamepad-bridge-stop"),
   gamepadBridgeSendFrame: (frame) => ipcRenderer.send("gamepad-bridge-frame", frame),

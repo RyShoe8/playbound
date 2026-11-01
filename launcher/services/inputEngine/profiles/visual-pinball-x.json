@@ -1,0 +1,23 @@
+{
+  "gameSlug": "visual-pinball-x",
+  "editionSlug": null,
+  "name": "PlayBound Pinball Triggers",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "supplementsNativePad": true,
+  "status": "testing",
+  "antiCheatCompatibility": "verified",
+  "testedControllers": [],
+  "notes": "VPX 10.8.0 sees XInput triggers as axes, not buttons. LT and RT synthesize its default left/right Shift flipper keys. Native XInput stays active for X nudge and right-stick analog plunger.",
+  "actions": [
+    { "id": "leftFlipper", "label": "Left flipper", "output": { "type": "key", "vk": "LeftShift" } },
+    { "id": "rightFlipper", "label": "Right flipper", "output": { "type": "key", "vk": "RightShift" } }
+  ],
+  "bindings": [
+    { "actionId": "leftFlipper", "physicalInput": "LT" },
+    { "actionId": "rightFlipper", "physicalInput": "RT" }
+  ],
+  "contexts": [],
+  "stickMouseSettings": { "enabled": false }
+}

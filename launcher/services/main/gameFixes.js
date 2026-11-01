@@ -549,7 +549,7 @@ const SOLARUS_REPAIR_SLUGS = new Set([
  * more, through the new full-rebuild path, without anyone needing to
  * manually reinstall.
  */
-const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v3";
+const ZBOM_REPAIR_MARKER = "-- PlayBound Solarus 2 controller repair v4";
 /*
  * v5: v4's replacements ended in `end` while their match stopped right before
  * the next `function`, gluing them into `endfunction` — a Lua syntax error
@@ -851,8 +851,14 @@ function patchZeldaMudoraGameManager(code) {
   if (code.includes(ZBOM_REPAIR_MARKER)) return code;
 
   code = code.replace(/-- PlayBound Solarus 2 controller bindings[\s\S]*?game:set_command_joypad_binding\("pause", "start"\)\r?\n\r?\n/, "");
+  // v3 bound commands as soon as game_manager.lua loaded. Solarus loads that
+  // file before game:start(), so set_command_joypad_binding raised "This game
+  // is not running" and the save selection remained black. Remove that exact
+  // injected block before adding the start-time handler below.
+  code = code.replace(/-- PlayBound Solarus 2 controller repair v3[\s\S]*?(?=-- This script handles global properties)/, "");
 
   const bindings = `${ZBOM_REPAIR_MARKER}
+game:register_event("on_started", function(game)
 game:set_command_joypad_binding("action", "a")
 game:set_command_joypad_binding("attack", "b")
 game:set_command_joypad_binding("item_1", "x")
@@ -862,6 +868,7 @@ game:set_command_joypad_binding("up", "left_y -")
 game:set_command_joypad_binding("down", "left_y +")
 game:set_command_joypad_binding("left", "left_x -")
 game:set_command_joypad_binding("right", "left_x +")
+end)
 
 local pb_dpad_buttons = {
   ["11"] = "up", dpup = "up", dpad_up = "up",
@@ -1221,4 +1228,4 @@ async function maybePrepareRenegadeX(info) {
   }
 }
 
-module.exports = { listUninstallRegistryDump, isFlightGearAircraftMod, flightGearHomeAddons, findDirContainingFile, flightGearAddonLaunchArgs, resolveModTargetDir, modUsesUserDataFolder, isBaseGameReady, elevationRemembered, rememberElevation, looksLikeElevationRefusal, prepareClassicDosInstall, flattenWadFiles, resolveInsideGameDir, peHasSection, isAuriePatched, removeEditionModPatch, isExecutableLocked, runAuriePatcher, maybeRepairWolfensteinEtInstall, SOLARUS_REPAIR_SLUGS, maybeRepairZeldaMudoraInstall, persistEditionExe, maybePrepareRenegadeX };
+module.exports = { listUninstallRegistryDump, isFlightGearAircraftMod, flightGearHomeAddons, findDirContainingFile, flightGearAddonLaunchArgs, resolveModTargetDir, modUsesUserDataFolder, isBaseGameReady, elevationRemembered, rememberElevation, looksLikeElevationRefusal, prepareClassicDosInstall, flattenWadFiles, resolveInsideGameDir, peHasSection, isAuriePatched, removeEditionModPatch, isExecutableLocked, runAuriePatcher, maybeRepairWolfensteinEtInstall, SOLARUS_REPAIR_SLUGS, maybeRepairZeldaMudoraInstall, patchZeldaMudoraGameManager, persistEditionExe, maybePrepareRenegadeX };

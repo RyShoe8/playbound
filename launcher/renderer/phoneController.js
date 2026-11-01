@@ -119,6 +119,13 @@ export async function gameSupportsController(detail, slug) {
   return false;
 }
 
+function gameSupportsFlightstick(detail, slug) {
+  if (slug === "star-wars-fate-of-the-galaxy" || detail?.gameSlug === "star-wars-fate-of-the-galaxy") return true;
+  return [...firstNonEmptyList(detail?.features), ...firstNonEmptyList(detail?.gameFeatures),
+    ...firstNonEmptyList(detail?.tags), ...firstNonEmptyList(detail?.gameTags)]
+    .some((value) => /\b(flightstick|hotas|joystick) support\b/i.test(String(value)));
+}
+
 function ensureOverlayRoot() {
   let el = document.getElementById("phone-controller-overlay");
   if (el) return el;
@@ -143,12 +150,14 @@ function hideOverlay() {
 /**
  * Modal: choose Mouse & Keyboard, Controller, or Phone.
  * @param {{ title?: string }} opts
- * @returns {Promise<"keyboard"|"controller"|"phone"|"cancel">}
+ * @returns {Promise<"keyboard"|"controller"|"flightstick"|"phone"|"cancel">}
  */
 export function promptPlayControllerChoice(opts = {}) {
   const title = opts.title || "this game";
   const enhancedOnly = opts.playBoundControlsOnly === true;
   const preview = opts.playBoundControlsPreview === true;
+  const supplementsNativePad = opts.supplementsNativePad === true;
+  const flightstick = opts.flightstick === true;
   return new Promise((resolve) => {
     const root = ensureOverlayRoot();
     root.classList.remove("hidden");
@@ -188,9 +197,17 @@ export function promptPlayControllerChoice(opts = {}) {
                 <span class="phone-controller-choice-title">${preview ? "PlayBound Controls Preview" : enhancedOnly ? "PlayBound Controls" : "Controller (Gamepad)"}</span>
                 <span class="phone-controller-choice-tag">${preview ? "Testing" : enhancedOnly ? "Enhanced" : "Direct"}</span>
               </div>
-              <span class="phone-controller-choice-sub">${preview ? "Use a connected controller: PlayBound maps it to this game's keyboard and mouse controls. This layout is still being tested." : enhancedOnly ? "Use a connected controller: PlayBound maps it to this game's keyboard and mouse controls." : "Use a connected Xbox, PlayStation, Switch Pro, or USB controller with this game's own controller controls."}</span>
+              <span class="phone-controller-choice-sub">${supplementsNativePad ? "Triggers control the flippers; the game's native pad controls the plunger and nudge. This layout is still being tested." : preview ? "Use a connected controller: PlayBound maps it to this game's keyboard and mouse controls. This layout is still being tested." : enhancedOnly ? "Use a connected controller: PlayBound maps it to this game's keyboard and mouse controls." : "Use a connected Xbox, PlayStation, Switch Pro, or USB controller with this game's own controller controls."}</span>
             </div>
           </button>
+
+          ${flightstick ? `<button type="button" class="phone-controller-choice-card" data-choice="flightstick">
+            <div class="phone-controller-choice-icon-wrap icon-controller">✈</div>
+            <div class="phone-controller-choice-text">
+              <div class="phone-controller-choice-header"><span class="phone-controller-choice-title">Flight Stick / HOTAS</span><span class="phone-controller-choice-tag">Native</span></div>
+              <span class="phone-controller-choice-sub">Use a flight stick, separate throttle, and other flight controls. PlayBound will detect them without a gamepad bridge.</span>
+            </div>
+          </button>` : ""}
 
           ${enhancedOnly ? "" : `<button type="button" class="phone-controller-choice-card is-featured" data-choice="phone">
             <div class="phone-controller-choice-icon-wrap icon-phone">
@@ -227,6 +244,40 @@ export function promptPlayControllerChoice(opts = {}) {
       },
       { once: true }
     );
+  });
+}
+
+function promptFsoHotasDevices(devices) {
+  return new Promise((resolve) => {
+    const root = ensureOverlayRoot();
+    root.classList.remove("hidden");
+    const flightDevices = devices.filter((device) => /flight|hotas|stick|throttle|rudder|pedal|yoke|virpil|vkb/i.test(device.name)).slice(0, 4);
+    const options = devices.map((device) => `<option value="${device.id}">${escapeHtml(device.name)}</option>`).join("");
+    root.innerHTML = `<div class="phone-controller-sheet">
+      <div class="phone-controller-header"><div class="phone-controller-badge">Flight controls</div>
+        <h2 id="phone-controller-title">Choose your flight devices</h2>
+        <p class="phone-controller-lead">Set Joy0 to your primary stick, then add a separate throttle or pedals as Joy1–3. FreeSpace Open will recognize each device; bind individual axes in its Controls menu.</p></div>
+      <div class="phone-controller-choices">${[0, 1, 2, 3].map((slot) =>
+        `<label class="phone-controller-choice-card"><span class="phone-controller-choice-title">Joy${slot} ${slot === 0 ? "· primary stick" : "· optional"}</span>
+          <select class="rounded-lg border border-border bg-secondary px-3 py-2 text-sm" data-joy-slot="${slot}">
+            <option value="">${slot === 0 ? "Choose a flight stick" : "None"}</option>${options}</select></label>`
+      ).join("")}</div>
+      <div class="phone-controller-footer"><button type="button" class="btn-ghost" data-cancel>Cancel</button>
+        <button type="button" class="btn-primary" data-confirm>Use selected devices</button></div></div>`;
+    root.querySelectorAll("[data-joy-slot]").forEach((select, index) => {
+      select.value = flightDevices[index] ? String(flightDevices[index].id) : "";
+    });
+    root.querySelector("[data-cancel]").addEventListener("click", () => { hideOverlay(); resolve(null); });
+    root.querySelector("[data-confirm]").addEventListener("click", () => {
+      const slots = [...root.querySelectorAll("[data-joy-slot]")].map((el) => el.value);
+      const ids = slots.filter(Boolean).map(Number);
+      if (!slots[0] || slots.some((value, index) => value && slots.slice(0, index).some((prior) => !prior)) ||
+          ids.length !== new Set(ids).size) {
+        setStatus("Choose Joy0 first, fill slots in order, and use each device only once", true); return;
+      }
+      hideOverlay();
+      resolve(ids);
+    });
   });
 }
 
@@ -377,15 +428,18 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   const gameSlug = detail?.gameSlug || slug || detail?.slug;
   let enhancedAvailable = false;
   let enhancedPreview = false;
+  let enhancedSupplemental = false;
   try {
     const availability = await pb()?.getPlayBoundControlsAvailability?.(gameSlug, detail?.editionSlug || null);
     enhancedAvailable = Boolean(availability?.available);
     enhancedPreview = enhancedAvailable && Boolean(availability?.preview);
+    enhancedSupplemental = enhancedAvailable && Boolean(availability?.supplementsNativePad);
     if (!enhancedAvailable && availability?.reason) console.info(`[playbound-controls] no controls popup for ${gameSlug}: ${availability.reason}`);
   } catch {
     // A failed profile lookup must not block an ordinary game launch.
   }
-  const isSupported = enhancedAvailable || await gameSupportsController(detail, gameSlug);
+  const hasFlightstick = gameSupportsFlightstick(detail, gameSlug);
+  const isSupported = enhancedAvailable || hasFlightstick || await gameSupportsController(detail, gameSlug);
   if (!isSupported) {
     await playFn({ inputMode: "keyboard" });
     return true;
@@ -397,6 +451,8 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     title: detail?.title || detail?.editionName || "This game",
     playBoundControlsOnly: enhancedAvailable,
     playBoundControlsPreview: enhancedPreview,
+    supplementsNativePad: enhancedSupplemental,
+    flightstick: hasFlightstick,
   });
   if (choice === "cancel") {
     setStatus("Launch cancelled");
@@ -406,7 +462,23 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
   let finalMode = "keyboard";
   let phoneHubSession = null;
 
-  if (choice === "phone") {
+  if (choice === "flightstick") {
+    finalMode = "flightstick";
+    await disableGamepadBridge();
+    if (gameSlug === "star-wars-fate-of-the-galaxy") {
+      setStatus("Detecting flight stick and throttle in FreeSpace Open…");
+      const result = await pb().getFsoHotasDevices();
+      if (result?.error || !result?.devices?.length) {
+        setStatus(result?.error || "No flight devices detected. Connect your stick and throttle, then try again.", true);
+        return false;
+      }
+      const selected = await promptFsoHotasDevices(result.devices);
+      if (!selected) { setStatus("Launch cancelled"); return false; }
+      try { await pb().saveFsoHotasDevices(selected); }
+      catch (error) { setStatus(`Could not configure flight devices: ${error.message}`, true); return false; }
+      setStatus("Flight devices configured. Bind the throttle axis in FreeSpace Open's Controls menu.");
+    }
+  } else if (choice === "phone") {
     finalMode = "phone";
     if (couchAlreadyActive && activeCouchState?.session?.solo) {
       // The approved phone can move between games for two hours. Once that

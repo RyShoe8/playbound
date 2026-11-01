@@ -161,6 +161,8 @@ const LOCAL_COUCH_GAMES = new Set([
   "lovers-in-a-dangerous-spacetime",
   "hindstrike",
   "hindstrike-homebrew-retroarch",
+  // Pinball is hotseat: players take turns on one machine, which is couch play.
+  "visual-pinball-x",
 ]);
 
 /** Games with local simultaneous play alongside their online host modes. */

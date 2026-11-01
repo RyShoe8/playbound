@@ -3902,6 +3902,7 @@ const BUNDLED_CONTROL_PROFILES = {
   outrun: "./services/inputEngine/profiles/outrun.json",
   "shadow-warrior-classic-complete": "./services/inputEngine/profiles/shadow-warrior-classic-complete.json",
   "soldier-of-fortune-platinum-edition": "./services/inputEngine/profiles/soldier-of-fortune-platinum-edition.json",
+  "visual-pinball-x": "./services/inputEngine/profiles/visual-pinball-x.json",
 };
 
 function bundledControlProfile(slug) {
@@ -3943,6 +3944,7 @@ function notifyPlayBoundControlsState(active) {
 async function applyControllerConfig(slug, installDir, opts = {}) {
   const inputMode = opts?.inputMode || (couchHost?.getState?.()?.active ? "phone" : null);
   let enhancedControlsActive = false;
+  let enhancedControlsSupplemental = false;
 
   /*
    * PlayBound Controls: keyboard/mouse synthesis for games with no native
@@ -3959,6 +3961,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     const profile = await availablePlayBoundControlsProfile(slug, opts?.editionSlug || null, opts?.controlsPreview === true);
     if (profile && gamepadBridge.activatePlayBoundControls(profile)) {
       enhancedControlsActive = true;
+      enhancedControlsSupplemental = profile.supplementsNativePad === true;
       const key = `${profile.gameSlug}::${profile.editionSlug || ""}`;
       gamepadBridge.updateControlsSettings(loadSettings().controlOverrides?.[key] || {});
       notifyPlayBoundControlsState(true);
@@ -3968,7 +3971,7 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
 
   // The keyboard/mouse profile owns this session's controller. Enabling the
   // game's joystick config as well can make one press fire two actions.
-  if (enhancedControlsActive) {
+  if (enhancedControlsActive && !enhancedControlsSupplemental) {
     // Enemy Territory may have an in_joystick setting left by an earlier
     // native-pad launch. Do not let that consume the same pad as the mapper.
     if (slug === "wolfenstein-enemy-territory") {
@@ -4029,17 +4032,17 @@ async function applyControllerConfig(slug, installDir, opts = {}) {
     console.log(`[controller] restoring saved ${deviceId} config for ${slug}`);
     await deviceControllerStorage.restoreDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
     deviceControllerStorage.recordActiveDevice(slug, deviceId, configPath, binary);
-    // A saved cfg may still have P1+P2 on one joy port (couch) or an outdated
-    // PlayBound template; applyProfile only rewrites those, never a remap the
-    // player made themselves.
-    if (binary) {
+    // A saved cfg may still have P1+P2 on one joy port (couch), or VPX may
+    // have blank native bindings from a previous launch. Both repair writers
+    // preserve bindings the player set by hand.
+    if (binary || slug === "visual-pinball-x") {
       try {
-        const restored = await fsp.readFile(configPath);
+        const restored = await fsp.readFile(configPath, binary ? undefined : "utf8");
         const separated = applyGameProfile(restored, profile);
         if (separated) {
           await fsp.writeFile(configPath, separated);
           await deviceControllerStorage.saveDeviceConfig(userDataPath, slug, deviceId, configPath, binary);
-          console.log(`[controller] separated OpenBOR joy ports for couch on ${slug}`);
+          console.log(`[controller] refreshed saved native bindings for ${slug}`);
         }
       } catch (err) {
         console.warn(`[controller] couch port-separate skipped:`, err?.message || err);
@@ -6531,11 +6534,18 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     );
   }
 
-  const exe =
+  let exe =
     findExecutable(gameDir, exeHintFor(entry)) ||
     findExecutable(gameDir, targetExeHint) ||
     findExecutable(gameDir, baseExeHint);
   if (!exe) throw new Error(`Install copied, but neither ${targetExeHint} nor ${baseExeHint} was found.`);
+  if (slug === "soldier-of-fortune-platinum-edition" && editionExtra.editionSlug === "openmerc") {
+    const openMercExe = path.join(gameDir, "openMerc.exe");
+    if (!fs.existsSync(openMercExe) || !fs.existsSync(path.join(gameDir, "base", "pak0.pak"))) {
+      throw new Error("OpenMerc needs both openMerc.exe and the original SoF base/pak0.pak. Reinstall the edition from your complete GOG game folder.");
+    }
+    exe = openMercExe;
+  }
 
   const version = entry.versionLabel || overlay.version || "located+overlay";
   markInstalled(slug, {
@@ -7026,6 +7036,21 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     const notInstalledErr = new Error(message);
     notInstalledErr.__launchFailedReported = true;
     throw notInstalledErr;
+  }
+
+  // Early OpenMerc installs copied the GOG data correctly but recorded SoF.exe
+  // as the edition target. Repair only that exact stale target, and only when
+  // the OpenMerc engine and the required original PAK are both present.
+  if (slug === "soldier-of-fortune-platinum-edition" && edSlug === "openmerc" &&
+      path.basename(String(info.exe || "")).toLowerCase() === "sof.exe") {
+    const openMercExe = path.join(info.dir || path.dirname(info.exe), "openMerc.exe");
+    const gamePak = path.join(info.dir || path.dirname(info.exe), "base", "pak0.pak");
+    if (fs.existsSync(openMercExe) && fs.existsSync(gamePak)) {
+      persistEditionExe(slug, edSlug, info.exe, openMercExe);
+      info = { ...info, exe: openMercExe };
+    } else {
+      throw new Error("OpenMerc needs both openMerc.exe and the original SoF base/pak0.pak. Reinstall the edition from your complete GOG game folder.");
+    }
   }
 
   // GOG starts Clone Campaigns through player.exe. Launching battlegrounds_x1
@@ -12099,6 +12124,30 @@ ipcMain.handle("get-game-discussions", async (_event, slug) => {
 });
 
 // --- Friends API Bridging ---
+ipcMain.handle("get-fso-hotas-devices", async () => {
+  const fso = require("./services/fsoHotas");
+  const installDir = loadState()["star-wars-fate-of-the-galaxy"]?.dir;
+  const binary = installDir && fso.findFsoExecutable(installDir);
+  if (!binary) return { devices: [], error: "FreeSpace Open is not installed yet. Install and open the game once, then retry." };
+  try { return { devices: await fso.queryFsoJoysticks(binary) }; }
+  catch (error) { return { devices: [], error: `Could not read flight devices from FreeSpace Open: ${error.message}` }; }
+});
+
+ipcMain.handle("save-fso-hotas-devices", async (_event, requested) => {
+  const fso = require("./services/fsoHotas");
+  const installDir = loadState()["star-wars-fate-of-the-galaxy"]?.dir;
+  const binary = installDir && fso.findFsoExecutable(installDir);
+  if (!binary) throw new Error("FreeSpace Open is not installed");
+  const available = await fso.queryFsoJoysticks(binary);
+  const selectedIds = Array.isArray(requested) ? requested.slice(0, 4).map(Number) : [];
+  const selected = selectedIds.map((id) => available.find((device) => device.id === id));
+  if (!selected.length || selected.some((device) => !device) || new Set(selectedIds).size !== selectedIds.length) {
+    throw new Error("Select one to four detected flight devices");
+  }
+  await fso.saveFsoJoysticks(fso.fsoSettingsPath(installDir, app.getPath("appData")), selected);
+  return { devices: selected };
+});
+
 ipcMain.handle("get-friends", async () => {
   try {
     // Same deal — one of the seven calls the home page blocks on.
@@ -13955,8 +14004,8 @@ ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editi
   // A supplement rides on native pad support (HoloCure's menu cursor): the
   // launch dialog keeps its ordinary Controller choice and this activates
   // underneath it, so it is not offered as an alternative control scheme.
-  if (profile?.supplementsNativePad) return { available: false };
-  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing"), name: profile?.name || null, reason: reason || null };
+  if (profile?.supplementsNativePad && slug !== "visual-pinball-x") return { available: false };
+  return { available: Boolean(profile), preview: Boolean(profile?.status === "testing"), supplementsNativePad: Boolean(profile?.supplementsNativePad), name: profile?.name || null, reason: reason || null };
 });
 ipcMain.handle("get-overlay-shortcut", () => ({
   accelerator: overlayShortcut(),

@@ -31,6 +31,8 @@ const QUIT_HINTS_BY_SLUG = {
     "Press Escape to pause or exit the mission.",
   "hindstrike-homebrew-retroarch":
     "Press Escape to pause or exit the mission.",
+  "visual-pinball-x":
+    "Press Escape on the host keyboard for the in-game menu, then choose Quit.",
 };
 
 const STANDARD_CONTROLS_FALLBACK = {

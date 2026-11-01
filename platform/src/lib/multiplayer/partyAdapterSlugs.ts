@@ -130,4 +130,5 @@ export const COUCH_PARTY_SLUGS: ReadonlySet<string> = new Set<string>([
   "lovers-in-a-dangerous-spacetime",
   "hindstrike",
   "hindstrike-homebrew-retroarch",
+  "visual-pinball-x",
 ]);

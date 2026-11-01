@@ -788,5 +788,52 @@ test("OpenClonk gets an SDL mapping its own build is too old to have", () => {
 
 
 
+test("Visual Pinball X maps a pad into blank [Player] keys only", () => {
+  // Shape of a real 10.8.0 VPinballX.ini: CRLF, blanks mean "use the default".
+  const ini = [
+    "; #  Visual Pinball X settings file",
+    "[Player]",
+    "LRAxis = ",
+    "UDAxis = ",
+    "PlungerAxis = ",
+    "JoyLFlipKey = ",
+    "JoyRFlipKey = ",
+    "JoyPlungerKey = ",
+    "JoyAddCreditKey = ",
+    "JoyLMagnaSave = ",
+    "JoyRMagnaSave = ",
+    "JoyStartGameKey = ",
+    "JoyLTiltKey = ",
+    "JoyCTiltKey = ",
+    "JoyRTiltKey = ",
+    "[Editor]",
+    "JoyLFlipKey = ",
+    "",
+  ].join("\r\n");
+  const xbox = pickPrimary([{ id: "Xbox 360 Controller (XInput STANDARD GAMEPAD)", mapping: "standard", connected: true }]);
+  const out = applyProfile("visual-pinball-x", ini, xbox);
+  assert.ok(out.includes("JoyLFlipKey = 5\r\n"));
+  assert.ok(out.includes("JoyRFlipKey = 6\r\n"));
+  assert.ok(out.includes("JoyPlungerKey = 1\r\n"));
+  assert.ok(out.includes("JoyCTiltKey = 3\r\n"));
+  assert.ok(out.includes("PlungerAxis = 5\r\n"));
+  // Only [Player] is touched.
+  assert.ok(out.endsWith("[Editor]\r\nJoyLFlipKey = \r\n"));
+  // Already mapped: left alone, so a player's own binding survives.
+  assert.strictEqual(applyProfile("visual-pinball-x", out, xbox), null);
+  const partial = ini.replace("JoyLFlipKey = \r\n", "JoyLFlipKey = 5\r\n")
+    .replace("JoyRFlipKey = \r\n", "JoyRFlipKey = 6\r\n");
+  const completed = applyProfile("visual-pinball-x", partial, xbox);
+  assert.ok(completed.includes("PlungerAxis = 5\r\n"));
+  assert.ok(completed.includes("JoyCTiltKey = 3\r\n"));
+  const ds = pickPrimary([{ id: "DualSense Wireless Controller", connected: true }]);
+  assert.ok(applyProfile("visual-pinball-x", ini, ds).includes("JoyPlungerKey = 2\r\n"));
+  // A flightstick has no pinball layout here.
+  const t16k = pickPrimary([{ id: "T.16000M Joystick", connected: true }]);
+  assert.strictEqual(applyProfile("visual-pinball-x", ini, t16k), null);
+  // Not a VPX settings file: declined.
+  assert.strictEqual(applyProfile("visual-pinball-x", "[Player]\r\nfoo = 1\r\n", xbox), null);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
