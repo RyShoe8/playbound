@@ -329,6 +329,7 @@ export interface EditionFaqItem {
  */
 export interface Edition {
   id: string;
+  ownerUserId?: string | null;
   gameId?: string;
   gameSlug: string;
   slug: string;

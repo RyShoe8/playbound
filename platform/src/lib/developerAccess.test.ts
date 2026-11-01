@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { canEditGame, canEditDeveloper } from "./developerAccess";
+import { canEditGame, canEditDeveloper, canEditAssignedItem } from "./developerAccess";
 
 vi.mock("@/lib/db", () => ({
   default: vi.fn().mockResolvedValue(undefined),
@@ -21,6 +21,14 @@ vi.mock("@/lib/models/Developer", () => ({
 }));
 
 describe("developerAccess", () => {
+  it("grants only the assigned item to its owner", () => {
+    const user = { id: "creator", role: "user" };
+    expect(canEditAssignedItem(user, { ownerUserId: "creator" })).toBe(true);
+    expect(canEditAssignedItem(user, { ownerUserId: "someone-else" })).toBe(false);
+    expect(canEditAssignedItem(null, { ownerUserId: "creator" })).toBe(false);
+    expect(canEditAssignedItem({ id: "viewer", role: "admin_viewer" }, { ownerUserId: "creator" })).toBe(false);
+    expect(canEditAssignedItem({ id: "admin", role: "admin" }, { ownerUserId: null })).toBe(true);
+  });
   describe("canEditGame", () => {
     it("allows site admins to edit any game", async () => {
       const admin = { id: "admin-user", role: "admin" };

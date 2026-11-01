@@ -85,14 +85,14 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;");
 }
 
-export function gameAssignmentEmailHtml(username: string, gameTitle: string, manageUrl: string) {
+export function gameAssignmentEmailHtml(username: string, gameTitle: string, manageUrl: string, kind: "game" | "edition" | "mod" = "game") {
   const name = escapeHtml(username);
   const title = escapeHtml(gameTitle);
   const url = escapeHtml(manageUrl);
   return `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
       <h2>${title} is now in your developer dashboard</h2>
-      <p>Hi ${name}, you can now manage this game's description, media, requirements, and install details on PlayBound.</p>
+      <p>Hi ${name}, you can now manage this ${kind}'s details on PlayBound.</p>
       <p><a href="${url}" style="display:inline-block;background:#7c5cf0;color:#fff;
         padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">Manage ${title}</a></p>
       <p>Or open this link: ${url}</p>

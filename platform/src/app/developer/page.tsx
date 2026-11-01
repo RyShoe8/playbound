@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DeveloperPromo } from "@/components/developer/DeveloperPromo";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { listManageableGames, listManageableDevelopers } from "@/lib/developerAccess";
+import { listManageableGames, listManageableDevelopers, listManageableEditions, listManageableMods } from "@/lib/developerAccess";
 import { Gamepad2, Building2, ExternalLink, Edit3, ShieldCheck, Sparkles } from "lucide-react";
 import Image from "next/image";
 
@@ -11,9 +11,11 @@ export default async function DeveloperDashboard() {
   if (!session?.user?.id) return <DeveloperPromo />;
   const userId = session.user.id;
 
-  const [games, developers] = await Promise.all([
+  const [games, developers, editions, mods] = await Promise.all([
     listManageableGames(userId),
     listManageableDevelopers(userId),
+    listManageableEditions(userId),
+    listManageableMods(userId),
   ]);
 
   return (
@@ -158,6 +160,23 @@ export default async function DeveloperDashboard() {
           </div>
         )}
       </div>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">Your Editions</h2>
+        {editions.length ? editions.map((edition) => (
+          <Link key={String(edition._id)} href={`/developer/editions/${edition._id}/edit`} className="block rounded-xl border border-border bg-card p-4 hover:border-primary">
+            <span className="font-bold">{edition.name}</span><span className="ml-2 text-sm text-muted-foreground">{edition.gameSlug}</span>
+          </Link>
+        )) : <p className="text-sm text-muted-foreground">No editions assigned yet.</p>}
+      </section>
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">Your Mods</h2>
+        {mods.length ? mods.map((mod) => (
+          <Link key={String(mod.slug)} href={`/developer/mods/${mod.slug}/edit`} className="block rounded-xl border border-border bg-card p-4 hover:border-primary">
+            <span className="font-bold">{mod.title}</span><span className="ml-2 text-sm text-muted-foreground">{mod.baseGameSlug}</span>
+          </Link>
+        )) : <p className="text-sm text-muted-foreground">No mods assigned yet.</p>}
+      </section>
 
       {/* Studio Profile Section */}
       <div className="space-y-4 pt-4">

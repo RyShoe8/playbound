@@ -9,6 +9,7 @@ import { getGame } from "@/lib/catalog";
 import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import { isNewGameAssignment, notifyCatalogItemAssigned, resolveGameOwnerUserId } from "@/lib/gameOwnerAssignment";
 
 import {
   ensureDerivedModFields,
@@ -44,6 +45,8 @@ export async function PATCH(
     }
 
     await dbConnect();
+    const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId ?? null);
+    if (body.ownerUserId && !ownerUserId) return NextResponse.json({ error: "No user with that username or email" }, { status: 400 });
 
     if (body.slug !== slug) {
       const clash = await CatalogMod.findOne({ slug: body.slug }).lean();
@@ -62,6 +65,8 @@ export async function PATCH(
       developerName = developerName || developersBySlug.get(developerSlug)?.name || null;
     }
 
+    const previous = await CatalogMod.findOne({ slug }).select("ownerUserId").lean();
+    if (!previous) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const doc = await CatalogMod.findOneAndUpdate(
       { slug },
       {
@@ -74,7 +79,7 @@ export async function PATCH(
           directUrl: body.directUrl || null,
           coverImage: body.coverImage || null,
           screenshots: body.screenshots ?? [],
-          ownerUserId: body.ownerUserId || null,
+          ownerUserId,
           managedBy: body.managedBy || "admin",
         },
       },
@@ -83,6 +88,9 @@ export async function PATCH(
 
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (isNewGameAssignment(previous.ownerUserId, ownerUserId)) {
+      await notifyCatalogItemAssigned(ownerUserId!, doc.title, `/developer/mods/${encodeURIComponent(doc.slug)}/edit`, "mod");
     }
 
     revalidateTag("mods", { expire: 0 });

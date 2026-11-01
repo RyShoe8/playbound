@@ -6,6 +6,8 @@ import { getGame, listAllGames } from "@/lib/catalog";
 import { getEditionById } from "@/lib/editions";
 import { EditionEditorForm } from "@/components/admin/EditionEditorForm";
 import { editionToDraft } from "@/lib/editionDraft";
+import dbConnect from "@/lib/db";
+import EditionModel from "@/lib/models/Edition";
 
 export async function generateMetadata({
   params,
@@ -32,6 +34,10 @@ export default async function EditEditionPage({
     listAllGames(),
   ]);
   if (!game || !edition) notFound();
+  await dbConnect();
+  const stored = /^[a-f\d]{24}$/i.test(editionId)
+    ? await EditionModel.findById(editionId).select("ownerUserId").lean()
+    : await EditionModel.findOne({ gameSlug: slug, slug: edition.slug }).select("ownerUserId").lean();
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -54,7 +60,7 @@ export default async function EditEditionPage({
       </div>
       <EditionEditorForm
         mode="edit"
-        initial={editionToDraft(edition)}
+        initial={editionToDraft({ ...edition, ownerUserId: stored?.ownerUserId ? String(stored.ownerUserId) : null })}
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
       />
     </div>

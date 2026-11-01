@@ -74,7 +74,7 @@ const CatalogModSchema = new Schema(
       index: true,
     },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
-    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
 
     detectedVersion: { type: String, default: null },
     lastVersionCheckAt: { type: Date, default: null },

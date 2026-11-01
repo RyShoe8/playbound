@@ -20,6 +20,7 @@ import type { InstallStep } from "@/lib/data/types";
 
 export interface EditionDraft {
   id?: string;
+  ownerUserId?: string | null;
   gameSlug: string;
   slug: string;
   name: string;
@@ -69,6 +70,7 @@ export interface EditionDraft {
 
 export function emptyEditionDraft(gameSlug: string): EditionDraft {
   return {
+    ownerUserId: null,
     gameSlug,
     slug: "",
     name: "",
@@ -116,6 +118,7 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
 /** A stored edition as the form's mutable draft. */
 export function editionToDraft(edition: Edition): EditionDraft {
   return {
+    ownerUserId: edition.ownerUserId ?? null,
     id: edition.id,
     gameSlug: edition.gameSlug,
     slug: edition.slug,

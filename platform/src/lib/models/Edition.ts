@@ -98,6 +98,7 @@ const EditionSchema = new Schema(
   {
     gameId: { type: Schema.Types.ObjectId, ref: "CatalogGame", default: null, index: true },
     gameSlug: { type: String, required: true, index: true },
+    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
 
     slug: { type: String, required: true },
     name: { type: String, required: true },

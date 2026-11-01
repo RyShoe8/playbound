@@ -1,8 +1,8 @@
 import { beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ session: vi.fn(), games: vi.fn(), developers: vi.fn() }));
+const mocks = vi.hoisted(() => ({ session: vi.fn(), games: vi.fn(), developers: vi.fn(), editions: vi.fn(), mods: vi.fn() }));
 vi.mock("next-auth/next", () => ({ getServerSession: mocks.session }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
-vi.mock("@/lib/developerAccess", () => ({ listManageableGames: mocks.games, listManageableDevelopers: mocks.developers }));
+vi.mock("@/lib/developerAccess", () => ({ listManageableGames: mocks.games, listManageableDevelopers: mocks.developers, listManageableEditions: mocks.editions, listManageableMods: mocks.mods }));
 import DeveloperDashboard from "./page";
 import DeveloperLayout from "./layout";
 import { DeveloperPromo } from "@/components/developer/DeveloperPromo";
@@ -18,6 +18,8 @@ it("preserves the signed-in dashboard", async () => {
   mocks.session.mockResolvedValue({ user: { id: "creator" } });
   mocks.games.mockResolvedValue([]);
   mocks.developers.mockResolvedValue([]);
+  mocks.editions.mockResolvedValue([]);
+  mocks.mods.mockResolvedValue([]);
   expect((await DeveloperDashboard()).type).toBe("div");
   expect(mocks.games).toHaveBeenCalledWith("creator");
 });

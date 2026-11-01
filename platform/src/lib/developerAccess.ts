@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Developer from "@/lib/models/Developer";
+import Edition from "@/lib/models/Edition";
+import CatalogMod from "@/lib/models/CatalogMod";
 import { userFromLauncherBearer } from "@/lib/library";
 
 export type SessionUser = {
@@ -83,6 +85,24 @@ export function canEditDeveloper(
   }
 
   return false;
+}
+
+/** Direct item assignment never grants access to its parent game or siblings. */
+export function canEditAssignedItem(
+  user: { id?: string; role?: string } | null | undefined,
+  item: { ownerUserId?: unknown }
+): boolean {
+  return Boolean(user?.id && (user.role === "admin" || (item.ownerUserId && String(item.ownerUserId) === user.id)));
+}
+
+export async function listManageableEditions(userId: string) {
+  await dbConnect();
+  return Edition.find({ ownerUserId: userId }).sort({ name: 1 }).select("_id gameSlug slug name shortDescription").lean();
+}
+
+export async function listManageableMods(userId: string) {
+  await dbConnect();
+  return CatalogMod.find({ ownerUserId: userId }).sort({ title: 1 }).select("slug title tagline baseGameSlug").lean();
 }
 
 /**

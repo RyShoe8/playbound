@@ -1108,6 +1108,15 @@ export function EditionEditorForm({
       </AdminCollapsibleSection>
 
       <AdminCollapsibleSection title="Credits & depth">
+        <div>
+          <label className={label}>Assigned user (optional)</label>
+          <input
+            value={form.ownerUserId ?? ""}
+            onChange={(e) => patch("ownerUserId", e.target.value || null)}
+            placeholder="Username, email, or user ID"
+            className={field}
+          />
+        </div>
         <p className="text-[11px] text-muted-foreground">
           Who made this edition and what players should know. Credit everyone whose work ships in it.
         </p>

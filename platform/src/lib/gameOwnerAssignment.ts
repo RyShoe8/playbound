@@ -29,14 +29,18 @@ export function isNewGameAssignment(previousId: unknown, nextId: string | null):
 
 /** A mail failure must not turn a successfully saved assignment into a 500. */
 export async function notifyGameAssigned(userId: string, title: string, slug: string): Promise<boolean> {
+  return notifyCatalogItemAssigned(userId, title, `/developer/games/${encodeURIComponent(slug)}/edit`, "game");
+}
+
+export async function notifyCatalogItemAssigned(userId: string, title: string, path: string, kind: "game" | "edition" | "mod"): Promise<boolean> {
   try {
     const user = await User.findById(userId).select("email username").lean();
     if (!user?.email) return false;
-    const url = absoluteUrl(`/developer/games/${encodeURIComponent(slug)}/edit`);
-    await sendMail(user.email, `You can now manage ${title} on PlayBound`, gameAssignmentEmailHtml(user.username || "there", title, url));
+    const url = absoluteUrl(path);
+    await sendMail(user.email, `You can now manage ${title} on PlayBound`, gameAssignmentEmailHtml(user.username || "there", title, url, kind));
     return true;
   } catch (error) {
-    console.error("Game assignment notification failed:", error);
+    console.error("Catalog assignment notification failed:", error);
     return false;
   }
 }

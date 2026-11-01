@@ -8,6 +8,7 @@ import EditionModel from "@/lib/models/Edition";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { editionPayloadSchema } from "@/lib/editionPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import { notifyCatalogItemAssigned, resolveGameOwnerUserId } from "@/lib/gameOwnerAssignment";
 import { getGame } from "@/lib/catalog";
 import { searchEditions } from "@/lib/editions";
 import { requestDiscordProvision } from "@/lib/discordProvision";
@@ -38,6 +39,9 @@ export async function POST(req: Request) {
     if (error) return error;
 
     const body = editionPayloadSchema.parse(await req.json());
+    await dbConnect();
+    const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId ?? null);
+    if (body.ownerUserId && !ownerUserId) return NextResponse.json({ error: "No user with that username or email" }, { status: 400 });
 
     // The parent game must exist, or the edition would be unreachable: every
     // edition URL is nested under a game page.
@@ -64,7 +68,8 @@ export async function POST(req: Request) {
     const gameDoc = await CatalogGame.findOne({ slug: body.gameSlug }).select("_id").lean();
     const gameId = (gameDoc as { _id?: unknown } | null)?._id ?? null;
 
-    const doc = await EditionModel.create({ ...body, gameId });
+    const doc = await EditionModel.create({ ...body, gameId, ownerUserId });
+    if (ownerUserId) await notifyCatalogItemAssigned(ownerUserId, doc.name, `/developer/editions/${doc._id}/edit`, "edition");
 
     // Exactly one default per game.
     if (body.isDefault) {

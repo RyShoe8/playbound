@@ -924,11 +924,11 @@ export function ModEditorForm({
       </div>
 
       <div>
-        <label className={label}>Owner user id (optional)</label>
+        <label className={label}>Assigned user (optional)</label>
         <input
           value={form.ownerUserId ?? ""}
           onChange={(e) => patch("ownerUserId", e.target.value || null)}
-          placeholder="Mongo user id when developer-managed"
+          placeholder="Username, email, or user ID"
           className={field}
         />
       </div>

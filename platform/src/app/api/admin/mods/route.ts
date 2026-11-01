@@ -9,6 +9,7 @@ import { getGame } from "@/lib/catalog";
 import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
+import { notifyCatalogItemAssigned, resolveGameOwnerUserId } from "@/lib/gameOwnerAssignment";
 import { listAllMods } from "@/lib/mods";
 import {
   ensureDerivedModFields,
@@ -47,6 +48,8 @@ export async function POST(req: Request) {
     }
 
     await dbConnect();
+    const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId ?? null);
+    if (body.ownerUserId && !ownerUserId) return NextResponse.json({ error: "No user with that username or email" }, { status: 400 });
     const exists = await CatalogMod.findOne({ slug: body.slug }).lean();
     if (exists) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
@@ -71,9 +74,10 @@ export async function POST(req: Request) {
       directUrl: body.directUrl || null,
       coverImage: body.coverImage || null,
       screenshots: body.screenshots ?? [],
-      ownerUserId: body.ownerUserId || null,
+      ownerUserId,
       managedBy: body.managedBy || "admin",
     });
+    if (ownerUserId) await notifyCatalogItemAssigned(ownerUserId, doc.title, `/developer/mods/${encodeURIComponent(doc.slug)}/edit`, "mod");
 
     revalidateTag("mods", { expire: 0 });
     revalidateTag("developers", { expire: 0 });

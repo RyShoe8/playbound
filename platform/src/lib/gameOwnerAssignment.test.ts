@@ -6,7 +6,7 @@ const sendMail = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/models/User", () => ({ default: { findOne, findById } }));
 vi.mock("@/lib/mailer", async (importOriginal) => ({ ...await importOriginal<typeof import("./mailer")>(), sendMail }));
 
-import { isNewGameAssignment, notifyGameAssigned, resolveGameOwnerUserId } from "./gameOwnerAssignment";
+import { isNewGameAssignment, notifyCatalogItemAssigned, notifyGameAssigned, resolveGameOwnerUserId } from "./gameOwnerAssignment";
 import { gameAssignmentEmailHtml } from "./mailer";
 
 describe("game owner assignment", () => {
@@ -61,5 +61,12 @@ describe("game owner assignment", () => {
     expect(sendMail).toHaveBeenCalledOnce();
     expect(sendMail.mock.calls[0][0]).toBe("dev@example.com");
     expect(sendMail.mock.calls[0][2]).toContain("https://playbound.club/developer/games/a-racing-game/edit");
+  });
+  it("sends a direct, item-specific edition management link", async () => {
+    findById.mockReturnValue({ select: () => ({ lean: async () => ({ username: "Creator", email: "dev@example.com" }) }) });
+    sendMail.mockResolvedValue(undefined);
+    expect(await notifyCatalogItemAssigned("507f1f77bcf86cd799439011", "Community Edition", "/developer/editions/507f1f77bcf86cd799439011/edit", "edition")).toBe(true);
+    expect(sendMail.mock.calls[0][2]).toContain("/developer/editions/507f1f77bcf86cd799439011/edit");
+    expect(sendMail.mock.calls[0][2]).toContain("edition's details");
   });
 });

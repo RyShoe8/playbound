@@ -7,6 +7,7 @@ import EditionModel from "@/lib/models/Edition";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { editionUpdateSchema } from "@/lib/editionPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import { isNewGameAssignment, notifyCatalogItemAssigned, resolveGameOwnerUserId } from "@/lib/gameOwnerAssignment";
 import { getEditionById, isVirtualId, parseSeedEditionId } from "@/lib/editions";
 import { resolveInstallAction } from "@/lib/editionInstall";
 import { requestDiscordProvision } from "@/lib/discordProvision";
@@ -52,6 +53,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const body = editionUpdateSchema.parse(await req.json());
     await dbConnect();
+    const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId ?? null);
+    if (body.ownerUserId && !ownerUserId) return NextResponse.json({ error: "No user with that username or email" }, { status: 400 });
 
     /*
      * A seed-backed edition has no database row yet — it is served straight
@@ -106,8 +109,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       gameId = (gameDoc as { _id?: unknown } | null)?._id ?? null;
     }
 
-    Object.assign(existing, body, { gameId });
+    const previousOwner = existing.ownerUserId;
+    Object.assign(existing, body, { gameId, ownerUserId });
     await existing.save();
+    if (isNewGameAssignment(previousOwner, ownerUserId)) {
+      await notifyCatalogItemAssigned(ownerUserId!, existing.name, `/developer/editions/${existing._id}/edit`, "edition");
+    }
 
     if (body.isDefault) {
       await EditionModel.updateMany(

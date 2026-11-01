@@ -176,6 +176,7 @@ const installConfigSchema = z
 export const editionPayloadSchema = z
   .object({
     gameSlug: z.string().trim().min(1).max(80).regex(SLUG, "Invalid game slug"),
+    ownerUserId: z.string().trim().nullable().optional(),
     slug: z
       .string()
       .trim()
