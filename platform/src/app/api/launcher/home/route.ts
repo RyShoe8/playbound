@@ -19,7 +19,7 @@ export async function GET() {
   return NextResponse.json({
     released: released.map(game => game.slug),
     popular: [...new Set(popular.map(({game}) => game.slug))],
-    popularEditions: popular.map(({game,edition}) => ({gameSlug: game.slug, edition: edition ? {slug:edition.slug,name:edition.name,coverImage:edition.branding.heroImage || edition.branding.logo || game.coverImage} : null})),
+    popularEditions: popular.map(({game,edition}) => ({gameSlug: game.slug, edition: edition ? {slug:edition.slug,name:edition.slug === "official" ? game.title : edition.name,coverImage:edition.branding.heroImage || edition.branding.logo || game.coverImage} : null})),
     editions,
     mods: [...mods].sort((a, b) => (Date.parse(b.createdAt || "") || 0) - (Date.parse(a.createdAt || "") || 0)).slice(0, 24),
   }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600", "Access-Control-Allow-Origin": "*" } });

@@ -135,7 +135,7 @@ async function loadHome() {
       const failed = !feed;
       paint('home-popular', feed ? (Array.isArray(feed.popularEditions) ? selected.popularEditions.map(({game,edition}) => {
         if (!edition) return createGameCard(game);
-        const card = createGameCard({...game,title:edition.name,coverImage:edition.coverImage || game.coverImage,editions:[]});
+        const card = createGameCard({...game,title:edition.slug === 'official' || /^official$/i.test(edition.name || '') ? game.title : edition.name,coverImage:edition.coverImage || game.coverImage,editions:[]});
         card.addEventListener('click', event => {event.stopImmediatePropagation(); api.openEditionDetail?.(game.slug,edition.slug);}, {capture:true});
         return card;
       }) : selected.popular.map(game => createGameCard(game))) : [], failed);
