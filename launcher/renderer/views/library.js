@@ -22,6 +22,7 @@ import {
   state,
   views,
   resizedImageUrl,
+  modsLabel,
 } from "../shared.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
@@ -1835,7 +1836,7 @@ function buildModsDisclosure(gameMods, modTitles) {
   toggle.type = "button";
   toggle.className = "library-mods-toggle";
   toggle.setAttribute("aria-expanded", "false");
-  toggle.innerHTML = `<span>Mods (${gameMods.length})</span><span class="chevron">▾</span>`;
+  toggle.innerHTML = `<span>${modsLabel(gameMods[0]?.baseGameSlug)} (${gameMods.length})</span><span class="chevron">▾</span>`;
 
   const panel = document.createElement("div");
   panel.className = "library-mods-panel hidden";

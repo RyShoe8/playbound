@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { modNounFor } from "@/lib/modNoun";
 import Link from "next/link";
 import { notFound, permanentRedirect, unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
@@ -455,7 +456,7 @@ export async function GamePageFrame({
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
-            {t}
+            {t === "mods" ? modNounFor(game.slug).many : t}
             {(t === "discussion" || t === "reviews") && (
               <Suspense fallback={null}>
                 <GameTabCount gameSlug={game.slug} kind={t} />
@@ -962,8 +963,8 @@ async function ModsTab({ game }: { game: Game }) {
       <div>
         <EmptyHint icon={Wrench}>
           {game.features.some((f) => f.toLowerCase().includes("mod"))
-            ? `No PlayBound-listed mods for ${game.title} yet — check back soon or the official community hub.`
-            : `${game.title} doesn't have documented mods on PlayBound yet.`}
+            ? `No PlayBound-listed ${modNounFor(game.slug).many} for ${game.title} yet — check back soon or the official community hub.`
+            : `${game.title} doesn't have documented ${modNounFor(game.slug).many} on PlayBound yet.`}
         </EmptyHint>
       </div>
     );
@@ -972,9 +973,11 @@ async function ModsTab({ game }: { game: Game }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold">Mods for {game.title}</h2>
+        <h2 className="text-lg font-bold">{modNounFor(game.slug).many.replace(/^./, (c) => c.toUpperCase())} for {game.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Install packageable mods with the PlayBound Launcher, or open hub pages for browse-only content.
+          {game.slug === "visual-pinball-x"
+            ? "Install a table with the PlayBound Launcher and Play opens it straight in Visual Pinball X. Tables download from their author's page on VPForums; the first time, sign in with a free VPForums account."
+            : "Install packageable mods with the PlayBound Launcher, or open hub pages for browse-only content."}
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -1256,6 +1256,24 @@ async function resolveModDownload(install) {
         md5: resolved.md5,
       };
     }
+    // VPForums: a member-only download, made with the player's own signed-in
+    // session (see vpforumsDownload.js). Signing in is handled by the caller.
+    const vpf = require("../vpforumsDownload");
+    if (vpf.isVpforumsFilePage(effectiveUrl)) {
+      const resolved = await vpf.resolveVpforumsDownload(effectiveUrl, {
+        getCookies: () => session.fromPartition(vpf.PARTITION).cookies.get({ url: `https://${vpf.HOST}` }),
+        // A catalog pattern picks one of the page's files (e.g. "1p v6");
+        // the generic "\\.zip$" default leaves the 4-player table choice alone.
+        filePattern: install.assetPattern && install.assetPattern !== "\\.zip$" ? install.assetPattern : null,
+      });
+      return {
+        url: resolved.url,
+        name: resolved.filename || `${install.slug || "table"}.zip`,
+        version: install.versionLabel || "latest",
+        headers: resolved.headers,
+        size: resolved.bytes || undefined,
+      };
+    }
     // Deadly Stream: an anonymous download that needs the page's session cookie.
     const deadly = require("../deadlystreamDownload");
     if (deadly.isDeadlyStreamFilePage(effectiveUrl)) {

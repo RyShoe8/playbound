@@ -152,6 +152,16 @@ export const state = {
   currentViewParams: {},
 };
 
+/**
+ * What a game calls its add-ons in the UI. Visual Pinball X lists tables, not
+ * mods; everything underneath (install, Play, updates) is the same mod system.
+ * Mirrors platform/src/lib/modNoun.ts.
+ */
+const MOD_NOUNS = { "visual-pinball-x": "Tables" };
+export function modsLabel(gameSlug) {
+  return MOD_NOUNS[gameSlug] || "Mods";
+}
+
 export function shouldReturnToFriendsAfterPartyInstall(slug, ctx = state.deepLinkCtx) {
   const wantsReturn = state.returnToFriendsParty || ctx?.returnView === "friends";
   if (!wantsReturn || !slug) return false;

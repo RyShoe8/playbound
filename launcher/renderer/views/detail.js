@@ -29,6 +29,7 @@ import {
   views,
   setProgress,
   toggleQueuePopover,
+  modsLabel,
 } from "../shared.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
@@ -614,7 +615,7 @@ function paintMasterCopyUnlocks(detail) {
     if (mods.length) {
       const heading = document.createElement("h3");
       heading.className = "detail-section-title";
-      heading.textContent = `Mods (${mods.length})`;
+      heading.textContent = `${modsLabel(detail.slug)} (${mods.length})`;
       const grid = document.createElement("div");
       grid.className = "game-grid";
       grid.style.marginTop = "12px";
@@ -936,7 +937,7 @@ async function renderGameDetailView(slug, opts = {}) {
       <button type="button" class="detail-tab ${state.detailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
       ${hasControlBindings(detail) ? `<button type="button" class="detail-tab ${state.detailActiveTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>` : ""}
       ${(detail.hasServerBrowser ?? detail.multiplayer) ? `<button type="button" class="detail-tab ${state.detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
-      ${detail.mods && detail.mods.length > 0 ? `<button type="button" class="detail-tab ${state.detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>` : ""}
+      ${detail.mods && detail.mods.length > 0 ? `<button type="button" class="detail-tab ${state.detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">${modsLabel(detail.slug)}</button>` : ""}
       <button type="button" class="detail-tab ${state.detailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
       <button type="button" class="detail-tab ${state.detailActiveTab === "achievements" ? "active" : ""}" data-tab="achievements">Achievements</button>
       <button type="button" class="detail-tab ${state.detailActiveTab === "news" ? "active" : ""}" data-tab="news">News</button>
@@ -2783,7 +2784,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       <button type="button" class="detail-tab ${state.editionDetailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
       <button type="button" class="detail-tab ${state.editionDetailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
       ${hasMultiplayer ? `<button type="button" class="detail-tab ${state.editionDetailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
-      ${hasMods ? `<button type="button" class="detail-tab ${state.editionDetailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>` : ""}
+      ${hasMods ? `<button type="button" class="detail-tab ${state.editionDetailActiveTab === "mods" ? "active" : ""}" data-tab="mods">${modsLabel(gameSlug)}</button>` : ""}
       <button type="button" class="detail-tab ${state.editionDetailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
       <button type="button" class="detail-tab ${state.editionDetailActiveTab === "achievements" ? "active" : ""}" data-tab="achievements">Achievements</button>
       <button type="button" class="detail-tab ${state.editionDetailActiveTab === "news" ? "active" : ""}" data-tab="news">News</button>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { modNounFor } from "@/lib/modNoun";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { Monitor, Play, Puzzle, Terminal } from "lucide-react";
@@ -74,7 +75,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const base = baseGame?.title ?? mod.baseGameSlug;
 
   return pageMetadata({
-    title: `${mod.title} — Free ${base} Mod`,
+    title: `${mod.title} — Free ${base} ${modNounFor(mod.baseGameSlug).one.replace(/^./, (c) => c.toUpperCase())}`,
     description: buildDescription([
       mod.whatItChanges || mod.tagline,
       `Free add-on for ${base}${mod.sizeMB ? `, roughly ${sizeLabel(mod.sizeMB)}` : ""}.`,
@@ -400,7 +401,7 @@ export default async function ModPage({
                       href={`/games/${baseGame.slug}?tab=mods`}
                       className="inline-flex items-center rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
                     >
-                      All mods for {baseGame.title}
+                      All {modNounFor(baseGame.slug).many} for {baseGame.title}
                     </Link>
                   )}
                 </div>

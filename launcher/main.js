@@ -6739,8 +6739,80 @@ async function runWindowsElevatedInstaller(installerPath, gameDir) {
   });
 }
 
+/*
+ * VPForums sign-in, once per player. Install on a VPForums table opens this
+ * window by itself when the player is not signed in; it closes on its own the
+ * moment VPForums sets a member cookie, and the install carries on. The
+ * session lives in its own partition and is never shared with PlayBound's
+ * pages. PlayBound never sees the password: the player types it into
+ * VPForums' own page.
+ */
+let vpforumsSignInPromise = null;
+function openVpforumsSignIn() {
+  if (vpforumsSignInPromise) return vpforumsSignInPromise;
+  const vpf = require("./services/vpforumsDownload");
+  const ses = session.fromPartition(vpf.PARTITION);
+  vpforumsSignInPromise = new Promise((resolve, reject) => {
+    const signInWin = new BrowserWindow({
+      width: 560,
+      height: 760,
+      parent: win && !win.isDestroyed() ? win : undefined,
+      // Without "Remember me" the forum's login ends when the launcher closes.
+      title: "Sign in to VPForums to download tables — free account; tick “Remember me” to stay signed in",
+      autoHideMenuBar: true,
+      backgroundColor: "#0c0a12",
+      webPreferences: { partition: vpf.PARTITION, contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(poll);
+      vpforumsSignInPromise = null;
+      if (!signInWin.isDestroyed()) signInWin.close();
+      ok ? resolve() : reject(new Error("VPForums sign-in was closed before it finished."));
+    };
+    /*
+     * Signed in = the page VPForums shows has a sign-out link. Not the
+     * member_id cookie alone: the forum sets that only when "Remember me" is
+     * ticked, so a player who left it unticked would sign in and the window
+     * would never close.
+     */
+    const poll = setInterval(async () => {
+      try {
+        if (vpf.isSignedIn(await ses.cookies.get({ url: `https://${vpf.HOST}` }))) return finish(true);
+        if (signInWin.isDestroyed() || signInWin.webContents.isLoading()) return;
+        const out = await signInWin.webContents.executeJavaScript(
+          `Boolean(document.querySelector('a[href*="do=logout"]'))`,
+          true
+        );
+        if (out) finish(true);
+      } catch { /* keep polling */ }
+    }, 1000);
+    // Links that leave VPForums (its footer, ads) open in the real browser.
+    signInWin.webContents.setWindowOpenHandler(({ url }) => {
+      void safeOpenExternal(url).catch(() => {});
+      return { action: "deny" };
+    });
+    signInWin.on("closed", () => finish(false));
+    void signInWin.loadURL(`https://${vpf.HOST}/index.php?app=core&module=global&section=login`);
+  });
+  return vpforumsSignInPromise;
+}
+
+async function resolveModDownloadSigningIn(install) {
+  try {
+    return await resolveModDownload(install);
+  } catch (err) {
+    if (err?.code !== "VPFORUMS_SIGNIN_REQUIRED") throw err;
+    sendProgress({ phase: "signin", addon: "Sign in to VPForums to download this table…" });
+    await openVpforumsSignIn();
+    return resolveModDownload(install);
+  }
+}
+
 async function placeModFiles(slug, install, baseDirOverride) {
-  const dl = await resolveModDownload(install);
+  const dl = await resolveModDownloadSigningIn(install);
   let targetDir = resolveModTargetDir(
     install.baseGameSlug,
     install.installRelativePath,
