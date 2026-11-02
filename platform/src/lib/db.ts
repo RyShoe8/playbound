@@ -45,6 +45,11 @@ async function connectOnce() {
       // createIndexes for every model, holding connections for minutes.
       // The hourly cron api/cron/ensure-indexes creates missing ones instead.
       autoIndex: process.env.NODE_ENV !== "production" || process.env.MONGO_AUTO_INDEX === "1",
+      // Model initialization otherwise issues createCollection for every model
+      // on every cold instance, even when all collections already exist.
+      // Index maintenance belongs to ensure-indexes; writes create new ordinary
+      // collections implicitly when needed.
+      autoCreate: process.env.NODE_ENV !== "production",
       // Return a connection to the pool quickly; idle lambdas should not sit on
       // sockets the rest of the fleet could be using.
       maxIdleTimeMS: 60_000,

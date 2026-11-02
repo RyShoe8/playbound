@@ -1,5 +1,32 @@
-import { describe, expect, it } from "vitest";
-import { describeCommand } from "@/lib/dbDiagnostics";
+import { describe, expect, it, vi } from "vitest";
+import { EventEmitter } from "node:events";
+import type { MongoClient } from "mongodb";
+import { attachDbDiagnostics, describeCommand } from "@/lib/dbDiagnostics";
+
+it("distinguishes connection establishment from pool usage without logging addresses", () => {
+  const client = new EventEmitter();
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  try {
+    attachDbDiagnostics(client as unknown as MongoClient, 20);
+    attachDbDiagnostics(client as unknown as MongoClient, 20);
+    const connection = { address: "private-db-host", connectionId: 1 };
+    client.emit("connectionCreated", connection);
+    client.emit("connectionCheckOutFailed", { reason: "timeout", durationMS: 10000 });
+    expect(warn).toHaveBeenLastCalledWith(expect.stringContaining("observedReady 0, connecting 1"));
+    client.emit("connectionReady", connection);
+    client.emit("connectionCheckedOut", { durationMS: 0 });
+    client.emit("connectionCheckOutFailed", { reason: "timeout", durationMS: 10000 });
+    expect(warn).toHaveBeenLastCalledWith(expect.stringContaining("inUse 1/20, observedReady 1, connecting 0"));
+    client.emit("connectionCheckedIn");
+    client.emit("connectionClosed", connection);
+    client.emit("connectionCheckOutFailed", { reason: "timeout", durationMS: 10000 });
+    expect(warn).toHaveBeenLastCalledWith(expect.stringContaining("inUse 0/20, observedReady 0, connecting 0"));
+    expect(warn).toHaveBeenCalledTimes(3);
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("private-db-host");
+  } finally {
+    warn.mockRestore();
+  }
+});
 
 describe("describeCommand", () => {
   it("names the collection and the filter fields, never their values", () => {

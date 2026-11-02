@@ -38,6 +38,10 @@ describe("mongo connection options", () => {
     expect(SOURCE).toMatch(/autoIndex:\s*process\.env\.NODE_ENV !== "production"/);
   });
 
+  it("does not create collections during production model initialization", () => {
+    expect(SOURCE).toMatch(/autoCreate:\s*process\.env\.NODE_ENV !== "production"/);
+  });
+
   it("does not hold idle sockets open indefinitely", () => {
     // An idle lambda sitting on connections starves the rest of the fleet.
     expect(numericOption("maxIdleTimeMS")).not.toBeNull();

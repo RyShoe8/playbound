@@ -19,6 +19,9 @@ import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import EditionModel from "@/lib/models/Edition";
 import { isModCompatible, type DeviceType } from "@/lib/compatibility/compatibility";
 import { withLiveActivityPermit } from "@/lib/liveActivityLimiter";
+import { createSingleFlight } from "@/lib/singleFlight";
+
+const refreshOnce = createSingleFlight();
 
 const EXTERNAL_CONCURRENT_PROVIDERS: Record<string, () => Promise<number>> = {
   holocure: async () => {
@@ -634,7 +637,7 @@ export function playingNowBySlug(stats: CatalogLiveStats): Record<string, number
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v9"], {
+  return unstable_cache(() => refreshOnce("catalog", computeCatalogLiveStats), ["live-activity-catalog-v9"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();
@@ -642,7 +645,7 @@ export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
 
 /** Per-game snapshot. Shared for 15 minutes. */
 export function getGameLiveStats(slug: string): Promise<EntityLiveStats> {
-  return unstable_cache(() => withLiveActivityPermit(() => computeGameLiveStats(slug)), ["live-activity-game", slug], {
+  return unstable_cache(() => refreshOnce(JSON.stringify(["game", slug]), () => withLiveActivityPermit(() => computeGameLiveStats(slug))), ["live-activity-game", slug], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity", `live-activity-game-${slug}`],
   })();
@@ -654,7 +657,7 @@ export function getEditionLiveStats(
   editionSlug: string
 ): Promise<EntityLiveStats> {
   return unstable_cache(
-    () => withLiveActivityPermit(() => computeEditionLiveStats(gameSlug, editionSlug)),
+    () => refreshOnce(JSON.stringify(["edition", gameSlug, editionSlug]), () => withLiveActivityPermit(() => computeEditionLiveStats(gameSlug, editionSlug))),
     ["live-activity-edition", gameSlug, editionSlug],
     {
       revalidate: CACHE_SECONDS,
@@ -665,7 +668,7 @@ export function getEditionLiveStats(
 
 /** Per-mod snapshot. Shared for 15 minutes. */
 export function getModLiveStats(modSlug: string): Promise<EntityLiveStats> {
-  return unstable_cache(() => withLiveActivityPermit(() => computeModLiveStats(modSlug)), ["live-activity-mod", modSlug], {
+  return unstable_cache(() => refreshOnce(JSON.stringify(["mod", modSlug]), () => withLiveActivityPermit(() => computeModLiveStats(modSlug))), ["live-activity-mod", modSlug], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity", `live-activity-mod-${modSlug}`],
   })();

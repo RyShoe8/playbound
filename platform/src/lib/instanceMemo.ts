@@ -14,7 +14,7 @@
  * promise is stored, so concurrent callers share one read, and a rejected read
  * is forgotten so the next caller retries.
  */
-const entries = new Map<string, { at: number; value: Promise<unknown> }>();
+const entries = new Map<string, { at: number; pending: boolean; value: Promise<unknown> }>();
 
 /*
  * Monotonic milliseconds. Not Date.now(): with Cache Components a prerender may
@@ -29,11 +29,17 @@ function nowMs(): number {
 export function instanceMemo<T>(key: string, ttlMs: number, read: () => Promise<T>): Promise<T> {
   const now = nowMs();
   const hit = entries.get(key);
-  if (hit && now - hit.at < ttlMs) return hit.value as Promise<T>;
-  const value = read();
-  entries.set(key, { at: now, value });
-  value.catch(() => {
-    if (entries.get(key)?.value === value) entries.delete(key);
+  // A slow read must not expire while still running: otherwise each TTL
+  // starts another full catalog read during the very outage causing the delay.
+  if (hit && (hit.pending || now - hit.at < ttlMs)) return hit.value as Promise<T>;
+  const value = Promise.resolve().then(read);
+  const entry = { at: now, pending: true, value };
+  entries.set(key, entry);
+  void value.then(() => {
+    entry.pending = false;
+    // Keep the freshness budget measured from start, not completion.
+  }, () => {
+    if (entries.get(key) === entry) entries.delete(key);
   });
   return value;
 }

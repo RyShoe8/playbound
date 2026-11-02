@@ -27,7 +27,8 @@ const EVENT_LOOP_WINDOW_MS = 30_000;
  * A command's duration runs from send to reply *processing*, so a blocked
  * event loop inflates it: two unrelated queries "taking" 11 s and finishing in
  * the same millisecond is a stall, not slow Mongo. inUse at a slow checkout
- * separates the two: a wait with the pool not full means the loop was busy.
+ * helps distinguish pool exhaustion from stalls or connection establishment
+ * failures. An empty pool alone does not prove an event-loop stall.
  */
 let eventLoopMonitorStarted = false;
 export function startEventLoopLagLog(): void {
@@ -49,7 +50,9 @@ export function startEventLoopLagLog(): void {
     const cpuMs = (cpu.user + cpu.system) / 1000;
     if (maxMs >= EVENT_LOOP_LAG_MS && cpuMs >= maxMs / 2) {
       console.warn(`[event-loop] stalled up to ${Math.round(maxMs)}ms (p99 ${Math.round(histogram.percentile(99) / 1e6)}ms, cpu ${Math.round(cpuMs)}ms) in the last ${EVENT_LOOP_WINDOW_MS / 1000}s`);
-      profileHotFunctions();
+      // Sampling adds work precisely when the instance is already struggling.
+      // Keep it an explicit, temporary diagnostic rather than automatic load.
+      if (process.env.DB_CPU_PROFILE === "1") profileHotFunctions();
     }
     histogram.reset();
   }, EVENT_LOOP_WINDOW_MS);
@@ -89,7 +92,6 @@ function profileHotFunctions(): void {
             done();
             if (err || !result?.profile) return;
             const nodes = result.profile.nodes as ProfileNode[];
-            const intervalMs = (result.profile.endTime - result.profile.startTime) / 1000 / Math.max(1, result.profile.samples?.length ?? 1);
             const byFrame = new Map<string, number>();
             for (const n of nodes) {
               const hits = n.hitCount ?? 0;
@@ -100,8 +102,10 @@ function profileHotFunctions(): void {
               byFrame.set(key, (byFrame.get(key) ?? 0) + hits);
             }
             const top = [...byFrame.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)
-              .map(([k, h]) => `${Math.round(h * intervalMs)}ms ${k}`);
-            console.warn(`[event-loop:profile] top self time over ${PROFILE_DURATION_MS / 1000}s: ${top.join(" | ")}`);
+              .map(([k, h]) => `${h} samples ${k}`);
+            // Wall time can include a serverless freeze. Distributing that time
+            // over samples falsely attributes the freeze to GC/application CPU.
+            console.warn(`[event-loop:profile] top sample counts: ${top.join(" | ")}`);
           });
         }, PROFILE_DURATION_MS);
         timer.unref?.();
@@ -142,6 +146,23 @@ export function attachDbDiagnostics(client: MongoClient, maxPoolSize: number): v
   const inFlight = new Map<number, Started>();
   // Connections currently checked out of this client's pool.
   let inUse = 0;
+  const connecting = new Set<string>();
+  const ready = new Set<string>();
+  const connectionKey = (event: { address: string; connectionId: number | string }) => `${event.address}/${event.connectionId}`;
+  client.on("connectionCreated", (event) => { connecting.add(connectionKey(event)); });
+  client.on("connectionReady", (event) => {
+    connecting.delete(connectionKey(event));
+    ready.add(connectionKey(event));
+  });
+  client.on("connectionClosed", (event) => {
+    connecting.delete(connectionKey(event));
+    ready.delete(connectionKey(event));
+  });
+  // Counts cover connections observed after diagnostics attach; no addresses,
+  // credentials, or raw driver error messages are emitted.
+  client.on("connectionPoolCleared", () => {
+    console.warn("[db:pool-cleared] driver invalidated a connection pool");
+  });
   startEventLoopLagLog();
 
   client.on("commandStarted", (event) => {
@@ -172,6 +193,6 @@ export function attachDbDiagnostics(client: MongoClient, maxPoolSize: number): v
   client.on("connectionCheckedIn", () => { inUse = Math.max(0, inUse - 1); });
   client.on("connectionCheckOutFailed", (event) => {
     const waited = (event as { durationMS?: number }).durationMS ?? 0;
-    console.warn(`[db:checkout-failed] ${event.reason} after ${Math.round(waited)}ms (inUse ${inUse}/${maxPoolSize})`);
+    console.warn(`[db:checkout-failed] ${event.reason} after ${Math.round(waited)}ms (inUse ${inUse}/${maxPoolSize}, observedReady ${ready.size}, connecting ${connecting.size})`);
   });
 }
