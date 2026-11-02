@@ -82,6 +82,7 @@ import '@/lib/models/Review';
 import '@/lib/models/SavedWorld';
 import '@/lib/models/ServerActivity';
 import '@/lib/models/ServerBackup';
+import '@/lib/models/ServerListSnapshot';
 import '@/lib/models/ServerResourceCalibration';
 import '@/lib/models/ServerResourceSample';
 import '@/lib/models/StoreDiscount';

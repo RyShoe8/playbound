@@ -1,5 +1,8 @@
 import { fetchSrb2Servers, fetchSrb2PlayerCount, fetchSrb2KartServers, fetchSrb2KartPlayerCount } from "./providers/srb2";
 import { getServerLobbyAuth } from "@/lib/catalog";
+import dbConnect from "@/lib/db";
+import { instanceMemo } from "@/lib/instanceMemo";
+import ServerListSnapshot from "@/lib/models/ServerListSnapshot";
 import { listJoinableCommunityServers } from "@/lib/communityHosting/discovery";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
 import { fetchFlightGearServers } from "./providers/flightgear";
@@ -81,6 +84,7 @@ import { fetchRimworldServers } from "./providers/rimworld";
 import { fetchUnturnedServers, fetchUnturnedPlayerCount } from "./providers/unturned";
 import { isUpstreamTimeout } from "./errors";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
+import { MAX_SERVERS } from "./types";
 
 // A broken upstream must not be hammered by every game page and catalog
 // refresh. This is per warm serverless instance; hosted rooms remain visible.
@@ -531,7 +535,101 @@ export function isKnownServerGame(slug: string): boolean {
   return hasServerBrowser(slug) || (UNSUPPORTED_SERVER_SLUGS as readonly string[]).includes(slug);
 }
 
+/** Every provider slug the server-list cron refreshes. */
+export function serverProviderSlugs(): string[] {
+  return Object.keys(providers);
+}
+
+function mergeHosted(hosted: readonly GameServer[], servers: readonly GameServer[]): GameServer[] {
+  const ownedAddresses = new Set(hosted.map((s) => `${s.host}:${s.port}`));
+  // A registered PlayBound room may also appear on the game's public master.
+  return [...hosted, ...servers.filter((s) => !ownedAddresses.has(`${s.host}:${s.port}`))];
+}
+
+type SnapshotRow = {
+  slug: string;
+  servers: GameServer[];
+  playerCount: { players: number; servers: number } | null;
+  error: string | null;
+  fetchedAt: Date;
+  okAt: Date | null;
+};
+
+/*
+ * All snapshots in one query, held per instance for 30 seconds. ~60 small
+ * documents, so one read serves every game page, the catalog live stats and
+ * the public servers API alike.
+ */
+async function loadSnapshots(): Promise<Map<string, SnapshotRow>> {
+  return instanceMemo("server-list-snapshots", 30_000, async () => {
+    await dbConnect();
+    const rows = await ServerListSnapshot.find({}).lean<SnapshotRow[]>();
+    return new Map(rows.map((r) => [r.slug, r]));
+  });
+}
+
+/**
+ * Fetch one provider live and store the result. Only the cron calls this: a
+ * failure keeps the last good list and records the error.
+ */
+export async function refreshServerListSnapshot(slug: string): Promise<{ slug: string; ok: boolean; servers: number; error?: string }> {
+  const provider = providers[slug];
+  if (!provider) return { slug, ok: false, servers: 0, error: "no provider" };
+  await dbConnect();
+  const fetchedAt = new Date();
+  try {
+    const [servers, playerCount] = await Promise.all([
+      fetchSourceOnce(slug, provider),
+      provider.fetchPlayerCount ? provider.fetchPlayerCount() : Promise.resolve(null),
+    ]);
+    await ServerListSnapshot.updateOne(
+      { slug },
+      { $set: { servers: servers.slice(0, MAX_SERVERS * 5), playerCount, error: null, fetchedAt, okAt: fetchedAt } },
+      { upsert: true }
+    );
+    return { slug, ok: true, servers: servers.length };
+  } catch (err) {
+    const message = reportSourceFailure(slug, err);
+    await ServerListSnapshot.updateOne({ slug }, { $set: { error: message, fetchedAt } }, { upsert: true });
+    return { slug, ok: false, servers: 0, error: message };
+  }
+}
+
+/**
+ * A game's public servers, from the cron's snapshot plus PlayBound-hosted
+ * rooms. Never calls an upstream master.
+ */
 export async function listServersForGame(
+  slug: string,
+  hostedSnapshot?: readonly GameServer[]
+): Promise<ServerListResult> {
+  const provider = providers[slug];
+  const hosted = hostedSnapshot
+    ? hostedSnapshot.filter((server) => server.gameSlug === slug)
+    : await listJoinableCommunityServers(slug);
+  if (!provider) return hosted.length
+    ? { supported: true, servers: hosted, updatedAt: new Date().toISOString() }
+    : { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
+  let snap: SnapshotRow | undefined;
+  try {
+    snap = (await loadSnapshots()).get(slug);
+  } catch (err) {
+    console.warn(`[servers] snapshot read failed: ${err instanceof Error ? err.message : err}`);
+  }
+  if (!snap) {
+    return { supported: true, servers: [...hosted], updatedAt: new Date(0).toISOString(), error: "Server list not fetched yet" };
+  }
+  const updatedAt = new Date(snap.okAt || snap.fetchedAt).toISOString();
+  return {
+    supported: true,
+    servers: mergeHosted(hosted, snap.servers || []),
+    updatedAt,
+    ...(snap.error ? { error: snap.error } : {}),
+  };
+}
+
+/** Fetch a provider live, as listServersForGame used to. For the cron and tests. */
+export async function listServersForGameLive(
   slug: string,
   hostedSnapshot?: readonly GameServer[]
 ): Promise<ServerListResult> {
@@ -564,9 +662,7 @@ export async function listServersForGame(
   try {
     const servers = await fetchSourceOnce(slug, provider);
     failedSources.delete(slug);
-    const ownedAddresses = new Set(hosted.map((s) => `${s.host}:${s.port}`));
-    // A registered PlayBound room may also appear on the game's public master.
-    return { supported: true, servers: [...hosted, ...servers.filter((s) => !ownedAddresses.has(`${s.host}:${s.port}`))], updatedAt: new Date().toISOString() };
+    return { supported: true, servers: mergeHosted(hosted, servers), updatedAt: new Date().toISOString() };
   } catch (err) {
     const message = reportSourceFailure(slug, err);
     failedSources.set(slug, { until: Date.now() + FAILED_SOURCE_RETRY_MS, message });
@@ -581,7 +677,11 @@ export async function getPlayerCountForGame(
   const provider = providers[slug];
   if (!provider) return { players: 0, servers: 0 };
   if (provider.fetchPlayerCount) {
-    return provider.fetchPlayerCount();
+    // The cron stores the provider's own count alongside its list.
+    try {
+      const snap = (await loadSnapshots()).get(slug);
+      if (snap?.playerCount) return snap.playerCount;
+    } catch { /* fall through to the list */ }
   }
   const result = await listServersForGame(slug, hostedSnapshot);
   const servers = result.servers ?? [];

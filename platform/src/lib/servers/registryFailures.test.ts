@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { listServersForGame } from "./registry";
+import { listServersForGameLive as listServersForGame } from "./registry";
 
 afterEach(() => {
   vi.unstubAllGlobals();

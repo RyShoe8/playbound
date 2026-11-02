@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/ensure-indexes",
       "schedule": "7 * * * *"
+    },
+    {
+      "path": "/api/cron/server-lists",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
