@@ -1,17 +1,4 @@
 {
-  "id": "openlara-windows-asset-and-models-20261102",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "tomb-raider-123/desktop-native",
-      "expected": { "installConfig.playbound_installer.assetPattern": ".*\\.zip$" },
-      "set": { "installConfig.playbound_installer.assetPattern": "^OpenLara_win\\.zip$" }
-    },
-    {
-      "kind": "mod",
-      "key": "openlara-lara-models",
-      "expected": { "downloadKind": "github-zip" },
-      "set": { "downloadKind": "external" }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
