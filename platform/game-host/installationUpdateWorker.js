@@ -50,7 +50,26 @@ export function steamCommandFailure(output) {
 
 export function diskAvailable(root) {
   const disk = fs.statfsSync(root);
-  return { free: disk.bavail * disk.bsize, reserve: Math.max(8 * GIB, disk.blocks * disk.bsize * 0.1) };
+  // A 10% reserve exceeds 38 GiB on our current VPS and blocks even tiny
+  // updates. Keep a substantial absolute floor without scaling indefinitely.
+  return { free: disk.bavail * disk.bsize, reserve: Math.max(8 * GIB, Math.min(16 * GIB, disk.blocks * disk.bsize * 0.1)) };
+}
+
+/** Keep only the newest recovery copy for a game after a verified activation. */
+export function pruneOlderRollbacks(store, gamesRoot, key, retainedId) {
+  for (const old of store.all()) {
+    if (old.key !== key || old.id === retainedId || old.action !== "update" || old.status !== "completed") continue;
+    if (!/^[a-f0-9-]{36}$/.test(old.id)) continue;
+    const candidate = path.join(gamesRoot, `.pb-rollback-${key}-${old.id}`);
+    try {
+      const stat = fs.lstatSync(candidate);
+      if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+      fs.rmSync(candidate, { recursive: true });
+      store.write({ ...old, rollbackConsumed: true });
+    } catch (error) {
+      if (error?.code !== "ENOENT") console.warn(`[installation-update] could not prune old rollback for ${key}: ${old.id}`);
+    }
+  }
 }
 
 // Each command owns a process group so a timeout also stops SteamCMD's children.
@@ -315,6 +334,7 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       ? "Factorio installation ready. Saved worlds were not changed. Back up the world before starting a newer version: binary rollback does not restore or guarantee compatibility with older save formats."
       : job.key === "barotrauma" ? "Installation ready. Private runtimes refresh on their next start, retaining current saves and the previous runtime. Binary rollback does not restore or guarantee compatibility with older save formats."
       : "Installation ready. Servers may be started normally; no game was stopped by this update.");
+    if (job.action === "update") pruneOlderRollbacks(store, gamesRoot, job.key, job.id);
   } catch (error) {
     // Once activation began, uncertainty must keep starts blocked for inspection.
     const uncertain = activated || (job.status === "activating" && !fs.existsSync(activePath));

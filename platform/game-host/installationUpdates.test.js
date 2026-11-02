@@ -5,7 +5,29 @@ import os from "node:os";
 import path from "node:path";
 import { createInstallationCoordinator, createInstallationStore } from "./installationJobs.js";
 import { INSTALLATION_TARGETS, verifyInstallation, prepareInstallationLinks, restoreInstallationLinks, installationKey, installationDependencies } from "./installationTargets.js";
-import { runInstallationUpdate, runCommand, steamCommandFailure } from "./installationUpdateWorker.js";
+import { runInstallationUpdate, runCommand, steamCommandFailure, pruneOlderRollbacks } from "./installationUpdateWorker.js";
+
+test("old completed rollback copies are pruned while the newest recovery point stays", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pb-rollback-prune-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const oldId = "11111111-1111-4111-8111-111111111111";
+  const latestId = "22222222-2222-4222-8222-222222222222";
+  const otherId = "33333333-3333-4333-8333-333333333333";
+  const oldPath = path.join(root, `.pb-rollback-team-fortress-2-${oldId}`);
+  const latestPath = path.join(root, `.pb-rollback-team-fortress-2-${latestId}`);
+  const otherPath = path.join(root, `.pb-rollback-core-keeper-${otherId}`);
+  for (const dir of [oldPath, latestPath, otherPath]) fs.mkdirSync(dir);
+  const jobs = [
+    { id: oldId, key: "team-fortress-2", action: "update", status: "completed" },
+    { id: latestId, key: "team-fortress-2", action: "update", status: "completed" },
+    { id: otherId, key: "core-keeper", action: "update", status: "completed" },
+  ];
+  pruneOlderRollbacks({ all: () => jobs, write: (job) => Object.assign(jobs.find((entry) => entry.id === job.id), job) }, root, "team-fortress-2", latestId);
+  assert.equal(fs.existsSync(oldPath), false);
+  assert.equal(fs.existsSync(latestPath), true);
+  assert.equal(fs.existsSync(otherPath), true);
+  assert.equal(jobs[0].rollbackConsumed, true);
+});
 import { isAgentGetPath } from "./agentRoutes.js";
 import { prepareBarotraumaRuntime } from "./barotraumaRuntime.js";
 

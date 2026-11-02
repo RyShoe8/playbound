@@ -84,7 +84,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
     const installed = verifyInstallation(path.join(gamesRoot, key), key, { metadataOnly: true });
     let rollbackId;
     if (action === "rollback") {
-      rollbackId = store.all().find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed)?.id;
+      rollbackId = store.all().find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed && fs.existsSync(path.join(gamesRoot, `.pb-rollback-${key}-${job.id}`)))?.id;
       if (!rollbackId) throw new Error("No retained installation is available for rollback");
       verifyInstallation(path.join(gamesRoot, `.pb-rollback-${key}-${rollbackId}`), key, { metadataOnly: true });
     }
@@ -154,7 +154,7 @@ export function createInstallationCoordinator({ stateDir, gamesRoot, rooms, game
           if (key === "factorio") blocked = "Factorio requires an official-package integrity baseline and a compatible headless runtime before updates. Custom files require operator review.";
           if (["paired-runtime", "coordinated-open-fortress"].includes(target.strategy)) blocked = "This installation needs its reviewed package and a current full-verification record before maintenance. Existing servers remain online.";
         }
-        const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed);
+        const rollback = jobs.find((job) => job.key === key && job.status === "completed" && job.action === "update" && !job.rollbackConsumed && fs.existsSync(path.join(gamesRoot, `.pb-rollback-${key}-${job.id}`)));
         return { hostingReadiness:hostingReadiness(key), updateLimitation: Object.hasOwn(MANUAL_UPDATES,key) ? MANUAL_UPDATES[key] : undefined, key, name: target.name, installed: Boolean(installed), buildId: installed?.buildId, branch: installed?.branch, rollbackAvailable: Boolean(rollback), blockedReason: blocked };
       }),
       jobs: [...jobs.filter((job) => !TERMINAL.has(job.status)), ...jobs.filter((job) => TERMINAL.has(job.status)).slice(0, 30)]
