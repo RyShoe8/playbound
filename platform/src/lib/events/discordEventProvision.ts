@@ -68,7 +68,7 @@ async function claimEventDiscordProvision(eventId: string): Promise<"claimed" | 
       ],
     },
     { $set: { discordVoiceProvisioningAt: new Date() } },
-    { new: true }
+    { returnDocument: "after" }
   )
     .select("_id")
     .lean();

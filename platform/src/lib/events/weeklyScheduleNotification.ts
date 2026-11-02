@@ -33,7 +33,7 @@ export async function sendWeeklyScheduleNotification(now = new Date()): Promise<
     claim = await WeeklyScheduleDispatch.findOneAndUpdate(
       { key: dedupeKey, completedAt: null, $or: [{ leaseUntil: null }, { leaseUntil: { $lt: now } }] },
       { $set: { leaseUntil: new Date(now.getTime() + 5 * 60_000) }, $setOnInsert: { key: dedupeKey } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === 11000) return { sent: 0, reason: "already_claimed" };
