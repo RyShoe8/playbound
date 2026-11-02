@@ -6,6 +6,7 @@ import User from "@/lib/models/User";
 import WeeklyScheduleDispatch from "@/lib/models/WeeklyScheduleDispatch";
 import { addCalendarDays, instantForLocal, localDate, normalizeNightly } from "./nightlySchedule";
 import { postDiscordEventsChannel } from "./discordEventProvision";
+import { eventsInWeeklySchedule } from "./weeklyScheduleWindow";
 import { SITE_URL } from "@/lib/site";
 
 /** One in-app notice per user after all seven evenings are actually published. */
@@ -19,10 +20,11 @@ export async function sendWeeklyScheduleNotification(now = new Date()): Promise<
   const target = instantForLocal(day, nightly.weeklyNotification.localTime, nightly.timezone);
   if (!target || now < target || now.getTime() >= target.getTime() + 86_400_000) return { sent: 0, reason: "outside_window" };
   const expectedDays = new Set(Array.from({ length: 7 }, (_, i) => addCalendarDays(day, i)));
-  const nights = await PlatformEvent.find({
+  const candidates = await PlatformEvent.find({
     eventType: "game_night", visibility: "public", status: { $nin: ["cancelled", "draft"] },
     startsAt: { $gte: new Date(`${addCalendarDays(day, -1)}T00:00:00Z`), $lt: new Date(`${addCalendarDays(day, 8)}T00:00:00Z`) },
   }).select({ title: 1, gameSlug: 1, startsAt: 1 }).sort({ startsAt: 1 }).lean();
+  const nights = eventsInWeeklySchedule(candidates, expectedDays, nightly.timezone);
   const publishedDays = new Set(nights.map((night) => localDate(new Date(night.startsAt), nightly.timezone)));
   if ([...expectedDays].some((date) => !publishedDays.has(date))) return { sent: 0, reason: "schedule_incomplete" };
   const dedupeKey = `game-night-week:${day}`;
