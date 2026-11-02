@@ -39,6 +39,11 @@ public static class Bridge
 
     public static async Task QueryBrowser()
     {
+        // Query mode bypasses normal server startup. RTNetwork's background
+        // listener logs while sending/receiving; without a Printer instance it
+        // faults before the handshake completes, leaving only a timeout.
+        // Do not initialize the server logger (it creates server data files).
+        _ = new Printer((_, _) => { }, (_, _) => { }, (_, _) => { }, (_, _) => { });
         var answer = new TaskCompletionSource<PKT_ServerInformation>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var tcp = new TcpClient();
         await tcp.ConnectAsync(Network.MultipurposeIP, Network.BrowserClientPort).WaitAsync(TimeSpan.FromSeconds(8));

@@ -5,7 +5,7 @@
   "runtime": "8.0.30",
   "sourceBytes": 1724432,
   "sourceSha256": "b4087f185fa55565c156da0b0356ee55f274d05f604d2c225cb80c6d2ee73f11",
-  "bridgeSha256": "0c97765ff064996c9b88569f8196138398c43e0e4ad35503f6be8237d3855661",
+  "bridgeSha256": "eb06b85597efe07648fbcc892534962cffcf076ac8aedfa01605718188cb0e20",
   "lockSha256": "c1bb9d04291985c927165b8420c73cb31b28cf9159f3f2dce193447c5445391a",
   "licenseSha256": "f7f28b8c7a1af76b9874ca6d040e8b1eb6768fd1043106c9d315090ea96754e7",
   "legacyBinary": {
@@ -13,8 +13,8 @@
     "sha256": "47364d2cc4eb23c379d71535cec2566b35d84a8b53e95e1e6a0ee662f19253be"
   },
   "binary": {
-    "bytes": 68361376,
-    "sha256": "1123a94abd7b72f1cdd69c6ded8d0a46adb729244013d674794be065ab372fb8"
+    "bytes": 68361251,
+    "sha256": "2cb4ce213545982acb1c521a727794a0bdb9b5abb6dafb7b7f79aa30fa3cc6c5"
   },
   "packages": {
     "microsoft.net.illink.tasks/8.0.30": "q8cwD52JNMGzYXGT3KLES6Aoi77QM8DfgGoDeHeJAhmsXcWxyMb0m4ultGeU0QeG7pO4meD9pr/M7ieUF7Il+w==",
