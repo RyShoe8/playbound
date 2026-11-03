@@ -45,6 +45,7 @@ export interface ICouchSession {
   autoApprove: boolean;
   /** When true, remotes start at playerSlot 1+ (host physical pad owns OpenBOR P1 / joy0). */
   reserveHostSlot?: boolean;
+  localPlayerCount?: number;
   /** Latest host-reported pad/stream metrics (overwrite-only). */
   runtimeMetrics?: Record<string, unknown> | null;
   expiresAt: Date;
@@ -65,6 +66,7 @@ const CouchSessionSchema = new Schema(
     hostEndpoints: { type: Schema.Types.Mixed, default: null },
     autoApprove: { type: Boolean, default: true },
     reserveHostSlot: { type: Boolean, default: false },
+    localPlayerCount: { type: Number, min: 0, max: 4 },
     runtimeMetrics: { type: Schema.Types.Mixed, default: null },
     expiresAt: { type: Date, required: true },
   },

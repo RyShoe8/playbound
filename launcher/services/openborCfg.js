@@ -156,12 +156,20 @@ function playersShareJoyPort(buf) {
  * Only the most recent session counts, and only joystick 0 (P1's port).
  */
 function parseOpenBorPad(logText) {
+  return parseOpenBorPads(logText)[0] || null;
+}
+
+function parseOpenBorPads(logText) {
   const text = String(logText || "");
   const start = text.lastIndexOf("joystick(s) found!");
-  if (start < 0) return null;
-  const m = /^(.*?) - (\d+) axes, (\d+) buttons, (\d+) hat\(s\)/m.exec(text.slice(start));
-  if (!m) return null;
-  return { name: m[1].trim(), axes: Number(m[2]), buttons: Number(m[3]), hats: Number(m[4]) };
+  if (start < 0) return [];
+  return [...text.slice(start).matchAll(/^(.*?) - (\d+) axes, (\d+) buttons, (\d+) hat\(s\)/gm)].slice(0, 4)
+    .map(m => ({ name: m[1].trim(), axes: Number(m[2]), buttons: Number(m[3]), hats: Number(m[4]) }));
+}
+
+function readOpenBorPads(gameDir) {
+  try { return parseOpenBorPads(require("fs").readFileSync(require("path").join(gameDir, "Logs", "OpenBorLog.txt"), "latin1")); }
+  catch { return []; }
 }
 
 function readOpenBorPad(gameDir) {
@@ -227,7 +235,9 @@ function applyOpenBorP1Keys(buf, profile) {
   const p1Keys = buf.length === 352 && family !== "xbox" && !isGenericPad(profile) ? XMEN_DUALSENSE_P1_KEYS : keysForProfile(profile);
   const next = Buffer.from(buf);
   for (let player = 0; player < 4; player += 1) {
-    const keys = shiftJoyKeysToPort(p1Keys, player);
+    const pad = profile.openborPads?.[player];
+    const individual = pad ? { family: require("./controllerProfiles").familyFor(pad.name).id, openborPad: pad } : null;
+    const keys = shiftJoyKeysToPort(individual ? keysForProfile(individual) : p1Keys, player);
     const base = playerKeysOffset(player);
     for (let i = 0; i < KEYS_PER_PLAYER; i += 1) {
       next.writeInt32LE(keys[i] | 0, base + i * 4);
@@ -331,6 +341,8 @@ module.exports = {
   playersShareJoyPort,
   applyOpenBorP1Keys,
   parseOpenBorPad,
+  parseOpenBorPads,
+  readOpenBorPads,
   readOpenBorPad,
   genericP1Keys,
 };

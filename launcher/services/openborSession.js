@@ -25,12 +25,16 @@ function configs(info) {
   return result;
 }
 
-function prepare(slug, info, {streaming=false, profile=null} = {}) {
+function prepare(slug, info, {streaming=false, profile=null, localPlayerCount=0} = {}) {
   const files = configs(info);
   if (!files.length) return null;
   const restores = sessions.get(slug) || [];
   for (const {file,data} of files) {
-    let next = profile ? cfg.applyOpenBorP1Keys(data,{...profile,openborPad:cfg.readOpenBorPad(path.dirname(path.dirname(file)))}) || data : data;
+    // A phone-only session uses virtual Xbox input. A previous run's physical
+    // pad log must not replace that mapping.
+    const pads = !streaming || localPlayerCount > 0 ? cfg.readOpenBorPads(path.dirname(path.dirname(file))) : [];
+    const primary = pads[0] ? {family:require("./controllerProfiles").familyFor(pads[0].name).id} : profile;
+    let next = profile ? cfg.applyOpenBorP1Keys(data,{...primary,openborPad:pads[0],openborPads:pads}) || data : data;
     if (streaming) {
       const offset = data.length-28;
       if (!restores.some(row => row.file === file)) restores.push({file,size:data.length,version:data.readUInt32LE(0),fullscreen:data.readInt32LE(offset)});

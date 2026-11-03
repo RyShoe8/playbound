@@ -213,6 +213,15 @@ describe("couch sessions", () => {
     }
   });
 
+  it("reserves both USB players before assigning phones", async () => {
+    const session = await createCouchSession({ localPlayerCount: 2 });
+    const third = await joinCouchSession(session, { label: "PS5 via phone" });
+    const fourth = await joinCouchSession(session, { label: "Other phone" });
+    expect("controller" in third && third.controller.playerSlot).toBe(2);
+    expect("controller" in fourth && fourth.controller.playerSlot).toBe(3);
+    expect(await joinCouchSession(session, { label: "Overflow" })).toMatchObject({ status: 409 });
+  });
+
   it("gives a Remote Play viewer video credentials without taking a player slot", async () => {
     const session = await createCouchSession({ maxPlayers: 4 });
     const viewer = await joinCouchSession(session, { label: "Remote viewer", spectator: true });

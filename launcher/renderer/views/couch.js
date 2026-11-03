@@ -112,14 +112,17 @@ export async function startCouchSessionQuiet(opts = {}) {
     return existing;
   }
   let reserveHostSlot = opts.reserveHostSlot;
+  let localPlayerCount = opts.localPlayerCount;
   // A solo phone is the chosen input for player one. Merely having an idle
   // physical pad connected must not push it into player two's slot.
   if (opts.solo) {
     reserveHostSlot = false;
+    localPlayerCount = 0;
   } else if (reserveHostSlot == null) {
     try {
       const pads = navigator.getGamepads?.() || [];
-      reserveHostSlot = pads.some((p) => p && p.connected);
+      localPlayerCount = Array.from(pads).filter((p) => p && p.connected).length;
+      reserveHostSlot = localPlayerCount > 0;
     } catch {
       reserveHostSlot = false;
     }
@@ -135,6 +138,7 @@ export async function startCouchSessionQuiet(opts = {}) {
       hostLabel: opts.hostLabel || "PlayBound",
       maxPlayers: opts.maxPlayers,
       reserveHostSlot: Boolean(reserveHostSlot),
+      localPlayerCount,
       // Passed through to hostService's session record so PlayBound Controls
       // can tell "one phone, no party" apart from a real couch party.
       solo: Boolean(opts.solo),

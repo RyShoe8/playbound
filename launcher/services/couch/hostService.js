@@ -430,8 +430,12 @@ function createHostService(deps) {
     const probe = await getProvider().probe();
 
     // When the host physical pad owns OpenBOR P1, remotes start at ViGEm slot 1.
-    const reserveHostSlot = Boolean(opts.reserveHostSlot);
-    const prewarmSlot = reserveHostSlot ? 1 : 0;
+    const localPlayerCount = Number.isInteger(opts.localPlayerCount)
+      ? Math.max(0, Math.min(COUCH_MAX_PLAYERS, opts.localPlayerCount))
+      : opts.reserveHostSlot ? 1 : 0;
+    if (localPlayerCount >= COUCH_MAX_PLAYERS) throw new Error("All four player slots are occupied by local controllers. Disconnect one before adding a phone controller.");
+    const reserveHostSlot = localPlayerCount > 0;
+    const prewarmSlot = localPlayerCount;
     try {
       const handle = await ensureSlot(prewarmSlot);
       if (opts.solo && handle?.unavailable) {
@@ -452,6 +456,7 @@ function createHostService(deps) {
         maxPlayers: opts.maxPlayers || COUCH_MAX_PLAYERS,
         autoApprove: opts.autoApprove !== false,
         reserveHostSlot,
+        localPlayerCount,
       }),
     });
     const data = await res.json();
@@ -465,6 +470,7 @@ function createHostService(deps) {
       joinPath: data.joinPath,
       snapshot: data.snapshot,
       reserveHostSlot,
+      localPlayerCount,
       // Set only by a caller that minted this session purely to plumb one
       // phone's controller for single-player (see startCouchSessionQuiet's
       // one solo call site) — never by the real couch-party UI flow. Lets

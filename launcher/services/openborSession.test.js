@@ -54,3 +54,13 @@ test("a non-DualSense pad gets left-stick numbers from its own OpenBOR log", () 
   assert.deepStrictEqual(cfg.genericP1Keys({ buttons: 15, axes: 6 }).slice(0, 4), cfg.DUALSENSE_P1_KEYS.slice(0, 4));
   assert.strictEqual(cfg.applyOpenBorP1Keys(buf, { family: "generic", openborPad: { buttons: 15, axes: 6, hats: 1 } }), null);
 });
+
+test("mixed USB models use independent axis offsets and phone Xbox uses its own port", () => {
+  const pads = cfg.parseOpenBorPads("3 joystick(s) found!\nUSB A - 4 axes, 13 buttons, 1 hat(s)\nUSB B - 2 axes, 8 buttons, 1 hat(s)\nXbox 360 Controller - 5 axes, 10 buttons, 1 hat(s)\n");
+  assert.equal(pads.length, 3);
+  const data = Buffer.alloc(348); data.writeUInt32LE(cfg.OPENBOR_CFG_VERSION);
+  const result = cfg.applyOpenBorP1Keys(data, {family:"generic", openborPad:pads[0], openborPads:pads});
+  assert.deepEqual(cfg.readPlayerKeys(result,0), cfg.genericP1Keys(pads[0]));
+  assert.deepEqual(cfg.readPlayerKeys(result,1), cfg.shiftJoyKeysToPort(cfg.genericP1Keys(pads[1]),1));
+  assert.deepEqual(cfg.readPlayerKeys(result,2), cfg.shiftJoyKeysToPort(cfg.XBOX_P1_KEYS,2));
+});

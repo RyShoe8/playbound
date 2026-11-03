@@ -7245,7 +7245,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
     try {
       const couchState = couchHost.getState();
-      const warmSlot = couchState?.session?.reserveHostSlot ? 1 : 0;
+      const warmSlot = couchState?.session?.localPlayerCount ?? (couchState?.session?.reserveHostSlot ? 1 : 0);
       await couchHost.warmControllerSlot(warmSlot);
     } catch (err) {
       console.warn("[controller] couch slot prewarm skipped:", err?.message || err);
@@ -7883,6 +7883,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   if (process.platform === "win32") {
     const openborEnv = require("./services/openborSession").prepare(slug, info, {
       streaming: Boolean(couchHost?.getState?.()?.active),
+      localPlayerCount: couchHost?.getState?.()?.session?.localPlayerCount ?? (couchHost?.getState?.()?.session?.reserveHostSlot ? 1 : 0),
       profile: opts?.inputMode === "keyboard" ? null : couchHost?.getState?.()?.active || opts?.inputMode === "phone"
         ? {family:"xbox"} : controllerProfiles.pickPrimary(lastKnownGamepads),
     });

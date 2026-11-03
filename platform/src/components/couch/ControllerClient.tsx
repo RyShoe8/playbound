@@ -487,23 +487,9 @@ export function ControllerClient({
 
   const [btStatus, setBtStatus] = useState<string | null>(null);
   const connectBluetoothController = useCallback(async () => {
-    setBtStatus(null);
-    const bt = (navigator as unknown as { bluetooth?: { requestDevice: (opts: unknown) => Promise<{ name?: string }> } }).bluetooth;
-    if (bt?.requestDevice) {
-      try {
-        const device = await bt.requestDevice({ acceptAllDevices: true });
-        setBtStatus(
-          device?.name
-            ? `Found "${device.name}" — finish pairing in your phone's Bluetooth settings, then it'll show up as a controller here.`
-            : "Turn the controller on in pairing mode, then finish pairing in your phone's Bluetooth settings."
-        );
-      } catch {
-        setBtStatus("Open Bluetooth in your phone's Settings app to pair your controller, then come back here.");
-      }
-    } else {
-      setBtStatus("Open Bluetooth in your phone's Settings app to pair your controller, then come back here.");
-    }
-    window.setTimeout(() => setBtStatus(null), 6000);
+    // Gamepads are paired by the OS and read through the Gamepad API, not
+    // the Web Bluetooth device picker (which does not pair HID gamepads).
+    setBtStatus("Pair in your phone's Settings → Bluetooth. For PS5: turn the controller off, then hold Create + PS until the light flashes and select DualSense Wireless Controller. Return here and press a controller button. Keep this page open while playing.");
   }, []);
 
   const joinDisplayLabel = useMemo(

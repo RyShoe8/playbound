@@ -163,6 +163,7 @@ export async function createCouchSession(params: {
   autoApprove?: boolean;
   /** Host physical pad owns OpenBOR P1 — remotes start at slot 1. */
   reserveHostSlot?: boolean;
+  localPlayerCount?: number;
 }): Promise<CouchSession> {
   const existing = new Set<string>();
   if (await withMongo()) {
@@ -191,6 +192,9 @@ export async function createCouchSession(params: {
     hostEndpoints: null,
     autoApprove: params.autoApprove !== false,
     reserveHostSlot: Boolean(params.reserveHostSlot),
+    localPlayerCount: Number.isInteger(params.localPlayerCount)
+      ? Math.max(0, Math.min(COUCH_MAX_PLAYERS, params.localPlayerCount!))
+      : params.reserveHostSlot ? 1 : 0,
     runtimeMetrics: null,
     expiresAt: new Date(now + SESSION_TTL_MS),
   };
@@ -237,7 +241,7 @@ function nextFreeSlot(session: CouchSession): number | null {
       .map((c) => c.playerSlot as number)
   );
   // When the host physical pad owns OpenBOR P1 / joy0, remotes start at slot 1.
-  const start = session.reserveHostSlot ? 1 : 0;
+  const start = session.localPlayerCount ?? (session.reserveHostSlot ? 1 : 0);
   for (let i = start; i < session.maxPlayers; i++) {
     if (!used.has(i)) return i;
   }
@@ -740,6 +744,7 @@ export function publicCouchSnapshot(session: CouchSession) {
     maxPlayers: session.maxPlayers,
     autoApprove: session.autoApprove,
     reserveHostSlot: Boolean(session.reserveHostSlot),
+    localPlayerCount: session.localPlayerCount ?? (session.reserveHostSlot ? 1 : 0),
     hostEndpoints: session.hostEndpoints
       ? {
           wsUrls: session.hostEndpoints.wsUrls,

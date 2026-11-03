@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       maxPlayers: typeof body.maxPlayers === "number" ? body.maxPlayers : undefined,
       autoApprove: body.autoApprove !== false,
       reserveHostSlot: body.reserveHostSlot === true,
+      localPlayerCount: typeof body.localPlayerCount === "number" ? body.localPlayerCount : undefined,
     });
 
     const joinPath = couchJoinPath(session.joinCode);

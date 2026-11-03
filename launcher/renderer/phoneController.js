@@ -223,6 +223,7 @@ export function promptPlayControllerChoice(opts = {}) {
           </button>`}
         </div>
 
+        ${!enhancedOnly ? `<button type="button" class="phone-controller-choice-card" data-choice="mixed"><span class="phone-controller-choice-text"><span class="phone-controller-choice-title">USB controllers + phone controller</span><span class="phone-controller-choice-sub">Local multiplayer: press a button on each USB controller first, then pair the extra controller through your phone before launching.</span></span></button>` : ""}
         <div class="phone-controller-footer">
           <button type="button" class="btn-ghost phone-controller-cancel-btn" data-choice="cancel">Cancel</button>
         </div>
@@ -478,7 +479,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       catch (error) { setStatus(`Could not configure flight devices: ${error.message}`, true); return false; }
       setStatus("Flight devices configured. Bind the throttle axis in FreeSpace Open's Controls menu.");
     }
-  } else if (choice === "phone") {
+  } else if (choice === "phone" || choice === "mixed") {
     finalMode = "phone";
     if (couchAlreadyActive && activeCouchState?.session?.solo) {
       // The approved phone can move between games for two hours. Once that
@@ -489,7 +490,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       } catch {
         /* use the last known snapshot */
       }
-      if (phoneHubDecision(activeCouchState.session, readPhoneHubLease(), gameSlug) === "rotate") {
+      if (choice === "mixed" || phoneHubDecision(activeCouchState.session, readPhoneHubLease(), gameSlug) === "rotate") {
         const stopped = await pb().couchStop?.();
         if (!stopped?.ok) {
           setStatus("Could not reset the phone hub. Try again from Connect.", true);
@@ -523,7 +524,7 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       // without ever doing so during actual multiplayer couch co-op.
       const state = couchAlreadyActive
         ? activeCouchState
-        : await startCouchSessionQuiet({ solo: true });
+        : await startCouchSessionQuiet({ solo: choice !== "mixed" });
       if (!state?.active || !state.session) {
         setStatus("Could not enable phone controller — launching with PC controls", true);
         finalMode = "controller";
