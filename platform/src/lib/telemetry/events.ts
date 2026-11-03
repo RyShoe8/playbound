@@ -86,6 +86,8 @@ export type TelemetryEventMap = {
     surface?: string;
     deliverySource?: "playbound_vps" | "r2" | "public";
   } & Extra;
+  /** A share button on a game, edition, mod or event page. */
+  content_shared: { kind: string; slug: string; network: string } & Extra;
   favorite_added: { gameId?: string; gameSlug?: string } & Extra;
   favorite_removed: { gameId?: string; gameSlug?: string } & Extra;
   review_created: { gameId?: string; gameSlug?: string; rating?: number } & Extra;

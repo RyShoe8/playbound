@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ShareButtons } from "@/components/ShareButtons";
+import { SITE_URL } from "@/lib/site";
 import { modNounFor } from "@/lib/modNoun";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
@@ -321,6 +323,15 @@ export default async function ModPage({
                     {mod.description}
                   </p>
                 )}
+                <ShareButtons
+                  variant="row"
+                  className="mt-6"
+                  url={`${SITE_URL}/mods/${mod.slug}`}
+                  title={mod.title}
+                  text={mod.tagline}
+                  kind="mod"
+                  slug={mod.slug}
+                />
               </section>
 
               {mod.compatibility && (
@@ -404,6 +415,7 @@ export default async function ModPage({
                       All {modNounFor(baseGame.slug).many} for {baseGame.title}
                     </Link>
                   )}
+                  <ShareButtons url={`${SITE_URL}/mods/${mod.slug}`} title={mod.title} text={mod.tagline} kind="mod" slug={mod.slug} />
                 </div>
               </div>
 

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ShareButtons } from "@/components/ShareButtons";
+import { SITE_URL } from "@/lib/site";
 import { notFound, permanentRedirect, unstable_rethrow } from "next/navigation";
 import {
   BookOpen,
@@ -382,6 +384,14 @@ export default async function EditionPage({
                 ))}
               </>
             )}
+            <ShareButtons
+              url={`${SITE_URL}/games/${game.slug}/editions/${edition.slug}`}
+              title={`${edition.name} · ${game.title}`}
+              text={edition.shortDescription || game.tagline}
+              kind="edition"
+              slug={`${game.slug}/${edition.slug}`}
+              tone="onImage"
+            />
           </div>
         </div>
       </section>

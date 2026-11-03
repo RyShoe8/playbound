@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { ShareButtons } from "@/components/ShareButtons";
+import { SITE_URL } from "@/lib/site";
 import { modNounFor } from "@/lib/modNoun";
 import Link from "next/link";
 import { notFound, permanentRedirect, unstable_rethrow } from "next/navigation";
@@ -340,6 +342,7 @@ export async function GamePageFrame({
               <Suspense fallback={<GameHeroActionsFallback game={game} choosable={choosable} />}>
                 <GameHeroActions game={game} choosable={choosable} />
               </Suspense>
+              <ShareButtons url={`${SITE_URL}/games/${game.slug}`} title={game.title} text={game.tagline} kind="game" slug={game.slug} tone="onImage" />
             </div>
           </div>
 
@@ -474,6 +477,17 @@ export async function GamePageFrame({
             editions={editions}
             includeTesting={includeTesting}
             liveStats={liveStats}
+          />
+        )}
+        {tab === "overview" && (
+          <ShareButtons
+            variant="row"
+            className="mt-10 border-t border-border pt-6"
+            url={`${SITE_URL}/games/${game.slug}`}
+            title={game.title}
+            text={game.tagline}
+            kind="game"
+            slug={game.slug}
           />
         )}
         {tab === "install" && (

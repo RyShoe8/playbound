@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ShareButtons } from "@/components/ShareButtons";
+import { SITE_URL } from "@/lib/site";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -358,6 +360,16 @@ export default async function EventDetailPage({ params }: Props) {
           initialStatus={myRsvp}
           disabled={!rsvpOpen}
           mode={event.eventType === "tournament" ? "register" : "rsvp"}
+        />
+        {/* Events fill through friends: the share sits right where people commit. */}
+        <ShareButtons
+          variant="row"
+          className="pt-1"
+          url={`${SITE_URL}/events/${event.id}`}
+          title={event.title}
+          text={game?.title ? `A ${game.title} event on PlayBound` : "A PlayBound community event"}
+          kind="event"
+          slug={event.id}
         />
       </section>
 
