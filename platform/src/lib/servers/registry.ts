@@ -546,26 +546,41 @@ function mergeHosted(hosted: readonly GameServer[], servers: readonly GameServer
   return [...hosted, ...servers.filter((s) => !ownedAddresses.has(`${s.host}:${s.port}`))];
 }
 
+type Totals = { players: number; servers: number };
 type SnapshotRow = {
   slug: string;
   servers: GameServer[];
-  playerCount: { players: number; servers: number } | null;
+  playerCount: Totals | null;
+  totals?: Totals | null;
   error: string | null;
   fetchedAt: Date;
   okAt: Date | null;
 };
+type SummaryRow = Omit<SnapshotRow, "servers">;
 
 /*
- * All snapshots in one query, held per instance for 30 seconds. ~60 small
- * documents, so one read serves every game page, the catalog live stats and
- * the public servers API alike.
+ * Totals for every provider, without the server lists. Reading all ~90 full
+ * lists for a player count took 23s in production; the summaries are a few
+ * KB. Held per instance for 30 seconds.
  */
-async function loadSnapshots(): Promise<Map<string, SnapshotRow>> {
-  return instanceMemo("server-list-snapshots", 30_000, async () => {
+async function loadSummaries(): Promise<Map<string, SummaryRow>> {
+  return instanceMemo("server-list-summaries", 30_000, async () => {
     await dbConnect();
-    const rows = await ServerListSnapshot.find({}).lean<SnapshotRow[]>();
+    const rows = await ServerListSnapshot.find({}).select("-servers").lean<SummaryRow[]>();
     return new Map(rows.map((r) => [r.slug, r]));
   });
+}
+
+/** One provider's full snapshot, held per instance for 30 seconds. */
+async function loadSnapshot(slug: string): Promise<SnapshotRow | null> {
+  return instanceMemo(`server-list-snapshot:${slug}`, 30_000, async () => {
+    await dbConnect();
+    return ServerListSnapshot.findOne({ slug }).lean<SnapshotRow>();
+  });
+}
+
+function sumServers(servers: readonly GameServer[]): Totals {
+  return { players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0), servers: servers.length };
 }
 
 /**
@@ -580,11 +595,14 @@ export async function refreshServerListSnapshot(slug: string): Promise<{ slug: s
   try {
     const [servers, playerCount] = await Promise.all([
       fetchSourceOnce(slug, provider),
-      provider.fetchPlayerCount ? provider.fetchPlayerCount() : Promise.resolve(null),
+      // A provider's own count is optional extra; one that cannot report a
+      // count (SRB2Kart's master lists addresses only) must not cost the list.
+      provider.fetchPlayerCount ? provider.fetchPlayerCount().catch(() => null) : Promise.resolve(null),
     ]);
+    const stored = servers.slice(0, MAX_SERVERS * 5);
     await ServerListSnapshot.updateOne(
       { slug },
-      { $set: { servers: servers.slice(0, MAX_SERVERS * 5), playerCount, error: null, fetchedAt, okAt: fetchedAt } },
+      { $set: { servers: stored, playerCount, totals: playerCount ?? sumServers(servers), error: null, fetchedAt, okAt: fetchedAt } },
       { upsert: true }
     );
     return { slug, ok: true, servers: servers.length };
@@ -612,7 +630,7 @@ export async function listServersForGame(
     : { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
   let snap: SnapshotRow | undefined;
   try {
-    snap = (await loadSnapshots()).get(slug);
+    snap = (await loadSnapshot(slug)) ?? undefined;
   } catch (err) {
     console.warn(`[servers] snapshot read failed: ${err instanceof Error ? err.message : err}`);
   }
@@ -676,13 +694,15 @@ export async function getPlayerCountForGame(
 ): Promise<{ players: number; servers: number }> {
   const provider = providers[slug];
   if (!provider) return { players: 0, servers: 0 };
-  if (provider.fetchPlayerCount) {
-    // The cron stores the provider's own count alongside its list.
-    try {
-      const snap = (await loadSnapshots()).get(slug);
-      if (snap?.playerCount) return snap.playerCount;
-    } catch { /* fall through to the list */ }
-  }
+  const hosted = hostedSnapshot?.filter((server) => server.gameSlug === slug);
+  try {
+    const summary = (await loadSummaries()).get(slug);
+    // The cron's totals cover the upstream list. Hosted rooms change the sum
+    // (and may duplicate a listed address), so only then read the full list.
+    if (summary && (summary.playerCount || (summary.totals && hostedSnapshot && !hosted?.length))) {
+      return summary.playerCount ?? summary.totals!;
+    }
+  } catch { /* fall through to the list */ }
   const result = await listServersForGame(slug, hostedSnapshot);
   const servers = result.servers ?? [];
   return {

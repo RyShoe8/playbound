@@ -22,6 +22,14 @@ const ServerListSnapshotSchema = new Schema(
       type: new Schema({ players: Number, servers: Number }, { _id: false }),
       default: null,
     },
+    /**
+     * Players and servers for the whole list (or the provider's own count).
+     * Summary reads exclude `servers`, which is most of the document.
+     */
+    totals: {
+      type: new Schema({ players: Number, servers: Number }, { _id: false }),
+      default: null,
+    },
     error: { type: String, default: null },
     fetchedAt: { type: Date, required: true },
     okAt: { type: Date, default: null },
