@@ -414,11 +414,11 @@ function deriveInstallMethod(game: Game): { method: InstallMethod; config: Editi
       },
     };
   }
-  if (game.browserPlayable) {
-    return { method: "browser", config: { browser: { playUrl: game.website } } };
-  }
   if (game.steamAppId) {
     return { method: "steam", config: { steam: { appId: game.steamAppId } } };
+  }
+  if (game.browserPlayable && !game.launchMethods?.includes("install")) {
+    return { method: "browser", config: { browser: { playUrl: game.website } } };
   }
   if (game.androidStoreUrl || game.iosStoreUrl) {
     return {

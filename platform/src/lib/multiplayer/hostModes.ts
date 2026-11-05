@@ -149,6 +149,10 @@ const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
  * added back here.
  */
 const LOCAL_COUCH_GAMES = new Set([
+  // v1.4 is controller-only local 1v1; no native online mode or AI opponent.
+  "bastante-bueno-lucha-libre",
+  "blastlane-racers",
+  "2045-drone-aces",
   "streets-of-rage-remake",
   "metal-slug-remake",
   "hurrican",

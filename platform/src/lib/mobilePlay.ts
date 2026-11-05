@@ -1,6 +1,5 @@
 import type { DeviceType } from "@/lib/compatibility/compatibility";
 import type { LaunchMethod } from "@/lib/data/types";
-import { isBrowserGame } from "@/lib/gameLaunch";
 
 export type MobileOs = "android" | "ios" | "other";
 
@@ -82,21 +81,21 @@ export function parseMobileOs(ua: string | null | undefined): MobileOs {
 
 /**
  * Outbound install/play target for mobile/tablet.
- * Prefer browser play → matching store URL → official website.
+ * Prefer a matching mobile install, then browser play, then the official site.
  */
 export function resolveMobileOutbound(
   game: MobilePlayGame,
   os: MobileOs
 ): MobileOutbound {
-  if (isBrowserGame(game)) {
-    return { href: game.website, label: "Play Free" };
-  }
-
   if (os === "android" && game.androidStoreUrl) {
     return { href: game.androidStoreUrl, label: androidLabel(game.androidStoreUrl) };
   }
   if (os === "ios" && game.iosStoreUrl) {
     return { href: game.iosStoreUrl, label: "Get on the App Store" };
+  }
+
+  if (game.browserPlayable || game.launchMethods?.includes("browser")) {
+    return { href: game.website, label: "Play Free" };
   }
 
   // Prefer any available store only when the OS is genuinely ambiguous.

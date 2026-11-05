@@ -69,9 +69,8 @@ function cardSizeLabel(game) {
  * getting a "Play" badge and no download size, hiding that some are very large.
  */
 function isBrowserGame(game) {
-  if (game.browserPlayable) return true;
   const methods = Array.isArray(game.launchMethods) ? game.launchMethods : [];
-  return methods.includes("browser") && !methods.includes("install");
+  return !methods.includes("install") && (game.browserPlayable || methods.includes("browser"));
 }
 
 /** Top-right badge: Play for browser titles, otherwise the download size. */

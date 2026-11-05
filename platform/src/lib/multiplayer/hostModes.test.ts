@@ -287,6 +287,11 @@ describe("orphaned adapters", () => {
 });
 
 describe("couch mode", () => {
+  it("offers only couch streaming for BBLL's local 1v1 matches", () => {
+    expect(hostModesFor("bastante-bueno-lucha-libre")).toEqual(["couch"]);
+    expect(defaultHostMode("bastante-bueno-lucha-libre")).toBe("couch");
+    expect(couchOnlyGameSlugs()).toContain("bastante-bueno-lucha-libre");
+  });
   /*
    * Streets of Rage Remake is a 2011 Bennu game with no network code at all:
    * two players share one keyboard and two pads. Before couch mode existed it

@@ -997,7 +997,7 @@ export function GameEditorForm({
           <div>
             <label className={label}>Size (MB)</label>
             <SizeInput
-              required
+              required={form.launchMethods.includes("install")}
               value={form.sizeMB}
               onChange={(v) => patch("sizeMB", v || 0)}
               className={field}

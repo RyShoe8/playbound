@@ -1333,6 +1333,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Native Xbox 360 / XInput controller support, documented by GOG. Configure both players in the game's controls menu; no keyboard-emulation profile is applied.",
   },
+  "bastante-bueno-lucha-libre": {
+    kind: "native",
+    note: "Prototype v1.4 uses native Xbox-compatible controllers for two-player local matches. Connect both pads before launch. Clicking a menu may switch that menu to mouse input. No keyboard-emulation profile or config rewrite is applied.",
+  },
   "city-of-heroes-homecoming": {
     kind: "native",
     note: "Homecoming Issue 26 Page 2 introduced native XInput and Raw Input controllers. Select your device in Options > Controls > Game Controller and configure power bindings. Keyboard/mouse remain useful for chat and menus; no existing binds are overwritten.",

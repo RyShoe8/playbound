@@ -1,7 +1,7 @@
 import type { Game } from "@/lib/data/types";
 
-/** Browser-first: playable in browser and not an installable desktop title. */
+/** Use browser play as the desktop action when there is no install method. */
 export function isBrowserGame(game: Pick<Game, "browserPlayable" | "launchMethods">): boolean {
-  if (game.browserPlayable) return true;
-  return game.launchMethods.includes("browser") && !game.launchMethods.includes("install");
+  return !game.launchMethods?.includes("install") &&
+    (game.browserPlayable || game.launchMethods?.includes("browser") === true);
 }

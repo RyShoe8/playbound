@@ -3936,6 +3936,7 @@ function couchDisqualifiesPlayBoundControls() {
  * stuck on the Play / Multiplayer screen with no way forward.
  */
 const BUNDLED_CONTROL_PROFILES = {
+  airtime: "./services/inputEngine/profiles/airtime.json",
   "f-e-a-r-platinum": "./services/inputEngine/profiles/f-e-a-r-platinum.json",
   holocure: "./services/inputEngine/profiles/holocure.json",
   "wolfenstein-enemy-territory": "./services/inputEngine/profiles/wolfenstein-enemy-territory.json",

@@ -1,0 +1,36 @@
+{
+  "gameSlug": "airtime",
+  "editionSlug": null,
+  "name": "PlayBound — Airtime",
+  "version": "0.1.0",
+  "platform": "windows",
+  "inputStrategy": "keyboard_mouse",
+  "status": "testing",
+  "antiCheatCompatibility": "unknown",
+  "testedControllers": [],
+  "notes": "Default keys verified against the official v0.9.13 packaged readme. Restore default controls in Airtime before testing. RT accelerates, LT brakes/reverses (disable Auto Brake if desired), left stick/D-pad steers, A uses the special, Start confirms and B returns. Physical controller validation remains pending.",
+  "actions": [
+    { "id": "left", "label": "Steer left", "output": { "type": "key", "vk": "ArrowLeft" } },
+    { "id": "right", "label": "Steer right", "output": { "type": "key", "vk": "ArrowRight" } },
+    { "id": "up", "label": "Accelerate / menu up", "output": { "type": "key", "vk": "ArrowUp" } },
+    { "id": "down", "label": "Brake / reverse / menu down", "output": { "type": "key", "vk": "ArrowDown" } },
+    { "id": "special", "label": "Car special", "output": { "type": "key", "vk": "Z" } },
+    { "id": "confirm", "label": "Confirm / leave finished race", "output": { "type": "key", "vk": "Enter" } },
+    { "id": "back", "label": "Back / leave race", "output": { "type": "key", "vk": "Escape" } }
+  ],
+  "bindings": [
+    { "actionId": "left", "physicalInput": "LEFT_LEFT" },
+    { "actionId": "right", "physicalInput": "LEFT_RIGHT" },
+    { "actionId": "left", "physicalInput": "DPAD_LEFT" },
+    { "actionId": "right", "physicalInput": "DPAD_RIGHT" },
+    { "actionId": "up", "physicalInput": "RT" },
+    { "actionId": "down", "physicalInput": "LT" },
+    { "actionId": "up", "physicalInput": "DPAD_UP" },
+    { "actionId": "down", "physicalInput": "DPAD_DOWN" },
+    { "actionId": "special", "physicalInput": "A" },
+    { "actionId": "confirm", "physicalInput": "START" },
+    { "actionId": "back", "physicalInput": "B" }
+  ],
+  "contexts": [],
+  "stickMouseSettings": { "enabled": false }
+}

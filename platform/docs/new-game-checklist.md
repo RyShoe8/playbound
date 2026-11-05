@@ -22,6 +22,8 @@ save safety, capacity, and release verification for every offered server game.
 
 ## 0. Entry Method — Browser & Admin Panel Only
 
+Prefer a verified install for the player's platform, including free downloads and owned store copies (GOG first). Keep a genuine browser version as a fallback. A free price or a source repository alone does not establish that an installable build exists.
+
 - Always create and manage new games through the **PlayBound Admin Panel** (`/admin/games` or `/admin/games/[slug]`) via the browser subagent or active admin session.
 - Ensure all required form fields pass validation before toggling `Published`.
 - Never insert unverified draft rows directly into files without clearing the 8-item editorial and verification gates.

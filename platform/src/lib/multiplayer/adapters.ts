@@ -113,6 +113,52 @@ export interface GameMultiplayerAdapter {
 }
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
+  "battle-drones": {
+    gameSlug: "battle-drones",
+    title: "Battle Drones",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Open Battle Drones and start an online duel or a four-player battle.",
+        "Share the game's invite link with your opponent. In a four-player lobby, send each friend the link for their own seat.",
+        "Keep the host's browser tab open for the whole match.",
+      ],
+    },
+  },
+  bigboard: {
+    gameSlug: "bigboard",
+    title: "Bigboard",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      requiresRoomCode: true,
+      inGameSteps: [
+        "Open bigboard.games on each phone or tablet. One player starts a table.",
+        "Join that table with its four-letter code or QR link, then follow the selected game's device layout and touch controls.",
+      ],
+    },
+    notes: "Browser table service with touch controls. Each player uses their own device; do not route this through PC couch streaming or a PlayBound dedicated server.",
+  },
+  "initial-unity": {
+    gameSlug: "initial-unity",
+    title: "Initial Unity: Reborn",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Everyone must use the same current Initial Unity: Reborn release.",
+        "Launch the game and meet through its online battle menus. PlayBound coordinates the party but does not host this game's online service.",
+      ],
+    },
+    notes: "Official project documents online head-to-head battles. No documented dedicated-server package or direct-IP launch arguments.",
+  },
   "double-dragon-trilogy": {
     gameSlug: "double-dragon-trilogy",
     title: "Double Dragon Trilogy",
