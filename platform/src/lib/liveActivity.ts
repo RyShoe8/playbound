@@ -21,7 +21,24 @@ import { isModCompatible, type DeviceType } from "@/lib/compatibility/compatibil
 import { withLiveActivityPermit } from "@/lib/liveActivityLimiter";
 import { createSingleFlight } from "@/lib/singleFlight";
 
-const refreshOnce = createSingleFlight();
+const singleFlight = createSingleFlight();
+
+/*
+ * A background refresh can outlive a Vercel freeze: the pool's wait expires on
+ * thaw (315s against a 10s limit) with nothing actually wrong. One retry gets a
+ * real answer instead of a failed revalidation; a real outage still throws, and
+ * the previous cached value keeps being served.
+ */
+function refreshOnce<T>(key: string, compute: () => Promise<T>): Promise<T> {
+  return singleFlight(key, async () => {
+    try {
+      return await compute();
+    } catch (err) {
+      if ((err as Error)?.name !== "MongoWaitQueueTimeoutError") throw err;
+      return compute();
+    }
+  });
+}
 
 const EXTERNAL_CONCURRENT_PROVIDERS: Record<string, () => Promise<number>> = {
   holocure: async () => {
@@ -409,20 +426,19 @@ async function countPlayersThisMonth(scope: Scope = {}): Promise<number> {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const prop = propertyMatch(scope);
 
-  const rows = await TelemetryEvent.find({
-    event: { $in: ["game_started", "edition_launched", "session_started"] },
-    createdAt: { $gte: since },
-    ...prop,
-  })
-    .select("userId anonymousId")
-    .lean();
-
-  const ids = new Set<string>();
-  for (const r of rows) {
-    const id = r.userId || r.anonymousId;
-    if (id) ids.add(id);
-  }
-  return ids.size;
+  const [result] = await TelemetryEvent.aggregate<{ count: number }>([
+    { $match: {
+      event: { $in: ["game_started", "edition_launched", "session_started"] },
+      createdAt: { $gte: since },
+      ...prop,
+    } },
+    { $group: { _id: { $cond: [
+      { $ne: [{ $ifNull: ["$userId", ""] }, ""] }, "$userId", "$anonymousId",
+    ] } } },
+    { $match: { _id: { $nin: [null, ""] } } },
+    { $count: "count" },
+  ]);
+  return result?.count ?? 0;
 }
 
 async function countModInstalls(modSlug: string): Promise<{ month: number; allTime: number }> {

@@ -204,6 +204,7 @@ export async function pollHedgewars() {
         return rooms;
       }
     } catch (err) {
+      if (err?.code === "ECONNREFUSED") throw err;
       lastErr = err;
       console.warn(
         `[hedgewars] PROTO ${proto} failed:`,

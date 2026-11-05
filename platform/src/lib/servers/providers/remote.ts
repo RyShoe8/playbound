@@ -53,8 +53,9 @@ export async function fetchViaAdapterOrDirect(
 
 /**
  * Hedgewars' official lobby refuses connections from the Render-hosted master
- * adapter (ECONNREFUSED, 2026-10-29) but answers our VPS, so ask the game-host
- * agent there first. The adapter stays as the fallback in case the VPS is down
+ * adapter (ECONNREFUSED, 2026-10-29), and since 2026-11 from our VPS as well,
+ * while a home connection still reaches it: an IP block only they can lift, so
+ * do not route around it. Ask the game-host agent first. The adapter stays as the fallback in case the VPS is down
  * or Hedgewars starts accepting Render again.
  */
 export async function fetchHedgewarsServers(): Promise<GameServer[]> {
@@ -62,8 +63,7 @@ export async function fetchHedgewarsServers(): Promise<GameServer[]> {
     const { fetchHedgewarsBrowser } = await import("@/lib/gameHost/client");
     const rows = (await fetchHedgewarsBrowser()) as GameServer[];
     return attachGeo(rows.slice(0, MAX_SERVERS));
-  } catch (err) {
-    logAdapterErrorOnce("hedgewars-vps", err instanceof Error ? err.message : String(err));
+  } catch {
     return fetchRemoteMaster("hedgewars");
   }
 }

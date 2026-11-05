@@ -37,7 +37,10 @@ async function connectOnce() {
     const opts = {
       bufferCommands: false,
       maxPoolSize: 20,
-      minPoolSize: 0,
+      // A warm instance keeps a couple of sockets, so a request after a quiet
+      // minute does not pay for TLS and login (2-7s slow-checkouts with the
+      // pool nearly empty). Atlas had 197/1500 connections in use at this change.
+      minPoolSize: 2,
       // The driver opens 2 connections at a time by default; a cold instance
       // serving a burst needs more without waiting on each TLS handshake.
       maxConnecting: 4,
@@ -50,9 +53,8 @@ async function connectOnce() {
       // Index maintenance belongs to ensure-indexes; writes create new ordinary
       // collections implicitly when needed.
       autoCreate: process.env.NODE_ENV !== "production",
-      // Return a connection to the pool quickly; idle lambdas should not sit on
-      // sockets the rest of the fleet could be using.
-      maxIdleTimeMS: 60_000,
+      // Close surplus idle connections, but not so fast that bursts reconnect.
+      maxIdleTimeMS: 300_000,
       // Fail fast rather than piling up waiters behind an unhealthy cluster.
       serverSelectionTimeoutMS: 5_000,
       waitQueueTimeoutMS: 10_000,

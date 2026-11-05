@@ -19,6 +19,7 @@ import { Session } from "node:inspector";
 
 export const SLOW_QUERY_MS = 1_500;
 export const SLOW_CHECKOUT_MS = 1_000;
+const FROZEN_CHECKOUT_MS = 30_000;
 /** Event-loop stalls longer than this are logged, at most once per window. */
 export const EVENT_LOOP_LAG_MS = 1_000;
 const EVENT_LOOP_WINDOW_MS = 30_000;
@@ -193,6 +194,9 @@ export function attachDbDiagnostics(client: MongoClient, maxPoolSize: number): v
   client.on("connectionCheckedIn", () => { inUse = Math.max(0, inUse - 1); });
   client.on("connectionCheckOutFailed", (event) => {
     const waited = (event as { durationMS?: number }).durationMS ?? 0;
+    // Far past the 10s wait limit means the instance was frozen, not the pool
+    // busy; the timer only fired on thaw. Callers still see the error.
+    if (waited > FROZEN_CHECKOUT_MS) return;
     console.warn(`[db:checkout-failed] ${event.reason} after ${Math.round(waited)}ms (inUse ${inUse}/${maxPoolSize}, observedReady ${ready.size}, connecting ${connecting.size})`);
   });
 }

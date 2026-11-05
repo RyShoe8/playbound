@@ -27,8 +27,10 @@ const discoveryConfig = unstable_cache(async () => {
  * below adds rooms the database query missed; without this it would re-add a
  * private or unlisted customer server (the query filtered it out on purpose).
  */
-async function listableServerIds(communityEnabled: boolean): Promise<Set<string>> {
-  const ids = await CommunityServer.find(listableFilter(communityEnabled)).distinct("_id");
+async function listableServerIds(communityEnabled: boolean, rooms: GameHostRoom[], seen: Set<string>): Promise<Set<string>> {
+  const candidates = rooms.map(room => String(room.communityServerId ?? "")).filter(id => /^[a-f0-9]{24}$/i.test(id) && !seen.has(id));
+  if (!candidates.length) return new Set();
+  const ids = await CommunityServer.find({ _id: { $in: candidates }, ...listableFilter(communityEnabled) }).distinct("_id");
   return new Set(ids.map((id: unknown) => String(id)));
 }
 
@@ -114,14 +116,14 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
         pageUrl: serverPageUrl(s),
         gameType: s.editionSlug || null,
         mod: s.mod || null,
-        location: { countryCode: "US", region: config.node?.regionLabel || s.regionKey },
+        location: { countryCode: "US", region: config?.node?.regionLabel || s.regionKey },
         protected: false,
       });
     }
 
     // Merge any live agent rooms for this gameSlug that might not be in the DB query
     if (agentResult && agentResult.ok) {
-      const allowed = await listableServerIds(Boolean(config?.enabled));
+      const allowed = await listableServerIds(Boolean(config?.enabled), agentResult.rooms.filter(room => room.gameSlug === slug), seenIds);
       for (const room of agentResult.rooms) {
         if (room.gameSlug !== slug) continue;
         // Never re-add a server the query hid (private/unlisted, or automatic hosting off).
@@ -146,7 +148,7 @@ export async function listJoinableCommunityServers(slug: string): Promise<GameSe
           map: null,
           gameType: null,
           mod: null,
-          location: { countryCode: "US", region: config.node?.regionLabel || "US Central" },
+          location: { countryCode: "US", region: config?.node?.regionLabel || "US Central" },
           protected: false,
         });
       }
@@ -236,14 +238,14 @@ export async function listAllJoinableCommunityServers(
         pageUrl: serverPageUrl(s),
         gameType: s.editionSlug || null,
         mod: s.mod || null,
-        location: { countryCode: "US", region: config.node?.regionLabel || s.regionKey },
+        location: { countryCode: "US", region: config?.node?.regionLabel || s.regionKey },
         protected: false,
       });
     }
 
     // Merge any live agent rooms that might not be in the DB query
     if (agentResult && agentResult.ok) {
-      const allowed = await listableServerIds(Boolean(config?.enabled));
+      const allowed = await listableServerIds(Boolean(config?.enabled), agentResult.rooms, seenIds);
       for (const room of agentResult.rooms) {
         if (room.communityServerId ? !allowed.has(String(room.communityServerId)) : !config?.enabled) continue;
         const idStr = room.communityServerId ? String(room.communityServerId) : room.roomId;
@@ -268,7 +270,7 @@ export async function listAllJoinableCommunityServers(
           map: null,
           gameType: null,
           mod: null,
-          location: { countryCode: "US", region: config.node?.regionLabel || "US Central" },
+          location: { countryCode: "US", region: config?.node?.regionLabel || "US Central" },
           protected: false,
         });
       }

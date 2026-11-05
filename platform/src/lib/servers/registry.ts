@@ -607,7 +607,11 @@ export async function refreshServerListSnapshot(slug: string): Promise<{ slug: s
     );
     return { slug, ok: true, servers: servers.length };
   } catch (err) {
-    const message = reportSourceFailure(slug, err);
+    // Log a failure when it starts or changes, not every five minutes. The
+    // cron's summary line still names every provider failing right now.
+    const message = err instanceof Error ? err.message : "Failed to load servers";
+    const previous = await ServerListSnapshot.findOne({ slug }).select("error").lean<{ error?: string | null }>();
+    if (previous?.error !== message) reportSourceFailure(slug, err);
     await ServerListSnapshot.updateOne({ slug }, { $set: { error: message, fetchedAt } }, { upsert: true });
     return { slug, ok: false, servers: 0, error: message };
   }
@@ -694,16 +698,13 @@ export async function getPlayerCountForGame(
 ): Promise<{ players: number; servers: number }> {
   const provider = providers[slug];
   if (!provider) return { players: 0, servers: 0 };
-  const hosted = hostedSnapshot?.filter((server) => server.gameSlug === slug);
-  try {
-    const summary = (await loadSummaries()).get(slug);
-    // The cron's totals cover the upstream list. Hosted rooms change the sum
-    // (and may duplicate a listed address), so only then read the full list.
-    if (summary && (summary.playerCount || (summary.totals && hostedSnapshot && !hosted?.length))) {
-      return summary.playerCount ?? summary.totals!;
-    }
-  } catch { /* fall through to the list */ }
-  const result = await listServersForGame(slug, hostedSnapshot);
+  const summary = await loadSummaries().then(rows => rows.get(slug)).catch(() => undefined);
+  if (summary?.playerCount) return summary.playerCount;
+  const hosted = hostedSnapshot
+    ? hostedSnapshot.filter(server => server.gameSlug === slug)
+    : await listJoinableCommunityServers(slug);
+  if (summary?.totals && hosted.length === 0) return summary.totals;
+  const result = await listServersForGame(slug, hosted);
   const servers = result.servers ?? [];
   return {
     players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
