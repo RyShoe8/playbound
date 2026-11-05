@@ -6137,6 +6137,35 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
     await maybeRepairZeldaMudoraInstall(entry.slug, { dir: gameDir });
   }
 
+  await ensureD3dx9Runtime(entry?.slug, gameDir);
+}
+
+/** Place Microsoft's d3dx9_43.dll beside a game that needs it. Never blocks the game. */
+async function ensureD3dx9Runtime(slug, gameDir) {
+  const d3dx9 = require("./services/d3dx9Runtime");
+  if (!d3dx9.needsD3dx9(slug, gameDir)) return;
+  const workDir = path.join(app.getPath("temp"), "playbound-launcher", `d3dx9-${crypto.randomUUID()}`);
+  try {
+    const bin = sevenZipBinary();
+    if (!bin) throw new Error("7-Zip is unavailable");
+    registerDownloadHostFromUrl(d3dx9.REDIST_URL);
+    sendProgress({ phase: "downloading", addon: "Microsoft DirectX 9 files" });
+    await d3dx9.installD3dx9(gameDir, {
+      workDir,
+      download: (url, dest) => downloadTo(url, dest),
+      extract: (archive, name, dir) =>
+        new Promise((resolve, reject) => {
+          const cp = spawn(bin, ["e", archive, name, `-o${dir}`, "-y"], { windowsHide: true });
+          cp.on("error", reject);
+          cp.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`7-Zip exited with ${code}`))));
+        }),
+    });
+    console.log(`[d3dx9] installed ${d3dx9.DLL} for ${slug}`);
+  } catch (err) {
+    console.warn(`[d3dx9] skipped for ${slug}:`, err?.message || err);
+  } finally {
+    await fsp.rm(workDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 /**
@@ -7144,6 +7173,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
    * through run_uh.bat → bundled python + run_uh.py. GameLauncher resolves the
    * bat at spawn time; do not force Locate looking for a nonexistent .exe.
    */
+  if (exeOnDisk(info)) await ensureD3dx9Runtime(slug, info.dir || path.dirname(exeOnDisk(info)));
   if (!exeOnDisk(info)) {
     const message = editionSlug ? "That edition is not installed" : "Not installed";
     // Mindustry reported this mid-session, with the game installed and being
