@@ -138,6 +138,11 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
   const install = game.launcherInstall;
   if (!install?.enabled) return false;
   if (install.kind === "external") {
+    // The host locates the purchased PC copy before starting a couch stream.
+    if (game.slug === "double-dragon-trilogy" && COUCH_PARTY_SLUGS.has(game.slug)) return true;
+    // The parent links to the community sites. Parties launch a selected
+    // edition's installed client (or the manually located Dogma Rising copy).
+    if (game.slug === "dragons-dogma-online" && game.editions?.some(editionSupportsPartyPlay)) return true;
     // GOG is the acquisition step; after the player installs Platinum and
     // locates FEAR.exe, PlayBound starts FEARMP.exe for a LAN party.
     if (

@@ -113,6 +113,63 @@ export interface GameMultiplayerAdapter {
 }
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
+  "double-dragon-trilogy": {
+    gameSlug: "double-dragon-trilogy",
+    title: "Double Dragon Trilogy",
+    tier: "tier1_improved",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: ["Launch Double Dragon Trilogy on both PCs and use the game's multiplayer menu to play online together."],
+    },
+    notes: "Two-player native online and local co-op. Choose couch streaming in PlayBound to share the host's copy with a remote controller.",
+  },
+  "dragons-dogma-online": {
+    gameSlug: "dragons-dogma-online",
+    title: "Dragon's Dogma Online",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Everyone must select the same edition: LegacyDDON and Dogma Rising are separate community services with separate accounts and characters.",
+        "Complete that edition's launcher updates and sign in, then meet on the same server/channel and invite your friends using the game's party menu.",
+      ],
+    },
+    notes: "Party launch and coordination only. The selected community edition runs its own network; PlayBound does not provision or bridge these servers.",
+  },
+  "city-of-heroes-homecoming": {
+    gameSlug: "city-of-heroes-homecoming",
+    title: "City of Heroes: Homecoming",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Update through the Homecoming launcher and sign in with your Homecoming game account.",
+        "Choose characters on the same Homecoming shard and invite your friends to a team in-game.",
+      ],
+    },
+    notes: "Homecoming operates the servers. PlayBound provides launch and party coordination, not private hosting or cross-shard matchmaking.",
+  },
+  "planetside-2": {
+    gameSlug: "planetside-2",
+    title: "PlanetSide 2",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    client: {
+      inGameJoinPrompt: true,
+      inGameSteps: [
+        "Update the game and sign in with your Daybreak account.",
+        "Choose the same PC server and faction, then invite your friends to an in-game squad.",
+      ],
+    },
+    notes: "Publisher-operated worlds only. PlayBound coordinates the party; it does not host a server, bypass queues, or automatically join a squad.",
+  },
   "f-e-a-r-platinum": {
     gameSlug: "f-e-a-r-platinum",
     title: "F.E.A.R. Platinum",

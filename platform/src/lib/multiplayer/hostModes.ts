@@ -167,6 +167,7 @@ const LOCAL_COUCH_GAMES = new Set([
 
 /** Games with local simultaneous play alongside their online host modes. */
 const ONLINE_COUCH_GAMES = new Set([
+  "double-dragon-trilogy",
   // RVGL supports 2–4 player split-screen with separate pads (or shared keyboard).
   "re-volt-rvgl",
   // Stardew Valley supports local split-screen co-op alongside online farms.
@@ -293,6 +294,8 @@ export function hostModesFor(gameSlug: string, editionSlug?: string | null): Par
  * `resolvedHostMode` so they do not silently switch to public.
  */
 export function defaultHostMode(gameSlug: string, editionSlug?: string | null): PartyHostMode | null {
+  // A party with no hosting override uses the game's own online multiplayer.
+  if (gameSlug === "double-dragon-trilogy") return null;
   const modes = hostModesFor(gameSlug, editionSlug);
   if (modes.includes("public")) return "public";
   if (modes.includes("dedicated")) return "dedicated";

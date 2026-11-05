@@ -5,6 +5,7 @@
  * from larger parties; unknown slugs fall back to PARTY_MAX_SIZE in fitsPartySize.
  */
 export const partyMaxPlayersBySlug: Readonly<Record<string, number>> = {
+  "double-dragon-trilogy": 2,
   // True 2P (or local-2) titles that should not appear for parties of 3+
   "relic-hunters-zero-remix": 2,
   "soccer-brawl": 2,

@@ -1329,6 +1329,18 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "Native multi-pad support for up to 4 local crew; no PlayBound config write needed.",
   },
+  "double-dragon-trilogy": {
+    kind: "native",
+    note: "Native Xbox 360 / XInput controller support, documented by GOG. Configure both players in the game's controls menu; no keyboard-emulation profile is applied.",
+  },
+  "city-of-heroes-homecoming": {
+    kind: "native",
+    note: "Homecoming Issue 26 Page 2 introduced native XInput and Raw Input controllers. Select your device in Options > Controls > Game Controller and configure power bindings. Keyboard/mouse remain useful for chat and menus; no existing binds are overwritten.",
+  },
+  "dragons-dogma-online": {
+    kind: "native",
+    note: "The DDON client has native gamepad input (ELECOM publishes DDON-compatible pads). LegacyDDON and Dogma Rising use the client's own control settings. Configure the connected pad in-game; account setup and launcher menus may need keyboard/mouse.",
+  },
   "flatout-2": {
     kind: "native",
     note: "Native gamepad and wheel support; no PlayBound config write needed.",

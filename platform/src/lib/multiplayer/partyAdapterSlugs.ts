@@ -117,6 +117,7 @@ export const PARTY_ADAPTER_SLUGS: ReadonlySet<string> = new Set<string>([
  * "online"; without this list neither client offers them a Start Party button.
  */
 export const COUCH_PARTY_SLUGS: ReadonlySet<string> = new Set<string>([
+  "double-dragon-trilogy",
   "re-volt-rvgl",
   "stardew-valley",
   "streets-of-rage-remake",
