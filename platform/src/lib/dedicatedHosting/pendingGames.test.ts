@@ -4,9 +4,9 @@ import { publicGames } from "./publicTier";
 import type { HostingTier } from "./tier";
 
 describe("planned Dedicated games", () => {
-  it("shows all five blocked games with a requirement and excludes Witchbrook", () => {
+  it("shows all blocked games with a requirement and excludes Witchbrook", () => {
     expect(PENDING_DEDICATED_GAMES.map((game) => game.gameSlug)).toEqual([
-      "aneurism-iv", "risk-of-rain-2", "starbound", "stardew-valley", "vintage-story",
+      "aneurism-iv", "risk-of-rain-2", "starbound", "stardew-valley",
     ]);
     expect(PENDING_DEDICATED_GAMES.every((game) => game.requirement.length > 30)).toBe(true);
     expect(isPendingDedicatedGame("witchbrook")).toBe(false);
@@ -23,10 +23,10 @@ describe("planned Dedicated games", () => {
   it("keeps planned games off clickable hosting pages even if a tier row was enabled", () => {
     const tier = {
       maxSlotsSold: 32,
-      games: ["starbound", "factorio"].map((slug) => ({
+      games: ["starbound", "factorio", "vintage-story"].map((slug) => ({
         profileKey: `${slug}:base`, enabled: true, newServerCreationEnabled: true,
       })),
     } as HostingTier;
-    expect(publicGames(tier).map((game) => game.gameSlug)).toEqual(["factorio"]);
+    expect(publicGames(tier).map((game) => game.gameSlug)).toEqual(["factorio", "vintage-story"]);
   });
 });

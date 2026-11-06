@@ -21,11 +21,6 @@ export const PENDING_DEDICATED_GAMES = [
     title: "Stardew Valley",
     requirement: "Needs a licensed game install and a verified headless server setup.",
   },
-  {
-    gameSlug: "vintage-story",
-    title: "Vintage Story",
-    requirement: "Needs the official server download from a Vintage Story game account.",
-  },
 ] as const;
 
 const pendingSlugs = new Set<string>(PENDING_DEDICATED_GAMES.map((game) => game.gameSlug));

@@ -98,8 +98,11 @@ test("config-file games write the cap into the server's own config", async () =>
   await recipes["core-keeper"].prepareSpawn(1300, ctxFor("core-keeper", ID_A, 8));
   assert.equal(read("core-keeper-servers", `pb-${ID_A}`, "data", "ServerConfig.json").maxNumberPlayers, 8);
 
-  await recipes["vintage-story"].prepareSpawn(42420, ctxFor("vintage-story", ID_A, 10));
-  const vs = read("vintage-story-servers", `pb-${ID_A}`, "data", "serverconfig.json");
+  const vsCtx = ctxFor("vintage-story", ID_A, 10);
+  await recipes["vintage-story"].prepareSpawn(42420, vsCtx);
+  const args = recipes["vintage-story"].args(42420, vsCtx);
+  assert.equal(fs.existsSync(path.join(args[1], "serverconfig.json")), false);
+  const vs = JSON.parse(args[3]);
   assert.equal(vs.MaxClients, 10);
   assert.equal(vs.Port, 42420);
 });

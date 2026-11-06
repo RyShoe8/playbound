@@ -518,16 +518,21 @@ export function createDedicatedRecipes(deps) {
       startupReadyTimeoutMs: 90_000,
       spawnEnv: isolatedHomeEnv("vintage-story-servers"),
       prepareSpawn: async (port, ctx) => {
-        // The game fills in every other setting on first load and keeps them afterwards.
-        mergeJsonConfig(path.join(serverDir("vintage-story-servers", ctx), "data", "serverconfig.json"), {
-          ServerName: serverName(ctx, "PlayBound Dedicated"),
-          Port: port,
-          MaxClients: managedPlayerLimit(ctx),
-          AdvertiseServer: false,
-          Upnp: false,
-        });
+        const file = path.join(serverDir("vintage-story-servers", ctx), "data", "serverconfig.json");
+        if (!fs.existsSync(file)) return;
+        // Older recipes wrote only these overrides, suppressing the engine's default roles.
+        const config = JSON.parse(fs.readFileSync(file, "utf8"));
+        if (Object.keys(config).sort().join(",") === "AdvertiseServer,MaxClients,Port,ServerName,Upnp") {
+          fs.renameSync(file, file + ".legacy");
+        }
       },
-      args: (_port, ctx) => ["--dataPath", path.join(serverDir("vintage-story-servers", ctx), "data")],
+      args: (port, ctx) => [
+        "--dataPath", path.join(serverDir("vintage-story-servers", ctx), "data"),
+        "--withconfig", JSON.stringify({
+          ServerName: serverName(ctx, "PlayBound Dedicated"), Port: port,
+          MaxClients: managedPlayerLimit(ctx), AdvertiseServer: false, Upnp: false,
+        }),
+      ],
     },
 
     factorio: {
