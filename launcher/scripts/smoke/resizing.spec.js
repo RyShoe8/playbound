@@ -78,11 +78,53 @@ test('Friend Size switches on drag, opens friends, and restores a full launcher'
     await companion.locator('[data-tab="controls"]').click();
     await expect(companion.locator('[data-tab="controls"]')).toHaveClass(/active/);
     await companion.locator('[data-tab="friends"]').click();
-    await companion.getByRole('button', { name: 'Friends & parties' }).click();
-    await expect(page.locator('#view-friends')).toHaveClass(/active/);
-    await app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes('index.html')).setSize(420,700));
-    await expect.poll(() => companion.evaluate(() => document.visibilityState)).toBe('visible');
+
+    // The same panel as the website's homepage, working inside Friend View.
+    const mainWindow = fn => app.evaluate(({BrowserWindow}, source) => {
+      const main = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes('renderer/index.html') || w.webContents.getURL().includes('renderer\\index.html'));
+      return new Function('main', `return (${source})(main)`)(main);
+    }, fn.toString());
+    const friendView = () => app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes('overlay.html')).isVisible());
+    await expect(companion.getByRole('button', { name: 'Free to Play Now' })).toBeVisible();
+    await expect(companion.locator('.pt-chip', { hasText: 'Smoke Friend' })).toBeVisible();
+    await companion.getByRole('button', { name: 'Invite', exact: true }).click();
+    await expect(companion.getByRole('status')).toHaveText('Invitation sent to Smoke Friend.');
+    await companion.getByRole('button', { name: 'Free to Play Now' }).click();
+    await expect(companion.getByRole('status')).toHaveText('Availability shared for two hours.');
+    await companion.getByRole('button', { name: 'Edit' }).click();
+    await companion.getByRole('button', { name: 'Save preferences' }).click();
+    await expect(companion.getByRole('status')).toHaveText('Preferences saved.');
+    // Other tabs must not lose what the panel is showing.
+    await companion.locator('[data-tab="controls"]').click();
+    await companion.locator('[data-tab="friends"]').click();
+    await expect(companion.getByRole('status')).toHaveText('Preferences saved.');
+
+    // Friend View hides the big launcher, and its button brings it back.
+    await expect.poll(() => mainWindow(main => main.isVisible())).toBe(false);
+    await companion.getByRole('button', { name: /Full launcher/ }).click();
+    await expect.poll(() => mainWindow(main => main.isVisible())).toBe(true);
+    await expect.poll(() => friendView()).toBe(false);
+
+    // The home sidebar has the same panel.
+    await page.locator('#sidebar [data-view="home"]').click();
+    await expect(page.locator('#home-availability').getByRole('button', { name: 'Free to Play Now' })).toBeVisible();
+
+    // Dragging narrow waits for the mouse to be released, then swaps windows and restores the size.
+    const fullBounds = await mainWindow(main => main.getBounds());
+    await mainWindow(main => { main.emit('will-resize'); main.setSize(420, 700); });
+    await page.waitForTimeout(300);
+    expect(await mainWindow(main => main.isVisible())).toBe(true);
+    await mainWindow(main => { main.emit('resized'); });
+    await expect.poll(() => mainWindow(main => main.isVisible())).toBe(false);
+    await expect.poll(() => friendView()).toBe(true);
     await expect(companion.locator('[data-tab="friends"]')).toHaveClass(/active/);
+    await companion.getByRole('button', { name: /Full launcher/ }).click();
+    await expect.poll(() => mainWindow(main => main.isVisible())).toBe(true);
+    expect((await mainWindow(main => main.getBounds())).width).toBe(fullBounds.width);
+
+    // A resize that is not a drag, such as a snap, still switches.
+    await mainWindow(main => { main.setSize(420, 700); });
+    await expect.poll(() => mainWindow(main => main.isVisible())).toBe(false);
   } finally {
     if (app) await app.close();
     fs.rmSync(root,{ recursive:true, force:true, maxRetries:5 });

@@ -1,4 +1,4 @@
-import { mountPlayAvailability } from "./playAvailability.js";
+import { mountPlayTogether } from "./playTogether.js";
 import { createFreeOfferCard, createGameCard, createModCard } from './cards.js';
 import { api, CACHE_TTL, cacheInvoke, cacheInvalidate, escapeHtml, filterCatalogGames, markViewReady, state, views } from './shared.js';
 import { diversifyOffers, homepageSelections } from './siteLayout.js';
@@ -20,7 +20,7 @@ function ensureHomeShell() {
     <section class="site-panel site-pad"><div class="section-header"><h2>Your people</h2><button class="site-text-link" data-home-view="friends">Friends →</button></div><div id="home-people"></div></section>
     <div id="home-availability"></div>
     <section class="site-panel site-pad"><h2>Discover more</h2><nav class="site-rail-links"><button data-home-web="/collections">Curated collections →</button><button data-home-view="deals">Free games & deals →</button><button data-home-web="/weekly">Weekly newsletter →</button><button data-home-view="multiplayer">Community servers →</button></nav></section>
-    <section class="site-panel site-pad"><p class="site-eyebrow">Your desktop companion</p><h2>Friends beside your game</h2><p>Keep friends and party controls in a narrow window.</p><button type="button" class="btn-primary" id="home-friend-size">Friend Size</button><p><kbd>Ctrl / ⌘ + P</kbd> opens your game helper.</p><button class="btn-secondary" data-home-view="couch">Controller setup</button></section>
+    <section class="site-panel site-pad site-friend-view"><p class="site-eyebrow">Friend View</p><h2>Your friends, on top of any game</h2><img src="friend-view.png" alt="The Friend View window, showing friends online, the next friend free to play, and an Invite button" loading="lazy"><p>Shrink PlayBound to a small window that floats over whatever you're playing. See who's free and send an invite without alt-tabbing.</p><button type="button" class="btn-primary" id="home-friend-size">Try Friend View</button><p><kbd>Ctrl / ⌘ + P</kbd> opens it in game.</p><button class="btn-secondary" data-home-view="couch">Controller setup</button></section>
     </aside></div>`;
   document.getElementById('home-friend-size').onclick = () => window.playbound.setFriendSize(true);
   views.home.querySelectorAll('[data-home-view]').forEach(button => button.addEventListener('click', () => api.navigateTo?.(button.dataset.homeView)));
@@ -89,7 +89,7 @@ async function loadHome() {
     if (owner) {
       const panel = document.createElement('div');
       availabilityHost.appendChild(panel);
-      mountPlayAvailability(panel, { compact: true });
+      mountPlayTogether(panel);
     }
   }
   const heading = views.home.querySelector('.site-page-heading h1');

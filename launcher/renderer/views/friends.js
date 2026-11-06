@@ -484,7 +484,7 @@ async function renderFriendsView() {
           <button class="btn-primary friends-action-btn" id="btn-toggle-create-party">Start Party</button>
           <button class="btn-secondary friends-action-btn" id="btn-lfg">Look for party</button>
           <button class="btn-secondary friends-action-btn" id="btn-toggle-add-friend">Add Friend</button>
-          <button class="btn-secondary friends-action-btn" id="btn-friends-size" title="Use a narrow launcher window">Friend Size</button>
+          <button class="btn-secondary friends-action-btn" id="btn-friends-size" title="Shrink PlayBound to a small window that stays on top of your game">Friend View</button>
         </div>
       </div>
 

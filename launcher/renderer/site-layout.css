@@ -252,3 +252,4 @@ h1.view-title { font-size:clamp(2rem,3.2vw,3rem); }
   .site-event-row { grid-template-columns:minmax(0,1fr); }
   .site-event-attendance { grid-column:1; flex-direction:row; flex-wrap:wrap; }
 }
+.site-friend-view img { display:block; width:100%; height:auto; margin:10px 0; border-radius:10px; }

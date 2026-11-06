@@ -939,29 +939,29 @@ function renderGameTab() {
   });
 }
 
-let friendsText = "";
+/*
+ * Play together keeps its own state, so it stays mounted in one element and
+ * survives this page's other tabs and its repaints. Loaded on first use: most
+ * Ctrl+P opens during a game never come here.
+ */
+let friendsPanel = null;
+let friendsHost = null;
+// A hidden window still reports itself as visible, so it is told when it is hidden.
+let overlayShowing = true;
 async function refreshFriends() {
-  friendsText = "Loading friends…";
-  render();
-  try {
-    const data = await window.playbound.getFriends();
-    if (!Array.isArray(data?.friends)) throw new Error();
-    const online = data.friends.filter(friend =>
-      ["online", "playing", "browsing", "away", "viewing_game", "installing", "launching"].includes(friend.presence?.status));
-    friendsText = online.map(friend => friend.username).join(", ") || "No friends online right now.";
-  } catch {
-    friendsText = "Could not load friends.";
+  if (friendsHost) {
+    friendsPanel?.refresh();
+    return render();
   }
-  if (state.activeTab === "friends") render();
+  friendsHost = document.createElement("div");
+  render();
+  const { mountPlayTogether } = await import("./playTogether.js");
+  friendsPanel = mountPlayTogether(friendsHost, { isShowing: () => overlayShowing });
 }
 
 function renderFriendsTab() {
-  root.innerHTML = '<h3>Friends online</h3><p class="note"></p><button class="apply">Friends &amp; parties</button>';
-  root.querySelector("p").textContent = friendsText;
-  root.querySelector("button").onclick = async () => {
-    await window.playbound.hideOverlay();
-    await window.playbound.showMainWindow({ navigate: "friends" });
-  };
+  if (!friendsHost) return void refreshFriends();
+  root.replaceChildren(friendsHost);
 }
 
 function renderTabs() {
@@ -1174,9 +1174,14 @@ document.addEventListener("keydown", (event) => {
 
 // Re-read on each open rather than polling: a hidden overlay asking the server
 // what the map is every few seconds is cost with nobody watching it.
+window.playbound?.onOverlayHidden?.(() => { overlayShowing = false; });
 if (window.playbound?.onOverlayOpened) window.playbound.onOverlayOpened(tab => {
+  overlayShowing = true;
   if (tab === "friends") { state.activeTab = tab; state.tabInitialized = true; }
   if (state.activeTab === "friends") void refreshFriends();
   void load();
+});
+document.getElementById("full-launcher")?.addEventListener("click", () => {
+  void window.playbound?.setFriendSize(false);
 });
 void load();

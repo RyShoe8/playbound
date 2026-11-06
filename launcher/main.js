@@ -11022,16 +11022,40 @@ ipcMain.handle("close-window", () => {
   win?.close();
   return true;
 });
+const FRIEND_VIEW_WIDTH = 500;
+let lastFullBounds = null;
 function setFriendSize(compact) {
   if (!compact) { hideOverlay(); showMainWindow(); return; }
   if (win && !win.isDestroyed()) {
-    if (win.getBounds().width <= 500) {
-      const area = screen.getDisplayMatching(win.getBounds()).workArea;
-      win.setSize(Math.min(1100, area.width), Math.min(800, area.height));
+    const bounds = win.getBounds();
+    if (bounds.width <= FRIEND_VIEW_WIDTH) {
+      const area = screen.getDisplayMatching(bounds).workArea;
+      win.setBounds(lastFullBounds || { ...bounds, width: Math.min(1100, area.width), height: Math.min(800, area.height) });
     }
     win.minimize();
   }
   return showOverlay("friends");
+}
+/*
+ * Dragging the launcher narrow switches to Friend View, but only once the drag
+ * has ended. Windows owns the window until the mouse is released and overrides
+ * any size or minimize asked for during the drag, which left the big launcher
+ * on screen with Friend View on top of it.
+ */
+function watchForFriendViewDrag(target) {
+  let dragging = false;
+  const isNarrow = () => target.isVisible() && !target.isMinimized() && target.getBounds().width <= FRIEND_VIEW_WIDTH;
+  target.on("will-resize", () => {
+    if (!dragging && target.getBounds().width > FRIEND_VIEW_WIDTH) lastFullBounds = target.getNormalBounds();
+    dragging = true;
+  });
+  target.on("resized", () => {
+    dragging = false;
+    if (isNarrow()) setImmediate(() => setFriendSize(true));
+  });
+  target.on("resize", () => {
+    if (!dragging && isNarrow()) setFriendSize(true);
+  });
 }
 ipcMain.handle("friend-size", (_event, compact) => setFriendSize(compact === true));
 ipcMain.handle("open-friends-popout", () => openFriendsPopout());
@@ -11397,6 +11421,20 @@ ipcMain.handle("save-play-availability", async (_event, availability) => {
     return await launcherJson("/api/friends/availability", { method: "PUT", body: availability });
   } catch (err) {
     return { error: err?.message || "Could not save availability" };
+  }
+});
+ipcMain.handle("patch-play-availability", async (_event, patch) => {
+  try {
+    return await launcherJson("/api/friends/availability", { method: "PATCH", body: patch });
+  } catch (err) {
+    return { error: err?.message || "Could not save" };
+  }
+});
+ipcMain.handle("send-friend-message", async (_event, payload) => {
+  try {
+    return await launcherJson("/api/friends/message", { method: "POST", body: payload });
+  } catch (err) {
+    return { error: err?.message || "Could not send the message" };
   }
 });
 ipcMain.handle("create-event", async (_event, payload) => {
@@ -13987,6 +14025,7 @@ function createOverlayWindow() {
   overlayWin.setAlwaysOnTop(true, "screen-saver");
   overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   overlayWin.loadFile(path.join(__dirname, "renderer", "overlay.html"));
+  overlayWin.on("hide", () => overlayWin?.webContents.send("overlay-hidden"));
   overlayWin.on("closed", () => {
     overlayWin = null;
   });
@@ -14813,6 +14852,7 @@ function createWindow() {
   });
 
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  watchForFriendViewDrag(win);
   win.on("minimize", (e) => {
     e.preventDefault();
     win.hide();

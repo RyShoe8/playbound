@@ -10,27 +10,11 @@
  */
 import { escapeHtml } from './shared.js';
 import { catalogGameSupportsParty } from './partyGameEligibility.js';
+import { availableAt } from './playMatch.js';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const emptyAvailability = (timezone = 'UTC') => ({ timezone, window: null, weekly: [] });
-const formatters = new Map();
-
-export function availableAt(availability, time) {
-  const w = availability.window;
-  if (w && Date.parse(w.startsAt) <= time && time < Date.parse(w.endsAt)) return true;
-  if (!availability.weekly.length) return false;
-  let formatter = formatters.get(availability.timezone);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat('en-US', { timeZone: availability.timezone, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    if (formatters.size > 64) formatters.clear();
-    formatters.set(availability.timezone, formatter);
-  }
-  const parts = formatter.formatToParts(time);
-  const value = (type) => parts.find((part) => part.type === type)?.value || '';
-  const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(value('weekday'));
-  const minute = Number(value('hour')) * 60 + Number(value('minute'));
-  return availability.weekly.some((slot) => slot.day === day && minute >= slot.startMinute && minute < slot.endMinute);
-}
+export { availableAt };
 
 /** Scan real instants, then compare local wall time, so timezones and DST stay local to each person. */
 export function commonAvailability(people, now = Date.now(), durationMinutes = 60) {

@@ -15,6 +15,9 @@ import { hasLinkedLauncher } from "@/lib/library";
 import { FreeGamesSection, FreeGamesSectionFallback } from "@/components/FreeGamesSection";
 import { FeaturedModsRow } from "@/components/access/FeaturedModsRow";
 import { HomePlayTogether } from "./HomePlayTogether";
+import Image from "next/image";
+
+const FRIEND_VIEW_IMAGE = { width: 808, height: 1082 };
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { EventCard } from "@/components/events/EventCard";
@@ -73,7 +76,7 @@ export default async function NewHomePage() {
       </div>
       <aside className="new-home-rail">
         {session?.user ? <HomePlayTogether games={games.filter(supportsMultiplayer).map(g => ({ slug:g.slug, title:g.title, genres:g.genres || [], free:g.launchMethods.includes("install") && !gameRequiresPurchase(g.access) }))} /> : <section className="new-panel new-pad"><h2>Play together</h2><p>Find friends who are free and invite them to play.</p><div className="home-play-actions"><Link className="new-button" href="/multiplayer?startParty=1">Start a Party</Link><Link className="new-button primary" href="/login?callbackUrl=/">Sign in to share availability</Link></div></section>}
-        <section className="new-panel new-pad"><h2>Desktop companion</h2><div className="companion-preview" aria-label="Friend Size navigation preview"><strong>Friend Size</strong><span>Friends</span><span>Multiplayer</span><span>Library</span></div><p>Use Friend Size to keep your friends and party beside your game. Press Ctrl+P in-game for controls and server settings.</p>{launcherLinked ? <a className="new-button" href="playbound://friend-size">Open Friend Size</a> : <Link className="new-button" href="/launcher">Get the launcher</Link>}</section>
+        <section className="new-panel new-pad friend-view-cta"><p className="friend-view-eyebrow">Friend View</p><h2>Your friends, on top of any game</h2><Image src="/brand/friend-view.png" alt="The Friend View window, showing friends online, the next friend free to play, and an Invite button" width={FRIEND_VIEW_IMAGE.width} height={FRIEND_VIEW_IMAGE.height} sizes="320px" /><p>Shrink PlayBound to a small window that floats over whatever you&apos;re playing. See who&apos;s free and send an invite without alt-tabbing.</p>{launcherLinked ? <a className="new-button primary" href="playbound://friend-size">Try Friend View</a> : <Link className="new-button primary" href="/launcher">Get the free launcher</Link>}<small>{launcherLinked ? "Or press Ctrl+P in any game." : "Then try Friend View in your next game."}</small></section>
         <section className="new-panel new-pad"><h2>Discover more</h2><nav className="new-rail-links"><Link href="/collections">Curated collections →</Link><Link href="/deals">Free games & deals →</Link><Link href="/weekly">Weekly newsletter →</Link><Link href="/multiplayer">Community servers →</Link></nav></section>
       </aside>
     </div>

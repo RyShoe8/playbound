@@ -71,6 +71,15 @@ const handlers = {
   'get-friends': () => ({ friends: [] }),
   'get-friend-requests': () => ({ incoming: [], outgoing: [] }),
   'get-parties': () => ({ myParties: [], discoverable: [] }),
+  'get-play-availability': () => ({
+    availability: { timezone: 'UTC', window: null, weekly: [] }, recentGames: [],
+    friends: [{ id: 'friend-1', username: 'Smoke Friend', online: true, recentGames: [], sharedGames: [{ slug: fixture.slug }],
+      availability: { timezone: 'UTC', weekly: [], window: { startsAt: new Date(Date.now() - 60000).toISOString(), endsAt: new Date(Date.now() + 3600000).toISOString() } } }],
+  }),
+  'patch-play-availability': (_event, patch) => patch.window !== undefined ? { window: patch.window } : { preferences: patch },
+  'send-friend-message': () => ({ ok: true }),
+  'create-party': () => ({ party: { id: 'smoke-party' } }),
+  'invite-to-party': () => ({ results: [{ status: 201 }] }),
   'get-party-sync': () => ({ friends: [], incoming: [], outgoing: [], myParties: [], discoverable: [] }),
   'get-installed': () => installed() ? [detail()] : [],
   'install': (_event, slug) => {

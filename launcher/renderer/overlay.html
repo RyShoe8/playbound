@@ -7,6 +7,7 @@
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self';"
     />
     <title>PlayBound Overlay</title>
+    <link rel="stylesheet" href="playTogether.css" />
     <style>
       /*
        * Self-contained rather than sharing styles.css. The overlay draws over a
@@ -55,10 +56,18 @@
         border-bottom: 1px solid var(--border);
       }
       .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
         font-weight: 700;
         letter-spacing: 0.08em;
         font-size: 11px;
         text-transform: uppercase;
+      }
+      .brand svg {
+        width: 16px;
+        height: 16px;
       }
       .subject {
         color: var(--muted);
@@ -76,6 +85,23 @@
         font-size: 15px;
         line-height: 1;
         padding: 2px 4px;
+      }
+      .full-launcher {
+        -webkit-app-region: no-drag;
+        flex-shrink: 0;
+        margin-left: auto;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .full-launcher:hover {
+        background: rgba(255, 255, 255, 0.1);
       }
       .tabs {
         -webkit-app-region: no-drag;
@@ -222,13 +248,57 @@
         gap: 6px;
         margin: 4px 0;
       }
+      /* Play together, in this panel's own format: its headings, fields and buttons. */
+      .pt-panel {
+        gap: 8px;
+      }
+      .pt-panel h2 {
+        display: none;
+      }
+      .pt-panel h3 {
+        margin: 10px 0 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .pt-panel p {
+        font-size: 11px;
+      }
+      .pt-field {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .pt-panel select,
+      .pt-panel input:not([type="checkbox"]) {
+        height: 30px;
+        padding: 0 8px;
+        border-radius: 7px;
+        background: rgba(0, 0, 0, 0.35);
+      }
+      .pt-button {
+        height: 32px;
+        padding: 0 12px;
+      }
+      .pt-button.primary {
+        flex: 1;
+        color: #fff;
+      }
+      .pt-sheet {
+        border: 0;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.06);
+      }
     </style>
   </head>
   <body>
     <div class="overlay">
       <header class="titlebar">
-        <span class="brand">PlayBound</span>
+        <span class="brand"><svg viewBox="0 0 1024 1024" aria-hidden="true"><path d="M342 182 L809 512 L342 842 Z" fill="#38BDF8"/></svg>PlayBound</span>
         <span class="subject" id="subject"></span>
+        <button class="full-launcher" id="full-launcher" title="Go back to the full PlayBound launcher">⤢ Full launcher</button>
         <button class="close" id="close" title="Close">✕</button>
       </header>
       <nav class="tabs" id="tabs"></nav>

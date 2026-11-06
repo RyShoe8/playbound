@@ -320,12 +320,6 @@ export async function openEventDetail(eventId, fromView) {
 }
 
 document.getElementById("friend-size-toggle").onclick = () => window.playbound.setFriendSize(true);
-let narrow = false;
-window.addEventListener("resize", () => {
-  const next = window.innerWidth <= 500;
-  if (next && !narrow) void window.playbound.setFriendSize(true);
-  narrow = next;
-});
 api.navigateTo = navigateTo;
 api.goBack = goBack;
 api.finishPartyInstallReturn = finishPartyInstallReturn;
