@@ -14,6 +14,7 @@ import { NewHomeEditions } from "@/components/new/NewHomeEditions";
 import { hasLinkedLauncher } from "@/lib/library";
 import { FreeGamesSection, FreeGamesSectionFallback } from "@/components/FreeGamesSection";
 import { FeaturedModsRow } from "@/components/access/FeaturedModsRow";
+import { PlayAvailabilityPanel } from "@/components/friends/PlayAvailabilityPanel";
 import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import { EventCard } from "@/components/events/EventCard";
 import { NewHomeFeature, NewHomeGames, NewHomeHeading } from "@/components/new/NewHomeCatalog";
@@ -71,6 +72,7 @@ export default async function NewHomePage() {
       </div>
       <aside className="new-home-rail">
         <section className="new-panel new-pad"><div className="new-section-heading"><h2>Your people</h2><Link href="/friends">Friends →</Link></div>{session?.user ? <PlayWithFriends surface="new_home" compact /> : <><p>See what your friends are playing and pick up your party here.</p><Link className="new-button" href="/login?callbackUrl=/">Sign in</Link></>}</section>
+        {session?.user && <PlayAvailabilityPanel compact />}
         {!launcherLinked && <section className="new-panel new-pad"><p className="new-eyebrow">One place to play</p><h2>Your launcher</h2><p>Your library, parties, more multiplayer games and expanded controller support - all in one open source launcher.</p><Link className="new-button" href="/launcher">Explore the launcher</Link></section>}
         <section className="new-panel new-pad"><h2>Discover more</h2><nav className="new-rail-links"><Link href="/collections">Curated collections →</Link><Link href="/deals">Free games & deals →</Link><Link href="/weekly">Weekly newsletter →</Link><Link href="/multiplayer">Community servers →</Link></nav></section>
       </aside>

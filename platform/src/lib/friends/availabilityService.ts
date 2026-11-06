@@ -1,3 +1,6 @@
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import CatalogGame from "@/lib/models/CatalogGame";
+import { mongoVisibleFilter } from "@/lib/catalogStatus";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
@@ -10,6 +13,19 @@ export function serializeAvailability(doc: { timezone?: string; window?: { start
   return { timezone: doc.timezone || "UTC", publishLooking: Boolean(doc.publishLooking), window: doc.window && new Date(doc.window.endsAt).getTime() > now ? { startsAt: new Date(doc.window.startsAt).toISOString(), endsAt: new Date(doc.window.endsAt).toISOString() } : null, weekly: (doc.weekly || []).map(({ day, startMinute, endMinute }) => ({ day, startMinute, endMinute })) };
 }
 
+async function recentGamesForUsers(ids: string[]) {
+  const plays = await TelemetryEvent.aggregate<{ _id: string; games: string[] }>([
+    { $match: { userId: { $in: ids }, createdAt: { $gte: new Date(Date.now() - 90 * 86400_000) },
+      event: { $in: ["game_started", "edition_launched", "session_started"] }, "properties.gameSlug": { $type: "string" } } },
+    { $group: { _id: { user: "$userId", slug: "$properties.gameSlug" }, lastPlayed: { $max: "$createdAt" } } },
+    { $group: { _id: "$_id.user", games: { $topN: { n: 3, sortBy: { lastPlayed: -1, "_id.slug": 1 }, output: "$_id.slug" } } } },
+  ]);
+  const slugs = [...new Set(plays.flatMap(row => row.games))];
+  const titles = slugs.length ? await CatalogGame.find({ ...mongoVisibleFilter(), slug: { $in: slugs } }).select("slug title").lean<{ slug: string; title: string }[]>() : [];
+  const bySlug = new Map(titles.map(game => [game.slug, game.title]));
+  return new Map(plays.map(row => [row._id, row.games.flatMap(slug => bySlug.has(slug) ? [bySlug.get(slug)!] : [])]));
+}
+
 export async function availabilityForFriends(userId: string) {
   await dbConnect();
   const relationships = await Friend.find({ status: "accepted", $or: [{ requesterId: userId }, { recipientId: userId }] }).select("requesterId recipientId").lean();
@@ -20,5 +36,6 @@ export async function availabilityForFriends(userId: string) {
     listSharedLibraryByFriend(userId, ids),
   ]);
   const byId = new Map(records.map(record => [String(record.userId), serializeAvailability(record)]));
-  return { availability: byId.get(userId) || emptyAvailability(), friends: users.map(user => ({ id: String(user._id), username: String(user.username), availability: byId.get(String(user._id)) || emptyAvailability(), sharedGames: shared[String(user._id)] || [] })).sort((a, b) => a.username.localeCompare(b.username)) };
+  const recent = await recentGamesForUsers([userId, ...users.map(user => String(user._id))]);
+  return { recentGames: recent.get(userId) ?? [], availability: byId.get(userId) || emptyAvailability(), friends: users.map(user => ({ id: String(user._id), username: String(user.username), recentGames: recent.get(String(user._id)) ?? [], availability: byId.get(String(user._id)) || emptyAvailability(), sharedGames: shared[String(user._id)] || [] })).sort((a, b) => a.username.localeCompare(b.username)) };
 }

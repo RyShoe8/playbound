@@ -1,3 +1,4 @@
+import { mountPlayAvailability } from "./playAvailability.js";
 import { createFreeOfferCard, createGameCard, createModCard } from './cards.js';
 import { api, CACHE_TTL, cacheInvoke, cacheInvalidate, escapeHtml, filterCatalogGames, markViewReady, state, views } from './shared.js';
 import { diversifyOffers, homepageSelections } from './siteLayout.js';
@@ -17,6 +18,7 @@ function ensureHomeShell() {
     ${section('home-mods', 'Newest Mods', 'mods')}
     </div><aside class="site-home-rail">
     <section class="site-panel site-pad"><div class="section-header"><h2>Your people</h2><button class="site-text-link" data-home-view="friends">Friends →</button></div><div id="home-people"></div></section>
+    <div id="home-availability"></div>
     <section class="site-panel site-pad"><h2>Discover more</h2><nav class="site-rail-links"><button data-home-web="/collections">Curated collections →</button><button data-home-view="deals">Free games & deals →</button><button data-home-web="/weekly">Weekly newsletter →</button><button data-home-view="multiplayer">Community servers →</button></nav></section>
     <section class="site-panel site-pad"><p class="site-eyebrow">Your desktop companion</p><h2>Game helper</h2><p>Server management, controls, and your phone controller—together while you play.</p><p><kbd>Ctrl / ⌘ + P</kbd> opens your game helper.</p><button class="btn-secondary" data-home-view="couch">Controller setup</button></section>
     </aside></div>`;
@@ -78,6 +80,17 @@ let feedRetried = false;
 async function loadHome() {
   const current = ++generation;
   const username = state.accountState?.connected ? state.accountState.username : null;
+  const availabilityHost = document.getElementById('home-availability');
+  const owner = username || '';
+  if (availabilityHost.dataset.owner !== owner) {
+    availabilityHost.dataset.owner = owner;
+    availabilityHost.replaceChildren();
+    if (owner) {
+      const panel = document.createElement('div');
+      availabilityHost.appendChild(panel);
+      mountPlayAvailability(panel, { compact: true });
+    }
+  }
   const heading = views.home.querySelector('.site-page-heading h1');
   if (heading) heading.textContent = username ? `Good to see you, ${username}.` : 'Find your next game night.';
   const catalogRequest = cacheInvoke('catalog', 60000, () => window.playbound.getCatalog());

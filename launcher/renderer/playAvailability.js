@@ -54,14 +54,14 @@ const localInput = (date) => new Date(date.getTime() - date.getTimezoneOffset() 
 const minuteText = (minute) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 const parseMinute = (value) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
 
-export function mountPlayAvailability(host) {
+export function mountPlayAvailability(host, { compact = false } = {}) {
   if (!host || host.dataset.mounted === '1') return;
   host.dataset.mounted = '1';
   const s = {
     loading: true, failed: false, busy: false, error: '', notice: '', editOpen: false,
     availability: emptyAvailability(), draft: emptyAvailability(), friends: [],
     selected: new Set(), duration: 60, eventTime: '', game: '', title: '', start: '', end: '',
-    games: [], now: Date.now(),
+    games: [], recentGames: [], scheduleOpen: false, hours: 2, now: Date.now(),
   };
 
   async function load() {
@@ -71,7 +71,7 @@ export function mountPlayAvailability(host) {
       if (!data || data.error) throw new Error(data?.error || 'Could not load availability. Please try again.');
       const saved = data.availability || emptyAvailability();
       const initial = saved.weekly.length || saved.window ? saved : { ...saved, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
-      s.availability = initial; s.draft = JSON.parse(JSON.stringify(initial)); s.friends = data.friends || [];
+      s.availability = initial; s.draft = JSON.parse(JSON.stringify(initial)); s.friends = data.friends || []; s.recentGames = data.recentGames || [];
       s.now = Date.now();
     } catch (err) { s.error = err.message; s.failed = true; }
     s.loading = false; paint();
@@ -91,16 +91,13 @@ export function mountPlayAvailability(host) {
       const res = await window.playbound.savePlayAvailability?.(next);
       if (!res || res.error) throw new Error(res?.error || 'Could not save availability');
       s.availability = res.availability; s.draft = JSON.parse(JSON.stringify(res.availability));
-      s.notice = res.availability.publishLooking ? 'Saved. You’ll appear in Looking to Party during your play windows.' : 'Availability saved. Only your friends can see it.';
+      s.scheduleOpen = false; s.notice = res.availability.publishLooking ? 'Saved. You’ll appear in Looking to Party during your play windows.' : 'Availability saved. Only your friends can see it.';
       s.now = Date.now();
     } catch (err) { s.error = err.message || 'Could not save availability'; }
     s.busy = false; paint();
   }
-  function preset(tonight) {
-    const starts = new Date();
-    if (tonight) { starts.setHours(19, 0, 0, 0); if (starts.getTime() < Date.now()) starts.setTime(Date.now()); }
-    const ends = new Date(starts.getTime() + 2 * 3600000);
-    return save({ ...s.availability, window: { startsAt: starts.toISOString(), endsAt: ends.toISOString() } });
+  function shareWindow(starts, hours) {
+    return save({ ...s.availability, window: { startsAt: starts.toISOString(), endsAt: new Date(starts.getTime() + hours * 3600000).toISOString() } });
   }
   const fmt = (time) => new Date(time).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: s.availability.timezone });
   const chosen = () => s.friends.filter((f) => s.selected.has(f.id));
@@ -142,25 +139,25 @@ export function mountPlayAvailability(host) {
     const a = s.availability;
     const slots = overlap();
     const free = freeToday();
-    const windowLine = a.window && Date.parse(a.window.endsAt) > s.now ? `<p class="view-sub">Your next window: ${escapeHtml(fmt(a.window.startsAt))} – ${escapeHtml(fmt(a.window.endsAt))}</p>` : '';
+    const windowLine = a.window && Date.parse(a.window.endsAt) > s.now ? `<p class="view-sub">${Date.parse(a.window.startsAt) <= s.now ? 'Free now until' : `Scheduled for ${escapeHtml(fmt(a.window.startsAt))} until`} ${escapeHtml(fmt(a.window.endsAt))}</p>` : '';
     const shared = s.games.filter((g) => chosen().length && chosen().every((f) => (f.sharedGames || []).some((sg) => sg.slug === g.slug)));
     const others = s.games.filter((g) => !shared.some((c) => c.slug === g.slug));
     const opt = (g) => `<option value="${escapeHtml(g.slug)}" ${s.game === g.slug ? 'selected' : ''}>${escapeHtml(g.title)}</option>`;
     host.innerHTML = `<section class="site-panel site-pad play-availability-panel" style="display:grid;gap:14px;">
       <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;">
         <div><h2 style="margin:0">Who can play tonight?</h2><p class="view-sub" style="margin:4px 0 0">Share a time with friends, or find a time together.</p></div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">${btn('pa-refresh', 'Refresh availability')}${btn('pa-edit', s.editOpen ? 'Close availability' : 'Set my availability')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">${btn('pa-refresh', 'Refresh availability')}${compact ? '' : btn('pa-edit', s.editOpen ? 'Close availability' : 'Weekly schedule')}</div>
       </div>
       ${s.error ? `<p role="alert" class="create-party-error" style="display:block">${escapeHtml(s.error)}</p>` : ''}${s.notice ? `<p role="status" class="view-sub">${escapeHtml(s.notice)}</p>` : ''}
       ${windowLine}
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">${btn('pa-now', 'Free now · 2 hours')}${btn('pa-tonight', 'Free tonight · 2 hours')}${btn('pa-stop', 'Stop sharing availability')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">${btn('pa-now', 'Free now · 2 hours')}${btn('pa-schedule', 'Choose a time', `aria-expanded="${s.scheduleOpen}"`)}${windowLine ? btn('pa-clear', 'Clear this window') : ''}${compact ? '' : btn('pa-stop', 'Stop sharing availability')}</div>
+      ${s.scheduleOpen ? `<form id="pa-window" style="display:flex;flex-wrap:wrap;align-items:end;gap:10px">
+        <label>Starts · local time<input class="create-party-input" required type="datetime-local" id="pa-start" value="${escapeHtml(s.start)}"></label>
+        <label>Duration<select class="create-party-input" id="pa-hours">${[0.5,1,2,3,4].map(h => `<option value="${h}" ${s.hours === h ? 'selected' : ''}>${h === 0.5 ? '30 minutes' : h === 1 ? '1 hour' : h + ' hours'}</option>`).join('')}</select></label>
+        <button class="btn-primary" ${s.busy ? 'disabled' : ''}>Share time</button></form>` : ''}
+      ${s.recentGames.length ? `<p class="view-sub">Recently played by you · ${escapeHtml(s.recentGames.join(', '))}</p>` : ''}
       ${s.editOpen ? `<div class="site-panel" style="padding:14px;display:grid;gap:12px;">
         <p class="view-sub" style="margin:0">Your full schedule stays friends-only. One-time windows expire automatically. Your usual week stays saved until you change it. Appear offline and Hide activity also hide availability and automatic Looking to Party listings.</p>
-        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;">
-          <label class="create-party-label">From · your device time<input type="datetime-local" class="create-party-input" id="pa-start" value="${escapeHtml(s.start)}"></label>
-          <label class="create-party-label">Until<input type="datetime-local" class="create-party-input" id="pa-end" value="${escapeHtml(s.end)}"></label>
-          ${btn('pa-save-window', 'Save this window')}
-        </div>
         <label class="create-party-label" style="max-width:320px">Weekly timezone<input class="create-party-input" id="pa-tz" value="${escapeHtml(s.draft.timezone)}" placeholder="America/Chicago"></label>
         <h3 style="margin:0">My usual week</h3>
         <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><input type="checkbox" id="pa-looking" ${s.draft.publishLooking ? 'checked' : ''}><span>Show me in Looking to Party during my play windows<br><small class="view-sub">Signed-in players can see your name and installed games while you’re available. Your full schedule stays friends-only. Save below to apply.</small></span></label>
@@ -171,9 +168,9 @@ export function mountPlayAvailability(host) {
         }).join('')}
         ${btn('pa-save-week', 'Save my usual week')}
       </div>` : ''}
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">${free.map((f) => `<span class="chip chip-accent">${escapeHtml(f.username)} · ${f.freeAt === s.now ? 'free now' : `free at ${new Date(f.freeAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`}</span>`).join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">${free.map((f) => `<span class="chip chip-accent">${escapeHtml(f.username)} · ${f.freeAt === s.now ? 'free now' : `free at ${new Date(f.freeAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`}${f.recentGames?.length ? `<small style="display:block">Recently played · ${escapeHtml(f.recentGames.join(', '))}</small>` : ''}</span>`).join('')}</div>
       ${free.length ? '' : '<p class="view-sub" style="margin:0">No friends have shared an available time today yet.</p>'}
-      <div style="display:grid;gap:12px;border-top:1px solid var(--border);padding-top:14px;">
+      ${compact ? '' : `<div style="display:grid;gap:12px;border-top:1px solid var(--border);padding-top:14px;">
         <h3 style="margin:0">Find a time together</h3>
         <p class="view-sub" style="margin:0">Select friends to find a shared window in the next seven days. Times below are in ${escapeHtml(a.timezone)}.</p>
         ${s.friends.length ? '' : '<p class="view-sub" style="margin:0">Add friends to start planning together.</p>'}
@@ -187,7 +184,7 @@ export function mountPlayAvailability(host) {
           <label class="create-party-label" style="max-width:480px">Event name · optional<input class="create-party-input" id="pa-title" maxlength="150" value="${escapeHtml(s.title)}"></label>
           <p class="view-sub" style="margin:0;font-size:12px">Creates an unlisted Game Night. Anyone with its link can view it. Share the link with your friends so they can RSVP; it won’t appear in public event listings.</p>
           <div><button type="button" class="btn-primary" id="pa-create" ${s.busy || !s.eventTime || !s.game ? 'disabled' : ''}>${s.busy ? 'Saving…' : 'Create Game Night'}</button></div>` : ''}
-      </div>
+      </div>`}
     </section>`;
     wire();
   }
@@ -195,14 +192,26 @@ export function mountPlayAvailability(host) {
   function wire() {
     const $ = (id) => host.querySelector(`#${id}`);
     $('pa-refresh').onclick = load;
-    $('pa-edit').onclick = () => { s.editOpen = !s.editOpen; paint(); };
-    $('pa-now').onclick = () => preset(false);
-    $('pa-tonight').onclick = () => preset(true);
-    $('pa-stop').onclick = () => save(emptyAvailability(s.availability.timezone));
+    if (!compact) $('pa-edit').onclick = () => { s.editOpen = !s.editOpen; paint(); };
+    $('pa-now').onclick = () => shareWindow(new Date(), 2);
+    $('pa-schedule').onclick = () => {
+      s.start = localInput(new Date(Math.ceil((Date.now() + 1) / 1800000) * 1800000));
+      s.scheduleOpen = !s.scheduleOpen; paint();
+    };
+    if (s.scheduleOpen) {
+      $('pa-start').oninput = e => { s.start = e.target.value; };
+      $('pa-hours').onchange = e => { s.hours = Number(e.target.value); };
+      $('pa-window').onsubmit = e => {
+        e.preventDefault();
+        const date = new Date(s.start);
+        if (!(date.getTime() > Date.now())) { s.error = 'Choose a future start time.'; paint(); return; }
+        void shareWindow(date, s.hours);
+      };
+    }
+    if ($('pa-clear')) $('pa-clear').onclick = () => save({ ...s.availability, window: null });
+    if (compact) return;
+    if (!compact) $('pa-stop').onclick = () => save(emptyAvailability(s.availability.timezone));
     if (s.editOpen) {
-      $('pa-start').oninput = (e) => { s.start = e.target.value; };
-      $('pa-end').oninput = (e) => { s.end = e.target.value; };
-      $('pa-save-window').onclick = () => { if (!s.start || !s.end) return; void save({ ...s.draft, window: { startsAt: new Date(s.start).toISOString(), endsAt: new Date(s.end).toISOString() } }); };
       $('pa-tz').oninput = (e) => { s.draft.timezone = e.target.value; };
       $('pa-looking').onchange = (e) => { s.draft.publishLooking = e.target.checked; };
       host.querySelectorAll('[data-day]').forEach((box) => { box.onchange = () => {
@@ -224,7 +233,7 @@ export function mountPlayAvailability(host) {
   }
 
   // Keep "free now" honest while the Friends page stays open.
-  const tick = setInterval(() => { if (!host.isConnected) { clearInterval(tick); return; } s.now = Date.now(); const typing = host.contains(document.activeElement) && ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName); if (!s.loading && !s.editOpen && !s.busy && !typing) paint(); }, 60000);
+  const tick = setInterval(() => { if (!host.isConnected) { clearInterval(tick); return; } s.now = Date.now(); const typing = host.contains(document.activeElement) && ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName); if (!s.loading && !s.editOpen && !s.scheduleOpen && !s.busy && !typing) paint(); }, 60000);
   void load();
-  void loadGames();
+  if (!compact) void loadGames();
 }

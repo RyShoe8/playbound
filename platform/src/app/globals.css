@@ -238,3 +238,27 @@ body.is-popout .shell-main {
     display: none;
   }
 }
+
+@media (max-width: 640px) {
+  .play-availability-panel {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: 1rem;
+  }
+  .play-availability-panel :is(button, a, label:has(input[type="checkbox"])) {
+    min-height: 44px;
+    align-items: center;
+  }
+  .play-availability-panel :is(input:not([type="checkbox"]), select) {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .play-availability-panel .availability-actions,
+  .play-availability-panel .availability-schedule {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .availability-schedule :is(input, select) { width: 100%; }
+}

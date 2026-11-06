@@ -7,7 +7,7 @@ import { pageHref } from "@/lib/designPreview";
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
 
 type Game = { slug: string; title: string; features?: string[]; tags?: string[] };
-type Friend = { id: string; username: string; availability: Availability; sharedGames: { slug: string; title: string }[] };
+type Friend = { id: string; username: string; recentGames?: string[]; availability: Availability; sharedGames: { slug: string; title: string }[] };
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const field = "rounded-lg border border-border bg-background px-3 py-2 text-sm";
 const button = "rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-50";
@@ -19,6 +19,9 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
   const router = useRouter();
   const [availability, setAvailability] = useState<Availability>(emptyAvailability());
   const [draft, setDraft] = useState<Availability>(emptyAvailability());
+  const [recentGames, setRecentGames] = useState<string[]>([]);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [hours, setHours] = useState(2);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +32,6 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
   const [notice, setNotice] = useState("");
   const [now, setNow] = useState(0);
   const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
   const [game, setGame] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [title, setTitle] = useState("");
@@ -43,7 +45,7 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
       const saved = data.availability as Availability;
       const initial = saved.weekly.length || saved.window ? saved : { ...saved, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
       setAvailability(initial); setDraft(initial);
-      setFriends(data.friends); setNow(Date.now());
+      setRecentGames(data.recentGames ?? []); setFriends(data.friends); setNow(Date.now());
     }).catch(err => { if (!controller.signal.aborted) { setError(err.message); setLoadFailed(true); } }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     const timer = setInterval(() => setNow(Date.now()), 60_000);
     return () => { controller.abort(); clearInterval(timer); };
@@ -55,16 +57,12 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
       const response = await fetch("/api/friends/availability", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not save availability");
-      setAvailability(data.availability); setDraft(data.availability); setNotice(data.availability.publishLooking ? "Saved. You’ll appear in Looking to Party during your play windows." : "Availability saved. Only your friends can see it."); setNow(Date.now());
+      setScheduleOpen(false); setAvailability(data.availability); setDraft(data.availability); setNotice(data.availability.publishLooking ? "Saved. You’ll appear in Looking to Party during your play windows." : "Availability saved. Only your friends can see it."); setNow(Date.now());
     } catch (err) { setError(err instanceof Error ? err.message : "Could not save availability"); }
     finally { setBusy(false); }
   }
-  function preset(tonight: boolean) {
-    const starts = new Date();
-    if (tonight) { starts.setHours(19, 0, 0, 0); if (starts.getTime() < Date.now()) starts.setTime(Date.now()); }
-    const ends = new Date(starts.getTime() + 2 * 3600_000);
-    setStart(localInput(starts)); setEnd(localInput(ends));
-    void save({ ...availability, window: { startsAt: starts.toISOString(), endsAt: ends.toISOString() } });
+  function shareWindow(starts: Date, length: number) {
+    void save({ ...availability, window: { startsAt: starts.toISOString(), endsAt: new Date(starts.getTime() + length * 3600_000).toISOString() } });
   }
   const chosen = friends.filter(friend => selected.includes(friend.id));
   const overlap = useMemo(() => selected.length ? commonAvailability([availability, ...friends.filter(friend => selected.includes(friend.id)).map(friend => friend.availability)], now, duration) : [], [availability, friends, selected, now, duration]);
@@ -96,15 +94,19 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
   if (loading) return <section className="rounded-2xl border border-border bg-card p-5" aria-busy="true">Loading play availability…</section>;
   if (loadFailed) return <section className="rounded-2xl border border-border bg-card p-5"><p role="alert">{error}</p><button className={button} onClick={() => { setLoading(true); setLoadFailed(false); setError(""); setLoadKey(loadKey + 1); }}>Retry availability</button></section>;
   return <section className="play-availability-panel space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Who can play tonight?</h2><p className="mt-1 text-sm text-muted-foreground">Share a time with friends, or find a time together.</p></div><div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => { setLoading(true); setError(""); setNotice(""); setLoadKey(loadKey + 1); }}>Refresh availability</button>{!compact && <button className={button} onClick={() => setEditOpen(!editOpen)}>{editOpen ? "Close availability" : "Set my availability"}</button>}</div></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Who can play tonight?</h2><p className="mt-1 text-sm text-muted-foreground">Share a time with friends, or find a time together.</p></div></div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}{notice && <p role="status" className="text-sm text-muted-foreground">{notice}</p>}
-    {availability.window && Date.parse(availability.window.endsAt) > now && <p className="text-sm">Your next window: {format(availability.window.startsAt)} – {format(availability.window.endsAt)}</p>}
-    <div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => preset(false)}>Free now · 2 hours</button><button className={button} disabled={busy} onClick={() => preset(true)}>Free tonight · 2 hours</button>{!compact && <button className={button} disabled={busy} onClick={() => void save(emptyAvailability(availability.timezone))}>Stop sharing availability</button>}</div>
+    {availability.window && Date.parse(availability.window.endsAt) > now && <p className="text-sm">{Date.parse(availability.window.startsAt) <= now ? "Free now until " : `Scheduled for ${format(availability.window.startsAt)} until `}{format(availability.window.endsAt)}</p>}
+    <div className="availability-actions flex flex-wrap gap-2"><button className={button + " bg-primary text-primary-foreground hover:bg-primary/90"} disabled={busy} onClick={() => shareWindow(new Date(), 2)}>Free now · 2 hours</button><button className={button} aria-expanded={scheduleOpen} disabled={busy} onClick={() => { setStart(localInput(new Date(Math.ceil((Date.now() + 1) / 1800_000) * 1800_000))); setScheduleOpen(!scheduleOpen); }}>Choose a time</button>{availability.window && Date.parse(availability.window.endsAt) > now && <button className={button} disabled={busy} onClick={() => void save({ ...availability, window: null })}>Clear this window</button>}{!compact && <button className={button} disabled={busy} onClick={() => void save(emptyAvailability(availability.timezone))}>Stop sharing availability</button>}</div>
+    {scheduleOpen && <form className="availability-schedule flex flex-wrap items-end gap-3" onSubmit={event => { event.preventDefault(); const date = new Date(start); if (!(date.getTime() > Date.now())) { setError("Choose a future start time."); return; } shareWindow(date, hours); }}>
+      <label className="grid gap-1 text-sm">Starts · local time<input className={field} type="datetime-local" required value={start} min={localInput(new Date(now))} onChange={e => setStart(e.target.value)} /></label>
+      <label className="grid gap-1 text-sm">Duration<select className={field} value={hours} onChange={e => setHours(Number(e.target.value))}>{[0.5, 1, 2, 3, 4].map(h => <option key={h} value={h}>{h === 0.5 ? "30 minutes" : h === 1 ? "1 hour" : h + " hours"}</option>)}</select></label>
+      <button className={button} disabled={busy}>Share time</button>
+    </form>}
+    <div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => { setLoading(true); setError(""); setNotice(""); setLoadKey(loadKey + 1); }}>Refresh availability</button>{!compact && <button className={button} aria-expanded={editOpen} onClick={() => setEditOpen(!editOpen)}>{editOpen ? "Close availability" : "Weekly schedule"}</button>}</div>
+    {!!recentGames.length && <p className="text-sm text-muted-foreground">Recently played by you · {recentGames.join(", ")}</p>}
     {!compact && editOpen && <div className="space-y-4 rounded-xl bg-secondary/25 p-4">
       <p className="text-sm text-muted-foreground">Your full schedule stays friends-only. One-time windows expire automatically. Your usual week stays saved until you change it. Appear offline and Hide activity also hide availability and automatic Looking to Party listings.</p>
-      <form className="flex flex-wrap items-end gap-3" onSubmit={event => { event.preventDefault(); if (!start || !end) return; void save({ ...draft, window: { startsAt: new Date(start).toISOString(), endsAt: new Date(end).toISOString() } }); }}>
-        <label className="grid gap-1 text-sm">From · your device time<input type="datetime-local" className={field} value={start} onChange={event => setStart(event.target.value)} required /></label><label className="grid gap-1 text-sm">Until<input type="datetime-local" className={field} value={end} onChange={event => setEnd(event.target.value)} required /></label><button className={button} disabled={busy}>Save this window</button>
-      </form>
       <label className="grid max-w-sm gap-1 text-sm">Weekly timezone<input className={field} value={draft.timezone} onChange={event => setDraft({ ...draft, timezone: event.target.value })} placeholder="America/Chicago" /></label>
       <h3 className="font-semibold">My usual week</h3>
       <label className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1 size-4 shrink-0 accent-primary" checked={!!draft.publishLooking} onChange={event => setDraft({ ...draft, publishLooking: event.target.checked })} /><span>Show me in Looking to Party during my play windows<small className="mt-1 block text-muted-foreground">Signed-in players can see your name and installed games while you’re available. Your full schedule stays friends-only. Save below to apply.</small></span></label>
@@ -115,7 +117,7 @@ export function PlayAvailabilityPanel({ games = [], compact = false }: { games?:
         return <div key={day} className="flex flex-wrap items-center gap-3"><label className="flex w-32 items-center gap-2 text-sm"><input type="checkbox" checked={!!slot} onChange={event => event.target.checked ? change({}) : setDraft({ ...draft, weekly: draft.weekly.filter(item => item.day !== day) })} />{days[day]}</label>{slot && <><input aria-label={`${days[day]} start`} className={field} type="time" value={minuteText(slot.startMinute)} onChange={event => change({ startMinute: parseMinute(event.target.value) })} /><span>to</span><input aria-label={`${days[day]} end`} className={field} type="time" value={minuteText(slot.endMinute)} onChange={event => change({ endMinute: parseMinute(event.target.value) })} /></>}</div>;
       })}</div><button className={button} disabled={busy} onClick={() => void save(draft)}>Save my usual week</button>
     </div>}
-    <div className="flex flex-wrap gap-2">{freeToday.map(friend => <span key={friend.id} className="rounded-full bg-primary/10 px-3 py-1 text-sm">{friend.username} · {friend.freeAt === now ? "free now" : `free at ${new Date(friend.freeAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}</span>)}</div>
+    <div className="flex flex-wrap gap-2">{freeToday.map(friend => <span key={friend.id} className="min-w-0 max-w-full rounded-xl bg-primary/10 px-3 py-2 text-sm">{friend.username} · {friend.freeAt === now ? "free now" : `free at ${new Date(friend.freeAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}{!!friend.recentGames?.length && <small className="block">Recently played · {friend.recentGames.join(", ")}</small>}</span>)}</div>
     {!freeToday.length && <p className="text-sm text-muted-foreground">No friends have shared an available time today yet.</p>}
     {compact ? <Link href="/friends" className="inline-flex text-sm font-bold text-primary">Find a time with friends →</Link> : <div className="space-y-4 border-t border-border pt-5">
       <h3 className="font-bold">Find a time together</h3><p className="text-sm text-muted-foreground">Select friends to find a shared window in the next seven days. Times below are in {availability.timezone}.</p>
