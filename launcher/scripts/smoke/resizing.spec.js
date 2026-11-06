@@ -95,7 +95,7 @@ test('Friend Size switches on drag, opens friends, and restores a full launcher'
     await companion.getByRole('button', { name: 'Save preferences' }).click();
     await expect(companion.getByRole('status')).toHaveText('Preferences saved.');
     // Other tabs must not lose what the panel is showing.
-    await companion.locator('[data-tab="controls"]').click();
+    await companion.locator('[data-tab="game"]').click();
     await companion.locator('[data-tab="friends"]').click();
     await expect(companion.getByRole('status')).toHaveText('Preferences saved.');
 
