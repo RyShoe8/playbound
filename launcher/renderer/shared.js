@@ -1066,6 +1066,7 @@ export function toggleQueuePopover() {
 
 export function applyAccountToSidebar(acc) {
   state.accountState = acc || { connected: false };
+  api.syncHomeAccount?.();
   const accountName = document.getElementById("site-account-name");
   const accountAvatar = document.getElementById("site-account-avatar");
   const accountDescription = document.getElementById("site-account-description");

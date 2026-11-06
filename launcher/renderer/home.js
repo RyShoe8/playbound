@@ -65,11 +65,17 @@ function paintNight(events, catalog) {
   host.querySelector('a').addEventListener('click', event => { event.preventDefault(); api.openEventDetail?.(night.id, 'home'); });
 }
 let feedRetried = false;
-async function loadHome() {
-  const current = ++generation;
-  const username = state.accountState?.connected ? state.accountState.username : null;
+/**
+ * The parts of home that depend on who is signed in. Home can paint before the
+ * saved session resolves, and then is not repainted, so this also runs whenever
+ * the account changes.
+ */
+function syncHomeAccount() {
+  const connected = Boolean(state.accountState?.connected);
+  const username = connected ? state.accountState.username : null;
   const availabilityHost = document.getElementById('home-availability');
-  const owner = username || '';
+  if (!availabilityHost) return;
+  const owner = connected ? username || 'account' : '';
   if (availabilityHost.dataset.owner !== owner) {
     availabilityHost.dataset.owner = owner;
     availabilityHost.replaceChildren();
@@ -85,6 +91,11 @@ async function loadHome() {
   }
   const heading = views.home.querySelector('.site-page-heading h1');
   if (heading) heading.textContent = username ? `Good to see you, ${username}.` : 'Find your next game night.';
+}
+api.syncHomeAccount = syncHomeAccount;
+async function loadHome() {
+  const current = ++generation;
+  syncHomeAccount();
   const catalogRequest = cacheInvoke('catalog', 60000, () => window.playbound.getCatalog());
   // Paint native catalog immediately; slower editorial/network sections fill in later.
   void catalogRequest.then(raw => {
