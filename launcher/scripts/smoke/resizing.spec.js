@@ -75,8 +75,8 @@ test('Friend Size switches on drag, opens friends, and restores a full launcher'
     await page.locator('#friend-size-toggle').click();
     const companion = await companionOpened;
     await expect(companion.locator('[data-tab="friends"]')).toHaveClass(/active/);
-    await companion.locator('[data-tab="controls"]').click();
-    await expect(companion.locator('[data-tab="controls"]')).toHaveClass(/active/);
+    await companion.locator('[data-tab="game"]').click();
+    await expect(companion.locator('[data-tab="game"]')).toHaveClass(/active/);
     await companion.locator('[data-tab="friends"]').click();
 
     // The same panel as the website's homepage, working inside Friend View.
