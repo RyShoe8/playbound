@@ -262,3 +262,11 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 .companion-preview { display:grid; gap:5px; max-width:12rem; margin:10px auto; padding:10px; border:1px solid var(--border); border-radius:10px; background:var(--background); }
 .companion-preview strong { color:var(--primary); }
 .companion-preview span { padding:4px 8px; border-radius:5px; background:var(--secondary); font-size:.8rem; }
+.home-play-dialog { background:var(--card); box-shadow:0 20px 70px #0008; overflow-y:auto; overscroll-behavior:contain; }
+.home-play-dialog legend { font-size:1.2rem; font-weight:700; margin-bottom:.75rem; }
+.party-plan p { margin:.75rem 0; }
+.home-play-dialog-actions { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem; }
+.home-play-dialog-actions .new-button { min-height:44px; justify-content:center; }
+.home-play-options label { padding:.35rem .5rem; }
+.home-play-options label:has(:checked) { background:var(--accent); border-radius:6px; }
+.home-play-dialog :focus-visible { outline:2px solid var(--ring); outline-offset:2px; }

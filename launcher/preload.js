@@ -220,7 +220,7 @@ contextBridge.exposeInMainWorld("playbound", {
   setOverlayGuide: (guide) => ipcRenderer.invoke("set-overlay-guide", guide),
   getOverlayShortcut: () => ipcRenderer.invoke("get-overlay-shortcut"),
   setOverlayShortcut: (accelerator) => ipcRenderer.invoke("set-overlay-shortcut", accelerator),
-  onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", () => cb()),
+  onOverlayOpened: (cb) => ipcRenderer.on("overlay-opened", (_event, tab) => cb(tab)),
   getServerSettings: (partyId) => ipcRenderer.invoke("get-server-settings", partyId),
   getLocalServerDiagnostics: (partyId) => ipcRenderer.invoke("local-server-diagnostics", partyId),
   restartLocalPartyServer: (partyId) => ipcRenderer.invoke("restart-local-party-server", partyId),

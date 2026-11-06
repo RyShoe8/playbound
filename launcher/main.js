@@ -11022,20 +11022,16 @@ ipcMain.handle("close-window", () => {
   win?.close();
   return true;
 });
-let lastFullBounds = null;
 function setFriendSize(compact) {
-  showMainWindow();
-  if (!win || win.isDestroyed()) return;
-  const bounds = win.getBounds();
-  const area = screen.getDisplayMatching(bounds).workArea;
-  if (compact && bounds.width > 540) lastFullBounds = win.getNormalBounds();
-  if (win.isMaximized()) win.unmaximize();
-  const preferred = compact ? { ...bounds, width: 400, height: 760 } :
-    lastFullBounds || { ...bounds, width: 1100, height: 800 };
-  const width = Math.min(preferred.width, area.width);
-  const height = Math.min(preferred.height, area.height);
-  win.setBounds({ width, height, x: Math.max(area.x, Math.min(preferred.x, area.x + area.width - width)),
-    y: Math.max(area.y, Math.min(preferred.y, area.y + area.height - height)) });
+  if (!compact) { hideOverlay(); showMainWindow(); return; }
+  if (win && !win.isDestroyed()) {
+    if (win.getBounds().width <= 500) {
+      const area = screen.getDisplayMatching(win.getBounds()).workArea;
+      win.setSize(Math.min(1100, area.width), Math.min(800, area.height));
+    }
+    win.minimize();
+  }
+  return showOverlay("friends");
 }
 ipcMain.handle("friend-size", (_event, compact) => setFriendSize(compact === true));
 ipcMain.handle("open-friends-popout", () => openFriendsPopout());
@@ -14010,12 +14006,14 @@ function toggleOverlay() {
     win.hide();
     return { ok: true, visible: false };
   }
-  /*
-   * Tell the page it is being opened rather than letting it poll while hidden.
-   * An overlay nobody is looking at should not be asking the server what the
-   * map is every few seconds.
-   */
-  win.webContents.send("overlay-opened");
+  return showOverlay();
+}
+
+function showOverlay(tab) {
+  const win = createOverlayWindow();
+  const notify = () => win.webContents.send("overlay-opened", tab);
+  if (win.webContents.isLoading()) win.webContents.once("did-finish-load", notify);
+  else notify();
   win.showInactive();
   win.focus();
   return { ok: true, visible: true };

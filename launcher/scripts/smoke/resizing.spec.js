@@ -71,16 +71,18 @@ test('Friend Size switches on drag, opens friends, and restores a full launcher'
     app = await _electron.launch({ args, env });
     const page = await app.firstWindow();
     await expect(page.locator('#site-account-name')).toHaveText('Smoke User');
+    const companionOpened = app.waitForEvent('window', { predicate: p => p !== page });
     await page.locator('#friend-size-toggle').click();
-    await expect(page.locator('body')).toHaveClass(/friend-size/);
+    const companion = await companionOpened;
+    await expect(companion.locator('[data-tab="friends"]')).toHaveClass(/active/);
+    await companion.locator('[data-tab="controls"]').click();
+    await expect(companion.locator('[data-tab="controls"]')).toHaveClass(/active/);
+    await companion.locator('[data-tab="friends"]').click();
+    await companion.getByRole('button', { name: 'Friends & parties' }).click();
     await expect(page.locator('#view-friends')).toHaveClass(/active/);
-    await page.locator('[data-compact-view="library"]').click();
-    await expect(page.locator('#view-library')).toHaveClass(/active/);
-    await page.locator('#friend-size-toggle').click();
-    await expect(page.locator('body')).not.toHaveClass(/friend-size/);
     await app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes('index.html')).setSize(420,700));
-    await expect(page.locator('body')).toHaveClass(/friend-size/);
-    await expect(page.locator('#friend-size-nav')).toBeVisible();
+    await expect.poll(() => companion.evaluate(() => document.visibilityState)).toBe('visible');
+    await expect(companion.locator('[data-tab="friends"]')).toHaveClass(/active/);
   } finally {
     if (app) await app.close();
     fs.rmSync(root,{ recursive:true, force:true, maxRetries:5 });

@@ -939,15 +939,43 @@ function renderGameTab() {
   });
 }
 
+let friendsText = "";
+async function refreshFriends() {
+  friendsText = "Loading friends…";
+  render();
+  try {
+    const data = await window.playbound.getFriends();
+    if (!Array.isArray(data?.friends)) throw new Error();
+    const online = data.friends.filter(friend =>
+      ["online", "playing", "browsing", "away", "viewing_game", "installing", "launching"].includes(friend.presence?.status));
+    friendsText = online.map(friend => friend.username).join(", ") || "No friends online right now.";
+  } catch {
+    friendsText = "Could not load friends.";
+  }
+  if (state.activeTab === "friends") render();
+}
+
+function renderFriendsTab() {
+  root.innerHTML = '<h3>Friends online</h3><p class="note"></p><button class="apply">Friends &amp; parties</button>';
+  root.querySelector("p").textContent = friendsText;
+  root.querySelector("button").onclick = async () => {
+    await window.playbound.hideOverlay();
+    await window.playbound.showMainWindow({ navigate: "friends" });
+  };
+}
+
 function renderTabs() {
   tabsEl.innerHTML = `
+    <button class="tab ${state.activeTab === "friends" ? "active" : ""}" data-tab="friends">Friends</button>
     <button class="tab ${state.activeTab === "game" ? "active" : ""}" data-tab="game">Game</button>
     <button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>
     <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>
   `;
   tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
+      state.tabInitialized = true;
       state.activeTab = btn.dataset.tab;
+      if (state.activeTab === "friends") return void refreshFriends();
       render();
     });
   });
@@ -957,6 +985,7 @@ function render() {
   renderTabs();
   if (state.activeTab === "controls") renderControlsTab();
   else if (state.activeTab === "game") renderGameTab();
+  else if (state.activeTab === "friends") renderFriendsTab();
   else renderServerTab();
 }
 
@@ -1145,5 +1174,9 @@ document.addEventListener("keydown", (event) => {
 
 // Re-read on each open rather than polling: a hidden overlay asking the server
 // what the map is every few seconds is cost with nobody watching it.
-if (window.playbound?.onOverlayOpened) window.playbound.onOverlayOpened(() => void load());
+if (window.playbound?.onOverlayOpened) window.playbound.onOverlayOpened(tab => {
+  if (tab === "friends") { state.activeTab = tab; state.tabInitialized = true; }
+  if (state.activeTab === "friends") void refreshFriends();
+  void load();
+});
 void load();

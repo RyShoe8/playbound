@@ -20,6 +20,8 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
   const [partyId, setPartyId] = useState("");
   const [now, setNow] = useState(0);
   const [when, setWhen] = useState(0);
+  const planner = useRef<HTMLDialogElement>(null);
+  const [planningAt, setPlanningAt] = useState(0);
   const dialog = useRef<HTMLDialogElement>(null);
   const [edit, setEdit] = useState(false);
   const [prefs, setPrefs] = useState(defaultPlayPreferences);
@@ -28,26 +30,48 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const [reload, refresh] = useState(0);
+  const writeVersion = useRef(0);
   const [plans, setPlans] = useState<Record<number,string>>({});
   const [sent, setSent] = useState<string[]>([]);
   useEffect(() => {
     let active = true;
-    Promise.all([request("/api/friends/availability"), request("/api/parties?discoverable=0")]).then(([data, parties]) => {
-      if (!active) return;
-      setNow(Date.now()); setSnapshot(data); setPrefs(data.preferences || defaultPlayPreferences);
-      setPartyId(parties.myParties[0]?.id || "");
-      const reply = new URLSearchParams(location.search).get("friend");
-      if (reply && data.friends.some((f:Friend) => f.id === reply)) setSelected(reply);
-    }).catch(e => { if (active) setNotice(e.message); });
-    const tick = setInterval(() => { const t = Date.now(); setNow(t); setWhen(old => old < t ? 0 : old); }, 30000);
-    return () => { active = false; clearInterval(tick); };
-  }, [reload]);
+    let lastAttempt = 0;
+    let pending = false;
+    let initialized = false;
+    async function refreshFriends() {
+      if (document.hidden || pending || Date.now() - lastAttempt < 120000) return;
+      lastAttempt = Date.now();
+      pending = true;
+      const version = writeVersion.current;
+      try {
+        const data = await request("/api/friends/availability");
+        if (!active || version !== writeVersion.current || version % 2) return;
+        setNow(Date.now());
+        setSnapshot(data);
+        if (!initialized) {
+          initialized = true;
+          const reply = new URLSearchParams(location.search).get("friend");
+          if (reply && data.friends.some((f: Friend) => f.id === reply)) setSelected(reply);
+        }
+      } catch (error) {
+        if (active && !initialized) setNotice(error instanceof Error ? error.message : "Could not load friends.");
+      } finally {
+        pending = false;
+      }
+    }
+    void refreshFriends();
+    void request("/api/parties?discoverable=0").then(parties => {
+      if (active) setPartyId(parties.myParties[0]?.id || "");
+    }).catch(() => {});
+    document.addEventListener("visibilitychange", refreshFriends);
+    const tick = setInterval(() => { void refreshFriends(); const t = Date.now(); setNow(t); setWhen(old => old < t ? 0 : old); }, 30000);
+    return () => { active = false; clearInterval(tick); document.removeEventListener("visibilitychange", refreshFriends); };
+  }, []);
   async function run(work: () => Promise<string>) {
     if (busy) return;
-    setBusy(true); setNotice("");
+    writeVersion.current++; setBusy(true); setNotice("");
     try { setNotice(await work()); } catch(e) { setNotice(e instanceof Error ? e.message : "Please try again."); }
-    finally { setBusy(false); }
+    finally { writeVersion.current++; setBusy(false); }
   }
   useEffect(() => {
     if (edit && !dialog.current?.open) dialog.current?.showModal();
@@ -94,13 +118,23 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
   return <section className="new-panel new-pad home-play-panel">
     <h2>Play together</h2>
     <label>When <select value={when} onChange={e=>setWhen(Number(e.target.value))}><option value={0}>Now</option>{slots.map(t=><option key={t} value={t}>{new Date(t).getDate() !== new Date(now).getDate() ? "Tomorrow · " : ""}{clock(t)}</option>)}</select></label>
-    <div className="home-play-actions">{when ? <button disabled={busy} className={style} onClick={()=>void run(async()=>{await plan(when);return "Party planned. Choose a friend to invite.";})}>Plan a party</button> : <Link className={style} href={partyId ? `/party/${partyId}` : "/multiplayer?startParty=1"}>{partyId ? "Open your party" : "Start a Party"}</Link>}
+    <div className="home-play-actions">{when ? <button disabled={busy} className={style} onClick={()=>{setPlanningAt(when);setNotice("");planner.current?.showModal();}}>{plans[when] ? "View party plan" : "Plan a party"}</button> : <Link className={style} href={partyId ? `/party/${partyId}` : "/multiplayer?startParty=1"}>{partyId ? "Open your party" : "Start a Party"}</Link>}
     <button disabled={busy || !snapshot} className="new-button primary" onClick={()=>void run(async()=>{
       const start = when || Date.now();
       const result = await request("/api/friends/availability","PATCH",{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone, window:{startsAt:new Date(start).toISOString(),endsAt:new Date(start+7200000).toISOString()}});
       setSnapshot(old=>old && {...old,availability:{...old.availability,window:result.window}});return "Availability shared for two hours.";
     })}>{when ? `Free at ${clock(when)}` : "Free to Play Now"}</button></div>
-    {snapshot?.availability.window && Date.parse(snapshot.availability.window.endsAt)>now && <p>Your window · {clock(Date.parse(snapshot.availability.window.startsAt))} – {clock(Date.parse(snapshot.availability.window.endsAt))} <button onClick={()=>void run(async()=>{await request("/api/friends/availability","PATCH",{timezone:snapshot.availability.timezone,window:null});setSnapshot(old=>old && {...old,availability:{...old.availability,window:null}});return "Window cleared.";})} disabled={busy}>Clear</button></p>}
+    <dialog ref={planner} className="home-play-dialog party-plan" aria-labelledby="party-plan-title" onClose={()=>setPlanningAt(0)}>
+      <h2 id="party-plan-title">{plans[planningAt] ? "Your party is planned" : "Plan a party"}</h2>
+      <p>{new Date(planningAt).toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"})} · {clock(planningAt)} – {clock(planningAt + 7200000)}</p>
+      <p>{plans[planningAt] ? "Open the party details or choose a friend to invite." : "Create an unlisted party, then invite your friends."}</p>
+      {notice && <p role="status">{notice}</p>}
+      <div className="home-play-dialog-actions">
+        {plans[planningAt] ? <Link className="new-button primary" href={`/events/${plans[planningAt]}`}>Open party</Link> :
+          <button className="new-button primary" disabled={busy} onClick={()=>void run(async()=>{await plan(planningAt);return "";})}>{busy ? "Creating party…" : "Create party"}</button>}
+        <button className="new-button" onClick={()=>planner.current?.close()}>{plans[planningAt] ? "Back to friends" : "Close"}</button>
+      </div>
+    </dialog>    {snapshot?.availability.window && Date.parse(snapshot.availability.window.endsAt)>now && <p>Your window · {clock(Date.parse(snapshot.availability.window.startsAt))} – {clock(Date.parse(snapshot.availability.window.endsAt))} <button onClick={()=>void run(async()=>{await request("/api/friends/availability","PATCH",{timezone:snapshot.availability.timezone,window:null});setSnapshot(old=>old && {...old,availability:{...old.availability,window:null}});return "Window cleared.";})} disabled={busy}>Clear</button></p>}
     {when > 0 && plans[when] ? <Link href={`/events/${plans[when]}`}>Open scheduled party →</Link> : null}
     <h3>Friends online</h3>
     {snapshot ? online.length ? <div className="home-play-actions">{online.map(f=><button key={f.id} onClick={()=>pick(f.id)}>{f.username}</button>)}</div> : <p>No friends online right now.</p> : <p>Loading friends…</p>}
@@ -109,14 +143,14 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
     <dialog ref={dialog} className="home-play-dialog" aria-label="Play preferences" onCancel={()=>setEdit(false)} onClose={()=>setEdit(false)}><fieldset className="play-pref-sheet"><legend>Choose play preferences</legend><label>Games <select value={prefs.mode} onChange={e=>setPrefs({...prefs,mode:e.target.value as PlayPreferences["mode"]})}><option value="any">Any multiplayer game</option><option value="genres">Choose genres</option><option value="games">Choose games</option></select></label>
     {prefs.mode!=="any" && <><input aria-label="Filter options" placeholder="Search options" value={query} onChange={e=>setQuery(e.target.value)}/><div className="home-play-options">{(prefs.mode==="genres"?[...new Set(games.flatMap(g=>g.genres))].sort().map(name=>({slug:name,title:name})):games).filter(g=>g.title.toLowerCase().includes(query.toLowerCase())).map(g=>{const key=prefs.mode==="genres"?"genres":"games";return <label key={g.slug}><input type="checkbox" checked={prefs[key].includes(g.slug)} onChange={e=>setPrefs({...prefs,[key]:e.target.checked?[...prefs[key],g.slug]:prefs[key].filter(id=>id!==g.slug)})}/>{g.title}</label>;})}</div></>}
     <label><input type="checkbox" checked={prefs.downloads} onChange={e=>setPrefs({...prefs,downloads:e.target.checked})}/> Open to downloading free games</label>
-    <button disabled={busy} onClick={()=>void run(async()=>{const data=await request("/api/friends/availability","PATCH",prefs);setSnapshot(old=>old && {...old,preferences:data.preferences});setEdit(false);return "Preferences saved.";})}>Save preferences</button><button onClick={()=>setEdit(false)}>Cancel</button>{edit && notice && <p role="status">{notice}</p>}</fieldset></dialog>
+    <div className="home-play-dialog-actions"><button className="new-button primary" disabled={busy} onClick={()=>void run(async()=>{const data=await request("/api/friends/availability","PATCH",prefs);setSnapshot(old=>old && {...old,preferences:data.preferences});setEdit(false);return "Preferences saved.";})}>Save preferences</button><button className="new-button" onClick={()=>setEdit(false)}>Cancel</button></div>{edit && notice && <p role="status">{notice}</p>}</fieldset></dialog>
     {!!snapshot?.recentGames?.length && <p>Recently played · {snapshot.recentGames.join(", ")}</p>}
     <h3>Next available</h3>
     {matches.slice(0,3).map(({friend,game,at:t,installed}, index)=><div key={friend.id}><button onClick={()=>pick(friend.id)}><strong>{friend.username}</strong> · {t===now?"Free now":clock(t)}<small>{game.title} · {installed?"Both installed":"Free download"}</small></button>{index===0 && <button className={style} disabled={busy || sent.includes(friend.id+":"+(t>now?t:0))} onClick={()=>void run(()=>invite(friend,t,game.slug))}>{sent.includes(friend.id+":"+(t>now?t:0))?"Invited":"Invite"}</button>}</div>)}
     {snapshot && !matches.length && <p>No matching friends in the next six hours.</p>}
     {target && <div><h3>{target.username}</h3><p>{target.recentGames?.length ? "Recently played · "+target.recentGames.join(", "):""}</p><button className={style} disabled={busy || alreadySent} onClick={()=>void run(()=>invite(target,at,chosen?.game.slug))}>{alreadySent?"Invited":at>now?`Invite for ${clock(at)}`:"Invite to party"}</button>
     <label>Message <input maxLength={500} value={message} onChange={e=>setMessage(e.target.value)} /></label><button disabled={busy || !message.trim()} onClick={()=>void run(async()=>{await request("/api/friends/message","POST",{friendId:selected,message});setMessage("");return "Message sent.";})}>Send message</button></div>}
-    {!edit && notice && <p role="status">{notice}</p>}
-    <div><Link href="/friends">Friends & schedule →</Link><button onClick={()=>refresh(n=>n+1)} disabled={busy}>Refresh</button></div>
+    {!edit && !planningAt && notice && <p role="status">{notice}</p>}
+    <div><Link href="/friends">Friends & schedule →</Link></div>
   </section>;
 }
