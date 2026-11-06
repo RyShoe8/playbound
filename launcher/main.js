@@ -17,6 +17,7 @@ app.commandLine.appendSwitch(
   "PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests,WebRtcHideLocalIpsWithMdns"
 );
 
+const { selectDownloadUrl } = require("./services/downloadSelection");
 const { spawn, exec, execFile, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -2560,6 +2561,11 @@ async function extractArchive(archivePath, destDir) {
     await extractDmg(archivePath, destDir);
   } else if (lower.endsWith(".pkg")) {
     await extractPkg(archivePath, destDir);
+  } else if (lower.endsWith(".deb") && process.platform === "linux") {
+    // Extract into this game directory without installing system packages or running maintainer scripts.
+    await new Promise((resolve, reject) => {
+      execFile("dpkg-deb", ["--extract", archivePath, destDir], error => error ? reject(error) : resolve());
+    });
   } else if (isTarball(lower)) {
     /*
      * Tar must be tested before 7-Zip, not after. 7zip-bin ships a 7za for
@@ -5192,7 +5198,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   if (entry.kind === "external") {
     sendProgress({ phase: "external-handoff", slug, title: entry.title || slug,
       message: `Opening the store for ${entry.title || slug}… PlayBound will watch for the completed install.` });
-    await openExternalInstallHandoff(entry.url, slug);
+    await openExternalInstallHandoff(selectDownloadUrl(entry), slug);
     /*
      * Watch for the game to appear, whatever the store does next.
      *

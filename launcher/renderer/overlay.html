@@ -7,6 +7,7 @@
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self';"
     />
     <title>PlayBound Overlay</title>
+    <link rel="stylesheet" href="premium-select.css" />
     <link rel="stylesheet" href="playTogether.css" />
     <style>
       /*
@@ -272,7 +273,7 @@
       #pick-library { max-height:48vh; overflow:auto; scrollbar-gutter:stable; }
       #pick-library .binding { padding:7px 9px; gap:12px; border-bottom:1px solid var(--border); font-size:13px; }
       #pick-library .binding span { overflow-wrap:anywhere; }
-      #pick-library .tab { color:var(--accent); border:1px solid var(--border); border-radius:7px; padding:5px 12px; }
+      #pick-library .tab { flex:0 0 5rem; text-align:center; color:var(--accent); border:1px solid var(--border); border-radius:7px; padding:5px 12px; }
       select, .pt-panel select, input[data-picker] {
         color-scheme:dark; color:var(--text); min-height:36px; min-width:0; max-width:100%;
         border:1px solid #414650; border-radius:8px; background-color:#20242c;
@@ -298,6 +299,7 @@
         <p class="note">Loading…</p>
       </main>
     </div>
+    <script type="module" src="overlay-selects.js"></script>
     <script type="module" src="overlay.js"></script>
   </body>
 </html>

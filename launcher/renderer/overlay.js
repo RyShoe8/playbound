@@ -860,13 +860,17 @@ function guideControlsHtml(g, { hideHeader = false } = {}) {
  * Look up any game from the Game and Server tabs. The catalog and library are
  * read when the overlay opens; choosing a game reads only that game's details.
  */
-const picker = { catalog: [], library: [], gameQuery: "", serverQuery: "", game: null, server: null, error: null };
+const picker = { serverGames: [], catalog: [], library: [], gameQuery: "", serverQuery: "", game: null, server: null, error: null };
 const PICK_SCHEME_LABELS = { keyboard: "Mouse & Keyboard", controller: "Controller", flightstick: "Flightstick", touch: "Touch" };
 
 async function loadPicker() {
   if (!window.playbound?.getCatalog || !window.playbound?.getInstalled) return;
   try {
-    const [catalog, library] = await Promise.all([window.playbound.getCatalog(), window.playbound.getInstalled()]);
+    const [catalog, library, index] = await Promise.all([
+      window.playbound.getCatalog(), window.playbound.getInstalled(),
+      window.playbound.getServerIndex?.().catch(() => null),
+    ]);
+    picker.serverGames = (index?.games || []).filter(game => game.supported && game.title);
     picker.catalog = Array.isArray(catalog) ? catalog : [];
     const bySlug = new Map((Array.isArray(library) ? library : []).map(game =>
       [game.slug, { ...game, playable: !game.pending || Boolean(game.exe || game.installedEditions?.some(e => e.exe)) }]));
@@ -886,43 +890,32 @@ async function loadPicker() {
   if (state.activeTab === "game" || state.activeTab === "server") render();
 }
 
-/** The game a typed title means: an exact match, then a prefix, then anywhere in the name. */
-function matchGame(query) {
-  const q = String(query || "").trim().toLowerCase();
-  if (!q) return null;
-  const titled = picker.catalog.filter((g) => g?.title);
-  return titled.find((g) => g.title.toLowerCase() === q)
-    || titled.find((g) => g.title.toLowerCase().startsWith(q))
-    || titled.find((g) => g.title.toLowerCase().includes(q))
-    || null;
-}
-
 function pickerHtml(kind, label, value) {
+  const games = kind === "server" ? picker.serverGames : picker.catalog;
+  const options = games.filter(game => game.title).map(game =>
+    `<option value="${escapeHtml(game.title)}"${game.title === value ? " selected" : ""}>${escapeHtml(game.title)}</option>`).join("");
   return `<div class="picker">
     <label class="guide-section" for="${kind}-pick">${escapeHtml(label)}</label>
-    <input id="${kind}-pick" data-picker="${kind}" list="${kind}-pick-list" value="${escapeHtml(value)}" placeholder="Type a game…" autocomplete="off" spellcheck="false" />
-    <datalist id="${kind}-pick-list">${picker.catalog.filter((g) => g?.title).map((g) => `<option value="${escapeHtml(g.title)}"></option>`).join("")}</datalist>
+    <select id="${kind}-pick" data-picker="${kind}"><option value="">Choose a game…</option>${options}</select>
   </div>`;
 }
 
-/** Choose on an exact title (a datalist click fills one in) or on Enter. */
-function wirePicker(kind, choose, onType) {
+function wirePicker(kind, choose) {
   const input = document.getElementById(`${kind}-pick`);
-  if (!input?.addEventListener) return;
-  input.addEventListener("input", () => {
-    onType?.(input.value);
-    const exact = picker.catalog.find((g) => g?.title?.toLowerCase() === input.value.trim().toLowerCase());
-    if (exact) void choose(exact);
-  });
-  input.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") return;
-    const found = matchGame(input.value);
-    if (found) void choose(found);
+  input?.addEventListener("change", () => {
+    const games = kind === "server" ? picker.serverGames : picker.catalog;
+    const game = games.find(entry => entry.title === input.value);
+    if (game) void choose(game);
+    else {
+      picker[kind] = null;
+      picker[kind + "Query"] = "";
+      render();
+    }
   });
 }
 
 function libraryHtml() {
-  const q = picker.gameQuery.trim().toLowerCase();
+  const q = (picker.libraryQuery || "").trim().toLowerCase();
   const games = picker.library.filter((g) => !q || String(g.title || "").toLowerCase().includes(q));
   if (!games.length) return q ? `<p class="note">No matching library games.</p>` : `<p class="note">Your saved and installed games appear here.</p>`;
   return games
@@ -973,8 +966,9 @@ function pickedGameHtml() {
 }
 
 function wireGamePicker() {
-  wirePicker("game", chooseGame, (value) => {
-    picker.gameQuery = value;
+  wirePicker("game", chooseGame);
+  document.getElementById("library-search")?.addEventListener("input", event => {
+    picker.libraryQuery = event.target.value;
     const list = document.getElementById("pick-library");
     if (list) { list.innerHTML = libraryHtml(); wirePlayButtons(); }
   });
@@ -1017,7 +1011,7 @@ function renderServerLookup() {
   root.innerHTML = `${pickerHtml("server", "See a game's server controls", picker.serverQuery)}
     <p class="guide-section">${escapeHtml(title)}</p>${body}
     <button class="tab" id="server-pick-back">${state.partyId ? "Back to your server" : "Clear"}</button>`;
-  wirePicker("server", chooseServerGame, (value) => { picker.serverQuery = value; });
+  wirePicker("server", chooseServerGame);
   document.getElementById("server-pick-back")?.addEventListener("click", () => {
     picker.server = null;
     picker.serverQuery = "";
@@ -1028,7 +1022,7 @@ function renderServerLookup() {
 function renderGameTab() {
   const g = state.guide;
   const top = `${picker.error ? `<p class="note warn">${escapeHtml(picker.error)}</p>` : ""}${pickerHtml("game", "Look up a game's controls", picker.gameQuery)}`;
-  const library = `<p class="guide-section">Your library</p><div id="pick-library">${libraryHtml()}</div>`;
+  const library = `<p class="guide-section">Your library</p><input id="library-search" data-picker="library" aria-label="Search your library" placeholder="Search your library…" value="${escapeHtml(picker.libraryQuery || "")}"><div id="pick-library">${libraryHtml()}</div>`;
   if (picker.game) {
     root.innerHTML = `${top}${pickedGameHtml()}${library}<p class="hint">Esc to close</p>`;
     wireGamePicker();
@@ -1139,7 +1133,7 @@ function render() {
     // The RVGL lobby repaints itself on a timer, which would wipe the field.
     if (!state.rvglEnabled && root.insertAdjacentHTML) {
       root.insertAdjacentHTML("afterbegin", pickerHtml("server", "See a game's server controls", picker.serverQuery));
-      wirePicker("server", chooseServerGame, (value) => { picker.serverQuery = value; });
+      wirePicker("server", chooseServerGame);
     }
   }
 }
