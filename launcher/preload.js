@@ -125,6 +125,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getHardwareCompatibility: (gameSlug, opts) =>
     ipcRenderer.invoke("get-hardware-compatibility", gameSlug, opts || {}),
   getGameControls: (slug) => ipcRenderer.invoke("get-game-controls", slug),
+  getServerControlInfo: (slug) => ipcRenderer.invoke("get-server-control-info", slug),
   ensureManagedJava: (opts) => ipcRenderer.invoke("ensure-managed-java", opts || {}),
   getJavaStatus: () => ipcRenderer.invoke("get-java-status"),
   getNetBirdStatus: () => ipcRenderer.invoke("get-netbird-status"),

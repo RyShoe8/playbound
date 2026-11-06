@@ -37,7 +37,7 @@ async function renderOverlay(context, serverSettings, extraPlaybound = {}) {
   const buttons = new Map();
   const tabs = {
     innerHTML: "",
-    querySelectorAll: () => ["game", "server", "controls"].map((tab) => {
+    querySelectorAll: () => ["game", "server"].map((tab) => {
       const button = { dataset: { tab }, addEventListener: (_event, handler) => buttons.set(tab, handler) };
       return button;
     }),
@@ -57,7 +57,7 @@ async function renderOverlay(context, serverSettings, extraPlaybound = {}) {
   return { root, tabs, subject, clickTab: (tab) => buttons.get(tab)?.() };
 }
 
-test("Controls opens directly for a solo game and keeps its tuning panel visible", async () => {
+test("The Game tab opens directly for a solo game and keeps its tuning panel visible", async () => {
   const overlay = await renderOverlay({
     party: null,
     controls: {
@@ -67,8 +67,8 @@ test("Controls opens directly for a solo game and keeps its tuning panel visible
       bindings: [{ input: "LEFT_UP", action: "Move forward" }],
     },
   });
-  assert.match(overlay.tabs.innerHTML, /data-tab="controls"/);
-  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="controls"/);
+  assert.doesNotMatch(overlay.tabs.innerHTML, /data-tab="controls"/);
+  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="game"/);
   assert.match(overlay.root.innerHTML, /Look sensitivity/);
   assert.match(overlay.root.innerHTML, /View controls/);
   overlay.clickTab("server");
@@ -82,8 +82,6 @@ test("Server controls remain available with a party", async () => {
   );
   assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="server"/);
   assert.match(overlay.root.innerHTML, /Server settings are unavailable/);
-  overlay.clickTab("controls");
-  assert.match(overlay.root.innerHTML, /Controls isn&#39;t active|Controls isn't active/);
 });
 
 test("Hosted server overlay shows the same map actions and restart warning as web management", async () => {
@@ -171,7 +169,7 @@ test("Re-Volt paid host sees the same lobby controls in the Server tab", async (
   assert.ok(reads >= 1);
 });
 
-test("Controls tab shows active control mapping for selected method when specialized controls is inactive", async () => {
+test("Game tab shows active control mapping for selected method when specialized controls is inactive", async () => {
   const overlay = await renderOverlay({
     party: null,
     controls: null,
@@ -200,9 +198,7 @@ test("Controls tab shows active control mapping for selected method when special
       },
     },
   });
-  overlay.clickTab("controls");
-  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="controls"/);
-  assert.match(overlay.root.innerHTML, /Active Controls/);
+  assert.match(overlay.tabs.innerHTML, /tab active[^>]*data-tab="game"/);
   assert.match(overlay.root.innerHTML, /<kbd>D-pad<\/kbd> or <kbd>Left Stick<\/kbd>/);
   assert.match(overlay.root.innerHTML, /Sword attack/);
   assert.match(overlay.root.innerHTML, /data-scheme="controller"/);
@@ -228,10 +224,8 @@ test("Game tab is the default after a launch and shows the game's guide", async 
   assert.match(overlay.root.innerHTML, /147\.93\.133\.235:25565/);
   assert.match(overlay.root.innerHTML, /Finish character creation first\./);
   assert.equal(overlay.subject.textContent, "Morrowind");
-  // Control bindings live only on the dedicated Controls tab now — the Game
-  // tab used to duplicate them, which is what this guards against.
-  assert.doesNotMatch(overlay.root.innerHTML, /Jump/);
-  assert.doesNotMatch(overlay.root.innerHTML, /<kbd>E<\/kbd>/);
+  assert.match(overlay.root.innerHTML, /Jump/);
+  assert.match(overlay.root.innerHTML, /<kbd>E<\/kbd>/);
 });
 
 test("Game tab explains itself when no game was launched", async () => {
@@ -274,4 +268,18 @@ test("Morrowind admin sees players with Make Ally, ally and invite states, and R
   assert.doesNotMatch(html, /data-make-ally="0"/);
   assert.doesNotMatch(html, /Offline Pal/);
   assert.match(html, /id="tes3mp-runstartup"/);
+});
+
+test("Game tab looks up any game's controls and only offers Play for games in the library", async () => {
+  const catalog = [{ slug: "openra", title: "OpenRA" }, { slug: "boll-deluxe", title: "Boll Deluxe" }];
+  const library = [{ slug: "openra", title: "OpenRA" }];
+  const overlay = await renderOverlay({ party: null, controls: null, guide: null }, undefined, {
+    getCatalog: async () => catalog,
+    getInstalled: async () => library,
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(overlay.root.innerHTML, /id="game-pick"/);
+  assert.match(overlay.root.innerHTML, /<option value="Boll Deluxe">/);
+  assert.match(overlay.root.innerHTML, /data-play="openra"/);
+  assert.doesNotMatch(overlay.root.innerHTML, /data-play="boll-deluxe"/);
 });

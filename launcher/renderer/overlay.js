@@ -10,12 +10,12 @@
  * definitions, the apply modes and the reasons a control is absent all come
  * from /api/parties/:id/server-settings; see docs/server-control.md.
  *
- * Controls: live tuning for an active PlayBound Controls session — sensitivity
+ * Also on Game: live tuning for an active PlayBound Controls session — sensitivity
  * and invert-Y, applied to the running Input Engine instantly via
  * gamepadBridge's `updateControlsSettings` (see services/gamepadBridge.js),
  * no alt-tab and no restart. Independent of party state on purpose: most
  * PlayBound Controls V1 games are single-player, so it must work exactly the
- * same whether or not a party is open, unlike the Server tab.
+ * same whether or not a party is open, unlike the Server tab. It was its own Controls tab until the Game tab showed bindings.
  */
 
 const root = document.getElementById("root");
@@ -726,67 +726,39 @@ function sliderRow({ id, label, value, min, max, step }) {
   </label>`;
 }
 
-function renderControlsTab() {
+/** The running game's bindings and, in a PlayBound Controls session, its live tuning. */
+function activeControlsHtml() {
   const info = state.controls;
   const g = state.guide;
-  const guideSchemes = Array.isArray(g?.controls?.schemes)
-    ? g.controls.schemes.filter((s) => s && (s.bindings?.length || s.notes || s.supported === false))
-    : [];
+  const bindings = guideControlsHtml(g, { hideHeader: true });
+  if (!info) return bindings ? `<p class="guide-section">Controls</p>${bindings}` : "";
+  const s = info.settings;
+  return `
+    <p class="guide-section">Controls</p>
+    <p class="note"><strong>${escapeHtml(info.profileName)}</strong>${
+      info.gameTitle ? ` — ${escapeHtml(info.gameTitle)}` : ""
+    }</p>
+    ${sliderRow({ id: "cs-sensitivity", label: "Look sensitivity", value: s.sensitivity, min: 0.1, max: 5, step: 0.05 })}
+    <label class="row toggle" for="cs-invert-y"><span>Invert Y</span>
+      <input type="checkbox" id="cs-invert-y" ${s.invertY ? "checked" : ""} />
+    </label>
+    <p class="hint">Changes apply instantly — no need to alt-tab.</p>
+    ${bindings || `<details class="note" open><summary>View controls</summary>
+      ${(info.bindings || []).map((binding) => `<p><strong>${escapeHtml(binding.input.replace(/_/g, " "))}</strong> — ${escapeHtml(binding.action)}</p>`).join("") || "No button bindings are listed."}
+    </details>`}`;
+}
 
-  if (!info && !guideSchemes.length) {
-    root.innerHTML = `<p class="note">PlayBound Controls isn't active for this game right now.</p>`;
-    return;
-  }
-
-  if (info) {
-    const s = info.settings;
-    const tuningHtml = `
-      <p class="note"><strong>${escapeHtml(info.profileName)}</strong>${
-        info.gameTitle ? ` — ${escapeHtml(info.gameTitle)}` : ""
-      }</p>
-      ${sliderRow({ id: "cs-sensitivity", label: "Look sensitivity", value: s.sensitivity, min: 0.1, max: 5, step: 0.05 })}
-      <label class="row toggle" for="cs-invert-y"><span>Invert Y</span>
-        <input type="checkbox" id="cs-invert-y" ${s.invertY ? "checked" : ""} />
-      </label>
-    `;
-
-    const controlsDisplay = guideSchemes.length
-      ? guideControlsHtml(g, { hideHeader: true })
-      : `<details class="note" open><summary>View controls</summary>
-          ${(info.bindings || []).map((binding) => `<p><strong>${escapeHtml(binding.input.replace(/_/g, " "))}</strong> — ${escapeHtml(binding.action)}</p>`).join("") || "No button bindings are listed."}
-        </details>`;
-
-    root.innerHTML = `
-      ${tuningHtml}
-      ${controlsDisplay}
-      <p class="hint">Changes apply instantly — no need to alt-tab. Esc to close</p>
-    `;
-
-    const sensitivity = document.getElementById("cs-sensitivity");
-    const sensitivityValue = document.getElementById("cs-sensitivity-value");
-    sensitivity?.addEventListener("input", () => {
-      const value = Number(sensitivity.value);
-      if (sensitivityValue) sensitivityValue.textContent = fmt1(value);
-      void updateControlsSettings({ sensitivity: value });
-    });
-
-    const invertY = document.getElementById("cs-invert-y");
-    invertY?.addEventListener("change", () => {
-      void updateControlsSettings({ invertY: invertY.checked });
-    });
-  } else {
-    root.innerHTML = `
-      <p class="note"><strong>${escapeHtml(g?.title || "Active Game")}</strong> — Active Controls</p>
-      ${guideControlsHtml(g, { hideHeader: true })}
-      <p class="hint">Esc to close</p>
-    `;
-  }
-
-  root.querySelectorAll("[data-scheme]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.guideScheme = btn.dataset.scheme;
-      render();
-    });
+function wireActiveControls() {
+  const sensitivity = document.getElementById("cs-sensitivity");
+  const sensitivityValue = document.getElementById("cs-sensitivity-value");
+  sensitivity?.addEventListener("input", () => {
+    const value = Number(sensitivity.value);
+    if (sensitivityValue) sensitivityValue.textContent = fmt1(value);
+    void updateControlsSettings({ sensitivity: value });
+  });
+  const invertY = document.getElementById("cs-invert-y");
+  invertY?.addEventListener("change", () => {
+    void updateControlsSettings({ invertY: invertY.checked });
   });
 }
 
@@ -884,11 +856,172 @@ function guideControlsHtml(g, { hideHeader = false } = {}) {
   }${g?.controls?.notes ? `<p class="note">${escapeHtml(g.controls.notes)}</p>` : ""}`;
 }
 
+/*
+ * Look up any game from the Game and Server tabs. The catalog and library are
+ * read when the overlay opens; choosing a game reads only that game's details.
+ */
+const picker = { catalog: [], library: [], gameQuery: "", serverQuery: "", game: null, server: null, error: null };
+const PICK_SCHEME_LABELS = { keyboard: "Mouse & Keyboard", controller: "Controller", flightstick: "Flightstick", touch: "Touch" };
+
+async function loadPicker() {
+  if (!window.playbound?.getCatalog || !window.playbound?.getInstalled) return;
+  try {
+    const [catalog, library] = await Promise.all([window.playbound.getCatalog(), window.playbound.getInstalled()]);
+    picker.catalog = Array.isArray(catalog) ? catalog : [];
+    picker.library = Array.isArray(library) ? library : [];
+  } catch { return; }
+  // Never repaint under someone typing: this runs just after the overlay opens.
+  if (document.activeElement?.dataset?.picker) return;
+  if (state.activeTab === "game" || state.activeTab === "server") render();
+}
+
+/** The game a typed title means: an exact match, then a prefix, then anywhere in the name. */
+function matchGame(query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return null;
+  const titled = picker.catalog.filter((g) => g?.title);
+  return titled.find((g) => g.title.toLowerCase() === q)
+    || titled.find((g) => g.title.toLowerCase().startsWith(q))
+    || titled.find((g) => g.title.toLowerCase().includes(q))
+    || null;
+}
+
+function pickerHtml(kind, label, value) {
+  return `<div class="picker">
+    <label class="guide-section" for="${kind}-pick">${escapeHtml(label)}</label>
+    <input id="${kind}-pick" data-picker="${kind}" list="${kind}-pick-list" value="${escapeHtml(value)}" placeholder="Type a game…" autocomplete="off" spellcheck="false" />
+    <datalist id="${kind}-pick-list">${picker.catalog.filter((g) => g?.title).map((g) => `<option value="${escapeHtml(g.title)}"></option>`).join("")}</datalist>
+  </div>`;
+}
+
+/** Choose on an exact title (a datalist click fills one in) or on Enter. */
+function wirePicker(kind, choose, onType) {
+  const input = document.getElementById(`${kind}-pick`);
+  if (!input?.addEventListener) return;
+  input.addEventListener("input", () => {
+    onType?.(input.value);
+    const exact = picker.catalog.find((g) => g?.title?.toLowerCase() === input.value.trim().toLowerCase());
+    if (exact) void choose(exact);
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    const found = matchGame(input.value);
+    if (found) void choose(found);
+  });
+}
+
+function libraryHtml() {
+  const q = picker.gameQuery.trim().toLowerCase();
+  const games = picker.library.filter((g) => !q || String(g.title || "").toLowerCase().includes(q)).slice(0, 8);
+  if (!games.length) return q ? "" : `<p class="note">Games you install appear here.</p>`;
+  return games
+    .map((g) => `<div class="binding"><span>${escapeHtml(g.title)}</span><button class="tab" data-play="${escapeHtml(g.slug)}">Play</button></div>`)
+    .join("");
+}
+
+async function launchFromOverlay(slug) {
+  picker.error = null;
+  try {
+    await window.playbound.play(slug);
+    void window.playbound.hideOverlay();
+  } catch (err) {
+    picker.error = err?.message || "Could not launch that game.";
+    render();
+  }
+}
+
+function wirePlayButtons() {
+  root.querySelectorAll("[data-play]").forEach((btn) => {
+    btn.addEventListener("click", () => void launchFromOverlay(btn.dataset.play));
+  });
+}
+
+async function chooseGame(game) {
+  picker.gameQuery = game.title;
+  state.guideScheme = null;
+  let controls = null;
+  try { controls = await window.playbound.getGameControls?.(game.slug); } catch { /* shown as none */ }
+  picker.game = { slug: game.slug, title: game.title, controls, schemeLabels: PICK_SCHEME_LABELS, groupOrder: [] };
+  render();
+}
+
+function pickedGameHtml() {
+  const g = picker.game;
+  if (!g) return "";
+  const installed = picker.library.some((item) => item.slug === g.slug);
+  return `<div class="binding"><strong>${escapeHtml(g.title)}</strong>${
+    installed ? `<button class="tab" data-play="${escapeHtml(g.slug)}">Play</button>` : `<span class="help">Not in your library</span>`
+  }</div>${guideControlsHtml(g, { hideHeader: true }) || `<p class="note">No controls listed for this game.</p>`}
+  <button class="tab" id="pick-clear">Clear</button>`;
+}
+
+function wireGamePicker() {
+  wirePicker("game", chooseGame, (value) => {
+    picker.gameQuery = value;
+    const list = document.getElementById("pick-library");
+    if (list) { list.innerHTML = libraryHtml(); wirePlayButtons(); }
+  });
+  wirePlayButtons();
+  document.getElementById("pick-clear")?.addEventListener("click", () => {
+    picker.game = null;
+    picker.gameQuery = "";
+    state.guideScheme = null;
+    render();
+  });
+  root.querySelectorAll("[data-scheme]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.guideScheme = btn.dataset.scheme;
+      render();
+    });
+  });
+}
+
+const APPLY_LABELS = { live: "Applies live", "next-round": "Next round", restart: "Needs a restart" };
+
+async function chooseServerGame(game) {
+  picker.serverQuery = game.title;
+  let info;
+  try { info = await window.playbound.getServerControlInfo(game.slug); }
+  catch (err) { info = { error: err?.message }; }
+  picker.server = { title: game.title, info };
+  render();
+}
+
+function renderServerLookup() {
+  const { title, info } = picker.server;
+  const body = info?.error
+    ? `<p class="note warn">${escapeHtml(info.error)}</p>`
+    : !info?.supported
+      ? `<p class="note">PlayBound has no server controls listed for ${escapeHtml(title)}.</p>`
+      : `${(info.settings || []).map((s) => `<div class="binding"><span>${escapeHtml(s.label)}${s.help ? ` <span class="help">${escapeHtml(s.help)}</span>` : ""}</span><span class="help">${escapeHtml(APPLY_LABELS[s.apply] || s.apply)}</span></div>`).join("")}
+         ${info.liveConsole ? `<p class="note">Includes a live server console.</p>` : ""}
+         ${info.mapCount ? `<p class="note">${escapeHtml(info.mapCount)} maps to switch between.</p>` : ""}
+         ${(info.unavailable || []).map((u) => `<p class="note"><strong>${escapeHtml(u.label)}:</strong> ${escapeHtml(u.reason)}</p>`).join("")}`;
+  root.innerHTML = `${pickerHtml("server", "See a game's server controls", picker.serverQuery)}
+    <p class="guide-section">${escapeHtml(title)}</p>${body}
+    <button class="tab" id="server-pick-back">${state.partyId ? "Back to your server" : "Clear"}</button>`;
+  wirePicker("server", chooseServerGame, (value) => { picker.serverQuery = value; });
+  document.getElementById("server-pick-back")?.addEventListener("click", () => {
+    picker.server = null;
+    picker.serverQuery = "";
+    render();
+  });
+}
+
 function renderGameTab() {
   const g = state.guide;
+  const top = `${picker.error ? `<p class="note warn">${escapeHtml(picker.error)}</p>` : ""}${pickerHtml("game", "Look up a game's controls", picker.gameQuery)}`;
+  const library = `<p class="guide-section">Your library</p><div id="pick-library">${libraryHtml()}</div>`;
+  if (picker.game) {
+    root.innerHTML = `${top}${pickedGameHtml()}${library}<p class="hint">Esc to close</p>`;
+    wireGamePicker();
+    return;
+  }
   if (!g) {
-    root.innerHTML = `<p class="note">Launch a game from PlayBound to see its controls and tips here.</p>
-      <p class="hint">Esc to close</p>`;
+    root.innerHTML = `${top}${state.controls ? activeControlsHtml() : `<p class="note">Launch a game from PlayBound to see its controls and tips here.</p>`}
+      ${library}<p class="hint">Esc to close</p>`;
+    wireGamePicker();
+    wireActiveControls();
     return;
   }
 
@@ -903,6 +1036,7 @@ function renderGameTab() {
   const connectSteps = Array.isArray(g.multiplayerGamingSteps) ? g.multiplayerGamingSteps : [];
 
   root.innerHTML = `
+    ${top}
     ${
       g.slowSeconds
         ? `<p class="note warn">${escapeHtml(g.title)} can take up to ${escapeHtml(
@@ -910,6 +1044,7 @@ function renderGameTab() {
           )} seconds to load and may show "Not Responding" meanwhile. That is normal.</p>`
         : ""
     }
+    ${activeControlsHtml()}
     <p class="guide-section">Leaving the game</p>
     <p class="note">${escapeHtml(
       g.howToQuit || "Press Escape to leave the game or exit to the menu (Alt+F4 also works)."
@@ -922,15 +1057,12 @@ function renderGameTab() {
     }
     ${connectSteps.length ? `<p class="guide-section">Connecting in game</p>${stepsHtml(connectSteps)}` : ""}
     ${firstPlay.length ? `<p class="guide-section">Quick tips</p>${stepsHtml(firstPlay)}` : ""}
+    ${library}
     <p class="hint">Esc to close</p>
   `;
 
-  root.querySelectorAll("[data-scheme]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.guideScheme = btn.dataset.scheme;
-      render();
-    });
-  });
+  wireGamePicker();
+  wireActiveControls();
   const copy = document.getElementById("guide-copy");
   copy?.addEventListener("click", async () => {
     if (!window.playbound?.clipboardWrite) return;
@@ -969,7 +1101,6 @@ function renderTabs() {
     <button class="tab ${state.activeTab === "friends" ? "active" : ""}" data-tab="friends">Friends</button>
     <button class="tab ${state.activeTab === "game" ? "active" : ""}" data-tab="game">Game</button>
     <button class="tab ${state.activeTab === "server" ? "active" : ""}" data-tab="server">Server</button>
-    <button class="tab ${state.activeTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>
   `;
   tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -983,10 +1114,17 @@ function renderTabs() {
 
 function render() {
   renderTabs();
-  if (state.activeTab === "controls") renderControlsTab();
-  else if (state.activeTab === "game") renderGameTab();
+  if (state.activeTab === "game") renderGameTab();
   else if (state.activeTab === "friends") renderFriendsTab();
-  else renderServerTab();
+  else if (picker.server) renderServerLookup();
+  else {
+    renderServerTab();
+    // The RVGL lobby repaints itself on a timer, which would wipe the field.
+    if (!state.rvglEnabled && root.insertAdjacentHTML) {
+      root.insertAdjacentHTML("afterbegin", pickerHtml("server", "See a game's server controls", picker.serverQuery));
+      wirePicker("server", chooseServerGame, (value) => { picker.serverQuery = value; });
+    }
+  }
 }
 
 /** A PlayBound Dedicated server rather than a party's: party-only tools (TES3MP) do not apply. */
@@ -1060,6 +1198,7 @@ async function load() {
     render();
     return;
   }
+  void loadPicker();
   const context = await window.playbound.getOverlayContext();
   const party = context?.party || null;
   if (state.partyId !== (party?.id || null)) {
@@ -1085,11 +1224,9 @@ async function load() {
     state.tabInitialized = true;
     state.activeTab = state.guide
       ? "game"
-      : state.partyId
+      : state.partyId && !state.controls
         ? "server"
-        : state.controls
-          ? "controls"
-          : "game";
+        : "game";
   }
 
   if (!state.partyId) {

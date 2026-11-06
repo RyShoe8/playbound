@@ -14277,6 +14277,12 @@ ipcMain.handle("get-server-settings", async (_event, partyId) => {
   }
 });
 
+ipcMain.handle("get-server-control-info", async (_event, slug) => {
+  if (typeof slug !== "string" || !/^[a-z0-9-]{1,120}$/.test(slug)) return { error: "Unknown game" };
+  try { return await launcherJson(`/api/games/${slug}/server-controls`); }
+  catch (err) { return { error: err.message }; }
+});
+
 ipcMain.handle("get-server-maps", async (_event, target) => {
   if (!target) return { error: "No server selected" };
   try { return await launcherJson(serverMapsPath(target)); }
