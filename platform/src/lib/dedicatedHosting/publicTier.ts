@@ -8,7 +8,7 @@
  * rather than failing the page. Reading never writes (see tier.ts).
  */
 import { cacheLife, cacheTag } from "next/cache";
-import { getHostableGame } from "@/lib/gameHost/catalog";
+import { DEDICATED_ONLY_GAMES, getHostableGame } from "@/lib/gameHost/catalog";
 import { BASIC_DEFAULTS, getTier, type HostingTier, type HostingTierKey } from "./tier";
 import { isPendingDedicatedProfile } from "./pendingGames";
 
@@ -54,7 +54,7 @@ export function publicGames(tier: HostingTier): PublicHostingGame[] {
     const [gameSlug, edition] = g.profileKey.split(":");
     const current = byGame.get(gameSlug) || {
       gameSlug,
-      title: getHostableGame(gameSlug)?.title || gameSlug,
+      title: getHostableGame(gameSlug)?.title || DEDICATED_ONLY_GAMES[gameSlug]?.title || gameSlug,
       editions: [],
     };
     if (edition && edition !== "base") current.editions.push(edition);
