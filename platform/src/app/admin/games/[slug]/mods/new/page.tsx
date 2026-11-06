@@ -1,3 +1,4 @@
+import { readSubmissionDraft } from "@/lib/submissionDraft";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
@@ -14,7 +15,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function AdminGameNewModPage({
   params,
+  searchParams,
 }: {
+  searchParams: Promise<{ fromSubmission?: string }>;
   params: Promise<{ slug: string }>;
 }) {
   // Never prerendered — see the layout. Each segment prerenders
@@ -25,6 +28,15 @@ export default async function AdminGameNewModPage({
     getGame(slug, { includeUnpublished: true }), listAllGames(), listDevelopers(),
   ]);
   if (!game) notFound();
+  const submission = await readSubmissionDraft((await searchParams).fromSubmission, "mod", slug);
+  const draft = emptyModDraft(game.slug);
+  if (submission) {
+    draft.description = submission.description;
+    draft.title = submission.title;
+    draft.website = submission.website;
+    draft.githubRepo = submission.githubRepo || null;
+    draft.license = submission.license || "";
+  }
 
 
   return (
@@ -43,7 +55,7 @@ export default async function AdminGameNewModPage({
       </div>
       <ModEditorForm
         mode="create"
-        initial={emptyModDraft(game.slug)}
+        initial={draft}
         developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
       />

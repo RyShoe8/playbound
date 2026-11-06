@@ -3,6 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { getGame } from "@/lib/catalog";
 import dbConnect from "@/lib/db";
 import GameSubmission from "@/lib/models/GameSubmission";
 import { CONTACT_EMAIL } from "@/lib/contact";
@@ -11,8 +12,10 @@ import { sendMail } from "@/lib/mailer";
 import { escapeHtml } from "@/lib/newsletterEmail";
 
 const submitSchema = z.object({
+  kind: z.enum(["game", "mod", "edition"]).default("game"),
+  baseGameSlug: z.string().trim().max(200).optional(),
   title: z.string().trim().min(2).max(120),
-  website: z.string().trim().url().max(500),
+  website: z.string().trim().url().regex(/^https?:\/\//i, "Enter an HTTP or HTTPS project link").max(500),
   githubRepo: z.string().trim().max(200).optional().or(z.literal("")),
   description: z.string().trim().min(20).max(4000),
   license: z.string().trim().max(120).optional().or(z.literal("")),
@@ -39,7 +42,14 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
+    const baseGame = data.kind !== "game" && data.baseGameSlug ? await getGame(data.baseGameSlug) : undefined;
+    if (data.kind !== "game" && !baseGame) {
+      return NextResponse.json({ error: "Choose a published base game." }, { status: 400 });
+    }
     const submission = await GameSubmission.create({
+      kind: data.kind,
+      baseGameSlug: baseGame?.slug,
+      baseGameTitle: baseGame?.title,
       title: data.title,
       website: data.website,
       githubRepo: data.githubRepo || null,
@@ -54,8 +64,8 @@ export async function POST(req: Request) {
     try {
       await sendMail(
         CONTACT_EMAIL,
-        `New game submission: ${data.title}`,
-        `<p><strong>${escapeHtml(data.title)}</strong> was submitted for PlayBound.</p>
+        `New ${data.kind} submission: ${data.title}`,
+        `<p><strong>${escapeHtml(data.title)}</strong> was submitted as a ${data.kind}${baseGame ? ` for ${escapeHtml(baseGame.title)}` : ""}.</p>
            <p>${escapeHtml(String(data.website ?? ""))}</p>
            <p>From: ${escapeHtml(data.contactEmail)}</p>
            <p>${escapeHtml(data.description.slice(0, 500))}</p>

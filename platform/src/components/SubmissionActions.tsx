@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Item = {
+  kind?: "game" | "mod" | "edition";
+  baseGameSlug?: string;
   _id: string;
   title: string;
   website: string;
@@ -18,6 +20,10 @@ type Item = {
 };
 
 export function SubmissionActions({ item }: { item: Item }) {
+  const editor = item.kind === "mod" || item.kind === "edition"
+    ? `/admin/games/${encodeURIComponent(item.baseGameSlug ?? "")}/${item.kind}s/new`
+    : "/admin/games/new";
+  const draftUrl = `${editor}?fromSubmission=${item._id}`;
   const router = useRouter();
   const [notes, setNotes] = useState(item.adminNotes ?? "");
   const [busy, setBusy] = useState(false);
@@ -39,7 +45,7 @@ export function SubmissionActions({ item }: { item: Item }) {
         return;
       }
       if (status === "approved") {
-        router.push(`/admin/games/new?fromSubmission=${item._id}`);
+        router.push(draftUrl);
         router.refresh();
         return;
       }
@@ -61,7 +67,7 @@ export function SubmissionActions({ item }: { item: Item }) {
         {item.status === "approved" && (
           <button
             type="button"
-            onClick={() => router.push(`/admin/games/new?fromSubmission=${item._id}`)}
+            onClick={() => router.push(draftUrl)}
             className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
           >
             Open create draft
@@ -99,7 +105,7 @@ export function SubmissionActions({ item }: { item: Item }) {
         </button>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Approve opens the game editor prefilled from this submission. Publish from Admin → Games when ready.
+        Approval opens the {item.kind ?? "game"} editor with the submitted details for review.
       </p>
     </div>
   );

@@ -22,6 +22,9 @@ export default async function AdminSubmissionsPage() {
 
   let items: {
     _id: { toString(): string };
+    kind?: "game" | "edition" | "mod";
+    baseGameSlug?: string;
+    baseGameTitle?: string;
     title: string;
     website: string;
     githubRepo?: string | null;
@@ -50,7 +53,7 @@ export default async function AdminSubmissionsPage() {
           <ArrowLeft className="size-4" /> Admin
         </Link>
         <h1 className="mt-2 flex items-center gap-2 text-3xl font-extrabold tracking-tight">
-          <Inbox className="size-7 text-primary" /> Game submissions
+          <Inbox className="size-7 text-primary" /> Catalog submissions
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {pending.length} pending · {items.length} total
@@ -65,6 +68,7 @@ export default async function AdminSubmissionsPage() {
             <article key={String(item._id)} className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
+                  <p className="text-xs capitalize">{item.kind ?? "game"}{item.baseGameSlug && ` · ${item.baseGameTitle ?? item.baseGameSlug}`}</p>
                   <h2 className="font-bold">{item.title}</h2>
                   <a
                     href={item.website}
@@ -90,6 +94,8 @@ export default async function AdminSubmissionsPage() {
               <SubmissionActions
                 item={{
                   _id: String(item._id),
+                  kind: item.kind,
+                  baseGameSlug: item.baseGameSlug,
                   title: item.title,
                   website: item.website,
                   githubRepo: item.githubRepo,

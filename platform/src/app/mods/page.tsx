@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Puzzle } from "lucide-react";
 import { listGames } from "@/lib/catalog";
 import { listMods, toModCard } from "@/lib/mods";
@@ -98,6 +99,7 @@ export default async function ModsIndexPage() {
             <Puzzle className="size-6 text-primary" /> Mods
           </h1>
         </div>
+        <Link href="/submit-mod" className="text-sm font-bold text-primary">Submit a mod</Link>
       </div>
 
       {liveMods.length === 0 ? (

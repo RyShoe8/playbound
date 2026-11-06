@@ -53,6 +53,8 @@ const footerSections: FooterSection[] = [
       { href: "/developers", label: "Developers" },
       { href: "/developer", label: "Developer Portal" },
       { href: "/submit-game", label: "Submit a Game" },
+      { href: "/submit-mod", label: "Submit a Mod" },
+      { href: "/submit-edition", label: "Submit an Edition" },
       { href: "/launcher", label: "Launcher", desktopOnly: true },
       { href: "/open-platform", label: "Trust & Architecture" },
     ],
@@ -114,6 +116,9 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-border/60 pt-6">
+          <p className="mb-2 text-sm text-muted-foreground">
+            PlayBound earns a commission when you buy games through our affiliate links at participating stores.
+          </p>
           <p className="text-xs text-muted-foreground">
             © {year}{" "}
             <a

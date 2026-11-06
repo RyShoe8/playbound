@@ -1,6 +1,9 @@
 import { Schema, model, models } from "mongoose";
 
 const GameSubmissionSchema = new Schema({
+  kind: { type: String, enum: ["game", "mod", "edition"], default: "game" },
+  baseGameSlug: String,
+  baseGameTitle: String,
   title: { type: String, required: true, maxlength: 120 },
   website: { type: String, required: true, maxlength: 500 },
   githubRepo: { type: String, maxlength: 200, default: null },

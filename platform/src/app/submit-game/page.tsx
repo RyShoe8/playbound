@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { SubmitGameForm } from "@/components/SubmitGameForm";
 import { pageMetadata } from "@/lib/seo";
@@ -19,6 +20,7 @@ export default function SubmitGamePage() {
           reviewed by the team — approved titles are added to the curated catalog manually.
         </p>
       </div>
+      <div className="flex gap-4 text-sm font-semibold text-primary"><Link href="/submit-mod">Submit a mod</Link><Link href="/submit-edition">Submit an edition</Link></div>
       <SubmitGameForm />
     </div>
   );

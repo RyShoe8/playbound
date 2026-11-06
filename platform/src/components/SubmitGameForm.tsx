@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Send } from "lucide-react";
 
-export function SubmitGameForm() {
+const subscribe = () => () => {};
+
+export function SubmitGameForm({ kind = "game", games = [] }: {
+  kind?: "game" | "mod" | "edition";
+  games?: { slug: string; title: string }[];
+}) {
+  const [baseGameSlug, setBaseGameSlug] = useState("");
+  const interactive = useSyncExternalStore(subscribe, () => true, () => false);
   const { data: session } = useSession();
   const [title, setTitle] = useState("");
   const [website, setWebsite] = useState("");
@@ -26,6 +33,8 @@ export function SubmitGameForm() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          kind,
+          baseGameSlug: baseGameSlug || undefined,
           title,
           website,
           githubRepo,
@@ -70,10 +79,19 @@ export function SubmitGameForm() {
     "mt-1 min-h-28 w-full rounded-lg border border-input bg-secondary/50 px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <form inert={!interactive} onSubmit={submit} className="space-y-3 rounded-2xl border border-border bg-card p-5 sm:p-6">
+      {kind !== "game" && (
+        <label className="block text-xs font-semibold text-muted-foreground">
+          Base game
+          <select className={input} required value={baseGameSlug} onChange={e => setBaseGameSlug(e.target.value)}>
+            <option value="">Choose a game</option>
+            {games.map(game => <option key={game.slug} value={game.slug}>{game.title}</option>)}
+          </select>
+        </label>
+      )}
       <div>
-        <label className="text-xs font-semibold text-muted-foreground">Game title</label>
-        <input className={input} required value={title} onChange={(e) => setTitle(e.target.value)} />
+        <label htmlFor="submission-title" className="text-xs font-semibold text-muted-foreground capitalize">{kind} title</label>
+        <input id="submission-title" className={input} required value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div>
         <label className="text-xs font-semibold text-muted-foreground">Official website</label>
@@ -105,7 +123,7 @@ export function SubmitGameForm() {
         />
       </div>
       <div>
-        <label className="text-xs font-semibold text-muted-foreground">Why it belongs on PlayBound</label>
+        <label className="text-xs font-semibold text-muted-foreground">{kind === "mod" ? "What does it change, and which game versions does it support?" : kind === "edition" ? "What makes this edition different, and how do players install it?" : "Why it belongs on PlayBound"}</label>
         <textarea
           className={area}
           required
@@ -133,7 +151,7 @@ export function SubmitGameForm() {
       {state === "error" && <p className="text-xs text-destructive">{message}</p>}
       <button
         type="submit"
-        disabled={state === "busy"}
+        disabled={!interactive || state === "busy"}
         className="h-10 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60"
       >
         {state === "busy" ? "Submitting…" : "Submit for review"}
