@@ -71,13 +71,17 @@ describe("picking a server to join", () => {
     expect(pickBestServer([far, near], VIEWER)?.server.id).toBe("near");
   });
 
-  it("rejects servers below the population floor", () => {
-    const tooQuiet = server({ players: 3, maxPlayers: 16 }); // 0.1875
-    expect(pickBestServer([tooQuiet], VIEWER)).toBeNull();
-    // Exactly at the floor is allowed.
-    const atFloor = server({ players: 4, maxPlayers: 16 });
+  it("rejects empty servers", () => {
+    expect(pickBestServer([server({ players: 0, maxPlayers: 16 })], VIEWER)).toBeNull();
+  });
+
+  it("falls back to the busiest quiet server, but prefers one past the floor", () => {
+    const one = server({ id: "one", players: 1, maxPlayers: 32 });
+    const three = server({ id: "three", players: 3, maxPlayers: 32 });
+    expect(pickBestServer([one, three], VIEWER)?.server.id).toBe("three");
+    const atFloor = server({ id: "floor", players: 4, maxPlayers: 16 });
     expect(atFloor.players! / atFloor.maxPlayers!).toBe(MIN_OCCUPANCY);
-    expect(pickBestServer([atFloor], VIEWER)).not.toBeNull();
+    expect(pickBestServer([three, atFloor], VIEWER)?.server.id).toBe("floor");
   });
 
   it("rejects a full server — there is no slot to take", () => {
@@ -113,7 +117,7 @@ describe("picking a server to join", () => {
     // The button hides itself instead of promising a good game it cannot find.
     expect(pickBestServer([], VIEWER)).toBeNull();
     expect(
-      pickBestServer([server({ players: 1, maxPlayers: 32 }), server({ location: FAR })], VIEWER)
+      pickBestServer([server({ players: 0, maxPlayers: 32 }), server({ location: FAR })], VIEWER)
     ).toBeNull();
   });
 
@@ -130,11 +134,12 @@ describe("picking a server to join", () => {
       [
         server({ id: "low", players: 4, maxPlayers: 16 }),
         server({ id: "target", players: 12, maxPlayers: 16 }),
-        server({ id: "rejected", players: 1, maxPlayers: 16 }),
+        server({ id: "quiet", players: 1, maxPlayers: 16 }),
+        server({ id: "rejected", players: 0, maxPlayers: 16 }),
       ],
       VIEWER
     );
-    expect(ranked.map((r) => r.server.id)).toEqual(["target", "low"]);
+    expect(ranked.map((r) => r.server.id)).toEqual(["target", "low", "quiet"]);
     expect(ranked[0].occupancy).toBeCloseTo(TARGET_OCCUPANCY);
     expect(ranked[0].latencyMs).toBeLessThanOrEqual(MAX_LATENCY_MS);
   });

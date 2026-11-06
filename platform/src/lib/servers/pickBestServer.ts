@@ -8,10 +8,11 @@ import type { GameServer } from "./types";
  * player would make if they read the whole list — which is not "the closest"
  * and not "the fullest".
  *
- * A nearly empty server is a lobby you sit alone in, and a full one has no slot
- * to take, so the population window is bounded at both ends: at least a quarter
- * full to be worth joining, and never completely full. Within that, the target
- * is three-quarters full — a game that is clearly happening but still has room
+ * An empty server is a lobby you sit alone in, and a full one has no slot to
+ * take, so both are out. Most games rarely have a server a quarter full, so
+ * that is a preference, not a cut: a quiet server with people beats telling the
+ * player there is nothing to join, and the busiest of those wins. At a quarter
+ * full or more, the target is three-quarters full — a game that is clearly happening but still has room
  * for you and a friend — so servers are ranked by distance from that mark
  * rather than by raw player count, and a 90%-full server loses to a 75% one.
  *
@@ -21,7 +22,7 @@ import type { GameServer } from "./types";
  * it was busy.
  */
 
-/** At least this full to be worth joining. */
+/** At least this full is preferred over any quieter server. */
 export const MIN_OCCUPANCY = 0.25;
 /** The sweet spot: busy, with room left. */
 export const TARGET_OCCUPANCY = 0.75;
@@ -71,7 +72,7 @@ export function rankJoinableServers(
     if (maxPlayers <= 0 || players < 0) continue;
 
     const occupancy = players / maxPlayers;
-    if (occupancy < MIN_OCCUPANCY) continue;
+    if (players === 0) continue;
     // No slot to take. Also covers providers that report more players than
     // slots, which happens with spectators.
     if (players >= maxPlayers) continue;
@@ -86,6 +87,10 @@ export function rankJoinableServers(
   }
 
   return picks.sort((a, b) => {
+    const aQuiet = a.occupancy < MIN_OCCUPANCY;
+    const bQuiet = b.occupancy < MIN_OCCUPANCY;
+    if (aQuiet !== bQuiet) return aQuiet ? 1 : -1;
+    if (aQuiet && a.players !== b.players) return b.players - a.players;
     const aTarget = Math.abs(a.occupancy - TARGET_OCCUPANCY);
     const bTarget = Math.abs(b.occupancy - TARGET_OCCUPANCY);
     // Bucketed so a trivial occupancy difference does not outrank a much

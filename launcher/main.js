@@ -1388,7 +1388,7 @@ function afterUiReady(fn) {
 
 async function fetchModInstall(slug) {
   const res = await apiFetch(`${getApiBase()}/api/mods/${encodeURIComponent(slug)}`, {
-    headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    headers: launcherApiHeaders({ "user-agent": "playbound-launcher", accept: "application/json" }),
   });
   if (!res.ok) throw new Error(`Couldn't load mod (${res.status})`);
   const data = await res.json();
@@ -10165,12 +10165,14 @@ ipcMain.on("join-capability", (event, slug) => {
  * failure returns a reason rather than throwing, because the button turns each
  * one into different words.
  */
-ipcMain.handle("find-best-server", async (_event, slug) => {
+ipcMain.handle("find-best-server", async (_event, slug, editionSlug) => {
   const clean = String(slug || "").trim();
   if (!/^[a-z0-9][a-z0-9-]*$/.test(clean)) return { server: null, reason: "unsupported" };
+  const edition = String(editionSlug || "").trim();
+  const query = /^[a-z0-9][a-z0-9-]*$/.test(edition) ? `?edition=${encodeURIComponent(edition)}` : "";
   try {
     const res = await apiFetch(
-      `${getApiBase()}/api/games/${encodeURIComponent(clean)}/best-server`,
+      `${getApiBase()}/api/games/${encodeURIComponent(clean)}/best-server${query}`,
       {
         headers: launcherApiHeaders({ accept: "application/json" }),
         cache: "no-store",

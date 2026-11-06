@@ -959,6 +959,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           const edPartyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions }, ed);
           if (edPartyBtn) rowActions.appendChild(edPartyBtn);
 
+          const edOnlineBtn = buildPlayOnlineButton(game, ed, { ...opts, compact: true });
+          if (edOnlineBtn) rowActions.appendChild(edOnlineBtn);
+
           const rowMenuItems = [];
           rowMenuItems.push({
             label: "Open folder",
@@ -1065,7 +1068,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         const partyBtn = buildStartPartyButton(game, { ...opts, editions: allEditions });
         if (partyBtn) group.appendChild(partyBtn);
 
-        const joinBtn = buildJoinMultiplayerButton(game, ed, opts);
+        const joinBtn = buildPlayOnlineButton(game, ed, opts);
         if (joinBtn) group.appendChild(joinBtn);
 
         const menuItems = [
@@ -1754,7 +1757,7 @@ function buildStartPartyButton(game, opts = {}, edition = null) {
 }
 
 /**
- * "Join Multiplayer" — one click into a server worth playing on.
+ * "Play Online" — one click into a server worth playing on.
  *
  * Only rendered for games the launcher can actually join from the command
  * line. A button that launches the game and leaves the player to find the
@@ -1767,7 +1770,7 @@ function buildStartPartyButton(game, opts = {}, edition = null) {
  * anyway. The button therefore starts optimistic and reports honestly when
  * nothing good is available, which is the same shape as Play failing.
  */
-function buildJoinMultiplayerButton(game, ed, opts = {}) {
+function buildPlayOnlineButton(game, ed, opts = {}) {
   const slug = game?.slug;
   if (!slug) return null;
   // Command-line connection support is also used by peer-to-peer parties.
@@ -1782,8 +1785,8 @@ function buildJoinMultiplayerButton(game, ed, opts = {}) {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "btn-secondary btn-sm btn-lib-join";
-  btn.textContent = "Join Multiplayer";
+  btn.className = `btn-secondary ${opts.compact ? "btn-xs" : "btn-sm"} btn-lib-join`;
+  btn.textContent = "Play Online";
   btn.title = "Find a server with players on it and join";
 
   btn.addEventListener("click", async (e) => {
@@ -1793,7 +1796,7 @@ function buildJoinMultiplayerButton(game, ed, opts = {}) {
     const original = btn.textContent;
     btn.textContent = "Finding…";
     try {
-      const best = await window.playbound.findBestServer(slug);
+      const best = await window.playbound.findBestServer(slug, ed?.slug);
       if (!best?.server) {
         // Each reason needs different words: "nobody is on" and "we could not
         // judge these servers" are not the same problem for the player.
@@ -1802,7 +1805,7 @@ function buildJoinMultiplayerButton(game, ed, opts = {}) {
             ? `No ${game.title} servers are listed right now.`
             : best?.reason === "unsupported"
               ? `PlayBound does not track ${game.title} servers.`
-              : `No ${game.title} server has enough players and a good connection right now.`;
+              : `No ${game.title} server has people on it and a good connection right now.`;
         setStatus(message, true);
         return;
       }
@@ -1813,6 +1816,7 @@ function buildJoinMultiplayerButton(game, ed, opts = {}) {
         { host: s.host, port: s.port, name: s.name, mod: s.mod || undefined },
         ed?.slug || undefined
       );
+      startGameSession(slug, game?.title || slug, res?.editionSlug || ed?.slug);
       maybeShowLaunchGuidance(res, {
         title: game?.title || slug,
         slug,

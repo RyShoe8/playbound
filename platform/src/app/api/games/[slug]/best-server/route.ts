@@ -1,3 +1,4 @@
+import { openRaModFor } from "@/lib/multiplayer/openRaMod";
 import { NextResponse } from "next/server";
 import { listServersForGame } from "@/lib/servers/registry";
 import { pickBestServer, type ViewerLocation } from "@/lib/servers/pickBestServer";
@@ -77,11 +78,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       return NextResponse.json({ server: null, canDirectJoin, reason: "unsupported" });
     }
 
-    const best = pickBestServer(result.servers ?? [], viewerFrom(req));
+    // OpenRA's editions are separate games: a client can only join its own mod.
+    const edition = new URL(req.url).searchParams.get("edition");
+    const servers =
+      slug === "openra" && edition
+        ? (result.servers ?? []).filter((s) => s.mod === openRaModFor(edition))
+        : result.servers ?? [];
+
+    const best = pickBestServer(servers, viewerFrom(req));
     if (!best) {
       // Distinguish "nobody is playing" from "we could not judge the servers",
       // because the two need different words in the UI.
-      const reason = (result.servers ?? []).length === 0 ? "no-servers" : "none-suitable";
+      const reason = servers.length === 0 ? "no-servers" : "none-suitable";
       return NextResponse.json({ server: null, canDirectJoin, reason });
     }
 
