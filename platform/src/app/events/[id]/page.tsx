@@ -1,3 +1,5 @@
+import Party from "@/lib/models/Party";
+import { ScheduledPartyAction } from "@/components/events/ScheduledPartyAction";
 import Link from "next/link";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SITE_URL } from "@/lib/site";
@@ -96,6 +98,11 @@ export default async function EventDetailPage({ params }: Props) {
   ]);
 
   const event = serializeEvent(eventDoc, counts, game?.coverImage || null);
+  const canOpenParty = session?.user && event.eventType === "party" && event.status !== "cancelled" &&
+    Date.parse(event.startsAt) <= Date.now() && (!event.endsAt || Date.now() < Date.parse(event.endsAt));
+  const eventParty = canOpenParty
+    ? await Party.findOne({ eventId: event.id, status: { $ne: "ended" } }).select("_id").lean()
+    : null;
   let myRsvp: string | null = null;
   if (session?.user?.id) {
     const r = await EventRsvp.findOne({
@@ -329,6 +336,7 @@ export default async function EventDetailPage({ params }: Props) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {canOpenParty && <ScheduledPartyAction eventId={event.id} gameSlug={event.gameSlug} organizer={String(orgId) === session?.user?.id} roomId={eventParty ? String(eventParty._id) : null} />}
         <EventActionBar
           hostedServer={hostedServer}
           eventId={event.id}

@@ -17,6 +17,7 @@ import { getRsvpCountsForEvents } from "@/lib/events/rsvpCounts";
 import { serializeEvent } from "@/lib/events/serialize";
 
 export const eventCreateSchema = z.object({
+  plannedParty: z.boolean().optional(),
   title: z.string().min(3).max(150),
   description: z.string().max(4000).optional().default(""),
   eventType: z.string().min(1).max(40).default("game_night"),
@@ -139,7 +140,7 @@ export async function createPlatformEvent(
     body.status && isEventStatus(body.status) ? body.status : "registration_open";
 
   await dbConnect();
-  const doc = await PlatformEvent.create({
+  const fields = {
     title: body.title,
     description: body.description || "",
     eventType: body.eventType || EVENT_TYPES[0],
@@ -163,7 +164,19 @@ export async function createPlatformEvent(
     featured: Boolean(body.featured),
     discordInviteUrl: body.discordInviteUrl || null,
     publishedAt: status === "draft" ? null : new Date(),
-  });
+  };
+  let doc;
+  if (body.plannedParty) {
+    const ahead = startsAt.getTime() - Date.now();
+    if (body.eventType !== "party" || body.visibility !== "unlisted" || ahead <= 0 || ahead > 6 * 3600_000) {
+      throw Object.assign(new Error("Choose a party time in the next six hours."), { status: 400 });
+    }
+    const scheduleKey = `friends:${organizerId}:${startsAt.toISOString()}`;
+    doc = await PlatformEvent.findOneAndUpdate({ scheduleKey }, { $setOnInsert: { ...fields, scheduleKey } }, { upsert: true, returnDocument: "after", runValidators: true });
+    if (!doc || doc.status === "cancelled") throw Object.assign(new Error("This planned party was cancelled."), { status: 400 });
+  } else {
+    doc = await PlatformEvent.create(fields);
+  }
 
   // Auto-create the Tournament doc so callers outside the API route
   // (admin scripts, future mobile API) don't silently miss it.

@@ -1,3 +1,6 @@
+import { PATCH as savePreferences } from "@/app/api/friends/availability/route";
+import { POST as sendFriendMessage } from "@/app/api/friends/message/route";
+import Notification from "@/lib/models/Notification";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
@@ -100,4 +103,36 @@ it("keeps Looking to Party active after a browser heartbeat expires", async () =
   expect(saved?.lookingForPlayersGameIds).toEqual(["openra"]);
   expect(new Date(saved!.lookingForPlayersUntil!).getTime()).toBeGreaterThan(now.getTime());
   expect((await listLookingToParty()).some(player => player.username === "stale-lfg")).toBe(true);
+});
+it("reuses a scheduled friends party when the organizer retries the same start time", async () => {
+  const start = Date.now() + 3600000;
+  const input = { title: "Play together with friends", description: "", plannedParty: true,
+    eventType: "party", hostType: "community" as const, visibility: "unlisted" as const, startsAt: new Date(start).toISOString() };
+  const first = await createPlatformEvent(input, owner);
+  const second = await createPlatformEvent(input, owner);
+  expect(String(first._id)).toBe(String(second._id));
+  expect(first.visibility).toBe("unlisted");
+  expect(first.generatedBy).toBe(null);
+  await expect(createPlatformEvent({ ...input, startsAt: new Date(start + 6 * 3600000).toISOString() }, owner)).rejects.toThrow("six hours");
+});
+
+it("saves matching choices separately from the user's availability window", async () => {
+  const data = { mode: "genres", genres: ["Strategy"], games: [], downloads: true };
+  const before = await PlayAvailability.findOne({userId: owner}).lean();
+  const response = await savePreferences(new Request("https://test/api/friends/availability", { method: "PATCH", body: JSON.stringify(data) }));
+  expect(response.status).toBe(200);
+  const after = await PlayAvailability.findOne({userId: owner}).lean();
+  expect(after?.preferences).toEqual(data);
+  expect(after?.weekly).toEqual(before?.weekly);
+  expect(after?.window).toEqual(before?.window);
+});
+it("delivers a friend note to the recipient and rejects unrelated accounts", async () => {
+  const friend = await User.findOne({username: "friend"}).lean();
+  const stranger = await User.findOne({username: "stranger"}).lean();
+  const send = (id: unknown) => sendFriendMessage(new Request("https://test/api/friends/message", {
+    method:"POST", body:JSON.stringify({friendId:String(id),message:"Ready for a game?"})
+  }));
+  expect((await send(friend!._id)).status).toBe(200);
+  expect((await send(stranger!._id)).status).toBe(403);
+  expect(await Notification.countDocuments({userId:friend!._id,type:"friend_message",body:"Ready for a game?"})).toBe(1);
 });

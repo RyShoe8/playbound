@@ -233,3 +233,32 @@ html[data-warm-preview] .new-friends-promo > p { max-width:560px; font-size:16px
 html[data-warm-preview] .new-friends-promo > ul { width:100%; max-width:800px; gap:16px; margin-top:28px; }
 html[data-warm-preview] .new-friends-promo > ul > li { padding:20px; }
 html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:14px; line-height:1.5; }
+
+.home-play-panel { display:grid; gap:12px; min-width:0; overflow-wrap:anywhere; }
+.home-play-panel label { display:grid; gap:4px; }
+.home-play-panel :is(input:not([type=checkbox]),select) { width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; padding:8px; background:var(--background); color:inherit; }
+.home-play-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.home-play-panel button { cursor:pointer; text-align:start; }
+.home-play-panel button:disabled { opacity:.6; }
+.home-play-panel small { display:block; }
+.home-play-options { max-height:12rem; overflow:auto; }
+.home-play-panel label:has([type=checkbox]) { display:flex; gap:8px; align-items:center; }
+.home-play-panel > div:has(> h3), .home-play-panel > div:has(> a) { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.home-play-panel fieldset { display:grid; gap:10px; min-width:0; }
+@media (max-width:800px) {
+  .new-home-rail:has(.home-play-panel) { display:contents!important; }
+  .new-home-layout:has(.home-play-panel) > .new-main-stack { grid-row:2; }
+  .home-play-panel { grid-row:1; }
+  .home-play-panel :is(button,a,select,input:not([type=checkbox])) { min-height:44px; }
+  .home-play-panel :is(input,select) { font-size:16px; }
+}
+.home-play-dialog { margin:auto; width:min(28rem,95vw); max-height:85dvh; padding:20px; border:1px solid var(--border); border-radius:14px; background:var(--background); color:var(--foreground); }
+.home-play-dialog::backdrop { background:#0009; }
+@media(max-width:640px) {
+  .home-play-dialog { margin:auto 0 0; width:100%; max-width:100%; border-radius:14px 14px 0 0; padding-bottom:max(16px,env(safe-area-inset-bottom)); }
+  .home-play-dialog label { min-height:44px; }
+}
+
+.companion-preview { display:grid; gap:5px; max-width:12rem; margin:10px auto; padding:10px; border:1px solid var(--border); border-radius:10px; background:var(--background); }
+.companion-preview strong { color:var(--primary); }
+.companion-preview span { padding:4px 8px; border-radius:5px; background:var(--secondary); font-size:.8rem; }

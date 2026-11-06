@@ -288,6 +288,11 @@ async function markRead(id, all = false) {
  * Falls back to opening the site in the browser.
  */
 async function openHref(href, meta = {}) {
+  const reply = /^\/\?friend=([a-f0-9]{24})$/i.exec(String(href));
+  if (reply) {
+    void window.playbound.openExternal?.(`https://playbound.club/?friend=${reply[1]}`);
+    return;
+  }
   const path = String(href || "/friends").split("?")[0];
   const editionMatch = path.match(/^\/games\/([^/]+)\/editions\/([^/]+)/);
   if (editionMatch) {

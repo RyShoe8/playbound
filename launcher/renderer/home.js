@@ -20,8 +20,9 @@ function ensureHomeShell() {
     <section class="site-panel site-pad"><div class="section-header"><h2>Your people</h2><button class="site-text-link" data-home-view="friends">Friends →</button></div><div id="home-people"></div></section>
     <div id="home-availability"></div>
     <section class="site-panel site-pad"><h2>Discover more</h2><nav class="site-rail-links"><button data-home-web="/collections">Curated collections →</button><button data-home-view="deals">Free games & deals →</button><button data-home-web="/weekly">Weekly newsletter →</button><button data-home-view="multiplayer">Community servers →</button></nav></section>
-    <section class="site-panel site-pad"><p class="site-eyebrow">Your desktop companion</p><h2>Game helper</h2><p>Server management, controls, and your phone controller—together while you play.</p><p><kbd>Ctrl / ⌘ + P</kbd> opens your game helper.</p><button class="btn-secondary" data-home-view="couch">Controller setup</button></section>
+    <section class="site-panel site-pad"><p class="site-eyebrow">Your desktop companion</p><h2>Friends beside your game</h2><p>Keep friends and party controls in a narrow window.</p><button type="button" class="btn-primary" id="home-friend-size">Friend Size</button><p><kbd>Ctrl / ⌘ + P</kbd> opens your game helper.</p><button class="btn-secondary" data-home-view="couch">Controller setup</button></section>
     </aside></div>`;
+  document.getElementById('home-friend-size').onclick = () => window.playbound.setFriendSize(true);
   views.home.querySelectorAll('[data-home-view]').forEach(button => button.addEventListener('click', () => api.navigateTo?.(button.dataset.homeView)));
   views.home.querySelectorAll('[data-home-web]').forEach(button => button.addEventListener('click', () => window.playbound.openExternal(`https://playbound.club${button.dataset.homeWeb}`)));
 }

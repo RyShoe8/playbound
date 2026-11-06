@@ -84,6 +84,7 @@ contextBridge.exposeInMainWorld("playbound", {
   remotePlayListDevices: () => ipcRenderer.invoke("remote-play-list-devices"),
   openDeepLink: (url) => ipcRenderer.invoke("open-deep-link", url),
   closeWindow: () => ipcRenderer.invoke("close-window"),
+  setFriendSize: compact => ipcRenderer.invoke("friend-size", compact),
   openFriendsPopout: () => ipcRenderer.invoke("open-friends-popout"),
   closeFriendsPopout: () => ipcRenderer.invoke("close-friends-popout"),
   showMainWindow: (opts) => ipcRenderer.invoke("show-main-window", opts || {}),

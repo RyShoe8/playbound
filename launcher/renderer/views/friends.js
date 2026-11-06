@@ -484,7 +484,7 @@ async function renderFriendsView() {
           <button class="btn-primary friends-action-btn" id="btn-toggle-create-party">Start Party</button>
           <button class="btn-secondary friends-action-btn" id="btn-lfg">Look for party</button>
           <button class="btn-secondary friends-action-btn" id="btn-toggle-add-friend">Add Friend</button>
-          <button class="btn-secondary friends-action-btn" id="btn-friends-popout" title="Open friends list in a separate window">Pop out</button>
+          <button class="btn-secondary friends-action-btn" id="btn-friends-size" title="Use a narrow launcher window">Friend Size</button>
         </div>
       </div>
 
@@ -628,8 +628,8 @@ async function renderFriendsView() {
     wireActivityPrivacy();
     wireLfgButton();
     mountPlayAvailability(document.getElementById("friends-availability-area"));
-    document.getElementById("btn-friends-popout")?.addEventListener("click", () => {
-      void window.playbound.openFriendsPopout?.();
+    document.getElementById("btn-friends-size")?.addEventListener("click", () => {
+      void window.playbound.setFriendSize(true);
     });
     // One library sync when the Friends shell first mounts — not on every remount/poll.
     if (window.playbound.syncLibraryNow) void window.playbound.syncLibraryNow({ quiet: true });

@@ -1253,6 +1253,7 @@ async function handleSyncDeepLink() {
 
 function handleDeepLink(parsed) {
   if (!parsed) return;
+  if (parsed.action === "friend-size") { setFriendSize(true); return; }
   if (parsed.action === "auth") {
     openAuthWindow();
     return;
@@ -11021,6 +11022,22 @@ ipcMain.handle("close-window", () => {
   win?.close();
   return true;
 });
+let lastFullBounds = null;
+function setFriendSize(compact) {
+  showMainWindow();
+  if (!win || win.isDestroyed()) return;
+  const bounds = win.getBounds();
+  const area = screen.getDisplayMatching(bounds).workArea;
+  if (compact && bounds.width > 540) lastFullBounds = win.getNormalBounds();
+  if (win.isMaximized()) win.unmaximize();
+  const preferred = compact ? { ...bounds, width: 400, height: 760 } :
+    lastFullBounds || { ...bounds, width: 1100, height: 800 };
+  const width = Math.min(preferred.width, area.width);
+  const height = Math.min(preferred.height, area.height);
+  win.setBounds({ width, height, x: Math.max(area.x, Math.min(preferred.x, area.x + area.width - width)),
+    y: Math.max(area.y, Math.min(preferred.y, area.y + area.height - height)) });
+}
+ipcMain.handle("friend-size", (_event, compact) => setFriendSize(compact === true));
 ipcMain.handle("open-friends-popout", () => openFriendsPopout());
 ipcMain.handle("close-friends-popout", () => closeFriendsPopout());
 ipcMain.handle("show-main-window", (_event, opts) => {
@@ -14737,7 +14754,7 @@ function createWindow() {
   const { width: workWidth, height: workHeight } = screen.getPrimaryDisplay().workAreaSize;
   const width = Math.min(1200, workWidth);
   const height = Math.min(800, workHeight);
-  const minWidth = Math.min(900, workWidth);
+  const minWidth = Math.min(350, workWidth);
   const minHeight = Math.min(600, workHeight);
 
   const appIconPath = resolveAssetPath(process.platform === "win32" ? "icon.ico" : "icon.png");

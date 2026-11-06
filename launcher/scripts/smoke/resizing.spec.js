@@ -59,3 +59,30 @@ for (const signedOut of [false,true]) {
     }
   });
 }
+
+test('Friend Size switches on drag, opens friends, and restores a full launcher', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playbound-friend-size-'));
+  const env = { ...process.env, PLAYBOUND_SMOKE_ROOT: root };
+  delete env.ELECTRON_RUN_AS_NODE;
+  let app;
+  try {
+    const args = [path.join(__dirname,'entry.js')];
+    if (process.platform === 'linux' && process.env.CI) args.push('--no-sandbox');
+    app = await _electron.launch({ args, env });
+    const page = await app.firstWindow();
+    await expect(page.locator('#site-account-name')).toHaveText('Smoke User');
+    await page.locator('#friend-size-toggle').click();
+    await expect(page.locator('body')).toHaveClass(/friend-size/);
+    await expect(page.locator('#view-friends')).toHaveClass(/active/);
+    await page.locator('[data-compact-view="library"]').click();
+    await expect(page.locator('#view-library')).toHaveClass(/active/);
+    await page.locator('#friend-size-toggle').click();
+    await expect(page.locator('body')).not.toHaveClass(/friend-size/);
+    await app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes('index.html')).setSize(420,700));
+    await expect(page.locator('body')).toHaveClass(/friend-size/);
+    await expect(page.locator('#friend-size-nav')).toBeVisible();
+  } finally {
+    if (app) await app.close();
+    fs.rmSync(root,{ recursive:true, force:true, maxRetries:5 });
+  }
+});

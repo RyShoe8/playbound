@@ -4,6 +4,7 @@ const schema = new Schema({
   timezone: { type: String, required: true },
   publishLooking: { type: Boolean, default: false, index: true },
   window: { type: { startsAt: Date, endsAt: Date }, default: null },
+  preferences: { type: Schema.Types.Mixed },
   weekly: { type: [{ _id: false, day: Number, startMinute: Number, endMinute: Number }], default: [] },
 }, { timestamps: true });
 export default models.PlayAvailability || model("PlayAvailability", schema);

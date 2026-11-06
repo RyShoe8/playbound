@@ -1,3 +1,5 @@
+import { isBaseEditionSlug } from "@/lib/playTogether/editionMatch";
+import { editionsFromRow } from "@/lib/library/installedEditions";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import Presence from "@/lib/models/Presence";
@@ -183,21 +185,23 @@ export async function listSharedPlayGames(userId: string, limit = 12): Promise<S
   return out.slice(0, limit);
 }
 
-export type SharedLibraryGame = { slug: string; title: string };
+export type SharedLibraryGame = { slug: string; title: string; editionSlug?: string };
 
 /** Installed games you and each friend both have, keyed by friend user id. */
 export async function listSharedLibraryByFriend(
   userId: string,
-  friendIds: string[]
+  friendIds: string[],
+  matchEdition = false
 ): Promise<Record<string, SharedLibraryGame[]>> {
   const out: Record<string, SharedLibraryGame[]> = {};
   if (friendIds.length === 0) return out;
 
   await dbConnect();
+  const projection = matchEdition ? "gameSlug installed platform editionSlug installedEditions" : "gameSlug";
   const [myLib, friendLib, games] = await Promise.all([
-    LibraryEntry.find({ userId, installed: true }).select("gameSlug").lean(),
+    LibraryEntry.find({ userId, installed: true }).select(projection).lean(),
     LibraryEntry.find({ userId: { $in: friendIds }, installed: true })
-      .select("userId gameSlug")
+      .select(`userId ${projection}`)
       .lean(),
     // Only slug -> title is read below, and this is reached from the friends
     // list on every party poll.
@@ -215,7 +219,18 @@ export async function listSharedLibraryByFriend(
     if (!title) continue;
     const uid = String(row.userId);
     const list = byFriend.get(uid) || [];
-    if (!list.some((g) => g.slug === slug)) list.push({ slug, title });
+    let editionSlug: string | undefined;
+    if (matchEdition) {
+      const friendEditions = [...editionsFromRow(row)].filter(e => !isBaseEditionSlug(e));
+      const mine = myLib.filter(entry => entry.gameSlug === slug && (entry.platform || "desktop") === (row.platform || "desktop"));
+      const compatible = mine.some(entry => {
+        const editions = [...editionsFromRow(entry)].filter(e => !isBaseEditionSlug(e));
+        editionSlug = editions.find(e => friendEditions.includes(e));
+        return Boolean(editionSlug) || (!editions.length && !friendEditions.length);
+      });
+      if (!compatible) continue;
+    }
+    if (!list.some((g) => g.slug === slug)) list.push({ slug, title, ...(editionSlug && {editionSlug}) });
     byFriend.set(uid, list);
   }
 

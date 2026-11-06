@@ -12119,3 +12119,13 @@ textarea.input-text {
 
 /* Off-screen cards in the long catalog grids are not laid out until they scroll near. */
 .mod-card, #view-games .game-card { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+
+#friend-size-toggle, #friend-size-nav { -webkit-app-region: no-drag; }
+.friend-size #sidebar, .friend-size #global-search-form { display:none; }
+.friend-size #content { width:100%; min-width:0; margin:0; }
+.friend-size .launcher-topbar { flex-wrap:wrap; height:auto; padding:8px; }
+.friend-size #friend-size-nav { display:flex; gap:5px; flex-wrap:wrap; }
+.friend-size #friend-size-nav button { padding:7px; color:var(--text); }
+.friend-size .view, .friend-size .site-panel { min-width:0; max-width:100%; }
+
+.friend-size #btn-friends-size { display:none; }

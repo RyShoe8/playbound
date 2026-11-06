@@ -319,6 +319,29 @@ export async function openEventDetail(eventId, fromView) {
   return navigateTo("eventDetail", { eventId });
 }
 
+let friendSize = false;
+let previousFullView = null;
+const sizeToggle = document.getElementById("friend-size-toggle");
+function updateFriendSize() {
+  const next = window.innerWidth <= (friendSize ? 540 : 500);
+  if (next === friendSize) return;
+  friendSize = next;
+  document.body.classList.toggle("friend-size", next);
+  document.getElementById("friend-size-nav").hidden = !next;
+  sizeToggle.textContent = next ? "Full launcher" : "Friend Size";
+  if (next) {
+    previousFullView = state.currentView;
+    void navigateTo("friends");
+  } else if (previousFullView && ["home","games","library","friends","multiplayer"].includes(previousFullView)) {
+    void navigateTo(previousFullView);
+  }
+}
+sizeToggle.onclick = () => window.playbound.setFriendSize(!friendSize);
+document.querySelectorAll("[data-compact-view]").forEach(button => {
+  button.onclick = () => navigateTo(button.dataset.compactView);
+});
+window.addEventListener("resize", updateFriendSize);
+window.addEventListener("load", updateFriendSize);
 api.navigateTo = navigateTo;
 api.goBack = goBack;
 api.finishPartyInstallReturn = finishPartyInstallReturn;
@@ -1028,10 +1051,10 @@ async function boot() {
         await navigateTo("deepLink", { ctx: bootState.context });
       }
     } else {
-      await navigateTo("home");
+      await navigateTo(friendSize ? "friends" : "home");
     }
   } else {
-    await navigateTo("home");
+    await navigateTo(friendSize ? "friends" : "home");
   }
 
   /*

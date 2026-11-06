@@ -1,6 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
 const NOTIFICATION_TYPES = [
+  "friend_message",
   "friend_request",
   "friend_request_accepted",
   "event_rsvp_confirmed",

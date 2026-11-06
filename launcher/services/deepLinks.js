@@ -91,6 +91,7 @@ function createDeepLinks(protocol) {
       // pathname and searchParams; custom schemes are treated as opaque.
       const u = new URL(raw.replace(schemePrefix, "https://"));
       const action = u.hostname.toLowerCase();
+      if (action === "friend-size") return { action };
       if (action === "auth") return { action: "auth" };
       if (action === "sync") return { action: "sync" };
       if (action === "link") {
