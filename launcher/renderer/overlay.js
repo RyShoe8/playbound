@@ -868,7 +868,18 @@ async function loadPicker() {
   try {
     const [catalog, library] = await Promise.all([window.playbound.getCatalog(), window.playbound.getInstalled()]);
     picker.catalog = Array.isArray(catalog) ? catalog : [];
-    picker.library = Array.isArray(library) ? library : [];
+    const bySlug = new Map((Array.isArray(library) ? library : []).map(game =>
+      [game.slug, { ...game, playable: !game.pending || Boolean(game.exe || game.installedEditions?.some(e => e.exe)) }]));
+    const sorted = () => [...bySlug.values()].sort((a, b) => String(a.title).localeCompare(String(b.title)));
+    picker.library = sorted();
+    if (state.activeTab === "game" && !document.activeElement?.dataset?.picker) render();
+    const cloud = await window.playbound.getCloudLibrary?.();
+    const titles = new Map(picker.catalog.map(game => [game.slug, game.title]));
+    for (const { gameSlug } of cloud?.entries || []) {
+      if (!gameSlug || bySlug.has(gameSlug)) continue;
+      bySlug.set(gameSlug, { slug: gameSlug, title: titles.get(gameSlug) || gameSlug.replace(/-/g, " "), playable: false });
+    }
+    picker.library = sorted();
   } catch { return; }
   // Never repaint under someone typing: this runs just after the overlay opens.
   if (document.activeElement?.dataset?.picker) return;
@@ -912,10 +923,10 @@ function wirePicker(kind, choose, onType) {
 
 function libraryHtml() {
   const q = picker.gameQuery.trim().toLowerCase();
-  const games = picker.library.filter((g) => !q || String(g.title || "").toLowerCase().includes(q)).slice(0, 8);
-  if (!games.length) return q ? "" : `<p class="note">Games you install appear here.</p>`;
+  const games = picker.library.filter((g) => !q || String(g.title || "").toLowerCase().includes(q));
+  if (!games.length) return q ? `<p class="note">No matching library games.</p>` : `<p class="note">Your saved and installed games appear here.</p>`;
   return games
-    .map((g) => `<div class="binding"><span>${escapeHtml(g.title)}</span><button class="tab" data-play="${escapeHtml(g.slug)}">Play</button></div>`)
+    .map((g) => `<div class="binding"><span>${escapeHtml(g.title)}</span><button class="tab" ${g.playable ? "data-play" : "data-game-details"}="${escapeHtml(g.slug)}">${g.playable ? "Play" : "Details"}</button></div>`)
     .join("");
 }
 
@@ -931,6 +942,12 @@ async function launchFromOverlay(slug) {
 }
 
 function wirePlayButtons() {
+  root.querySelectorAll("[data-game-details]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      await window.playbound.showMainWindow({ navigate: { view: "gameDetail", slug: btn.dataset.gameDetails } });
+      await window.playbound.hideOverlay();
+    });
+  });
   root.querySelectorAll("[data-play]").forEach((btn) => {
     btn.addEventListener("click", () => void launchFromOverlay(btn.dataset.play));
   });
@@ -948,9 +965,9 @@ async function chooseGame(game) {
 function pickedGameHtml() {
   const g = picker.game;
   if (!g) return "";
-  const installed = picker.library.some((item) => item.slug === g.slug);
+  const installed = picker.library.some((item) => item.slug === g.slug && item.playable);
   return `<div class="binding"><strong>${escapeHtml(g.title)}</strong>${
-    installed ? `<button class="tab" data-play="${escapeHtml(g.slug)}">Play</button>` : `<span class="help">Not in your library</span>`
+    installed ? `<button class="tab" data-play="${escapeHtml(g.slug)}">Play</button>` : `<span class="help">Not installed here</span>`
   }</div>${guideControlsHtml(g, { hideHeader: true }) || `<p class="note">No controls listed for this game.</p>`}
   <button class="tab" id="pick-clear">Clear</button>`;
 }

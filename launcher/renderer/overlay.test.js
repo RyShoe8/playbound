@@ -283,3 +283,17 @@ test("Game tab looks up any game's controls and only offers Play for games in th
   assert.match(overlay.root.innerHTML, /data-play="openra"/);
   assert.doesNotMatch(overlay.root.innerHTML, /data-play="boll-deluxe"/);
 });
+
+test("companion library keeps the ninth install and deduplicates synced games", async () => {
+  const installed = Array.from({ length: 9 }, (_, i) => ({ slug: "local-" + i, title: "Local " + i }));
+  const overlay = await renderOverlay({ party: null, controls: null, guide: null }, undefined, {
+    getCatalog: async () => [...installed, { slug: "cloud", title: "Cloud game" }],
+    getInstalled: async () => installed,
+    getCloudLibrary: async () => ({ entries: [{ gameSlug: "local-8" }, { gameSlug: "cloud" }] }),
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  const html = overlay.root.innerHTML;
+  assert.equal(html.match(/data-play="local-8"/g)?.length, 1);
+  assert.match(html, /data-game-details="cloud"/);
+  assert.doesNotMatch(html, /data-play="cloud"/);
+});

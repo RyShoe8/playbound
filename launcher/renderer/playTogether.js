@@ -244,19 +244,25 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
       </div>
       ${s.planningAt ? planHtml() : ""}
       ${window_ && Date.parse(window_.endsAt) > s.now ? `<p>Your window · ${clock(Date.parse(window_.startsAt))} – ${clock(Date.parse(window_.endsAt))} <button type="button" class="pt-link" data-action="clear-window" ${busy}>Clear</button></p>` : ""}
-      <h3>Friends online</h3>
-      ${online.length ? online.map(friendRowHtml).join("") : "<p>No friends online right now.</p>"}
-      <div class="pt-row"><h3>Play preferences</h3><button type="button" class="pt-link" data-action="edit-prefs">${s.editing ? "Close" : "Edit"}</button></div>
-      ${s.editing ? preferencesHtml() : `<p>${escapeHtml(preferencesSummary())}</p>`}
-      ${s.snapshot.recentGames?.length ? `<p>Recently played · ${escapeHtml(s.snapshot.recentGames.join(", "))}</p>` : ""}
+      <section class="play-group">
       <h3>Next available</h3>
       ${list.length ? list.slice(0, 3).map((match, index) => {
         const sent = s.sent.includes(sentKey(match.friend.id, match.at));
         return `<div class="pt-match">
-          <button type="button" class="pt-match-who" data-pick="${escapeHtml(match.friend.id)}"><strong>${escapeHtml(match.friend.username)}</strong> · ${match.at === s.now ? "Free now" : clock(match.at)}<small>${escapeHtml(match.game.title)} · ${match.installed ? "Both installed" : "Free download"}</small></button>
+          <button type="button" class="pt-match-who" data-pick="${escapeHtml(match.friend.id)}"><strong>${escapeHtml(match.friend.username)}</strong> <span class="play-time">${match.at === s.now ? "Free now" : clock(match.at)}</span><small>${escapeHtml(match.game.title)} · ${match.installed ? "Both installed" : "Free download"}</small></button>
           ${index === 0 ? `<button type="button" class="pt-button" data-invite="${escapeHtml(match.friend.id)}" ${s.busy || sent ? "disabled" : ""}>${sent ? "Invited" : "Invite"}</button>` : ""}
         </div>`;
       }).join("") : "<p>No matching friends in the next six hours.</p>"}
+      </section>
+      <section class="play-group">
+      <h3>Friends online</h3>
+      ${online.length ? online.map(friendRowHtml).join("") : "<p>No friends online right now.</p>"}
+      </section>
+      <section class="play-group">
+      <div class="pt-row"><h3>Play preferences</h3><button type="button" class="pt-link" data-action="edit-prefs">${s.editing ? "Close" : "Edit"}</button></div>
+      ${s.editing ? preferencesHtml() : `<p>${escapeHtml(preferencesSummary())}</p>`}
+      ${s.snapshot.recentGames?.length ? `<div class="play-recent"><small>Recently played</small><ul>${s.snapshot.recentGames.map(title => `<li>${escapeHtml(title)}</li>`).join("")}</ul></div>` : ""}
+      </section>
       ${selectedHtml(list)}
       ${s.notice ? `<p role="status" class="pt-notice">${escapeHtml(s.notice)}</p>` : ""}
       <button type="button" class="pt-link" data-action="friends">Friends &amp; schedule →</button>

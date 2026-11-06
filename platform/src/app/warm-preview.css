@@ -274,3 +274,16 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 .home-play-options label { padding:.35rem .5rem; }
 .home-play-options label:has(:checked) { background:var(--accent); border-radius:6px; }
 .home-play-dialog :focus-visible { outline:2px solid var(--ring); outline-offset:2px; }
+
+.home-play-panel .play-group { display:grid; gap:.5rem; min-width:0; border-top:1px solid var(--border); padding-top:.85rem; }
+.home-play-panel .play-group h3 { margin:0; font-size:.95rem; line-height:1.4; }
+.home-play-panel .play-group p { margin:0; color:var(--muted-foreground); line-height:1.5; }
+.home-play-panel .play-group > div:has(> h3), .home-play-panel .play-match { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.home-play-panel .play-match, .home-play-panel .home-play-friend { border-radius:8px; background:#38bdf80c; padding:.55rem .7rem; min-width:0; }
+.home-play-panel .play-match button:first-child { min-width:0; text-align:left; overflow-wrap:anywhere; }
+.home-play-panel .play-match small, .home-play-panel .home-play-friend small { display:block; color:var(--muted-foreground); line-height:1.5; }
+.home-play-panel .play-time { display:inline-block; font-size:.76rem; color:#7dd3fc; white-space:nowrap; margin-inline-start:.3rem; }
+.home-play-panel .play-recent ul { list-style:none; display:flex; flex-wrap:wrap; gap:.3rem; margin:.35rem 0 0; padding:0; }
+.home-play-panel .play-recent li { border:1px solid var(--border); border-radius:.4rem; padding:.15rem .45rem; font-size:.8rem; overflow-wrap:anywhere; }
+
+.play-friend-list { display:grid; gap:.4rem; }
