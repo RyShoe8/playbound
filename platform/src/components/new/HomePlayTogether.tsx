@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { type Availability } from "@/lib/friends/availability";
+import { type FriendActivity } from "@/lib/friends/friendActivity";
 import { acceptsGame, nextPlayTime, defaultPlayPreferences, type MatchGame, type PlayPreferences } from "@/lib/friends/playPreferences";
 
-type Friend = { id: string; username: string; online: boolean; availability: Availability; preferences?: PlayPreferences; recentGames?: string[]; sharedGames: {slug: string; editionSlug?: string}[] };
+type Friend = FriendActivity & { id: string; username: string; online: boolean; availability: Availability; preferences?: PlayPreferences; recentGames?: string[]; sharedGames: {slug: string; editionSlug?: string}[] };
 type Snapshot = { recentGames?: string[]; availability: Availability; preferences?: PlayPreferences; friends: Friend[] };
 async function request(path: string, method = "GET", body?: unknown) {
   const response = await fetch(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -137,7 +138,7 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
     </dialog>    {snapshot?.availability.window && Date.parse(snapshot.availability.window.endsAt)>now && <p>Your window · {clock(Date.parse(snapshot.availability.window.startsAt))} – {clock(Date.parse(snapshot.availability.window.endsAt))} <button onClick={()=>void run(async()=>{await request("/api/friends/availability","PATCH",{timezone:snapshot.availability.timezone,window:null});setSnapshot(old=>old && {...old,availability:{...old.availability,window:null}});return "Window cleared.";})} disabled={busy}>Clear</button></p>}
     {when > 0 && plans[when] ? <Link href={`/events/${plans[when]}`}>Open scheduled party →</Link> : null}
     <h3>Friends online</h3>
-    {snapshot ? online.length ? <div className="home-play-actions">{online.map(f=><button key={f.id} onClick={()=>pick(f.id)}>{f.username}</button>)}</div> : <p>No friends online right now.</p> : <p>Loading friends…</p>}
+    {snapshot ? online.length ? <div className="home-play-actions">{online.map(f=><div key={f.id} className="home-play-friend"><button onClick={()=>pick(f.id)}>{f.username}</button>{f.playing && <small>Playing <Link href={`/games/${f.playing.slug}`}>{f.playing.title}</Link></small>}{f.openTo && <small>Open to {f.openTo.games.map((g,i)=><span key={g.slug}>{i>0&&", "}<Link href={`/games/${g.slug}`}>{g.title}</Link></span>)}{f.openTo.genres.join(", ")}{f.openTo.moreCount>0&&` +${f.openTo.moreCount} more`}{f.openTo.downloads&&" · free downloads OK"}</small>}</div>)}</div> : <p>No friends online right now.</p> : <p>Loading friends…</p>}
     <div><h3>Play preferences</h3><button disabled={!snapshot} onClick={()=>{setNotice("");setPrefs(activePrefs);setEdit(!edit);}}>{edit?"Close":"Edit"}</button></div>
     <p>{activePrefs.mode==="any"?"Any multiplayer game":activePrefs.mode==="genres"?activePrefs.genres.join(", "):games.filter(g=>activePrefs.games.includes(g.slug)).map(g=>g.title).join(", ")} · {activePrefs.downloads?"Open to downloads":"Installed games"}</p>
     <dialog ref={dialog} className="home-play-dialog" aria-label="Play preferences" onCancel={()=>setEdit(false)} onClose={()=>setEdit(false)}><fieldset className="play-pref-sheet"><legend>Choose play preferences</legend><label>Games <select value={prefs.mode} onChange={e=>setPrefs({...prefs,mode:e.target.value as PlayPreferences["mode"]})}><option value="any">Any multiplayer game</option><option value="genres">Choose genres</option><option value="games">Choose games</option></select></label>

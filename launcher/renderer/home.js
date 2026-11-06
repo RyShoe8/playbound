@@ -17,10 +17,9 @@ function ensureHomeShell() {
     ${section('home-editions', 'Newest Editions', 'games')}
     ${section('home-mods', 'Newest Mods', 'mods')}
     </div><aside class="site-home-rail">
-    <section class="site-panel site-pad"><div class="section-header"><h2>Your people</h2><button class="site-text-link" data-home-view="friends">Friends →</button></div><div id="home-people"></div></section>
     <div id="home-availability"></div>
-    <section class="site-panel site-pad"><h2>Discover more</h2><nav class="site-rail-links"><button data-home-web="/collections">Curated collections →</button><button data-home-view="deals">Free games & deals →</button><button data-home-web="/weekly">Weekly newsletter →</button><button data-home-view="multiplayer">Community servers →</button></nav></section>
     <section class="site-panel site-pad site-friend-view"><p class="site-eyebrow">Friend View</p><h2>Your friends, on top of any game</h2><img src="friend-view.png" alt="The Friend View window, showing friends online, the next friend free to play, and an Invite button" loading="lazy"><p>Shrink PlayBound to a small window that floats over whatever you're playing. See who's free and send an invite without alt-tabbing.</p><button type="button" class="btn-primary" id="home-friend-size">Try Friend View</button><p><kbd>Ctrl / ⌘ + P</kbd> opens it in game.</p><button class="btn-secondary" data-home-view="couch">Controller setup</button></section>
+    <section class="site-panel site-pad"><h2>Discover more</h2><nav class="site-rail-links"><button data-home-web="/collections">Curated collections →</button><button data-home-view="deals">Free games & deals →</button><button data-home-web="/weekly">Weekly newsletter →</button><button data-home-view="multiplayer">Community servers →</button></nav></section>
     </aside></div>`;
   document.getElementById('home-friend-size').onclick = () => window.playbound.setFriendSize(true);
   views.home.querySelectorAll('[data-home-view]').forEach(button => button.addEventListener('click', () => api.navigateTo?.(button.dataset.homeView)));
@@ -65,18 +64,6 @@ function paintNight(events, catalog) {
     </div></a>`;
   host.querySelector('a').addEventListener('click', event => { event.preventDefault(); api.openEventDetail?.(night.id, 'home'); });
 }
-function paintPeople(result) {
-  const host = document.getElementById('home-people');
-  if (!state.accountState?.connected) { host.innerHTML = '<p>See what your friends are playing and pick up your party here.</p><button class="btn-primary">Sign in</button>'; host.querySelector('button').addEventListener('click', () => window.playbound.signIn()); return; }
-  const friends = Array.isArray(result) ? result : result?.friends || [];
-  const online = friends.filter(friend => friend.presence?.online || friend.online).slice(0, 6); host.replaceChildren();
-  if (!online.length) { host.innerHTML = '<p>Your friends will appear here when they’re online.</p><button class="btn-secondary">Find friends</button>'; host.querySelector('button').addEventListener('click', () => api.navigateTo?.('friends')); return; }
-  for (const friend of online) {
-    const button = document.createElement('button'); button.className = 'site-person';
-    button.innerHTML = `<span class="site-avatar">${escapeHtml((friend.username || friend.name || '?').slice(0, 2).toUpperCase())}</span><span>${escapeHtml(friend.username || friend.name || 'Friend')}<small>${escapeHtml(friend.presence?.gameTitle || friend.presence?.gameSlug || 'Online')}</small></span>`;
-    button.addEventListener('click', () => api.navigateTo?.('friends')); host.append(button);
-  }
-}
 let feedRetried = false;
 async function loadHome() {
   const current = ++generation;
@@ -90,6 +77,10 @@ async function loadHome() {
       const panel = document.createElement('div');
       availabilityHost.appendChild(panel);
       mountPlayTogether(panel);
+    } else {
+      availabilityHost.innerHTML = '<section class="site-panel site-pad"><h2>Play together</h2><p>Find friends who are free and invite them to play.</p><div class="site-rail-links"><button data-start-party>Start a Party →</button></div><button class="btn-primary" data-sign-in>Sign in to share availability</button></section>';
+      availabilityHost.querySelector('[data-start-party]').addEventListener('click', () => api.navigateTo?.('multiplayer'));
+      availabilityHost.querySelector('[data-sign-in]').addEventListener('click', () => window.playbound.signIn());
     }
   }
   const heading = views.home.querySelector('.site-page-heading h1');
@@ -114,7 +105,6 @@ async function loadHome() {
   });
   const eventsRequest = cacheInvoke('events', CACHE_TTL.events, () => window.playbound.getEvents?.());
   const offersRequest = cacheInvoke('freeOffers', CACHE_TTL.freeOffers, () => window.playbound.getFreeOffers?.());
-  const friendsRequest = Promise.resolve().then(() => window.playbound.getFriends?.());
   const settled = request => Promise.resolve(request).then(value => value ?? null, () => null);
   const catalogReady = settled(catalogRequest).then(raw => filterCatalogGames(Array.isArray(raw) ? raw : raw?.games || []));
   const paint = (id, cards, feedFailed = false) => {
@@ -130,7 +120,6 @@ async function loadHome() {
   };
   const sections = [
     settled(offersRequest).then(offers => { if (stillHere()) paint('home-free', diversifyOffers(offers?.offers || [], 8).map(createFreeOfferCard)); }),
-    settled(friendsRequest).then(friends => { if (stillHere()) paintPeople(friends || {}); }),
     Promise.all([catalogReady, settled(eventsRequest)]).then(([catalog, events]) => { if (stillHere()) paintNight(events?.events || [], catalog); }),
     Promise.all([catalogReady, settled(feedRequest)]).then(([catalog, feed]) => {
       if (!stillHere()) return;

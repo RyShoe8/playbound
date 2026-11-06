@@ -27,6 +27,9 @@
 }
 .pt-panel select option { background: #17141f; color: #f1eff6; }
 .pt-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-friend { display: grid; justify-items: start; gap: 3px; margin-bottom: 8px; min-width: 0; overflow-wrap: anywhere; }
+.pt-friend small { font-size: 11px; color: var(--pt-muted); }
+.pt-friend .pt-link { display: inline; padding: 0; font-size: inherit; }
 .pt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .pt-button,
 .pt-chip {

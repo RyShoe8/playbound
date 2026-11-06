@@ -27,6 +27,23 @@ async function leaveFor(view, params = {}) {
   await window.playbound.showMainWindow({ navigate: { view, ...params } });
 }
 
+const gameLink = (game) => `<button type="button" class="pt-link" data-game="${escapeHtml(game.slug)}">${escapeHtml(game.title)}</button>`;
+
+/** `playing` and `openTo` come worked out from the server; see platform/src/lib/friends/friendActivity.ts. */
+function friendRowHtml(friend) {
+  const open = friend.openTo;
+  const openParts = open
+    ? [...open.games.map(gameLink), ...open.genres.map(escapeHtml)].join(", ") +
+      (open.moreCount ? ` +${open.moreCount} more` : "") +
+      (open.downloads ? " · free downloads OK" : "")
+    : "";
+  return `<div class="pt-friend">
+    <button type="button" class="pt-chip" data-pick="${escapeHtml(friend.id)}">${escapeHtml(friend.username)}</button>
+    ${friend.playing ? `<small>Playing ${gameLink(friend.playing)}</small>` : ""}
+    ${open ? `<small>Open to ${openParts}</small>` : ""}
+  </div>`;
+}
+
 export function mountPlayTogether(host, { isShowing = () => !document.hidden } = {}) {
   const s = {
     snapshot: null, games: [], partyId: "", now: Date.now(), when: 0, selected: "", message: "", notice: "", busy: false,
@@ -228,7 +245,7 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
       ${s.planningAt ? planHtml() : ""}
       ${window_ && Date.parse(window_.endsAt) > s.now ? `<p>Your window · ${clock(Date.parse(window_.startsAt))} – ${clock(Date.parse(window_.endsAt))} <button type="button" class="pt-link" data-action="clear-window" ${busy}>Clear</button></p>` : ""}
       <h3>Friends online</h3>
-      ${online.length ? `<div class="pt-actions">${online.map((friend) => `<button type="button" class="pt-chip" data-pick="${escapeHtml(friend.id)}">${escapeHtml(friend.username)}</button>`).join("")}</div>` : "<p>No friends online right now.</p>"}
+      ${online.length ? online.map(friendRowHtml).join("") : "<p>No friends online right now.</p>"}
       <div class="pt-row"><h3>Play preferences</h3><button type="button" class="pt-link" data-action="edit-prefs">${s.editing ? "Close" : "Edit"}</button></div>
       ${s.editing ? preferencesHtml() : `<p>${escapeHtml(preferencesSummary())}</p>`}
       ${s.snapshot.recentGames?.length ? `<p>Recently played · ${escapeHtml(s.snapshot.recentGames.join(", "))}</p>` : ""}
@@ -275,6 +292,7 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
     const button = event.target.closest("button");
     if (!button || !host.contains(button) || button.disabled) return;
     if (button.dataset.action) return void actions[button.dataset.action]?.();
+    if (button.dataset.game) return void leaveFor("gameDetail", { slug: button.dataset.game });
     if (button.dataset.pick) {
       s.selected = button.dataset.pick;
       s.message = "";

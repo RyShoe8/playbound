@@ -238,6 +238,8 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 .home-play-panel label { display:grid; gap:4px; }
 .home-play-panel :is(input:not([type=checkbox]),select) { width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; padding:8px; background:var(--background); color:inherit; }
 .home-play-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.home-play-friend { width:100%; min-width:0; }
+.home-play-friend a { text-decoration:underline; }
 .home-play-panel button { cursor:pointer; text-align:start; }
 .home-play-panel button:disabled { opacity:.6; }
 .home-play-panel small { display:block; }

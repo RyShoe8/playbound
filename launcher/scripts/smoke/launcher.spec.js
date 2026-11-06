@@ -18,7 +18,7 @@ test('signed-out launcher keeps discovery usable and exposes account entry', asy
     await page.locator('#home-editions-grid').getByRole('button',{name:'Try again'}).click();
     await expect(page.locator('#home-editions-grid')).toContainText('Fixture Edition');
     await expect(page.locator('#home-mods-grid')).toContainText('Fixture Mod');
-    await expect(page.locator('#home-people').getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+    await expect(page.locator('#home-availability').getByRole('button',{name:'Sign in to share availability',exact:true})).toBeVisible();
     await page.locator('[data-view="games"]').click();
     await expect(page.locator('#games-grid .card-title-text').filter({hasText:'Smoke Fixture Game'})).toBeVisible();
     await page.locator('[data-view="deals"]').click();
