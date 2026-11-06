@@ -11034,7 +11034,7 @@ function setFriendSize(compact) {
       const area = screen.getDisplayMatching(bounds).workArea;
       win.setBounds(lastFullBounds || { ...bounds, width: Math.min(1100, area.width), height: Math.min(800, area.height) });
     }
-    win.minimize();
+    win.hide();
   }
   return showOverlay("friends");
 }
@@ -11047,17 +11047,31 @@ function setFriendSize(compact) {
 function watchForFriendViewDrag(target) {
   let dragging = false;
   const isNarrow = () => target.isVisible() && !target.isMinimized() && target.getBounds().width <= FRIEND_VIEW_WIDTH;
+  let settleTimer;
+  function checkWidth() {
+    if (!target.isDestroyed() && isNarrow()) setFriendSize(true);
+  }
   target.on("will-resize", () => {
     if (!dragging && target.getBounds().width > FRIEND_VIEW_WIDTH) lastFullBounds = target.getNormalBounds();
     dragging = true;
   });
   target.on("resized", () => {
     dragging = false;
-    if (isNarrow()) setImmediate(() => setFriendSize(true));
+    clearTimeout(settleTimer);
+    setImmediate(checkWidth);
   });
   target.on("resize", () => {
-    if (!dragging && isNarrow()) setFriendSize(true);
+    clearTimeout(settleTimer);
+    // Read the settled native bounds. macOS can also omit the final
+    // resized event for a programmatic resize or snap.
+    if (!dragging || process.platform === "darwin") {
+      settleTimer = setTimeout(() => {
+        dragging = false;
+        checkWidth();
+      }, 450);
+    }
   });
+  target.once("closed", () => clearTimeout(settleTimer));
 }
 ipcMain.handle("friend-size", (_event, compact) => setFriendSize(compact === true));
 ipcMain.handle("open-friends-popout", () => openFriendsPopout());
