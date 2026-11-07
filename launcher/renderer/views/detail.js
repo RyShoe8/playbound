@@ -807,6 +807,8 @@ async function renderGameDetailView(slug, opts = {}) {
   ).catch(() => null);
 
   const editions = filterRealEditions(editionsRes?.editions);
+  // The last game's tab may not exist on this one.
+  if (state.detailActiveTab === "editions" && editions.length <= 1) state.detailActiveTab = "overview";
   // Drives whether the Editions nav entry appears for this game.
   state.currentDetailEditionCount = editions.length;
   updateGamesFamilyNav();
@@ -934,6 +936,7 @@ async function renderGameDetailView(slug, opts = {}) {
 
     <nav class="detail-tabs" id="detail-tabs">
       <button type="button" class="detail-tab ${state.detailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
+      ${editions.length > 1 ? `<button type="button" class="detail-tab ${state.detailActiveTab === "editions" ? "active" : ""}" data-tab="editions">Editions</button>` : ""}
       <button type="button" class="detail-tab ${state.detailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
       ${hasControlBindings(detail) ? `<button type="button" class="detail-tab ${state.detailActiveTab === "controls" ? "active" : ""}" data-tab="controls">Controls</button>` : ""}
       ${(detail.hasServerBrowser ?? detail.multiplayer) ? `<button type="button" class="detail-tab ${state.detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
@@ -959,15 +962,6 @@ async function renderGameDetailView(slug, opts = {}) {
                      <h2 class="detail-section-title">What this copy unlocks</h2>
                      <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">Owning ${escapeHtml(detail.title)} unlocks the games, editions, and mods below.</p>
                      <div id="detail-unlocks-body"></div>
-                   </section>`
-                : ""
-            }
-            ${
-              editions.length > 1
-                ? `<section class="detail-section" id="detail-editions-sec">
-                     <h2 class="detail-section-title">Available Editions</h2>
-                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length} editions are available for ${escapeHtml(detail.title)}. Each installs separately.</p>
-                     <div class="detail-editions-grid" id="detail-editions-list"></div>
                    </section>`
                 : ""
             }
@@ -1085,6 +1079,13 @@ async function renderGameDetailView(slug, opts = {}) {
       <!-- ── Dynamic Subnav Tabs ─────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "controls" ? "active" : ""}" data-panel="controls" id="detail-controls-sec">${controlsPanelHtml(detail)}</div>
       <div class="detail-tab-panel ${state.detailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="detail-servers-sec"></div>
+      ${editions.length > 1 ? `<div class="detail-tab-panel ${state.detailActiveTab === "editions" ? "active" : ""}" data-panel="editions">
+        <section class="detail-section" id="detail-editions-sec">
+          <h2 class="detail-section-title">Available Editions</h2>
+          <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length} editions are available for ${escapeHtml(detail.title)}.</p>
+          <div class="detail-editions-grid" id="detail-editions-list"></div>
+        </section>
+      </div>` : ""}
       <div class="detail-tab-panel ${state.detailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="detail-mods-sec"></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="detail-guides-sec"><p class="view-sub">Loading guides…</p></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "achievements" ? "active" : ""}" data-panel="achievements" id="detail-achievements-sec">
@@ -1777,9 +1778,9 @@ async function renderGameDetailView(slug, opts = {}) {
     actions.innerHTML = `
       <button class="btn-success" id="act-play">Play Now</button>
       <button class="btn-secondary" id="act-folder">${window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"}</button>
-      <button class="btn-danger" id="act-uninstall">Uninstall</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-play-remote" title="Stream this game from another PlayBound PC on your account">📡 Play Remotely</button>` : ""}
+      <button class="btn-danger" id="act-uninstall">Uninstall</button>
       ${gamePlayHintHtml(slug)}
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
@@ -2769,12 +2770,12 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
         <div class="detail-hero-actions">
           ${
             editionInstalled
-              ? `<button class="btn-success" id="edition-play">Play</button>
-                 <button class="btn-danger" id="edition-uninstall">Uninstall</button>`
+              ? `<button class="btn-success" id="edition-play">Play</button>`
               : `<button class="btn-primary" id="edition-install">Install this edition</button>
                  <button class="btn-secondary" id="edition-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>`
           }
           <button type="button" class="btn-secondary" id="edition-open-site" title="View this edition on playbound.club">View on Web ↗</button>
+          ${editionInstalled ? `<button class="btn-danger" id="edition-uninstall">Uninstall</button>` : ""}
         </div>
       </div>
     </section>

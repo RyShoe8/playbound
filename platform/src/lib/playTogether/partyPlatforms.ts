@@ -100,12 +100,14 @@ export function partyGameOptionLabel(
   opts: {
     testing?: boolean;
     genres?: readonly string[] | null;
+    /** The genre being filtered on: every row has it, so it says nothing. */
+    hideGenre?: string | null;
   } = {}
 ): string {
   const tags: string[] = [];
   for (const genre of opts.genres || []) {
     const trimmed = String(genre || "").trim();
-    if (!trimmed) continue;
+    if (!trimmed || trimmed.toLowerCase() === opts.hideGenre?.toLowerCase()) continue;
     if (tags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) continue;
     tags.push(trimmed);
     if (tags.length >= 3) break;

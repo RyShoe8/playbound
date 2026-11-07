@@ -11965,3 +11965,9 @@ textarea.input-text {
 .search-collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
 .search-collection-card { display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .search-collection-card span { font-size: 13px; color: var(--text-muted); }
+
+.party-game-select > input { width: 100%; }
+.party-game-list { margin-top: 6px; max-height: 256px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+.party-game-option { display: block; width: 100%; padding: 8px 12px; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.party-game-option:hover { background: var(--bg-card-hover); }
+.party-game-option[aria-selected="true"] { font-weight: 700; }

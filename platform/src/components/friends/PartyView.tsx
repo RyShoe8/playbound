@@ -1,5 +1,6 @@
 "use client";
 
+import { PartyGamePicker } from "@/components/friends/PartyGamePicker";
 import { SavedWorldPicker } from "@/components/friends/SavedWorldPicker";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -588,40 +589,12 @@ export function PartyView({
               */}
             {isLeader && party.status !== "ended" ? (
               <div className="max-w-[240px] space-y-2">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Game
-                  </span>
-                  <PremiumSelect
-                    value={party.gameSlug || ""}
-                    onChange={(e) => {
-                      if (e.target.value) void setGame(party.id, e.target.value);
-                    }}
-                  >
-                    <option value="">Select a game</option>
-                      {/*
-                      Game list is already filtered by Multiplayer Type; labels
-                      only need genres + Testing.
-                    */}
-                    {partyGames.map((g) => (
-                      <option key={g.slug} value={g.slug}>
-                        {partyGameOptionLabel(g.title, {
-                          testing: g.status === "testing" || g.status === "ready",
-                          genres: g.genres,
-                        })}
-                      </option>
-                    ))}
-                    {/*
-                      Keeps whatever is already selected visible, including a game
-                      the filter now excludes. A party set to a singleplayer title
-                      before this filter existed would otherwise render a blank
-                      selector and look broken rather than merely out of date.
-                    */}
-                    {party.gameSlug && !partyGames.some((g) => g.slug === party.gameSlug) ? (
-                      <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
-                    ) : null}
-                  </PremiumSelect>
-                </label>
+                <PartyGamePicker
+                  games={partyGames}
+                  selectedSlug={party.gameSlug || ""}
+                  selectedTitle={party.gameTitle || party.gameSlug || ""}
+                  onSelect={(slug) => void setGame(party.id, slug)}
+                />
                 {/*
                   A shorter list with no explanation reads as games having
                   disappeared; the leader cannot guess a member's OS is why.

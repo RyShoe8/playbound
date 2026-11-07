@@ -13598,8 +13598,23 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
       headers: catalogReadHeaders(),
     });
     if (res.ok) rich = await res.json();
-  } catch {
-    /* offline */
+    else console.warn(`[detail] ${slug}: game details returned HTTP ${res.status}`);
+  } catch (err) {
+    console.warn(`[detail] ${slug}: game details failed:`, err?.message || err);
+  }
+  /*
+   * Without these details the page silently loses its Mods/Tables tab, so an
+   * admin's signed-in request that fails gets one retry as a public request.
+   */
+  if (!rich && linkedCanUseAdminChannel) {
+    try {
+      const res = await apiFetch(`${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}`, {
+        headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      });
+      if (res.ok) rich = await res.json();
+    } catch {
+      /* offline */
+    }
   }
   let entry = (await entryPromise) || catalogEntry(slug);
 

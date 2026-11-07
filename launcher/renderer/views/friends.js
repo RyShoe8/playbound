@@ -1809,11 +1809,11 @@ function fitsPartySize(maxPlayers, memberCount) {
   return seats >= need;
 }
 
-function partyGameOptionLabel(title, { testing = false, genres = [] } = {}) {
+function partyGameOptionLabel(title, { testing = false, genres = [], hideGenre = "" } = {}) {
   const tags = [];
   for (const genre of genres || []) {
     const trimmed = String(genre || "").trim();
-    if (!trimmed) continue;
+    if (!trimmed || trimmed.toLowerCase() === hideGenre.toLowerCase()) continue;
     if (tags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) continue;
     tags.push(trimmed);
     if (tags.length >= 3) break;
@@ -1823,13 +1823,15 @@ function partyGameOptionLabel(title, { testing = false, genres = [] } = {}) {
   return `${title} · ${tags.join(" · ")}`;
 }
 
-function partyGameOptionsHtml(selectedSlug, party) {
+let partyGenreFilter = "";
+
+function partyGameChoices(party) {
   const required = Array.isArray(party?.requiredPlatforms) ? party.requiredPlatforms : [];
   const memberCount = Array.isArray(party?.members) ? party.members.length : 1;
   const couchCapable = new Set(party?.couchCapableGames || party?.couchOnlyGames || []);
   // Party choices describe what this group can launch, regardless of the
   // Free/All preference used while browsing Discover.
-  const games = (partyGamesCache || [])
+  return (partyGamesCache || [])
     .filter((g) => partyCanAllPlay(g, required))
     .filter((g) => fitsPartySize(g.maxPlayers, memberCount))
     /*
@@ -1837,29 +1839,27 @@ function partyGameOptionsHtml(selectedSlug, party) {
      * party multiplayer titles (including Connect couch titles like TMNT/X-Men).
      */
     .filter((g) => (partyCouchCoopFilter ? couchCapable.has(g.slug) : true));
-  const options = [`<option value="">Select a game</option>`];
-  for (const g of games) {
-    const label = partyGameOptionLabel(g.title, {
-      testing: Boolean(g.testing || g.status === "testing"),
-      genres: g.genres,
-    });
-    options.push(
-      `<option value="${escapeHtml(g.slug)}"${g.slug === selectedSlug ? " selected" : ""}>${escapeHtml(
-        label
-      )}</option>`
-    );
-  }
-  // A party can point at something the launcher catalog does not carry (a
-  // testing entry, say). The site keeps that selectable rather than silently
-  // resetting the party's game the next time the leader touches the picker.
-  if (selectedSlug && !games.some((g) => g.slug === selectedSlug)) {
-    options.push(
-      `<option value="${escapeHtml(selectedSlug)}" selected>${escapeHtml(
-        party?.gameTitle || selectedSlug
-      )}</option>`
-    );
-  }
-  return options.join("");
+}
+
+function partyGenreOptionsHtml(party) {
+  const genres = [...new Set(partyGameChoices(party).flatMap((g) => (g.genres || []).map((x) => String(x).trim()).filter(Boolean)))]
+    .sort((a, b) => a.localeCompare(b));
+  if (partyGenreFilter && !genres.includes(partyGenreFilter)) partyGenreFilter = "";
+  return [`<option value="">All genres</option>`, ...genres.map((g) =>
+    `<option value="${escapeHtml(g)}"${g === partyGenreFilter ? " selected" : ""}>${escapeHtml(g)}</option>`)].join("");
+}
+
+/** The list under the game box: narrowed by genre and by what has been typed. */
+function paintPartyGameList(list, party, query) {
+  const q = query.trim().toLowerCase();
+  const games = partyGameChoices(party).filter((g) =>
+    (!partyGenreFilter || (g.genres || []).some((x) => String(x).trim() === partyGenreFilter)) &&
+    String(g.title).toLowerCase().includes(q));
+  list.innerHTML = games.length
+    ? games.map((g) => `<button type="button" role="option" class="party-game-option" aria-selected="${g.slug === party.gameSlug}" data-slug="${escapeHtml(g.slug)}">${escapeHtml(partyGameOptionLabel(g.title, {
+        testing: Boolean(g.testing || g.status === "testing"), genres: g.genres, hideGenre: partyGenreFilter,
+      }))}</button>`).join("")
+    : `<p class="party-game-platform-note" style="padding:8px 12px;margin:0">No games match.</p>`;
 }
 
 /*
@@ -2003,10 +2003,16 @@ function buildPartyViewHtml(party) {
       : "";
 
   const gameHtml = isLeader && !ended
-    ? `<label class="party-field-label" for="party-game-select">Game</label>
-       <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
-         ${partyGameOptionsHtml(party.gameSlug || "", party)}
-       </select>${openRaModHtml}${platformNoteHtml}`
+    ? `<label class="party-field-label" for="party-genre-select">Genre</label>
+       <select class="input-text party-game-select" id="party-genre-select" aria-label="Filter party games by genre">
+         ${partyGenreOptionsHtml(party)}
+       </select>
+       <label class="party-field-label" for="party-game-input">Game</label>
+       <div class="party-game-select">
+         <input type="text" class="input-text" id="party-game-input" role="combobox" aria-expanded="false" aria-controls="party-game-list" autocomplete="off"
+           placeholder="${escapeHtml(party.gameTitle || "Type to search games")}" value="${escapeHtml(party.gameTitle || party.gameSlug || "")}" />
+         <div class="party-game-list hidden" id="party-game-list" role="listbox"></div>
+       </div>${openRaModHtml}${platformNoteHtml}`
     : hasGame
     ? `<p class="party-field-label">Game</p>
        <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${openRaModHtml}${
@@ -3371,7 +3377,8 @@ function wirePartyView(slot, party) {
     });
   }
 
-  const gameSelect = slot.querySelector("#party-game-select");
+  const gameInput = slot.querySelector("#party-game-input");
+  const gameList = slot.querySelector("#party-game-list");
   const multiplayerType = slot.querySelector("#party-multiplayer-type-select");
   if (multiplayerType) {
     multiplayerType.addEventListener("change", () => {
@@ -3381,10 +3388,41 @@ function wirePartyView(slot, party) {
       paintPartyArea({ myParties: [partyStore.current], discoverable: [] }, { force: true });
     });
   }
-  if (gameSelect) {
-    gameSelect.addEventListener("change", async () => {
-      const slug = gameSelect.value;
+  const genreFilter = slot.querySelector("#party-genre-select");
+  if (genreFilter) {
+    genreFilter.addEventListener("change", () => {
+      partyGenreFilter = genreFilter.value;
+      if (gameList && !gameList.classList.contains("hidden")) paintPartyGameList(gameList, party, gameInput.value);
+    });
+    enhanceSelect(genreFilter);
+  }
+  if (gameInput && gameList) {
+    const closeList = () => {
+      gameList.classList.add("hidden");
+      gameInput.setAttribute("aria-expanded", "false");
+      gameInput.value = party.gameTitle || party.gameSlug || "";
+    };
+    gameInput.addEventListener("focus", () => {
+      gameInput.value = "";
+      gameList.classList.remove("hidden");
+      gameInput.setAttribute("aria-expanded", "true");
+      paintPartyGameList(gameList, party, "");
+    });
+    gameInput.addEventListener("input", () => paintPartyGameList(gameList, party, gameInput.value));
+    gameInput.addEventListener("blur", closeList);
+    gameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") gameInput.blur();
+      if (event.key === "Enter") {
+        event.preventDefault();
+        gameList.querySelector("[data-slug]")?.click();
+      }
+    });
+    // Before the input's blur closes the list, including on a scrollbar drag.
+    gameList.addEventListener("mousedown", (event) => event.preventDefault());
+    gameList.addEventListener("click", async (event) => {
+      const slug = event.target.closest("[data-slug]")?.dataset.slug;
       if (!slug) return;
+      gameInput.blur();
       const pickedTitle =
         partyGamesCache?.find((g) => g.slug === slug)?.title || slug;
       pendingJoin = null;
@@ -3395,7 +3433,6 @@ function wirePartyView(slot, party) {
       }), () => window.playbound.setPartyGame(partyId, slug), "Couldn't set the party game.");
       void window.playbound.syncLibraryNow?.({ quiet: true });
     });
-    enhanceSelect(gameSelect);
   }
 
   const openRaEditionSelect = slot.querySelector("#party-openra-edition-select");
