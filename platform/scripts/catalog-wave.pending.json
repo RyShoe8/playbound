@@ -1,4 +1,85 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261106-09",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "triplea/triplea-official",
+      "expected": {
+        "longDescription": "The complete official TripleA for Windows with an integrated Java environment, online lobby and map downloads. TripleA lets you play Axis and Allies-style board games and thousands of community maps."
+      },
+      "set": {
+        "longDescription": "TripleA is what to install if you love Axis & Allies or Risk but cannot get six friends and a very large table together for an entire weekend. It is a free, open-source, turn-based grand strategy engine in that board game tradition: push armies around a map, buy units with your income, roll the dice, and try to keep the peace with allies who may be about to make a terrible decision.\n\nIts real attraction is the sheer amount there is to play. More than 300 community-made maps cover the world wars, along with science fiction and fantasy settings, so the engine works more like a library of board games than a single title. Some are quick, and some will happily take you days.\n\nJust as useful is how many ways you can play. You can take on the AI alone, share a screen in hot-seat, send turns by email or through forums, connect directly, or use the hosted lobby for live games. That flexibility suits a genre where a full match can last far longer than one evening. The interface is more functional than pretty, and it takes a while to learn, but nobody here is playing for the graphics. It is free under the GPL version 3, on Windows, macOS and Linux."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "trigger-rally/trigger-rally-portable",
+      "expected": {
+        "longDescription": "The official 64-bit Windows release of Trigger Rally, a free 3D rally game with over 100 stages and zero-install portable packaging."
+      },
+      "set": {
+        "longDescription": "Trigger Rally is a small, fast, free rally game that wants nothing except for you to get to the finish line a little faster than last time. It is an open-source, single-player racer for Linux and Windows, with events to work through and tracks that are mostly about keeping your car pointed roughly the right way across dirt, snow and whatever else the map throws at you.\n\nMost maps come with spoken co-driver notes, which add a surprising amount of rally feel for a modest game. There is also a practice mode for learning a stage without pressure, and an optional driving assist if the handling gets away from you. The physics are arcade-minded rather than a serious simulation, and that is fine: you can get going within a minute, and the fun comes from a clean run rather than from setup screens.\n\nCommunity contributions have added many tracks and events, and the project offers a tutorial and XML reference if you want to make your own. Its art and sound come from open sources like OpenGameArt and Freesound, so do not expect a modern showpiece. This portable edition keeps everything in one folder. It is released under the GPL, and it costs nothing to try over a coffee break."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "ysoccer/ysoccer-portable",
+      "expected": {
+        "longDescription": "The complete official 64-bit Windows distribution of YSoccer, a Sensible Soccer-style football game with international teams and leagues."
+      },
+      "set": {
+        "longDescription": "YSoccer is a love letter to Sensible World of Soccer. Formerly called Yoda Soccer, this free, open-source game describes itself as a continuation of that series, and it plays the way the name promises: a tiny top-down pitch, quick passing and a control scheme that gets almost everything done with a single button, with volleys and bicycle kicks if you can time them.\n\nIt is still a little more than a nostalgia act. Players have more detail than in the original, with shaded kits and a wider range of skin tones and hairstyles. Weather comes into it too, as rain, snow, fog and wind can all change how a match feels, and a bouncing ball in a gale is a real equaliser between friends.\n\nThere is plenty of football to play as well. Preset competitions use random or fixed calendars, and you can create your own leagues and cups. Player control can be automatic or fixed, depending on how much you want to manage. It works best with a friend on the same machine or as a quick solo match when you have ten spare minutes. This portable edition keeps everything in one folder. YSoccer is free under the GPL version 2."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "heroes-of-might-and-magic-3-complete/wog",
+      "expected": {
+        "longDescription": "In the Wake of Gods (WoG), here with the ERA 3 platform, is a total conversion platform for Heroes III. Heroes get new abilities, there are new objects, creatures and scripting options, and a large library of community content builds on it."
+      },
+      "set": {
+        "longDescription": "In the Wake of Gods is the wild side of Heroes of Might and Magic III. Where Horn of the Abyss carefully extends the game's balance, this one has always been about adding as many new ideas as possible, and ERA 3 is the modern, redesigned edition that keeps it running, built on a platform that fans use to manage their mods.\n\nThe original WoG brought in the things it is still known for. Commanders, originally called pets, travel with your hero as units in their own right. Creatures gain experience and grow stronger as they fight, new creatures join the existing lineups, and a whole scripting language, ERM, lets map makers do things the base game never allowed. It even has a campaign built on those scripts.\n\nERA adds a practical layer on top, fixing many of WoG's old bugs and adding XXL maps, a convenient mod manager, an improved map editor and new landscape types, along with support for C++ plugins and a large collection of community add-ons, some with entire new towns. It is messier than Horn of the Abyss, and it is not the choice for competitive play, but it is hard to beat for anyone who wants a more surprising game. It needs your own Heroes III Complete."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/rebirth",
+      "expected": {
+        "longDescription": "Morrowind Rebirth is a total overhaul that enriches and expands every city and settlement in Morrowind."
+      },
+      "set": {
+        "longDescription": "Morrowind Rebirth is what you install to make the old game feel new without really leaving it. One modder's long-running project, it reached version 6.0 after 11 years, and PC Gamer called it the ultimate enhanced vanilla experience. That is a good summary: it stays on Vvardenfell and changes nearly everything you look at while you are there.\n\nThe world is where you notice it first. Cities are remodelled, with places such as Ald Velothi and Molag Mar overhauled, and new rocks and trees spread through every region. New dungeons appear across the island, including a new Daedric realm to explore, and existing ones have been reworked, so even veterans have reason to poke into caves they think they know.\n\nBalance gets the same treatment, with creatures' health adjusted and weapons swinging faster, and that takes the edge off the frustrating early hours. Skill changes are optional through a separate add-on, so you can choose how far to go.\n\nThe main thing to plan around is compatibility. It conflicts with Tamriel Rebuilt, and many mods that change models, textures or values will not work alongside it, so it is more of a one-stop choice than a starting point for a big mod list. It also depends on the Morrowind Code Patch. You need your own copy of Morrowind."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openarena/omega",
+      "expected": {
+        "longDescription": "OmegA is a mod and engine build for OpenArena that polishes the original game and adds features for competitive and casual play, including OpenGL and Vulkan renderers, and ideas from Ratmod, Aftershock and ioquake3."
+      },
+      "set": {
+        "longDescription": "OmegA is a mod for OpenArena that sets out to polish the free Quake III-style shooter and make it better for both competitive and casual play. It draws from earlier projects such as Ratmod and Aftershock along with ioquake3, and it runs on a Q3E-based engine that is efficient enough to reach 60 frames per second on a Raspberry Pi. So almost anyone's computer can run it.\n\nIf you know arena shooters, the structure is familiar. You get Free For All, Capture the Flag, Team Deathmatch and Elimination, and the speed and the rocket-jumping that made the genre what it is. Where it stands apart is in its options: server settings cover air control, automatic bunny-hopping, rail jumps, slick surfaces and team pushing, so a host can shape how a match moves, from comfortable to very fast.\n\nThat also makes it a nice party choice, because it is free, it is a small download by modern standards, and nobody is stuck on a slow machine. It is under active development too, with regular releases on ModDB and itch.io. If your group wants the simple pleasure of a few rounds of railgun duels before moving on to something else, OmegA is a good way to get them. It stands on its own, with no other game needed."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "mrboom/retroarch",
+      "expected": {
+        "longDescription": "Mr. Boom's standalone Windows download is gone; the author now publishes source and a libretro core. This edition runs the game through RetroArch, with up to eight players, bots and classic Bomberman-style rules."
+      },
+      "set": {
+        "longDescription": "Mr.Boom is an eight-player Bomberman clone, and it knows exactly how much fun that is. Originally a DOS game written in assembly, it was converted using a tool called asm2c and now runs as a core for RetroArch, which is why it turns up on a remarkable list of systems. This edition is set up through RetroArch, so you can get straight to blowing up your friends.\n\nYou know the rules: drop bombs, clear the walls, grab power-ups and do not stand in the wrong place. Eight players at once is what lifts it above most of its peers, because the board turns into a magnificent mess. Bomb pushing and remote controls add a layer of cruelty, and riding kangaroos adds a layer of silliness. Teams can be organised by colour or by sex, or you can use a Skynet mode that pits people against the machines.\n\nIt handles fewer friends well too. Netplay brings distant players into the same match, and newer AI bots fill empty slots, so there is always a full board. A round takes a couple of minutes, which makes this one of the easiest games to suggest at the start or end of a night together. It is free and open source under the MIT license."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "everquest/project-99",
+      "expected": {
+        "longDescription": "Project 1999 recreates classic EverQuest eras on community servers. PlayBound cannot ship the Titanium client, so you provide a legal copy of EverQuest Titanium and PlayBound sets it up to connect.\n\nThe servers follow a staged content release, so the game feels as it did in the early years: slow levelling, camping, and a world that depends on other players."
+      },
+      "set": {
+        "longDescription": "Project 1999 is EverQuest as it was, and for its community that is the point. It is a free, fan-run classic server, unaffiliated with Daybreak but operating with legal permission, whose goal since the beginning has been to re-create the game from 1999 to 2001, covering the original release and the Kunark and Velious expansions, as accurately as possible.\n\nThat means accepting everything modern MMOs were designed to remove. There is no quest tracker to follow, and experience comes slowly, and dying far from your corpse is a real problem that you may need a friend to help you solve. Groups are not an optional extra: much of the game is about finding people, holding a camp and talking to each other while the mobs respawn. If that sounds awful, you already know this is not for you. If it sounds like what you have been missing, nothing else quite replaces it.\n\nBlue is the main non-PvP server, Red is for PvP, and a separate Green server was built to relive the earliest era. There are a few deliberate departures from classic, like zone experience modifiers. It uses a Titanium-era client, which you need to supply, and it has its own rules of conduct. It is free to play, with no subscription."
+      }
+    }
+  ]
 }
