@@ -1,4 +1,105 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261107-holocure-daggerfall-guidance",
+  "operations": [
+    {
+      "expected": {
+        "whyWePickedIt": "It makes a solo favourite playable with friends.",
+        "faq": [
+          {
+            "q": "What is included in the HoloCure PlayBound Edition?",
+            "a": "The PlayBound Edition packages verified community mods into a single one-click install: online co-op Multiplayer, full Sandbox/testing mode, community Character Expansions, Discord Rich Presence, and QoL utilities (random character picker & quick restarts)."
+          },
+          {
+            "q": "Can I install these mods individually?",
+            "a": "Yes. Every mod included in the PlayBound Edition is also listed as an individual mod option in the Mods tab so you can enable, configure, or remove specific mods independently."
+          },
+          {
+            "q": "Will this affect my existing HoloCure save files?",
+            "a": "No. HoloCure saves are stored separately in %LOCALAPPDATA%\\HoloCure (save_n.dat) and are never overwritten or deleted by PlayBound."
+          },
+          {
+            "q": "Can I still play the vanilla single-player edition?",
+            "a": "Yes. The standard unmodded Official Edition remains available and can be launched or selected at any time."
+          }
+        ]
+      },
+      "kind": "edition",
+      "key": "holocure/playbound",
+      "set": {
+        "whyWePickedIt": "The draw is getting to share the chaos with someone who normally only hears about your run afterward. We'd pick this for friends who already like HoloCure and want to experiment together. Give yourselves time to get connected, and expect the occasional rough edge: multiplayer here comes from an ambitious community mod.",
+        "faq": [
+          {
+            "q": "What does this edition install?",
+            "a": "HoloCure plus the Aurie loader, multiplayer mod, supporting menu and callback modules, and emote files. This is not a bundle of sandbox tools or character expansions."
+          },
+          {
+            "q": "How do we start a LAN session?",
+            "a": "Open Play, then Multiplayer. Select the network adapter shared by your group; one player chooses Host LAN Session and the others choose Join LAN Session. For a virtual LAN, select its adapter rather than an unrelated Wi-Fi connection."
+          },
+          {
+            "q": "Is multiplayer an official HoloCure feature?",
+            "a": "No. PippleCultist makes this community mod. Its author warns that extensive changes can cause bugs and crashes."
+          },
+          {
+            "q": "Should I back up my saves?",
+            "a": "Yes, before experimenting with mods. HoloCure keeps saves under %LOCALAPPDATA%\\HoloCure. A separate installation is not necessarily a separate save, so keep a backup rather than assuming your progress is isolated."
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "whyWePickedIt": "A free, quick-to-start game with a lot of depth.",
+        "faq": []
+      },
+      "kind": "edition",
+      "key": "holocure/official",
+      "set": {
+        "whyWePickedIt": "We'd start here if you want to learn HoloCure before adding multiplayer to the mix. Pick a character, try a different weapon combination and see what carries you further into the crowd. Unlocks use in-game currency, so the next character is something to work toward rather than another purchase.",
+        "faq": [
+          {
+            "q": "Is the character gacha paid?",
+            "a": "No. The creator describes a completely free game with character unlocks using in-game currency only."
+          },
+          {
+            "q": "Is this an official hololive game?",
+            "a": "It is an unofficial fan game by Kay Yu and the HoloCure team, featuring hololive characters. The project states it is not affiliated with COVER Corp."
+          },
+          {
+            "q": "Which platforms are officially supported?",
+            "a": "The creator lists Windows PC. Running it through a compatibility layer is different from having an official macOS or Linux build."
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "whyWePickedIt": "The best way to play Daggerfall today.",
+        "faq": []
+      },
+      "kind": "edition",
+      "key": "daggerfall/daggerfall-unity",
+      "set": {
+        "whyWePickedIt": "We'd choose Unity when you want Daggerfall itself, with fewer obstacles between you and the adventure. Modern controls and widescreen presentation make it easier to settle in, while the retro display options let you keep the older look. Start with the unmodified game, then decide which parts you actually want a mod to change.",
+        "faq": [
+          {
+            "q": "Does the engine include the original game data?",
+            "a": "Daggerfall Unity requires the free DOS Daggerfall data for artwork, models and sounds. If setup asks for those files, point it at your Daggerfall data folder rather than another engine installation."
+          },
+          {
+            "q": "Does it run natively on Mac and Linux?",
+            "a": "Yes. The project supports Windows, Linux and macOS without DOS emulation."
+          },
+          {
+            "q": "Should I install a graphics overhaul immediately?",
+            "a": "We would get the unmodified game running first. The developers warn that optional mods can substantially raise hardware requirements or reduce stability. Add them gradually so you can identify problems."
+          },
+          {
+            "q": "Can I keep the retro appearance?",
+            "a": "Yes. The engine offers optional 320x200 and 640x400 retro modes with VGA palettes, alongside modern display options."
+          }
+        ]
+      }
+    }
+  ]
 }
