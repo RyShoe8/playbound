@@ -324,7 +324,11 @@ export function toEdition(doc: LeanEdition): Edition {
     bestFor: Array.isArray(doc.bestFor) && doc.bestFor.length > 0 ? (doc.bestFor as string[]) : seedMatch?.bestFor ?? [],
     notFor: Array.isArray(doc.notFor) && doc.notFor.length > 0 ? (doc.notFor as string[]) : seedMatch?.notFor ?? [],
 
-    version: (doc.version as string) || undefined,
+    // The daily check keeps the install recipe current, so a label on it is what actually installs.
+    version:
+      String((doc.installConfig as { playbound_installer?: { versionLabel?: string } } | null)?.playbound_installer?.versionLabel || "").replace(/^v/i, "") ||
+      (doc.version as string) ||
+      undefined,
     firstPlaySteps:
       Array.isArray(doc.firstPlaySteps) && doc.firstPlaySteps.length > 0
         ? (doc.firstPlaySteps as InstallStep[])

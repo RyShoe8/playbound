@@ -58,6 +58,7 @@ const { createSteamCmdInstaller } = require("./services/steamCmd");
 const { steamAppState, steamRuntimeForLaunch } = require("./services/steamPrerequisites");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
+const { mergeModFiles, modUpdateAction, normalizedVersion, shouldUpdateEdition } = require("./services/autoUpdate");
 const controllerProfiles = require("./services/controllerProfiles");
 const launchFixes = require("./services/launchFixes");
 const gameControllerConfig = require("./services/gameControllerConfig");
@@ -130,7 +131,7 @@ const daggerfallData = require("./services/daggerfallData");
 const daggerfallBaseFirst = require("./services/daggerfallBaseFirst");
 const gamepadBridge = require("./services/gamepadBridge");
 const { resolveControlsForGame, resolveQuitHint } = require("./services/gameControls");
-const { CATALOG_LIVE_STATS_TTL_MS, CATALOG_TTL_MS, DEFAULT_API_BASE, DEFAULT_EDITION_SLUG, DEFAULT_GAMES_DIR, INSTALLED_SLUG_ALIASES, PROTOCOL, UPDATER_FEED_URL, apiFetch, assertDownloadUrl, assertOpenExternalUrl, catalogEntryFromEdition, cloudSaves, collectHardwareProfile, configureYoutubeEmbedIdentity, editionInstallDir, ensureGameInstallRecord, ensureUnixExecutable, exeOnDisk, expandWinPath, extract7z, extractDmg, extractLinkHandoff, extractPkg, extractZip, fetchCatalogLiveStats, fetchControlProfile, fetchLauncherEditions, findExecutable, findInstallerInDir, findNamedPortableExe, findYSoccerOnlineJar, gamesRoot, getApiBase, getAvailableDiskSpace, getRemoteDeviceId, getRemoteDeviceName, httpStatusFromInstallError, installErrorCode, installQueue, isAllowedApiBase, launcherApiHeaders, launcherJson, listEditionEntries, listFixedDriveRoots, liveStatsDisk, loadCachedCatalog, loadCachedCatalogFile, loadSettings, loadState, normalizeFsPath, normalizeProcessImageName, parseDeepLink, pathUnderRoot, playableExePath, probeServerLatency, promoteStagingDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, registerCatalogEntryHosts, registerDownloadHostFromUrl, rememberLocatedRoot, repairUnixExtractedBinaries, reportInstall, resolveDownload, resolveEditionForInstall, resolveEventMedia, resolveMediaUrl, resolveModDownload, runLibrarySync, safeOpenExternal, saveCatalogCache, saveData, saveLiveStatsDiskCache, saveSettings, saveState, sevenZipBinary, shouldSkipScanDir, shouldSyncHardwareProfile, steamAppIdForEntry, stripRegQuotes, syncGameInstallSummary, uninstallExeCache, unpackNestedArchives, unwrapSingleRootDirectory, verifyChecksumMd5, verifyChecksumSha256, writeJarLauncher } = require("./services/main/core");
+const { CATALOG_LIVE_STATS_TTL_MS, CATALOG_TTL_MS, DEFAULT_API_BASE, DEFAULT_EDITION_SLUG, DEFAULT_GAMES_DIR, INSTALLED_SLUG_ALIASES, PROTOCOL, UPDATER_FEED_URL, apiFetch, assertDownloadUrl, assertOpenExternalUrl, catalogEntryFromEdition, cloudSaves, collectHardwareProfile, configureYoutubeEmbedIdentity, editionInstallDir, ensureGameInstallRecord, ensureUnixExecutable, exeOnDisk, expandWinPath, extract7z, extractDmg, extractLinkHandoff, extractPkg, extractZip, fetchCatalogLiveStats, fetchControlProfile, fetchLauncherEditions, findExecutable, findInstallerInDir, findNamedPortableExe, findYSoccerOnlineJar, gamesRoot, getApiBase, getAvailableDiskSpace, getRemoteDeviceId, getRemoteDeviceName, httpStatusFromInstallError, installErrorCode, installQueue, isAllowedApiBase, launcherApiHeaders, launcherJson, listEditionEntries, listFixedDriveRoots, liveStatsDisk, loadCachedCatalog, loadCachedCatalogFile, loadSettings, loadState, normalizeFsPath, normalizeProcessImageName, parseDeepLink, pathUnderRoot, playableExePath, probeServerLatency, takeRollbackDir, setCarryPlayerFiles, promoteStagingDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, registerCatalogEntryHosts, registerDownloadHostFromUrl, rememberLocatedRoot, repairUnixExtractedBinaries, reportInstall, resolveDownload, resolveEditionForInstall, resolveEventMedia, resolveMediaUrl, resolveModDownload, runLibrarySync, safeOpenExternal, saveCatalogCache, saveData, saveLiveStatsDiskCache, saveSettings, saveState, sevenZipBinary, shouldSkipScanDir, shouldSyncHardwareProfile, steamAppIdForEntry, stripRegQuotes, syncGameInstallSummary, uninstallExeCache, unpackNestedArchives, unwrapSingleRootDirectory, verifyChecksumMd5, verifyChecksumSha256, writeJarLauncher } = require("./services/main/core");
 const { ensureSteamRunning, isDiscordUrl, parseDiscordInviteCode, steamAppIdFor, steamBaseDir } = require("./services/main/steam");
 const { epicStoreOpenUrl } = require("./services/epicLauncher");
 const { SOLARUS_REPAIR_SLUGS, elevationRemembered, findDirContainingFile, flattenWadFiles, flightGearAddonLaunchArgs, isAuriePatched, isBaseGameReady, isExecutableLocked, isFlightGearAircraftMod, listUninstallRegistryDump, looksLikeElevationRefusal, maybeRepairWolfensteinEtInstall, maybeRepairZeldaMudoraInstall, modUsesUserDataFolder, persistEditionExe, prepareClassicDosInstall, rememberElevation, removeEditionModPatch, resolveInsideGameDir, resolveModTargetDir, runAuriePatcher } = require("./services/main/gameFixes");
@@ -1794,6 +1795,7 @@ function buildSettingsPayload() {
     updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
     partyInviteTrayNotifications:
       settings.partyInviteTrayNotifications !== false,
+    autoUpdates: settings.autoUpdates !== false,
     javaRuntime: managedJava.status(),
     dosBoxRuntime: managedDosBox.status(),
     dotNetRuntime: managedDotNet.status(),
@@ -1881,65 +1883,213 @@ async function refreshRemoteCatalog(force = false) {
 }
 
 /*
- * Editions whose portable layout is known to keep saves outside the install
- * directory and can therefore be replaced safely in the background.
- *
- * Auto-updating every archive would be destructive for older portable games
- * that store saves beside the executable. Keep this an explicit allowlist
- * until recipes can declare their save/update contract themselves.
+ * Installed editions and mods follow the catalog on their own. Only archive
+ * installs in PlayBound's own folder qualify: an installer or a store manages
+ * its own files. services/autoUpdate.js keeps the player's files across the swap.
  */
-const SAFE_MANAGED_EDITION_UPDATES = new Set(["rollercoaster-tycoon::openrct2"]);
+const AUTO_UPDATE_KINDS = ["direct-zip", "direct-7z", "github-zip"];
+const AUTO_UPDATE_EVERY_MS = 6 * 60 * 60 * 1000;
+const BACKGROUND_DOWNLOAD_BYTES_PER_SECOND = 15 * 1024 * 1024;
+/** How soon a failed start counts against the update, and when the old build is let go. */
+const UPDATE_CRASH_WINDOW_MS = 15 * 1000;
+const UPDATE_KEEP_AFTER_MS = 60 * 1000;
+let autoUpdateRunning = false;
+let backgroundInstallActive = false;
 
-function normalizedReleaseVersion(value) {
-  return String(value || "").trim().replace(/^v/i, "");
+/** Background downloads wait out any running game and stay under a speed limit. */
+async function backgroundDownloadGate(bytes) {
+  if (!backgroundInstallActive) return;
+  while (activeLaunches.size > 0) await new Promise((resolve) => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, (bytes / BACKGROUND_DOWNLOAD_BYTES_PER_SECOND) * 1000));
 }
 
-async function autoUpdateSafeManagedEditions() {
+function notifyUpdated(message) {
+  try {
+    win?.webContents?.send("account", { message });
+  } catch {
+    /* window closed */
+  }
+}
+
+function restoreRollback(slug, editionSlug) {
   const state = loadState();
-  for (const key of SAFE_MANAGED_EDITION_UPDATES) {
-    const [slug, editionSlug] = key.split("::");
-    let edition;
+  const record = state[slug]?.editions?.[editionSlug];
+  const rollback = record?.rollback;
+  if (!rollback || !fs.existsSync(rollback.dir)) return;
+  const broken = `${record.dir}.playbound-broken`;
+  fs.rmSync(broken, { recursive: true, force: true });
+  fs.renameSync(record.dir, broken);
+  fs.renameSync(rollback.dir, record.dir);
+  fs.rmSync(broken, { recursive: true, force: true });
+  record.version = rollback.fromVersion;
+  delete record.rollback;
+  saveState(state);
+  notifyUpdated(`The ${rollback.toVersion} update would not start, so ${entryTitleFor(slug)} is back on ${rollback.fromVersion}.`);
+}
+
+function entryTitleFor(slug) {
+  return catalogEntry(slug)?.title || slug;
+}
+
+function discardRollback(slug, editionSlug) {
+  const state = loadState();
+  const record = state[slug]?.editions?.[editionSlug];
+  if (!record?.rollback) return;
+  fs.rm(record.rollback.dir, { recursive: true, force: true }, () => {});
+  delete record.rollback;
+  saveState(state);
+}
+
+/** The first launch after an update decides whether the old build is still needed. */
+function watchFirstLaunchAfterUpdate(slug, editionSlug, child) {
+  const edition = editionSlug || DEFAULT_EDITION_SLUG;
+  if (!loadState()[slug]?.editions?.[edition]?.rollback) return;
+  const startedAt = Date.now();
+  let settled = false;
+  const settle = (restore) => {
+    if (settled) return;
+    settled = true;
     try {
-      edition = await resolveEditionForInstall(slug, editionSlug);
+      if (restore) restoreRollback(slug, edition);
+      else discardRollback(slug, edition);
     } catch (err) {
-      console.warn(`[game-update] couldn't check ${key}:`, err?.message || err);
-      continue;
+      console.warn(`[game-update] rollback step failed for ${slug}:`, err?.message || err);
     }
-    const editionEntry = catalogEntryFromEdition(edition);
-    const entry = editionEntry ? { ...(catalogEntry(slug) || {}), ...editionEntry } : null;
-    if (!["direct-zip", "direct-7z", "github-zip"].includes(entry?.kind)) continue;
+  };
+  child?.once?.("error", () => settle(true));
+  child?.once?.("exit", (code) => settle(Boolean(code) && Date.now() - startedAt < UPDATE_CRASH_WINDOW_MS));
+  setTimeout(() => settle(false), UPDATE_KEEP_AFTER_MS);
+}
 
-    const game = ensureGameInstallRecord(state[slug]);
-    const installed = game.editions?.[editionSlug];
-    const fromVersion = normalizedReleaseVersion(installed?.version);
-    const toVersion = normalizedReleaseVersion(entry?.versionLabel);
-    if (!exeOnDisk(installed) || !fromVersion || !toVersion || fromVersion === toVersion) {
-      continue;
+async function autoUpdateInstalledEditions() {
+  const state = loadState();
+  for (const [slug, raw] of Object.entries(state)) {
+    if (slug.startsWith("__") || !raw || typeof raw !== "object") continue;
+    const game = ensureGameInstallRecord(raw);
+    for (const [editionSlug, installed] of Object.entries(game.editions || {})) {
+      if (activeLaunches.has(slug) || !exeOnDisk(installed) || !isPlayBoundManagedInstallDir(slug, installed.dir)) continue;
+      let entry;
+      try {
+        const editionEntry = catalogEntryFromEdition(await resolveEditionForInstall(slug, editionSlug));
+        entry = { ...(catalogEntry(slug) || {}), ...(editionEntry || {}) };
+      } catch (err) {
+        console.warn(`[game-update] couldn't check ${slug}/${editionSlug}:`, err?.message || err);
+        continue;
+      }
+      const fromVersion = normalizedVersion(installed.version);
+      const toVersion = normalizedVersion(entry.versionLabel);
+      if (!AUTO_UPDATE_KINDS.includes(entry.kind)) continue;
+      if (!shouldUpdateEdition({ fromVersion, toVersion, triedVersion: installed.autoUpdateTriedTo })) continue;
+
+      const fresh = loadState();
+      const record = fresh[slug]?.editions?.[editionSlug];
+      if (record) {
+        record.autoUpdateTriedTo = toVersion;
+        saveState(fresh);
+      }
+      // installedAt survives reinstalls, so an earlier update records its own time.
+      const installedAt = Date.parse(installed.filesInstalledAt || installed.installedAt || "");
+      setCarryPlayerFiles({ installedAtMs: Number.isFinite(installedAt) ? installedAt : NaN });
+      backgroundInstallActive = true;
+      try {
+        console.log(`[game-update] ${slug}/${editionSlug}: ${fromVersion} -> ${toVersion}`);
+        const result = await installGame(slug, installed.dir, editionSlug);
+        if (result?.status === "installed") {
+          const after = loadState();
+          if (after[slug]?.editions?.[editionSlug]) {
+            const updated = after[slug].editions[editionSlug];
+            updated.filesInstalledAt = new Date().toISOString();
+            const rollbackDir = takeRollbackDir();
+            if (rollbackDir) updated.rollback = { dir: rollbackDir, fromVersion, toVersion };
+            saveState(after);
+          }
+          notifyUpdated(`Updated ${entryTitleFor(slug)} to ${toVersion}.`);
+          void telemetry.editionUpdated(editionInfoFor(slug, { editionSlug, fromVersion, toVersion }));
+        }
+      } catch (err) {
+        // Install failures are already surfaced by installGame.
+        console.warn(`[game-update] ${slug}/${editionSlug} failed:`, err?.message || err);
+      } finally {
+        setCarryPlayerFiles(null);
+        backgroundInstallActive = false;
+      }
     }
-    if (!isPlayBoundManagedInstallDir(slug, installed.dir)) continue;
+  }
+}
 
+async function downloadNewerThan(url, installedAt) {
+  const since = Date.parse(installedAt || "");
+  if (!url || !Number.isFinite(since)) return false;
+  try {
+    const res = await fetch(assertDownloadUrl(url), {
+      method: "HEAD",
+      redirect: "follow",
+      headers: { "user-agent": "playbound-launcher" },
+      signal: AbortSignal.timeout(10000),
+    });
+    const modified = Date.parse(res.headers.get("last-modified") || "");
+    return res.ok && Number.isFinite(modified) && modified > since;
+  } catch {
+    return false;
+  }
+}
+
+async function autoUpdateInstalledMods() {
+  const mods = loadState().__mods__;
+  if (!mods || typeof mods !== "object") return;
+  for (const [slug, record] of Object.entries(mods)) {
+    if (activeLaunches.has(record?.baseGameSlug) || activeLaunches.has(slug)) continue;
+    let install;
     try {
-      console.log(
-        `[game-update] ${slug}/${editionSlug}: ${fromVersion} -> ${toVersion}`
-      );
-      const result = await installGame(slug, installed.dir, editionSlug);
+      install = await fetchModInstall(slug);
+    } catch (err) {
+      console.warn(`[mod-update] couldn't check ${slug}:`, err?.message || err);
+      continue;
+    }
+    // VPForums downloads go through the player's own sign-in, so never start one unprompted.
+    if (/vpforums\.org/i.test(String(install.url || ""))) continue;
+    const latest = install.latestVersion;
+    const action = modUpdateAction({ record, downloadKind: install.downloadKind, latestVersion: latest });
+    if (action === "none") continue;
+    const remember = (fields) => {
+      const fresh = loadState();
+      if (fresh.__mods__?.[slug]) {
+        Object.assign(fresh.__mods__[slug], fields);
+        saveState(fresh);
+      }
+    };
+    if (action === "remember") {
+      // A download newer than this install is an update, even on the first check.
+      if (!(await downloadNewerThan(install.url, record?.installedAt))) {
+        remember({ latestSeen: latest });
+        continue;
+      }
+    }
+    remember({ autoUpdateTriedTo: latest });
+    backgroundInstallActive = true;
+    try {
+      console.log(`[mod-update] ${slug}: updating to ${latest}`);
+      const result = await installMod(slug, null);
       if (result?.status === "installed") {
-        void telemetry.editionUpdated(
-          editionInfoFor(slug, {
-            editionSlug,
-            fromVersion,
-            toVersion,
-          })
-        );
+        remember({ latestSeen: latest, autoUpdateTriedTo: latest });
+        notifyUpdated(`Updated ${install.title || slug}.`);
       }
     } catch (err) {
-      // Install failures are already surfaced by installGame and can be
-      // retried on the next launcher run.
-      console.warn(
-        `[game-update] ${slug}/${editionSlug} failed:`,
-        err?.message || err
-      );
+      console.warn(`[mod-update] ${slug} failed:`, err?.message || err);
+    } finally {
+      backgroundInstallActive = false;
     }
+  }
+}
+
+async function runAutoUpdates() {
+  if (autoUpdateRunning || loadSettings().autoUpdates === false) return;
+  autoUpdateRunning = true;
+  try {
+    await autoUpdateInstalledEditions();
+    await autoUpdateInstalledMods();
+  } finally {
+    autoUpdateRunning = false;
   }
 }
 
@@ -2221,6 +2371,7 @@ async function downloadTo(url, dest, attempts = 3, extraHeaders = null) {
       const meter = createTransferMeter();
       await writeDownloadBody(res.body, file, {
         signal: activeDownloadSignal || undefined,
+        gate: backgroundDownloadGate,
         onChunk(bytes) {
           received += bytes;
           const now = Date.now();
@@ -6948,6 +7099,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
    */
   const backups = [];
   const written = [];
+  let modFileStamps = null;
 
   /**
    * Decided by the file itself, not by downloadKind.
@@ -6961,7 +7113,19 @@ async function placeModFiles(slug, install, baseDirOverride) {
   const isArchive = /\.(zip|7z|dmg|pkg|tar\.gz|tgz|tar\.xz)$/i.test(dl.name);
   if (isArchive && !/\.jar$/i.test(dl.name)) {
     sendProgress({ phase: "extracting" });
-    await extractArchive(downloadPath, targetDir);
+    if (/\.(zip|7z)$/i.test(dl.name)) {
+      // Unpacked aside first, so an update can leave a player's edited files alone.
+      const unpacked = await fsp.mkdtemp(path.join(app.getPath("temp"), "playbound-mod-"));
+      try {
+        await extractArchive(downloadPath, unpacked);
+        const previous = backgroundInstallActive ? loadState().__mods__?.[slug]?.fileStamps : null;
+        modFileStamps = mergeModFiles(unpacked, targetDir, previous || null);
+      } finally {
+        await fsp.rm(unpacked, { recursive: true, force: true }).catch(() => {});
+      }
+    } else {
+      await extractArchive(downloadPath, targetDir);
+    }
   } else {
     sendProgress({ phase: "extracting" });
     const dest = path.join(targetDir, path.basename(dl.name));
@@ -7007,6 +7171,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
     ...(portable ? { portable: true } : {}),
     ...(backups.length > 0 ? { backups } : {}),
     ...(written.length > 0 ? { written } : {}),
+    ...(modFileStamps ? { fileStamps: modFileStamps } : {}),
   };
   saveState(state);
   void reportModInstallTelemetry(slug);
@@ -8914,6 +9079,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
     pollTimer: null,
     settleTimer: null,
   });
+  watchFirstLaunchAfterUpdate(slug, opts.editionSlug, child);
 
   if (process.platform === "win32" && (slug === "pokemon-dawn-of-darkness" || entry?.autoMaximize)) {
     try {
@@ -9782,6 +9948,9 @@ async function uninstallGame(slug, editionSlug = null) {
 
   const editions = listEditionEntries(game);
   const dirs = collectGameUninstallDirs(slug, game, entry);
+  for (const dir of dirs) {
+    fs.rm(`${dir}.playbound-rollback`, { recursive: true, force: true }, () => {});
+  }
   const primaryDir = dirs[0];
   const hasUninstaller = Boolean(primaryDir && findUninstallerBinary(primaryDir));
   let attemptedVendorUninstall = false;
@@ -12203,6 +12372,7 @@ ipcMain.handle("install-update", () => {
 });
 ipcMain.handle("save-settings", (_event, patch) => {
   const settings = loadSettings();
+  if (typeof patch.autoUpdates === "boolean") settings.autoUpdates = patch.autoUpdates;
   if (patch.apiBase != null) {
     if (isAllowedApiBase(patch.apiBase)) {
       settings.apiBase = String(patch.apiBase).replace(/\/$/, "");
@@ -15259,7 +15429,11 @@ if (gotLock) {
     void scanKnownInstalls();
     void (async () => {
       await refreshRemoteCatalog();
-      await autoUpdateSafeManagedEditions();
+      await runAutoUpdates();
+      setInterval(async () => {
+        await refreshRemoteCatalog().catch(() => {});
+        await runAutoUpdates().catch((err) => console.warn("[game-update]", err?.message || err));
+      }, AUTO_UPDATE_EVERY_MS);
       for (const entry of catalog) {
         if (
           (entry.kind === "github-installer" || entry.kind === "direct-installer") &&

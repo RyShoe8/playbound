@@ -99,6 +99,8 @@ export function toModCard(mod: ModCardMod): ModCardMod {
 }
 
 export type ModInstallMeta = {
+  /** What the daily version check last saw; the launcher updates installs from it. */
+  latestVersion?: string | null;
   slug: string;
   title: string;
   baseGameSlug: string;
@@ -190,6 +192,7 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
     installerFile: mod.installerFile,
     archiveSha256: mod.archiveSha256,
     installRelativePath: mod.installRelativePath || "",
+    latestVersion: mod.detectedVersion ?? null,
     platforms: mod.platforms?.length ? mod.platforms : undefined,
     approxSize: sizeLabel(mod.sizeMB),
     art: [mod.art.from, mod.art.to],

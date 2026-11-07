@@ -1889,9 +1889,29 @@ async function unwrapSingleRootDirectory(dir) {
  * archive actually provides are touched — sibling packages the player
  * installed separately, in the same games/ or mods/ folder, are left alone.
  */
+/** Set while an automatic update runs: keep the player's files, and the old build for rollback. */
+let activeUpdate = null;
+let lastRollbackDir = null;
+const ROLLBACK_MIN_FREE_BYTES = 5 * 1024 * 1024 * 1024;
+function setCarryPlayerFiles(update) {
+  activeUpdate = update;
+  if (update) lastRollbackDir = null;
+}
+function takeRollbackDir() {
+  const dir = lastRollbackDir;
+  lastRollbackDir = null;
+  return dir;
+}
+
 async function promoteStagingDir(stagingDir, gameDir, siblingEditionNames) {
   const backupDir = `${gameDir}.playbound-prev`;
   await fsp.rm(backupDir, { recursive: true, force: true });
+  // Before sibling editions move in, so this lists only what the build shipped.
+  try {
+    require("../autoUpdate").writeManifest(stagingDir);
+  } catch (err) {
+    console.warn("[install] could not write manifest:", err?.message || err);
+  }
   if (siblingEditionNames && siblingEditionNames.size && fs.existsSync(gameDir)) {
     const items = await fsp.readdir(gameDir, { withFileTypes: true });
     for (const item of items) {
@@ -1912,6 +1932,28 @@ async function promoteStagingDir(stagingDir, gameDir, siblingEditionNames) {
       await fsp.rename(backupDir, gameDir);
     }
     throw err;
+  }
+  if (activeUpdate && fs.existsSync(backupDir)) {
+    try {
+      const count = require("../autoUpdate").carryPlayerFiles(backupDir, gameDir, activeUpdate.installedAtMs);
+      console.log(`[game-update] kept ${count} player file(s) in ${gameDir}`);
+    } catch (err) {
+      // Leave the old folder in place: it is the only copy of whatever did not make it.
+      console.warn(`[game-update] could not carry files; old install kept at ${backupDir}:`, err?.message || err);
+      return;
+    }
+    try {
+      const disk = fs.statfsSync(path.dirname(gameDir));
+      if (Number(disk.bavail) * Number(disk.bsize) > ROLLBACK_MIN_FREE_BYTES) {
+        const rollbackDir = `${gameDir}.playbound-rollback`;
+        await fsp.rm(rollbackDir, { recursive: true, force: true });
+        await fsp.rename(backupDir, rollbackDir);
+        lastRollbackDir = rollbackDir;
+        return;
+      }
+    } catch (err) {
+      console.warn("[game-update] no rollback copy:", err?.message || err);
+    }
   }
   await fsp.rm(backupDir, { recursive: true, force: true }).catch(() => {});
 }
@@ -2596,4 +2638,4 @@ function getRemoteDeviceName() {
   return settings.remoteDeviceName || os.hostname() || "This PC";
 }
 
-module.exports = { loadHardwareModule, PROTOCOL, DEFAULT_GAMES_DIR, STATE_FILE, SETTINGS_FILE, CATALOG_CACHE_FILE, LIVE_STATS_CACHE_FILE, DEFAULT_API_BASE, UPDATER_FEED_URL, configureYoutubeEmbedIdentity, registerDownloadHostFromUrl, registerCatalogEntryHosts, isAllowedApiBase, assertDownloadUrl, assertOpenExternalUrl, loadSettings, saveSettings, gamesRoot, getApiBase, parseDeepLink, extractLinkHandoff, CATALOG_CACHE_VERSION, loadCachedCatalogFile, loadCachedCatalog, saveCatalogCache, INSTALLED_SLUG_ALIASES, migrateInstalledSlugAliases, safeOpenExternal, steamAppIdForEntry, normalizeFsPath, pathUnderRoot, rememberLocatedRoot, LIBRARY_BATCH_TIMEOUT_MS, LIBRARY_ITEM_SYNC_TIMEOUT_MS, formatLibrarySyncError, isSyncTimeoutError, syncLibraryItemsIndividually, postLibraryBatch, runLibrarySync, loadState, saveState, DEFAULT_EDITION_SLUG, ensureGameInstallRecord, listEditionEntries, findJarInDir, exeOnDisk, playableExePath, pickPrimaryEdition, syncGameInstallSummary, editionInstallDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, fetchLauncherEditions, catalogEntryFromEdition, resolveEditionForInstall, resolveMediaUrl, resolveEventMedia, launcherApiHeaders, API_TIMEOUT_MS, apiFetch, CATALOG_TTL_MS, hostArchAssetScore, hostOsAssetScore, sortAssetsForHost, pickGithubAsset, assetPatternsForEntry, itchNoDownloadsReason, resolveDownload, resolveModDownload, installQueue, saveData, zipDirectory, cloudSaves, verifyChecksumMd5, verifyChecksumSha256, reportInstall, extractZip, extractDmg, extractPkg, sevenZipBinary, getAvailableDiskSpace, extract7z, unwrapSingleRootDirectory, promoteStagingDir, unpackNestedArchives, repairUnixExtractedBinaries, findExecutable, preferRunnableCandidate, findInstallerInDir, ensureUnixExecutable, findNamedPortableExe, findYSoccerOnlineJar, compatPrefixesRoot, expandWinPath, stripRegQuotes, uninstallExeCache, controlProfileCache, CONTROL_PROFILE_TTL_MS, fetchControlProfile, listFixedDriveRoots, EXE_SCAN_SKIP_DIR, shouldSkipScanDir, writeJarLauncher, installErrorCode, httpStatusFromInstallError, normalizeProcessImageName, probeServerLatency, CATALOG_LIVE_STATS_TTL_MS, loadLiveStatsDiskCache, saveLiveStatsDiskCache, liveStatsDisk, fetchCatalogLiveStats, launcherJson, collectHardwareProfile, shouldSyncHardwareProfile, getRemoteDeviceId, getRemoteDeviceName };
+module.exports = { setCarryPlayerFiles, takeRollbackDir, loadHardwareModule, PROTOCOL, DEFAULT_GAMES_DIR, STATE_FILE, SETTINGS_FILE, CATALOG_CACHE_FILE, LIVE_STATS_CACHE_FILE, DEFAULT_API_BASE, UPDATER_FEED_URL, configureYoutubeEmbedIdentity, registerDownloadHostFromUrl, registerCatalogEntryHosts, isAllowedApiBase, assertDownloadUrl, assertOpenExternalUrl, loadSettings, saveSettings, gamesRoot, getApiBase, parseDeepLink, extractLinkHandoff, CATALOG_CACHE_VERSION, loadCachedCatalogFile, loadCachedCatalog, saveCatalogCache, INSTALLED_SLUG_ALIASES, migrateInstalledSlugAliases, safeOpenExternal, steamAppIdForEntry, normalizeFsPath, pathUnderRoot, rememberLocatedRoot, LIBRARY_BATCH_TIMEOUT_MS, LIBRARY_ITEM_SYNC_TIMEOUT_MS, formatLibrarySyncError, isSyncTimeoutError, syncLibraryItemsIndividually, postLibraryBatch, runLibrarySync, loadState, saveState, DEFAULT_EDITION_SLUG, ensureGameInstallRecord, listEditionEntries, findJarInDir, exeOnDisk, playableExePath, pickPrimaryEdition, syncGameInstallSummary, editionInstallDir, pullCompatibilityPreference, pushCompatibilityPreference, pushDiscoveryPreference, fetchLauncherEditions, catalogEntryFromEdition, resolveEditionForInstall, resolveMediaUrl, resolveEventMedia, launcherApiHeaders, API_TIMEOUT_MS, apiFetch, CATALOG_TTL_MS, hostArchAssetScore, hostOsAssetScore, sortAssetsForHost, pickGithubAsset, assetPatternsForEntry, itchNoDownloadsReason, resolveDownload, resolveModDownload, installQueue, saveData, zipDirectory, cloudSaves, verifyChecksumMd5, verifyChecksumSha256, reportInstall, extractZip, extractDmg, extractPkg, sevenZipBinary, getAvailableDiskSpace, extract7z, unwrapSingleRootDirectory, promoteStagingDir, unpackNestedArchives, repairUnixExtractedBinaries, findExecutable, preferRunnableCandidate, findInstallerInDir, ensureUnixExecutable, findNamedPortableExe, findYSoccerOnlineJar, compatPrefixesRoot, expandWinPath, stripRegQuotes, uninstallExeCache, controlProfileCache, CONTROL_PROFILE_TTL_MS, fetchControlProfile, listFixedDriveRoots, EXE_SCAN_SKIP_DIR, shouldSkipScanDir, writeJarLauncher, installErrorCode, httpStatusFromInstallError, normalizeProcessImageName, probeServerLatency, CATALOG_LIVE_STATS_TTL_MS, loadLiveStatsDiskCache, saveLiveStatsDiskCache, liveStatsDisk, fetchCatalogLiveStats, launcherJson, collectHardwareProfile, shouldSyncHardwareProfile, getRemoteDeviceId, getRemoteDeviceName };
