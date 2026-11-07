@@ -1,4 +1,823 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-rework-20261107-thirteen-full-guides",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "luanti/nodecore",
+      "expected": {
+        "longDescription": "NodeCore is one of the strangest games on Luanti, and that is the reason to play it. Warr1024's game calls itself a surreal dream-world where everything is possible but nothing is easy. It throws out the things block games normally rely on: there is no crafting grid and almost no explanation, so you learn how the world works by pounding on it, moving things around and paying attention to what happens.\n\nAll crafting happens in the world itself rather than in a menu. Stack the right things in the right place and strike them, and something new may appear. From those odd beginnings it goes much further than you would expect, with machines built from separate parts, hinged and rotary machinery, automated crafting and even logic circuits that work with light.\n\nIts listing warns of a different kind of difficulty, and that is accurate. There are no monsters to blame, only your own understanding, and progress comes from discovery. It has a built-in new player guide, plays alone or with others, and works with a gamepad or on mobile. The whole thing is a tiny download of about 1.4 MB under the MIT license, and it has been in active development since 2019. Try it if figuring things out is your favourite part of any game.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Players who like figuring things out"
+        ],
+        "notFor": [
+          "Players who want guidance"
+        ],
+        "multiplayerGamingSteps": []
+      },
+      "set": {
+        "longDescription": "NodeCore is one of the strangest games on Luanti, and that is the reason to play it. Warr1024's game calls itself a surreal dream-world where everything is possible but nothing is easy. It throws out the things block games normally rely on: there is no crafting grid and almost no explanation, so you learn how the world works by pounding on it, moving things around and paying attention to what happens.\n\nAll crafting happens in the world itself rather than in a menu. Stack the right things in the right place and strike them, and something new may appear. From those odd beginnings it goes much further than you would expect, with machines built from separate parts, hinged and rotary machinery, automated crafting and even logic circuits that work with light.\n\nIts listing warns of a different kind of difficulty, and that is accurate. There are no monsters to blame, only your own understanding, and progress comes from discovery. It has a built-in new player guide, plays alone or with others, and works with a gamepad or on mobile. The whole thing is a tiny download of about 1.4 MB under the MIT license, and it has been in active development since 2019. Try it if figuring things out is your favourite part of any game.\n\nYour first session works best as a little field experiment. Change one thing, watch what happens, and try to reproduce it before moving on. The built-in guide is there to keep you from missing a possibility, not to hand over every solution. That makes sharing discoveries with a friend part of the appeal. We'd agree on whether the group wants hints before somebody opens a walkthrough and answers the question everyone else was enjoying.\n\nLater machinery grows out of those same physical interactions. There is a satisfying continuity between figuring out a material and eventually making it do useful work. Choose NodeCore when that process sounds like the evening's entertainment; a player looking for a familiar recipe list and quick equipment progression may find the early uncertainty frustrating.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install Luanti and the NodeCore game, then select NodeCore when creating a new world."
+          },
+          {
+            "platform": "all",
+            "text": "Open the built-in new-player guide and follow its early discoveries before looking for a conventional crafting menu."
+          },
+          {
+            "platform": "all",
+            "text": "Experiment with materials directly in the world. Change one arrangement at a time so you can tell what caused the result."
+          },
+          {
+            "platform": "all",
+            "text": "Keep your first discoveries small and repeatable before attempting a complicated machine."
+          }
+        ],
+        "bestFor": [
+          "Players who enjoy discovering rules through experiments",
+          "Friends who like comparing theories and building together",
+          "Builders interested in mechanical and optical systems"
+        ],
+        "notFor": [
+          "Players expecting familiar Minecraft crafting recipes",
+          "Groups that want immediate instructions for every objective"
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "Choose a server or shared world running NodeCore, rather than a different Luanti game."
+          },
+          {
+            "platform": "all",
+            "text": "Agree on whether to share solutions or offer hints; discovery is a large part of this game."
+          },
+          {
+            "platform": "all",
+            "text": "Start a shared experimental area before combining unfamiliar mechanisms into a larger build."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "luanti/exile",
+      "expected": {
+        "longDescription": "Exile is the block game for people who think survival games are too polite. Created by Dokimi and now developed by the Exile Team, it drops you into the wilderness as an outcast with no tools and little hope, and its own listing calls it challenging and at times brutal. There is no gentle first night here: the cold, your hunger and your body will all work against you from the first minute.\n\nFinding food, water and shelter is the whole early game. You craft basic tools, then work up through fires, kilns and furnaces, and the technology stays simple, because progress is measured in staying alive. Hypothermia, exhaustion and disease are all things that can kill you, while seasonal weather, erosion and water that flows through soil make the world feel like a place with no interest in you.\n\nFor a harder and slower game, the Carpathian map generator is supported alongside the standard Valleys setting. It is free software on Luanti, with no required add-ons, and it is actively developed. Its developers warn that some people may find parts of it difficult or disturbing, which is fair. Choose it if you want every campfire you survive to feel like an achievement.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Players who want a hard, slow survival game"
+        ],
+        "notFor": [
+          "Players who want a relaxed building game"
+        ]
+      },
+      "set": {
+        "longDescription": "Exile is the block game for people who think survival games are too polite. Created by Dokimi and now developed by the Exile Team, it drops you into the wilderness as an outcast with no tools and little hope, and its own listing calls it challenging and at times brutal. There is no gentle first night here: the cold, your hunger and your body will all work against you from the first minute.\n\nFinding food, water and shelter is the whole early game. You craft basic tools, then work up through fires, kilns and furnaces, and the technology stays simple, because progress is measured in staying alive. Hypothermia, exhaustion and disease are all things that can kill you, while seasonal weather, erosion and water that flows through soil make the world feel like a place with no interest in you.\n\nFor a harder and slower game, the Carpathian map generator is supported alongside the standard Valleys setting. It is free software on Luanti, with no required add-ons, and it is actively developed. Its developers warn that some people may find parts of it difficult or disturbing, which is fair. Choose it if you want every campfire you survive to feel like an achievement.\n\nWe'd make the first evening about a functioning camp. Shelter and rest are useful milestones because they give you a place to recover while you learn the environment. A large building project can wait until the people constructing it can get through an ordinary day. That small scale is where Exile becomes interesting: another practical improvement feels valuable because you understand the problem it solves.\n\nFor a group, discuss what needs doing before everyone wanders off pursuing their own idea of progress. Keep the first world simple, use the standard Valleys generator, and give yourselves room to learn from a failed plan. This is a better choice for patient survival players than a casual building night where nobody wants to keep an eye on their character's condition.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install Exile as a Luanti game and select it when creating your world."
+          },
+          {
+            "platform": "all",
+            "text": "Use Valleys for a first attempt; the project describes Carpathian as the harder, slower alternative."
+          },
+          {
+            "platform": "all",
+            "text": "Prioritize shelter, a bed and drinking water before committing to a large construction project."
+          },
+          {
+            "platform": "all",
+            "text": "Watch exhaustion and temperature, and use your camp to recover rather than pushing through every warning."
+          }
+        ],
+        "bestFor": [
+          "Patient survival players",
+          "Groups that enjoy dividing practical camp tasks",
+          "Players who want shelter and weather to matter"
+        ],
+        "notFor": [
+          "Relaxed creative-building sessions",
+          "Players who dislike demanding survival systems"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "luanti/asuna",
+      "expected": {
+        "longDescription": "Asuna is the Luanti game to install if you mostly want somewhere beautiful to wander. EmptyStar has blended many of the platform's best biome and decoration mods into one curated package, and the numbers show how much that adds up to: more than 60 biomes, over 100 flowers, plants and mushrooms, more than 30 farming crops, 27 animals and creatures, and 80 decorative stones to build with.\n\nIt leaves the tone up to you, through content packs that can be switched on or off in settings. Nutrition rewards a good diet with faster movement and health regeneration, and starvation is off by default. Wayfarer adds achievements, loot chests and Worldgates, a teleportation network for getting around all that land. Menagerie brings the animals and slimes, Stratosphere adds sky islands and harvestable clouds, and Research offers an earned creative mode, where discovering an item lets you duplicate it.\n\nWith 54 achievements and 31 background music tracks, it feels more complete than its peaceful pitch suggests. Mapgen v7 is the only officially supported map generator, and it is the one that produces those sky islands. It is free software, rated very positively by players, and a gentle counterweight to the harsher survival games in this family.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Relaxed exploration and building"
+        ],
+        "notFor": [
+          "Players who want combat-heavy gameplay"
+        ]
+      },
+      "set": {
+        "longDescription": "Asuna is the Luanti game to install if you mostly want somewhere beautiful to wander. EmptyStar has blended many of the platform's best biome and decoration mods into one curated package, and the numbers show how much that adds up to: more than 60 biomes, over 100 flowers, plants and mushrooms, more than 30 farming crops, 27 animals and creatures, and a broad selection of decorative stones to build with.\n\nIt leaves the tone up to you, through content packs that can be switched on or off in settings. Nutrition rewards a good diet with faster movement and health regeneration, and starvation is off by default. Wayfarer adds achievements, loot chests and Worldgates, a teleportation network for getting around all that land. Menagerie brings the animals and slimes, Stratosphere adds sky islands and harvestable clouds, and Research offers an earned creative mode, where discovering an item lets you duplicate it.\n\nWith 54 achievements and 31 background music tracks, it feels more complete than its peaceful pitch suggests. Mapgen v7 is the only officially supported map generator, and it is the one that produces those sky islands. It is free software, rated very positively by players, and a gentle counterweight to the harsher survival games in this family.\n\nBefore generating the world, spend a few minutes deciding what kind of trip you want. Asuna's optional content packs make that a meaningful choice. Research gives a builder a route toward plentiful materials, while the exploration systems give the friend who is always over the next hill something useful to pursue. Neither requires turning the whole evening into a fight against hunger.\n\nWe'd use mapgen v7 and start with the included content before installing more mods. Asuna already combines and adapts a substantial collection, so adding another copy of a bundled component can create warnings instead of improving the game. Once the group has explored a little, you can decide whether it wants a settled farming-and-building world or a longer expedition. The best reason to choose this edition is having a landscape worth making that decision in.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install Asuna in Luanti and select it as the game for a new world."
+          },
+          {
+            "platform": "all",
+            "text": "Choose mapgen v7, the officially supported generator; the sky-island content depends on it."
+          },
+          {
+            "platform": "all",
+            "text": "Review Settings > Content: Games > Asuna and choose the content packs your group wants before settling into the world."
+          },
+          {
+            "platform": "all",
+            "text": "Try the bundled content first. Avoid adding duplicate versions of mods Asuna already includes."
+          },
+          {
+            "platform": "all",
+            "text": "Explore a few nearby biomes before committing to a building site, and consider Research if gathering repeated building materials becomes a chore."
+          }
+        ],
+        "bestFor": [
+          "Explorers who enjoy finding a place to build",
+          "Groups that want configurable survival rules",
+          "Builders interested in earned item duplication"
+        ],
+        "notFor": [
+          "Players seeking a tightly directed campaign",
+          "Groups expecting every third-party Luanti mod to work unchanged"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/combined-arms",
+      "expected": {
+        "longDescription": "Combined Arms is a very simple idea executed at huge scale: take the best factions in Command & Conquer's history and let them fight in one game. Built on OpenRA, it puts the Allies, Soviets, GDI, Nod and the alien Scrin on the same battlefield, drawing units and technology from Tiberian Dawn, Red Alert and Tiberium Wars. PC Gamer's description of a giant five-faction brawl is about right.\n\nIt would be easy for that to fall apart, but this is a designed game rather than a pile of parts. The older Tiberian Dawn sides gain the tech centres, support powers and navies they never had. Each faction also splits into several sub-factions with their own units, super-weapons and support powers, so picking GDI is only the first decision of a match.\n\nYou can play skirmishes and multiplayer matches, or try singleplayer and co-operative missions, and the mod has kept growing since its 1.0 release in December 2023, with a major overhaul in August 2024 and further updates since. Best of all for newcomers, it is free and completely standalone: you need neither an original Command & Conquer game nor anything else installed. It runs on Windows, Linux and macOS.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Experienced RTS players"
+        ],
+        "notFor": [
+          "Beginners to the genre"
+        ],
+        "multiplayerGamingSteps": [],
+        "branding.screenshots": []
+      },
+      "set": {
+        "longDescription": "Combined Arms is a very simple idea executed at huge scale: take the best factions in Command & Conquer's history and let them fight in one game. Built on OpenRA, it puts the Allies, Soviets, GDI, Nod and the alien Scrin on the same battlefield, drawing units and technology from Tiberian Dawn, Red Alert and Tiberium Wars. The appeal is seeing those different armies share a battlefield.\n\nIt would be easy for that to fall apart, but this is a designed game rather than a pile of parts. The older Tiberian Dawn sides gain the tech centres, support powers and navies they never had. Each faction also splits into several sub-factions with their own units, super-weapons and support powers, so picking GDI is only the first decision of a match.\n\nYou can play skirmishes and multiplayer matches, or try singleplayer and co-operative missions, and the mod has kept growing since its 1.0 release in December 2023, with a major overhaul in August 2024 and further updates since. Best of all for newcomers, it is free and completely standalone: you need neither an original Command & Conquer game nor anything else installed. It runs on Windows, Linux and macOS.\n\nFor the first match, pick an army you recognize and give yourself permission to learn it again. Familiar names make the game approachable, but they can also tempt you into assumptions about what a unit should do. The faction and sub-faction choices are more interesting when you treat them as options to explore instead of a test of your old C&C build order.\n\nWe'd begin with a relaxed skirmish before organizing a competitive evening. Get everyone onto the same Combined Arms release and make sure they are opening this client, not stock OpenRA. After an update, the faction-specific release notes are worth a read: balance changes can alter a strategy without changing the familiar face of the unit involved. This is a good home for a group that enjoys returning to the same rivalry with a different army each time.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install the standalone Combined Arms client for your operating system."
+          },
+          {
+            "platform": "all",
+            "text": "Launch Combined Arms itself rather than the stock OpenRA client."
+          },
+          {
+            "platform": "all",
+            "text": "Start a skirmish and pick a familiar faction while learning this edition's units and options."
+          },
+          {
+            "platform": "all",
+            "text": "Read the faction section of the release notes when returning after an update."
+          }
+        ],
+        "bestFor": [
+          "Friends with different favourite C&C factions",
+          "Skirmish players who enjoy experimenting with army composition",
+          "Returning RTS players willing to relearn familiar units"
+        ],
+        "notFor": [
+          "Players seeking unchanged original C&C balance",
+          "Groups using mismatched clients or releases"
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "Have everyone install the same Combined Arms release."
+          },
+          {
+            "platform": "all",
+            "text": "Open the multiplayer lobby in Combined Arms, then join the same match."
+          },
+          {
+            "platform": "all",
+            "text": "Agree on teams and match settings before starting; use a practice round if anyone is new to this edition."
+          }
+        ],
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/34/33634/Allied_HQ.gif",
+          "https://media.moddb.com/images/mods/1/34/33634/ava2.gif"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/crystallized-nexus",
+      "expected": {
+        "longDescription": "Crystallized Nexus is a reimagining of the old Crystallized Doom mod, and it is one of the more technically ambitious things anyone has done with OpenRA. DoGyAUT's standalone real-time strategy game pits GDI against Nod in a Tiberian Sun-style war, and much of its appeal is a battlefield that actively changes under you.\n\nTerrain matters here. Weapon and sight ranges scale with height, units slow down going uphill and speed up on the way down, cliffs can be collapsed to open new paths, and weapons can deform the ground itself. Ion storms roll through in phases, granting effects and throwing random lightning at everyone. Blue and red Tiberium chain-react when hit, and veinholes can be destroyed, leaving a pit you can walk through.\n\nThe rest of the design is just as busy, with mob squads that share a health pool, formation movement, and units that dodge when a crusher approaches. Bots come in profiles from Rush to Adaptive, across difficulty tiers from Easy to Brutal, and an adaptive soundtrack shifts with the fighting. It is a playtest build rather than a finished release, so expect changes and rough edges. It is free, self-contained and open source under the GPL version 3, with no other game needed.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Players who like trying new RTS games"
+        ],
+        "notFor": [
+          "Players who want a finished game - it is a playtest"
+        ]
+      },
+      "set": {
+        "longDescription": "Crystallized Nexus is a reimagining of the old Crystallized Doom mod, and it is one of the more technically ambitious things anyone has done with OpenRA. DoGyAUT's standalone real-time strategy game pits GDI against Nod in a Tiberian Sun-style war, and much of its appeal is a battlefield that actively changes under you.\n\nTerrain matters here. Weapon and sight ranges scale with height, units slow down going uphill and speed up on the way down, cliffs can be collapsed to open new paths, and weapons can deform the ground itself. Ion storms roll through in phases, granting effects and throwing random lightning at everyone. Blue and red Tiberium chain-react when hit, and veinholes can be destroyed, leaving a pit you can walk through.\n\nThe rest of the design is just as busy, with mob squads that share a health pool, formation movement, and units that dodge when a crusher approaches. Bots come in profiles from Rush to Adaptive, across difficulty tiers from Easy to Brutal, and an adaptive soundtrack shifts with the fighting. It is a playtest build rather than a finished release, so expect changes and rough edges. It is free, self-contained and open source under the GPL version 3, with no other game needed.\n\nThe useful habit here is to keep looking at the ground. A route is more than a line between your base and the enemy: changes to cliffs and terrain can alter the assumptions behind a defensive position. That is why we'd try a small practice match before deciding how a familiar Tiberian Sun tactic ought to work. Watch a storm develop, observe what the map allows, and learn one interaction at a time.\n\nIt is also worth separating enthusiasm for the design from expectations of a finished product. The published package is a playtest. Save the exact build name when arranging a session or reporting a problem, and describe what happened rather than assuming an unusual interaction is intentional. For a group that enjoys investigating a strategy game's systems, those experiments can be the point of the evening. For a frictionless competitive night, a more settled edition is an easier recommendation.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install the published Crystallized Nexus playtest and note its build identifier."
+          },
+          {
+            "platform": "all",
+            "text": "Start a practice match before organizing a longer session."
+          },
+          {
+            "platform": "all",
+            "text": "Watch the ion-storm warnings and test how terrain affects your approach."
+          },
+          {
+            "platform": "all",
+            "text": "When reporting a problem, include the build, map and the action that triggered it."
+          }
+        ],
+        "bestFor": [
+          "RTS players curious about changing terrain",
+          "Tiberian Sun fans willing to experiment",
+          "Groups comfortable with prerelease software"
+        ],
+        "notFor": [
+          "Players expecting a finished competitive ruleset",
+          "Sessions where crashes or changing mechanics would spoil the evening"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/ra2",
+      "expected": {
+        "longDescription": "Westwood's Red Alert 2 is one of the best-loved games in the Command & Conquer series, and this edition brings it to OpenRA through Romanov's Vengeance, the project by MustaphaTR that took over where OpenRA's own unfinished Red Alert 2 work left off. Allied and Soviet armies are here with their famous excess intact, and it goes further than the base game by adding Yuri's Revenge content as well.\n\nRunning on OpenRA changes the experience around those battles. You get high frame rates on modern displays, current netcode and an updated lobby, which is exactly what makes a 2000 game worth setting up for an evening with friends. The mod's developers have also taken liberties that the original never did, such as adding new subfactions, so this is its own take on Red Alert 2 rather than a strict recreation.\n\nThat makes it a good fit for people who want Prism Tanks, Apocalypse Tanks and a working multiplayer lobby without fighting an old executable. If you want the game exactly as it shipped, the differences may bother you. It is open source under the GPL version 3, and development happens in the open on GitHub, which is the best place to follow its progress.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Red Alert 2 fans"
+        ],
+        "notFor": [
+          "Players who want a finished feature set"
+        ],
+        "branding.screenshots": []
+      },
+      "set": {
+        "longDescription": "Westwood's Red Alert 2 is one of the best-loved games in the Command & Conquer series, and this edition brings it to OpenRA through Romanov's Vengeance, the project by MustaphaTR that took over where OpenRA's own unfinished Red Alert 2 work left off. Allied and Soviet armies are here with their famous excess intact, and it goes further than the base game by adding Yuri's Revenge content as well.\n\nRunning on OpenRA changes the experience around those battles. You get high frame rates on modern displays, current netcode and an updated lobby, which is exactly what makes a 2000 game worth setting up for an evening with friends. The mod's developers have also taken liberties that the original never did, such as adding new subfactions, so this is its own take on Red Alert 2 rather than a strict recreation.\n\nThat makes it a good fit for people who want Prism Tanks, Apocalypse Tanks and a working multiplayer lobby without fighting an old executable. If you want the game exactly as it shipped, the differences may bother you. It is open source under the GPL version 3, and development happens in the open on GitHub, which is the best place to follow its progress.\n\nWe'd approach the first evening as learning a new take on a familiar war. Knowing Red Alert 2 gives you recognizable armies and units, but the project's own goal is to rebalance multiplayer and introduce ideas from later C&C games. That makes a low-pressure practice match more useful than arriving with a favourite original-game tactic and expecting it to behave identically.\n\nThe development status matters just as much as the nostalgia. The project warns about missing features, placeholder art and changes to balance, and describes a custom campaign as planned rather than ready. Pick it because you want to see where this community version takes the multiplayer, not because you need an exact replacement for the original campaign. Match build versions with your friends and keep the release name handy if you report a bug.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install Romanov's Vengeance for your operating system."
+          },
+          {
+            "platform": "all",
+            "text": "Check the playtest identifier before asking friends to install their copies."
+          },
+          {
+            "platform": "all",
+            "text": "Try a practice match to learn the changed balance and available units."
+          },
+          {
+            "platform": "all",
+            "text": "Use the project issue tracker for problems, including your build and what happened."
+          }
+        ],
+        "bestFor": [
+          "Red Alert 2 fans interested in community reinterpretations",
+          "Friends who enjoy learning changed multiplayer balance",
+          "Players comfortable with unfinished features"
+        ],
+        "notFor": [
+          "Players looking for a finished custom campaign",
+          "Anyone wanting exact original Red Alert 2 behaviour"
+        ],
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/44/43239/Drones.png",
+          "https://media.moddb.com/images/mods/1/44/43239/resim_2024-12-11_111647862.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/tiberian-dawn-hd",
+      "expected": {
+        "longDescription": "Tiberian Dawn HD is an experiment in having the best of both worlds: EA's remastered 2020 art, on OpenRA's engine and netcode. It is an official OpenRA project that runs Command & Conquer's first war using the high-definition sprites from the Remastered Collection, while keeping OpenRA's modern controls, lobby and balance. Multiplayer is still compatible with OpenRA.\n\nThe important catch is what it needs from you. The mod loads its art directly from an existing digital install of the C&C Remastered Collection, so you must own that game on Steam or Origin. Without it, there is nothing here to look at. A dedicated graphics card is recommended too, because all those high-resolution assets are heavy.\n\nThe project's own readme is candid about its status. It calls itself a prototype and a proof of concept, says performance, memory use and loading times have not been optimised, and warns you to proceed at your own risk. So treat this as a good-looking curiosity for owners of the Remastered Collection, rather than the stable way to play. For that, the official OpenRA edition is the better choice. It is open source under the GPL version 3, but no formal releases have been published.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Fans of the original C&C"
+        ],
+        "notFor": [
+          "Players who want new factions"
+        ],
+        "hardwareRequirements": null
+      },
+      "set": {
+        "longDescription": "Tiberian Dawn HD is an experiment in having the best of both worlds: EA's remastered 2020 art, on OpenRA's engine and netcode. It is an official OpenRA project that runs Command & Conquer's first war using the high-definition sprites from the Remastered Collection, while keeping OpenRA's modern controls, lobby and balance. Multiplayer is still compatible with OpenRA.\n\nThe important catch is what it needs from you. The mod loads its art directly from an existing digital install of the C&C Remastered Collection, so you must own that game on Steam or Origin. Without it, there is nothing here to look at. A dedicated graphics card is recommended too, because all those high-resolution assets are heavy.\n\nThe project's own readme is candid about its status. It calls itself a prototype and a proof of concept, says performance, memory use and loading times have not been optimised, and warns you to proceed at your own risk. So treat this as a good-looking curiosity for owners of the Remastered Collection, rather than the stable way to play. For that, the official OpenRA edition is the better choice. It is open source under the GPL version 3, but no formal releases have been published.\n\nTreat setup as two separate jobs: the engine must run, and it must be able to find the remastered artwork you own. If the assets are missing, changing a graphics option will not solve that. Follow the project's platform-specific asset instructions and confirm that the Remastered Collection data is installed before troubleshooting the engine itself.\n\nWe'd judge this edition on the pleasure of seeing the presentation working rather than on how quickly it gets a group into a match. The developers explicitly say performance, memory use and loading times are not optimized. Leave yourself time to investigate, keep a working stock OpenRA installation available, and avoid interpreting those prototype requirements as a hardware promise. There is a worthwhile experiment here for a curious C&C fan, but the experimental status belongs in the decision to install it.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install a digital copy of Command & Conquer Remastered Collection that you own."
+          },
+          {
+            "platform": "all",
+            "text": "Read the TiberianDawnHD README for your operating system's asset-discovery steps."
+          },
+          {
+            "platform": "all",
+            "text": "Confirm the required data is present before launching the prototype."
+          },
+          {
+            "platform": "all",
+            "text": "Use a dedicated GPU as recommended by the project, and expect unoptimized loading and memory use."
+          }
+        ],
+        "bestFor": [
+          "Remastered Collection owners curious about OpenRA",
+          "Players who enjoy testing experimental presentation",
+          "Fans willing to follow platform-specific setup notes"
+        ],
+        "notFor": [
+          "Anyone without the required Remastered Collection assets",
+          "Low-fuss game nights or guaranteed performance targets"
+        ],
+        "hardwareRequirements": {
+          "recommended": {
+            "gpuText": "Dedicated GPU",
+            "notes": "Prototype: performance, memory use and loading times are unoptimized. No finalized numeric requirements are published."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/OpenRA/TiberianDawnHD",
+            "verifiedAt": "2026-11-07"
+          }
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "holocure/official",
+      "expected": {
+        "longDescription": "HoloCure is a fan game with far more care in it than anybody could reasonably expect. Kay Yu's completely free and unofficial game takes the Vampire Survivors formula and fills it with Hololive VTubers, and its enormous rating, 4.9 out of 5 from over 5,000 people on itch.io, suggests that you do not need to know who any of them are to get hooked. There is no monetisation of any kind.\n\nYou pick a character, walk around and try to survive endless waves of enemies while your attacks fire on their own. The decisions come from building your run: which weapons and passive items you take as you level up, and how they combine. A session lasts about half an hour, so it is easy to tell yourself just one more. There are 47 characters to unlock through a gacha system that uses only in-game currency, each with unique skills and special attacks, along with song remixes by Eufrik that are good enough to listen to on their own.\n\nIt is not affiliated with Hololive or Cover Corp, and it is still in development, with no mobile version planned. This official edition is the plain single-player game on Windows. For playing together, PlayBound's co-op edition is listed separately. It supports English, Japanese and Indonesian.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Short action sessions",
+          "Hololive fans"
+        ],
+        "notFor": [
+          "Players wanting multiplayer - see the PlayBound edition"
+        ],
+        "branding.videos": [],
+        "hardwareRequirements": null,
+        "credits": [
+          {
+            "name": "Kay Yu",
+            "role": "Creator",
+            "url": "https://kay-yu.itch.io/holocure"
+          },
+          {
+            "name": "COVER Corp. (hololive production)",
+            "role": "Characters",
+            "url": "https://hololive.hololivepro.com"
+          }
+        ]
+      },
+      "set": {
+        "longDescription": "HoloCure is a fan game with far more care in it than anybody could reasonably expect. Kay Yu's completely free and unofficial game takes the Vampire Survivors formula and fills it with Hololive VTubers, and its enormous rating, 4.9 out of 5 from over 5,000 people on itch.io, suggests that you do not need to know who any of them are to get hooked. There is no monetisation of any kind.\n\nYou pick a character, walk around and try to survive endless waves of enemies while your attacks fire on their own. The decisions come from building your run: which weapons and passive items you take as you level up, and how they combine. A session lasts about half an hour, so it is easy to tell yourself just one more. There are 47 characters to unlock through a gacha system that uses only in-game currency, each with unique skills and special attacks, along with song remixes by Eufrik that are good enough to listen to on their own.\n\nIt is not affiliated with Hololive or Cover Corp, and it is still in development, with no mobile version planned. This official edition is the plain single-player game on Windows. For playing together, PlayBound's co-op edition is listed separately. It supports English, Japanese and Indonesian.\n\nFor a first run, we'd resist trying to understand the entire unlock roster. Pick someone whose abilities interest you, watch what your upgrades do, and get a feel for how the crowd closes in. The useful knowledge is not just which item sounds strongest; it is what keeps your particular run alive. Trying another character then gives you a reason to question the habits you just learned.\n\nThis is the unmodded single-player option, which also makes it the sensible starting point when troubleshooting. Get a normal run working before adding a multiplayer loader. Keep a copy of your save before experimenting with mods, and remember that an installation folder and a save folder are different things. If your goal is simply an evening of increasingly ridiculous builds, you can stay here without installing the community edition at all.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install and launch the unmodified HoloCure edition."
+          },
+          {
+            "platform": "all",
+            "text": "Choose a character and complete a short first run before spending time on a large unlock plan."
+          },
+          {
+            "platform": "all",
+            "text": "Read weapon and passive-item descriptions as you level up, then try a different combination on the next run."
+          },
+          {
+            "platform": "all",
+            "text": "Back up your HoloCure save before experimenting with mods or a second installation."
+          }
+        ],
+        "bestFor": [
+          "Solo players who enjoy experimenting with builds",
+          "Fans of short repeatable survival runs",
+          "Players wanting the unmodified game without a mod loader"
+        ],
+        "notFor": [
+          "Groups expecting built-in co-op in this edition",
+          "Players seeking an officially supported mobile version"
+        ],
+        "branding.videos": [
+          "https://video.akamai.steamstatic.com/store_trailers/2420510/587885/b78b6bc5d5c7e4619d2b513050394e4f6a0ba624/1750917107/hls_264_master.m3u8?t=1689447106"
+        ],
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "arch": [
+              "x64"
+            ],
+            "ramMB": 300,
+            "storageMB": 250,
+            "notes": "Publisher lists Windows 10 and a 64-bit processor/OS. CPU and GPU models are not specified."
+          },
+          "recommended": {
+            "ramMB": 500,
+            "storageMB": 250,
+            "notes": "Publisher lists Windows 10 or newer. These figures are for unmodded HoloCure, not the multiplayer mod."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://store.steampowered.com/app/2420510/",
+            "verifiedAt": "2026-11-07"
+          }
+        },
+        "credits": [
+          {
+            "name": "Kay Yu",
+            "role": "Creator",
+            "url": "https://kay-yu.itch.io/holocure"
+          },
+          {
+            "name": "COVER Corp. (hololive production)",
+            "role": "Characters",
+            "url": "https://hololive.hololivepro.com"
+          },
+          {
+            "name": "Eufrik",
+            "role": "HoloCure song remixes; credited by the game creator",
+            "url": "https://kay-yu.itch.io/holocure"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "holocure/playbound",
+      "expected": {
+        "longDescription": "HoloCure is a great single-player game, and this edition makes it possible to share with friends. It adds PippleCultist's HoloCure Multiplayer Mod to Save the Fans!, so a group can run stages together, with PlayBound installing the Aurie mod loader and the mod in a single click. Surviving those waves of enemies is an entirely different kind of chaos when somebody else is filling the screen with attacks too.\n\nThe mod itself works over LAN, with one player hosting and everyone else joining on the same network. PlayBound's party system removes that limit: Join Game puts every member on one shared Connect network and points HoloCure at it, so a LAN session works across the internet. In the game, you go to Play, then Multiplayer, then the saved network adapter, then Host LAN Session for the leader and Join LAN Session for everyone else.\n\nSome of the mod's menus only work with a mouse, which is worth knowing if you are on a controller. This is also experimental community software rather than an official HoloCure feature, and the mod's author notes that it may crash occasionally because so much of the game is modified to add networking. Your saves stay in their usual folder, and you can go back to the unmodded game at any time. If you only want to play alone, use the official edition.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Co-op groups"
+        ],
+        "notFor": [
+          "Players who need a stable, polished multiplayer"
+        ],
+        "multiplayerGamingSteps": [],
+        "credits": [
+          {
+            "name": "PippleCultist",
+            "role": "Author of the HoloCure Multiplayer Mod",
+            "url": "https://github.com/PippleCultist/HoloCureMultiplayerMod"
+          },
+          {
+            "name": "Aurie mod loader project",
+            "role": "Mod loader the multiplayer mod runs on",
+            "url": ""
+          },
+          {
+            "name": "Kay Yu",
+            "role": "Creator of HoloCure",
+            "url": "https://kay-yu.itch.io/holocure"
+          },
+          {
+            "name": "COVER Corp. (hololive production)",
+            "role": "Characters",
+            "url": "https://hololive.hololivepro.com"
+          },
+          {
+            "name": "PlayBound",
+            "role": "Installer and PlayBound Connect party integration",
+            "url": "https://playbound.club"
+          }
+        ],
+        "branding.screenshots": [
+          "/games/holocure/editions/playbound.jpg",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_0b4a50d12f737a522960ba3b3229546f536ff57f.1920x1080.jpg",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_a393d743965dc088d53d97c493ee6728d74b384d.1920x1080.jpg"
+        ]
+      },
+      "set": {
+        "longDescription": "HoloCure is a great single-player game, and this edition makes it possible to share with friends. It adds PippleCultist's HoloCure Multiplayer Mod to Save the Fans!, so a group can run stages together, with PlayBound installing the Aurie mod loader and the mod in a single click. Surviving those waves of enemies is an entirely different kind of chaos when somebody else is filling the screen with attacks too.\n\nThe mod itself works over LAN, with one player hosting and everyone else joining on the same network. PlayBound's party system removes that limit: Join Game puts every member on one shared Connect network and points HoloCure at it, so a LAN session works across the internet. In the game, you go to Play, then Multiplayer, then the saved network adapter, then Host LAN Session for the leader and Join LAN Session for everyone else.\n\nSome of the mod's menus only work with a mouse, which is worth knowing if you are on a controller. This is also experimental community software rather than an official HoloCure feature, and the mod's author notes that it may crash occasionally because so much of the game is modified to add networking. Your saves stay in their usual folder, and you can go back to the unmodded game at any time. If you only want to play alone, use the official edition.\n\nSet aside a few minutes for a connection check before committing to a long run. The important choice is the network adapter: everyone needs to be using the same actual or virtual LAN, and selecting an unrelated Wi-Fi adapter can leave the host invisible. Once connected, start something short so the group can confirm that each player is participating before settling in.\n\nKeep the distinction between installation convenience and mod compatibility clear. PlayBound prepares the listed components, but this remains PippleCultist's community modification of HoloCure, with the bugs and crashes the author warns about. Back up your save before changing versions, use matching game and mod builds, and avoid adding unrelated mods until the shared session works. We'd choose this with friends who can laugh off a failed attempt and are interested enough in HoloCure to try again.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Back up the save folder under %LOCALAPPDATA%\\HoloCure before experimenting."
+          },
+          {
+            "platform": "all",
+            "text": "Install this multiplayer edition and launch it through PlayBound."
+          },
+          {
+            "platform": "all",
+            "text": "Confirm the Multiplayer menu appears before inviting the whole group."
+          },
+          {
+            "platform": "all",
+            "text": "Keep a mouse available for setup menus and test a short session first."
+          }
+        ],
+        "bestFor": [
+          "Friends who already enjoy HoloCure",
+          "Groups comfortable testing a community multiplayer mod",
+          "LAN or virtual-LAN sessions with matching builds"
+        ],
+        "notFor": [
+          "Players expecting official co-op support",
+          "Groups unwilling to troubleshoot experimental software"
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "Have everyone use matching HoloCure and multiplayer-mod versions."
+          },
+          {
+            "platform": "all",
+            "text": "Join the same PlayBound party and use its shared connection flow."
+          },
+          {
+            "platform": "all",
+            "text": "In HoloCure choose Play > Multiplayer and select the shared network adapter; use the saved adapter only if it is the correct one."
+          },
+          {
+            "platform": "all",
+            "text": "The host chooses Host LAN Session; other players choose Join LAN Session."
+          },
+          {
+            "platform": "all",
+            "text": "If the host does not appear, recheck the adapter choice before changing unrelated settings."
+          }
+        ],
+        "credits": [
+          {
+            "name": "PippleCultist",
+            "role": "Author of the HoloCure Multiplayer Mod",
+            "url": "https://github.com/PippleCultist/HoloCureMultiplayerMod"
+          },
+          {
+            "name": "Aurie mod loader project",
+            "role": "Mod loader the multiplayer mod runs on",
+            "url": "https://github.com/AurieFramework/Aurie"
+          },
+          {
+            "name": "Kay Yu",
+            "role": "Creator of HoloCure",
+            "url": "https://kay-yu.itch.io/holocure"
+          },
+          {
+            "name": "COVER Corp. (hololive production)",
+            "role": "Characters",
+            "url": "https://hololive.hololivepro.com"
+          },
+          {
+            "name": "PlayBound",
+            "role": "Installer and PlayBound Connect party integration",
+            "url": "https://playbound.club"
+          },
+          {
+            "name": "Eufrik",
+            "role": "HoloCure song remixes; credited by the game creator",
+            "url": "https://kay-yu.itch.io/holocure"
+          }
+        ],
+        "branding.screenshots": [
+          "/games/holocure/editions/playbound.jpg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "daggerfall/daggerfall-unity",
+      "expected": {
+        "longDescription": "Daggerfall Unity is the reason most people can comfortably play The Elder Scrolls II today. It rebuilds Bethesda's 1996 role-playing game in the Unity engine while using the original game's own data, so the enormous world, its towns and dungeons and its quests all remain Daggerfall, without the need to run it through a DOS emulator.\n\nThe practical differences start with the platform: it runs natively on Windows, Linux and macOS, with mouselook and modern input in place of the old DOS setup. The original's assets are still required, but they are free, and PlayBound sets them up for you during install.\n\nIts real strength is the mod scene the rebuild made possible. DREAM reworks the textures, sounds and interface; Physical Combat and Armor Overhaul changes how fights resolve; World of Daggerfall fills out the sparse countryside; and quest packs add new things to do. The base game asks for little, just a Skylake-era i3 and 2 GB of RAM, though a long mod list can raise that a lot. The project is open source under the MIT license, with its development discussed on the Workshop forums and on Discord.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "RPG fans curious about the series' roots",
+          "Players who want Daggerfall with modern controls and mods"
+        ],
+        "notFor": [
+          "Players who want quick, linear games",
+          "Players who want the original DOS engine - choose Classic DOS"
+        ],
+        "hardwareRequirements": null,
+        "branding.screenshots": [],
+        "branding.heroImage": null
+      },
+      "set": {
+        "longDescription": "Daggerfall Unity offers a more approachable way to revisit The Elder Scrolls II. It rebuilds Bethesda's 1996 role-playing game in the Unity engine while using the original game's own data, so the enormous world, its towns and dungeons and its quests all remain Daggerfall, without the need to run it through a DOS emulator.\n\nThe practical differences start with the platform: it runs natively on Windows, Linux and macOS, with mouselook and modern input in place of the old DOS setup. The original's assets are still required, but they are free, and PlayBound sets them up for you during install.\n\nIts real strength is the mod scene the rebuild made possible. DREAM reworks the textures, sounds and interface; Physical Combat and Armor Overhaul changes how fights resolve; World of Daggerfall fills out the sparse countryside; and quest packs add new things to do. The base game asks for little, just a Skylake-era i3 and 2 GB of RAM, though a long mod list can raise that a lot. The project is open source under the MIT license, with its development discussed on the Workshop forums and on Discord.\n\nThe first decision is how much you want to change. We'd run a clean installation before choosing a graphics overhaul or a long mod list. That gives you a working baseline and a chance to learn which parts of Daggerfall you actually want to adjust. The engine can keep the old presentation through its retro display modes, so modern controls do not force you into a wholesale visual replacement.\n\nWhen you do add mods, add them gradually and pay attention to their own instructions. The developer's hardware figures describe the engine, not every combination of community textures, world additions and gameplay changes. If performance drops or a problem appears after a new addition, knowing what changed is much more useful than starting again with an equally large collection. For us, that flexibility is the attraction: you can preserve the adventure's older character while choosing how much friction to remove.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install Daggerfall Unity and make sure the original DOS Daggerfall data is available."
+          },
+          {
+            "platform": "all",
+            "text": "If prompted for data, select the original game-data folder rather than the Unity executable folder."
+          },
+          {
+            "platform": "all",
+            "text": "Launch without optional mods first and check movement, camera and display settings."
+          },
+          {
+            "platform": "all",
+            "text": "Choose a modern or retro presentation before building a mod list."
+          },
+          {
+            "platform": "all",
+            "text": "Add optional mods gradually, following their requirements and keeping saves backed up."
+          }
+        ],
+        "bestFor": [
+          "Players returning to classic Elder Scrolls with modern input",
+          "Players who want to choose their own mod setup",
+          "Windows, macOS and Linux users seeking a native engine"
+        ],
+        "notFor": [
+          "Players expecting modern Elder Scrolls quest design",
+          "Anyone assuming a large graphics-mod pack has the same requirements as the base engine"
+        ],
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "linux",
+              "macos"
+            ],
+            "cpuText": "Intel i3 (Skylake) equivalent",
+            "gpuText": "DirectX 11 capable GPU with current drivers",
+            "ramMB": 2048,
+            "vramMB": 1024
+          },
+          "recommended": {
+            "cpuText": "Intel i5 (Skylake) equivalent",
+            "gpuText": "NVIDIA GeForce GTX 660 or equivalent",
+            "ramMB": 4096,
+            "vramMB": 2048,
+            "notes": "Optional mods can substantially increase requirements or reduce stability."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/Interkarma/daggerfall-unity#system-requirements",
+            "verifiedAt": "2026-11-07"
+          }
+        },
+        "branding.screenshots": [
+          "https://github.com/Interkarma/daggerfall-unity/assets/10426244/4f176f9d-6332-47b3-a4d7-317ed8d6b38b"
+        ],
+        "branding.heroImage": "https://github.com/Interkarma/daggerfall-unity/assets/10426244/4f176f9d-6332-47b3-a4d7-317ed8d6b38b"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rkpd2",
+      "expected": {
+        "longDescription": "Sometimes you want another crack at a dungeon that has been kicking your teeth in, with a little more power on your side. Rat King Pixel Dungeon 2 is built around that feeling. Zrp200's Shattered Pixel Dungeon fork buffs the heroes and puts the Rat King himself in the character lineup. A joke that began around April Fools has become a whole alternative way to play.\n\nThe appeal is getting more room to experiment. If you keep finding interesting equipment in Shattered and dying before you get much use out of it, this is the edition we'd point you toward. Stronger characters give you a different starting point for exploring the dungeon's possibilities. Challenges are still there when you want to turn the pressure back up.\n\nChoose this one for the powerful-hero approach. Rat King Adventure, its descendant, piles on more systems and a whole extra endgame. Our preference would be to get comfortable here before adding that much to learn. PlayBound installs the project's Java desktop release and prepares a runtime if needed. Android players can grab the separate build from the developer.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Players who like build experiments"
+        ],
+        "notFor": [
+          "Players who want classic difficulty"
+        ]
+      },
+      "set": {
+        "longDescription": "Sometimes you want another crack at a dungeon that has been kicking your teeth in, with a little more power on your side. Rat King Pixel Dungeon 2 is built around that feeling. Zrp200's Shattered Pixel Dungeon fork buffs the heroes and puts the Rat King himself in the character lineup. A joke that began around April Fools has become a whole alternative way to play.\n\nThe appeal is getting more room to experiment. If you keep finding interesting equipment in Shattered and dying before you get much use out of it, this is the edition we'd point you toward. Stronger characters give you a different starting point for exploring the dungeon's possibilities. Challenges are still there when you want to turn the pressure back up.\n\nChoose this one for the powerful-hero approach. Rat King Adventure, its descendant, piles on more systems and a whole extra endgame. Our preference would be to get comfortable here before adding that much to learn. PlayBound installs the project's Java desktop release and prepares a runtime if needed. Android players can grab the separate build from the developer.\n\nWe'd use a familiar character first so the changes in power have something to compare against. A run does not need to become an exercise in maximizing every advantage immediately; noticing how a stronger hero changes your decisions is part of the pleasure. The retained challenges give you somewhere to go when the easier direction starts feeling too comfortable.\n\nThis is a separate fork, so check its own release notes and report problems to its own project rather than assuming the Shattered team maintains it. Pick the desktop package for a computer and the Android package for a phone. Do not assume a save or a guide written for another Pixel Dungeon version transfers unchanged. The attraction is an alternate balance philosophy, and that works best when you give it room to be its own game.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Choose the RKPD2 desktop release in PlayBound; Android is a separate project download."
+          },
+          {
+            "platform": "all",
+            "text": "Start with a familiar hero to see how the increased power changes a run."
+          },
+          {
+            "platform": "all",
+            "text": "Explore the Rat King hero once you are comfortable with the fork."
+          },
+          {
+            "platform": "all",
+            "text": "Try the retained challenges when you want to push the stronger characters further."
+          }
+        ],
+        "bestFor": [
+          "Shattered players wanting a more powerful hero",
+          "Players interested in the playable Rat King",
+          "Roguelike fans looking for a different balance philosophy"
+        ],
+        "notFor": [
+          "Players seeking unchanged Shattered difficulty",
+          "Anyone expecting every other Pixel Dungeon guide or save to transfer unchanged"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rat-king-adventure",
+      "expected": {
+        "longDescription": "Beat Yog and still want to see what your character can do? Rat King Adventure has an answer. Its Abyss carries on beyond that boss, with tougher enemies and no fixed end. That is a pretty good introduction to this fork's priorities. There is always another reason to push a run further.\n\nAdventure builds on Rat King Pixel Dungeon 2, then adds tier-six weapons, expanded talents and secret subclasses for each class. The special seeds are particularly interesting. They can change the rules of a run, giving you a reason to revisit familiar ground with a different plan. Kromers bring another temptation, offering unpredictable rewards with a risk attached. For the player who reads an item description and immediately starts thinking of combinations, there is plenty to get stuck into.\n\nWe'd recommend learning Shattered or RKPD2 first. This edition adds enough moving parts that knowing the basics will make the discoveries more satisfying. Come here when you want more to figure out and somewhere to take a strong character after the usual finish. PlayBound uses the project's Java desktop release. The developer also distributes an Android build.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Veterans"
+        ],
+        "notFor": [
+          "Newcomers"
+        ]
+      },
+      "set": {
+        "longDescription": "Beat Yog and still want to see what your character can do? Rat King Adventure has an answer. Its Abyss carries on beyond that boss, with tougher enemies and no fixed end. That is a pretty good introduction to this fork's priorities. There is always another reason to push a run further.\n\nAdventure builds on Rat King Pixel Dungeon 2, then adds tier-six weapons, expanded talents and secret subclasses for each class. The special seeds are particularly interesting. They can change the rules of a run, giving you a reason to revisit familiar ground with a different plan. Kromers bring another temptation, offering unpredictable rewards with a risk attached. For the player who reads an item description and immediately starts thinking of combinations, there is plenty to get stuck into.\n\nWe'd recommend learning Shattered or RKPD2 first. This edition adds enough moving parts that knowing the basics will make the discoveries more satisfying. Come here when you want more to figure out and somewhere to take a strong character after the usual finish. PlayBound uses the project's Java desktop release. The developer also distributes an Android build.\n\nFor a first run, choose one new system to investigate instead of trying to understand every addition at once. Read unfamiliar item and talent descriptions, pay attention to what a special seed changes, and give yourself room for an experiment to fail. The appeal is discovering combinations; a borrowed optimal route can skip the part you came for.\n\nWe'd keep the intended audience in mind when choosing between this and RKPD2. Adventure adds more decisions and a longer destination for a strong character. If you mainly want a gentler version of Shattered, the simpler fork may be a better starting point. If you keep reaching the end and wishing there were somewhere else to take the build, the Abyss is a much more compelling reason to install than a list of extra items alone.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install the Java desktop release through PlayBound, or use the project's separate Android package on a phone."
+          },
+          {
+            "platform": "all",
+            "text": "Begin with a class you know and read the changed talent choices."
+          },
+          {
+            "platform": "all",
+            "text": "Experiment with one unfamiliar system at a time, especially special seeds and unpredictable items."
+          },
+          {
+            "platform": "all",
+            "text": "Treat the Abyss as a later goal once a run reaches beyond Yog."
+          }
+        ],
+        "bestFor": [
+          "Experienced Pixel Dungeon players",
+          "Players who enjoy unusual item combinations",
+          "Players wanting somewhere to take a strong late-game character"
+        ],
+        "notFor": [
+          "First-time roguelike players seeking a simple introduction",
+          "Players who want minimal changes to Shattered"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "tomb-raider-123/desktop-native",
+      "expected": {
+        "longDescription": "There is a particular pleasure in returning to an old Tomb Raider room and remembering where you need to go before you remember how to get there. OpenLara is for that sort of return visit. XProger's open-source engine takes the classic games as its starting point, with the first Tomb Raider the sensible place to begin.\n\nThe distinction between the available engine builds matters. In the project's roadmap, XProger describes the original main-branch engine as capable of completing Tomb Raider I, while the newer engine rewrite has its own unfinished milestones. Support for later games is part of that ongoing work. We'd start with the first adventure and treat experiments with the sequels as something to investigate separately.\n\nThis edition installs the standalone Windows release from the project's GitHub downloads. The website you linked is also the home of its WebGL demo, which is a handy way to get a first look. Linux and macOS builds are published separately. Our pick here is for people who enjoy revisiting a classic through a community engine and are comfortable checking the project notes when they hit a rough edge. For release downloads and troubleshooting, follow the XProger links on this page.",
+        "firstPlaySteps": [],
+        "bestFor": [
+          "Tomb Raider fans"
+        ],
+        "notFor": [
+          "Players wanting the original look only"
+        ]
+      },
+      "set": {
+        "longDescription": "There is a particular pleasure in returning to an old Tomb Raider room and remembering where you need to go before you remember how to get there. OpenLara is for that sort of return visit. XProger's open-source engine takes the classic games as its starting point, with the first Tomb Raider the sensible place to begin.\n\nThe distinction between the available engine builds matters. In the project's roadmap, XProger describes the original main-branch engine as capable of completing Tomb Raider I, while the newer engine rewrite has its own unfinished milestones. Support for later games is part of that ongoing work. We'd start with the first adventure and treat experiments with the sequels as something to investigate separately.\n\nThis edition installs the standalone Windows release from the project's GitHub downloads. The website you linked is also the home of its WebGL demo, which is a handy way to get a first look. Linux and macOS builds are published separately. Our pick here is for people who enjoy revisiting a classic through a community engine and are comfortable checking the project notes when they hit a rough edge. For release downloads and troubleshooting, follow the XProger links on this page.\n\nFor a first visit, start with Tomb Raider I and make sure the basic movement and camera feel right before investigating later-game support. OpenLara's roadmap distinguishes between the original engine and its newer rewrite, which makes the exact build more useful than a broad claim that a whole series is supported. Keep that build information when looking for help.\n\nWe'd also separate the browser demo from the desktop installation in your expectations. The demo is a convenient first look; the standalone package is the edition you install and manage locally. Follow the project's game-data instructions for the adventure you own, and check its release notes before assuming a feature shown in development footage is present in your download. That small amount of preparation leaves more of the evening for the actual attraction: rediscovering the route through a room you only half remember.",
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Install the standalone OpenLara edition for your system."
+          },
+          {
+            "platform": "all",
+            "text": "Follow the release instructions for supplying the original game data you own."
+          },
+          {
+            "platform": "all",
+            "text": "Start with Tomb Raider I and check movement, camera and display options."
+          },
+          {
+            "platform": "all",
+            "text": "Consult the roadmap before relying on later-game or experimental features."
+          },
+          {
+            "platform": "all",
+            "text": "Report issues with the build, operating system and level where they occur."
+          }
+        ],
+        "bestFor": [
+          "Classic Tomb Raider fans revisiting the first adventure",
+          "Players curious about community engine work",
+          "Players comfortable following release and data-setup instructions"
+        ],
+        "notFor": [
+          "Anyone expecting every Tomb Raider sequel to be complete",
+          "Players wanting a guaranteed feature match with current development footage"
+        ]
+      }
+    }
+  ]
 }
