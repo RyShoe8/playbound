@@ -1,45 +1,4 @@
 {
-  "id": "edition-retire-duplicates-20261107",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "quake-champions/qc-steam",
-      "expected": {
-        "visibility": "public"
-      },
-      "set": {
-        "visibility": "hidden"
-      }
-    },
-    {
-      "kind": "edition",
-      "key": "starcraft/official",
-      "expected": {
-        "visibility": "public"
-      },
-      "set": {
-        "visibility": "hidden"
-      }
-    },
-    {
-      "kind": "edition",
-      "key": "trigger-rally/trigger-rally-portable",
-      "expected": {
-        "visibility": "public"
-      },
-      "set": {
-        "visibility": "hidden"
-      }
-    },
-    {
-      "kind": "edition",
-      "key": "world-of-sea-battle/official",
-      "expected": {
-        "visibility": "public"
-      },
-      "set": {
-        "visibility": "hidden"
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
