@@ -58,7 +58,7 @@ const { createSteamCmdInstaller } = require("./services/steamCmd");
 const { steamAppState, steamRuntimeForLaunch } = require("./services/steamPrerequisites");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
-const { mergeModFiles, modUpdateAction, normalizedVersion, shouldUpdateEdition } = require("./services/autoUpdate");
+const { hasManifest, hasRollbackRoom, mergeModFiles, modUpdateAction, normalizedVersion, shouldUpdateEdition } = require("./services/autoUpdate");
 const controllerProfiles = require("./services/controllerProfiles");
 const launchFixes = require("./services/launchFixes");
 const gameControllerConfig = require("./services/gameControllerConfig");
@@ -1979,6 +1979,17 @@ async function autoUpdateInstalledEditions() {
       if (!AUTO_UPDATE_KINDS.includes(entry.kind)) continue;
       if (!shouldUpdateEdition({ fromVersion, toVersion, triedVersion: installed.autoUpdateTriedTo })) continue;
 
+      if (!(await remoteAutoUpdatesAllowed())) return;
+      // Without a file record, only a kept copy of the old install makes this safe.
+      try {
+        if (!hasManifest(installed.dir) && !hasRollbackRoom(installed.dir)) {
+          console.log(`[game-update] ${slug}/${editionSlug}: waiting for disk space to keep a rollback copy`);
+          continue;
+        }
+      } catch {
+        continue;
+      }
+
       const fresh = loadState();
       const record = fresh[slug]?.editions?.[editionSlug];
       if (record) {
@@ -2063,6 +2074,7 @@ async function autoUpdateInstalledMods() {
         continue;
       }
     }
+    if (!(await remoteAutoUpdatesAllowed())) return;
     remember({ autoUpdateTriedTo: latest });
     backgroundInstallActive = true;
     try {
@@ -2080,10 +2092,24 @@ async function autoUpdateInstalledMods() {
   }
 }
 
+/** Our remote off switch. No answer counts as off: updates can always wait. */
+async function remoteAutoUpdatesAllowed() {
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/auto-updates`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+    return res.ok && (await res.json())?.enabled === true;
+  } catch {
+    return false;
+  }
+}
+
 async function runAutoUpdates() {
   if (autoUpdateRunning || loadSettings().autoUpdates === false) return;
   autoUpdateRunning = true;
   try {
+    if (!(await remoteAutoUpdatesAllowed())) return;
     await autoUpdateInstalledEditions();
     await autoUpdateInstalledMods();
   } finally {

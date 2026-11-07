@@ -4,7 +4,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { carryPlayerFiles, mergeModFiles, modUpdateAction, shouldUpdateEdition, writeManifest } = require("./autoUpdate");
+const { hasManifest, carryPlayerFiles, mergeModFiles, modUpdateAction, shouldUpdateEdition, writeManifest } = require("./autoUpdate");
 
 test("editions update once per new, comparable release", () => {
   assert.equal(shouldUpdateEdition({ fromVersion: "v0.5.5", toVersion: "0.5.7" }), true);
@@ -115,5 +115,14 @@ test("a mod update keeps edits and removes what the release dropped", () => {
   assert.equal(read("target/mod/main.dat"), "v2");
   assert.equal(has("target/mod/old.dat"), false);
   assert.equal(read("target/game-file.dat"), "not the mod's");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("an install is only exact once it has a file record", () => {
+  const { root, write } = fixture();
+  write("game.exe", "v1");
+  assert.equal(hasManifest(root), false);
+  writeManifest(root);
+  assert.equal(hasManifest(root), true);
   fs.rmSync(root, { recursive: true, force: true });
 });

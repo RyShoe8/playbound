@@ -28,6 +28,7 @@ const limitsSchema = z
      * below it is a decision for whoever is running the platform.
      */
     maxFreePartySize: z.number().int().min(2).max(PARTY_STRUCTURAL_MAX).optional(),
+    launcherAutoUpdates: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 

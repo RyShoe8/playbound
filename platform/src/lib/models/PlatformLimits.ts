@@ -22,6 +22,8 @@ export interface IPlatformLimits extends Document {
   freePartySlotPool: number;
   /** The largest a party can get without a subscription. */
   maxFreePartySize: number;
+  /** Off stops every launcher's automatic game and mod updates. */
+  launcherAutoUpdates: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +33,7 @@ const PlatformLimitsSchema = new Schema<IPlatformLimits>(
     singletonKey: { type: String, required: true, unique: true, default: "default" },
     freePartySlotPool: { type: Number, required: true, default: 200, min: 0 },
     maxFreePartySize: { type: Number, required: true, default: 8, min: 2 },
+    launcherAutoUpdates: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

@@ -63,6 +63,7 @@ export default async function ConnectPartiesPage() {
           initialLimits={{
             freePartySlotPool: limits.freePartySlotPool,
             maxFreePartySize: limits.maxFreePartySize,
+            launcherAutoUpdates: limits.launcherAutoUpdates,
           }}
           initialUsage={usage}
         />

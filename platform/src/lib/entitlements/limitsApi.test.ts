@@ -44,12 +44,12 @@ describe("the route", () => {
 
   it("exposes exactly two settings, and no more", () => {
     /*
-     * Free seats and free party size. Subscribers need no setting — they are
+     * Free seats, free party size and the launcher update switch. Subscribers need no setting — they are
      * bounded by what they bought plus whatever the pool has spare — and
      * party size is not something a player picks.
      */
     const fields = (ROUTE.match(/^\s{4}\w+: z\./gm) || []).length;
-    expect(fields).toBe(2);
+    expect(fields).toBe(3);
     expect(ROUTE).toMatch(/freePartySlotPool: z\.number\(\)/);
     expect(ROUTE).toMatch(/maxFreePartySize: z\.number\(\)/);
   });

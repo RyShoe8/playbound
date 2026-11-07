@@ -39,6 +39,7 @@ export async function getPlatformLimits() {
   const limits = (doc ?? {}) as {
     freePartySlotPool?: number;
     maxFreePartySize?: number;
+    launcherAutoUpdates?: boolean;
     /* Earlier names for the free cap, read so a live document is not lost. */
     freePartyHardCap?: number;
     partyHardCap?: number;
@@ -49,6 +50,7 @@ export async function getPlatformLimits() {
    * returning undefined into the arithmetic.
    */
   return {
+    launcherAutoUpdates: limits.launcherAutoUpdates !== false,
     freePartySlotPool: limits.freePartySlotPool ?? 200,
     maxFreePartySize:
       limits.maxFreePartySize ?? limits.freePartyHardCap ?? limits.partyHardCap ?? 8,

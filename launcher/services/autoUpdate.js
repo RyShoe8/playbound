@@ -90,6 +90,19 @@ function readManifest(dir) {
   }
 }
 
+/** Installs from before manifests get the date-based rules, so they need a rollback copy. */
+function hasManifest(dir) {
+  return readManifest(dir) !== null;
+}
+
+/** Room for the old install to be kept beside the new one, with a margin. */
+function hasRollbackRoom(dir) {
+  const disk = fs.statfsSync(path.dirname(dir));
+  const free = Number(disk.bavail) * Number(disk.bsize);
+  const used = listFiles(dir).reduce((sum, rel) => sum + fs.statSync(path.join(dir, rel)).size, 0);
+  return free > used * 2 + 5 * 1024 * 1024 * 1024;
+}
+
 /**
  * Copies the player's files from the old install into the new one, returning
  * the count. With a manifest this is exact: a shipped file left untouched is
@@ -149,4 +162,4 @@ function mergeModFiles(unpackedDir, targetDir, previousStamps) {
   return stamps;
 }
 
-module.exports = { carryPlayerFiles, mergeModFiles, writeManifest, isComparableVersion, modUpdateAction, normalizedVersion, shouldUpdateEdition };
+module.exports = { hasManifest, hasRollbackRoom, carryPlayerFiles, mergeModFiles, writeManifest, isComparableVersion, modUpdateAction, normalizedVersion, shouldUpdateEdition };

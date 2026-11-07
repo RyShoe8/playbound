@@ -13,6 +13,7 @@ import { useState } from "react";
 type Limits = {
   freePartySlotPool: number;
   maxFreePartySize: number;
+  launcherAutoUpdates?: boolean;
 };
 
 type Usage = {
@@ -121,6 +122,20 @@ export function PlatformLimitsEditor({
             onChange={(e) => set("maxFreePartySize", Number(e.target.value))}
             className="w-40 rounded-lg border border-border bg-background px-3 py-2"
           />
+        </Field>
+
+        <Field
+          label="Launcher automatic updates"
+          hint="Turn off to stop every launcher from updating installed games and mods, within about a minute of the next check. Updates already downloading finish. Older launchers before 0.3.224 ignore this."
+        >
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={limits.launcherAutoUpdates !== false}
+              onChange={(e) => set("launcherAutoUpdates", e.target.checked)}
+            />
+            Automatic updates on
+          </label>
         </Field>
 
         <div className="flex items-center gap-3 pt-1">
