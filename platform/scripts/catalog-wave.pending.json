@@ -1,15 +1,4 @@
 {
-  "id": "edition-rename-tf2-classified-20261106",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "team-fortress-2/tf2-classic",
-      "expected": {
-        "name": "Team Fortress 2 Classic"
-      },
-      "set": {
-        "name": "Team Fortress 2 Classified"
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
