@@ -148,7 +148,7 @@ async function renderSettingsView() {
 
     <div class="settings-group">
       <label class="settings-label">Automatic updates</label>
-      <p class="settings-hint">Keep installed games, editions and mods current. Downloads run at a limited speed and wait while you play. Your saves and edited settings are kept.</p>
+      <p class="settings-hint">Keep installed games, editions and mods current. Downloads wait while you play. Your saves and edited settings are kept.</p>
       <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
         <input type="checkbox" id="set-auto-updates" ${settings.autoUpdates === false ? "" : "checked"} />
         <span style="font-size: 13px; color: var(--text);">Update automatically</span>

@@ -1889,18 +1889,16 @@ async function refreshRemoteCatalog(force = false) {
  */
 const AUTO_UPDATE_KINDS = ["direct-zip", "direct-7z", "github-zip"];
 const AUTO_UPDATE_EVERY_MS = 6 * 60 * 60 * 1000;
-const BACKGROUND_DOWNLOAD_BYTES_PER_SECOND = 15 * 1024 * 1024;
 /** How soon a failed start counts against the update, and when the old build is let go. */
 const UPDATE_CRASH_WINDOW_MS = 15 * 1000;
 const UPDATE_KEEP_AFTER_MS = 60 * 1000;
 let autoUpdateRunning = false;
 let backgroundInstallActive = false;
 
-/** Background downloads wait out any running game and stay under a speed limit. */
-async function backgroundDownloadGate(bytes) {
+/** Background downloads wait out any running game. */
+async function backgroundDownloadGate() {
   if (!backgroundInstallActive) return;
   while (activeLaunches.size > 0) await new Promise((resolve) => setTimeout(resolve, 2000));
-  await new Promise((resolve) => setTimeout(resolve, (bytes / BACKGROUND_DOWNLOAD_BYTES_PER_SECOND) * 1000));
 }
 
 function notifyUpdated(message) {
