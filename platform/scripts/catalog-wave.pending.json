@@ -1,4 +1,80 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261107-faq-openlara-ratking",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rat-king-adventure",
+      "expected": {
+        "faq": [],
+        "longDescription": "Rat King Adventure is what happens when a joke mod's own joke mod keeps growing. It is an expansive fork of RKPD2, which is itself built on Shattered Pixel Dungeon, and it stays in sync with updates from both. Where Shattered ends, this one keeps going: past Yog lies the Abyss, a new area of tough enemies with no set end, for anybody who thought the final boss should have been a starting point.\n\nThe additions are as wild as that suggests. Tier-6 weapons have unusual effects, expanded talents reach tier 4, and every class has secret subclasses to find. Rats also turn up in place of some common enemies. Kromers are unpredictable items with high risk and high reward, special seeds grant unique effects or whole new mechanics, and new challenges build on the existing ones if you somehow still need a harder time.\n\nNobody should start here. It assumes you already know Shattered's rules and want them stretched until they snap, and the balance is firmly on the side of fun. It installs and saves separately, so it never disturbs a normal Shattered run, and PlayBound installs a Java runtime on desktop if you need one. It is free under the GPL version 3, on Android and desktop."
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "How is Rat King Adventure different from Shattered Pixel Dungeon?",
+            "a": "It builds on RKPD2 with extra talents, secret subclasses, tier-six weapons and the Abyss, an endless area after Yog. Choose it when you want more systems and a longer challenge to explore."
+          },
+          {
+            "q": "Which version does PlayBound install?",
+            "a": "PlayBound installs the Java desktop release from the project’s GitHub repository and prepares a Java runtime when needed. The project also offers an Android build separately."
+          },
+          {
+            "q": "Where should I report a bug?",
+            "a": "Use the Issues section of TrashboxBobylev/Rat-King-Adventure on GitHub. Include your game version, what happened and the steps that caused it."
+          }
+        ],
+        "longDescription": "Beat Yog and still want to see what your character can do? Rat King Adventure has an answer. Its Abyss carries on beyond that boss, with tougher enemies and no fixed end. That is a pretty good introduction to this fork's priorities. There is always another reason to push a run further.\n\nAdventure builds on Rat King Pixel Dungeon 2, then adds tier-six weapons, expanded talents and secret subclasses for each class. The special seeds are particularly interesting. They can change the rules of a run, giving you a reason to revisit familiar ground with a different plan. Kromers bring another temptation, offering unpredictable rewards with a risk attached. For the player who reads an item description and immediately starts thinking of combinations, there is plenty to get stuck into.\n\nWe'd recommend learning Shattered or RKPD2 first. This edition adds enough moving parts that knowing the basics will make the discoveries more satisfying. Come here when you want more to figure out and somewhere to take a strong character after the usual finish. PlayBound uses the project's Java desktop release. The developer also distributes an Android build."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rkpd2",
+      "expected": {
+        "faq": [],
+        "longDescription": "RKPD2, short for Rat King Pixel Dungeon 2, is Shattered Pixel Dungeon with the difficulty deliberately turned down and the power turned up. Zrp200's fork carries the spirit of Rat King Dungeon, an April Fools spoof of Shattered, into a proper game that keeps up with Shattered's development. Its stated aim is a game that is both easier and shorter than the original, which is an unusual promise from a roguelike.\n\nIts signature is the Rat King himself, who effectively lets you play as every class at once. The other heroes are heavily buffed as well, and that power creep is the whole joke: you get to feel unreasonably strong in a genre that usually punishes you for trying. Levels are smaller, so runs move along more quickly, and there are a few quality-of-life changes along the way.\n\nThat makes it surprisingly useful as well as silly. If Shattered's difficulty has always bounced you off, this is a friendlier way to learn its items and enemies. If you already know Shattered well, it is a holiday from careful play. It installs and saves separately, so your normal runs stay untouched. It is free under the GPL version 3, on Windows, macOS, Linux and Android. It is a different project from Rat King Adventure, its much wilder descendant."
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "What changes in Rat King Pixel Dungeon 2?",
+            "a": "RKPD2 gives Shattered Pixel Dungeon’s heroes much more power and adds the playable Rat King. Its easier balance makes it a good option if you want to experiment with stronger characters."
+          },
+          {
+            "q": "How is it different from Rat King Adventure?",
+            "a": "RKPD2 is the project Rat King Adventure builds on. Adventure adds another layer of content, including the Abyss and expanded talents. Pick RKPD2 for its focus on powerful heroes."
+          },
+          {
+            "q": "How do I install the desktop version?",
+            "a": "Use Install with PlayBound to download the project’s Java release. PlayBound prepares a Java runtime when needed. Android downloads are available separately from the project."
+          }
+        ],
+        "longDescription": "Sometimes you want another crack at a dungeon that has been kicking your teeth in, with a little more power on your side. Rat King Pixel Dungeon 2 is built around that feeling. Zrp200's Shattered Pixel Dungeon fork buffs the heroes and puts the Rat King himself in the character lineup. A joke that began around April Fools has become a whole alternative way to play.\n\nThe appeal is getting more room to experiment. If you keep finding interesting equipment in Shattered and dying before you get much use out of it, this is the edition we'd point you toward. Stronger characters give you a different starting point for exploring the dungeon's possibilities. Challenges are still there when you want to turn the pressure back up.\n\nChoose this one for the powerful-hero approach. Rat King Adventure, its descendant, piles on more systems and a whole extra endgame. Our preference would be to get comfortable here before adding that much to learn. PlayBound installs the project's Java desktop release and prepares a runtime if needed. Android players can grab the separate build from the developer."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "tomb-raider-123/desktop-native",
+      "expected": {
+        "faq": [],
+        "longDescription": "This is the fuller way to play OpenLara: XProger's open-source engine for classic Tomb Raider, as a standalone program rather than a browser tab. The engine's long-term goal is to run the original-era games from the first through the fifth, and the first Tomb Raider is the one its documentation describes as fully playable, so that is the best place to start.\n\nNative builds are where its improvements have the most room. Frame rates are independent of the original's limits, with options as high as 144 frames per second, and resolution goes far beyond what 1996 allowed. Lighting is improved, with coloured light and self-shadowing, and the water is rewritten. There is even a first-person mode with Lara's hands in view, which changes how those long drops feel. This edition also adds headset support through OpenXR and two-player local split screen, two things no one expected from a 1996 tomb crawl.\n\nOpenLara ships none of the original game's copyrighted files, so you bring your own Tomb Raider data. Expect some rough edges too, since this is a volunteer project still in progress. It is open source under the BSD 2-Clause license."
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Where can I try OpenLara in a browser?",
+            "a": "The project links a WebGL demo at http://xproger.info/projects/OpenLara/. Use the desktop edition’s Install with PlayBound button for the standalone Windows build."
+          },
+          {
+            "q": "Does this install the standalone version?",
+            "a": "Yes. This edition’s recipe downloads OpenLara_win.zip from XProger’s GitHub releases. The project also publishes separate builds for Linux and macOS."
+          },
+          {
+            "q": "Where can I check progress and report problems?",
+            "a": "Use XProger/OpenLara on GitHub for the roadmap and issue tracker. Include your OpenLara build, operating system and the level where the problem occurs."
+          }
+        ],
+        "longDescription": "There is a particular pleasure in returning to an old Tomb Raider room and remembering where you need to go before you remember how to get there. OpenLara is for that sort of return visit. XProger's open-source engine takes the classic games as its starting point, with the first Tomb Raider the sensible place to begin.\n\nThe distinction between the available engine builds matters. In the project's roadmap, XProger describes the original main-branch engine as capable of completing Tomb Raider I, while the newer engine rewrite has its own unfinished milestones. Support for later games is part of that ongoing work. We'd start with the first adventure and treat experiments with the sequels as something to investigate separately.\n\nThis edition installs the standalone Windows release from the project's GitHub downloads. The website you linked is also the home of its WebGL demo, which is a handy way to get a first look. Linux and macOS builds are published separately. Our pick here is for people who enjoy revisiting a classic through a community engine and are comfortable checking the project notes when they hit a rough edge. For release downloads and troubleshooting, follow the XProger links on this page."
+      }
+    }
+  ]
 }
