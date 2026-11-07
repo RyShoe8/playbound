@@ -1,4 +1,73 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261106-03",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "rollercoaster-tycoon/openrct2",
+      "expected": {
+        "longDescription": "OpenRCT2 keeps the tiny guests, ruthless economics and tactile coaster builder of RollerCoaster Tycoon, and removes the friction of running a 2002 game: modern resolutions, multiplayer, plugins, bug fixes and more."
+      },
+      "set": {
+        "longDescription": "OpenRCT2 is what keeps Chris Sawyer's park builder running on a modern PC. It is an open-source re-implementation of RollerCoaster Tycoon 2, written so the game no longer depends on the ageing original executable. The parks, rides and peeps are the ones you remember, because the original game's files are still what it plays from, and you need your own copy of them.\n\nThe attraction is everything the rewrite adds around that familiar game. Wide and high resolutions replace the small windows of the original, and the game keeps up with current versions of Windows rather than needing compatibility tricks. Fast-forward cuts the long wait for a new coaster's first customers, and the project has grown a large community of custom scenarios and plugins.\n\nThe biggest addition is multiplayer. OpenRCT2 has a public server list, so several people can build and run the same park together, one laying track while another fixes the queue lines and the prices. That turns a very solitary kind of game into a shared one. Development is active, with regular releases and a Discord, a subreddit and a wiki for help getting started."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/openmw",
+      "expected": {
+        "longDescription": "OpenMW is a free, modern, 64-bit open-source engine reimplementation of The Elder Scrolls III: Morrowind, with better performance, lighting and stability. It needs the original game data files."
+      },
+      "set": {
+        "longDescription": "OpenMW is a new engine for The Elder Scrolls III: Morrowind, written from scratch to replace the one the game shipped with in 2002. It is not a mod and it uses none of the original executable, but it does need your own copy of Morrowind, because it contains no game content. Point it at your install and Vvardenfell loads as usual, only without most of the old engine's bugs.\n\nThe differences show up quickly. It runs natively on Windows, Linux and macOS, with improved physics and AI, distant terrain, and saves sorted by character. Spell search and other interface fixes smooth over small daily annoyances from the original, and the old limit of 255 loaded mods is effectively gone.\n\nMost content mods built for the original game work well, though anything that depends on MWSE, MGE XE or MCP does not, because those tools patch the executable OpenMW replaces. Native features cover much of that ground, including shader support, object paging for distant land, groundcover and Lua scripting. It is free under the GPL version 3, and it comes with OpenMW-CS, an editor for making mods. The project is still below version 1.0, which it reserves for full parity with the original engine."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "old-school-runescape/runelite",
+      "expected": {
+        "version": null,
+        "longDescription": "RuneLite is the officially approved, community-built client for Old School RuneScape. It adds plugins, GPU rendering, interface improvements and the 117 HD graphics options."
+      },
+      "set": {
+        "version": "1.13.6",
+        "longDescription": "RuneLite is the client much of the Old School RuneScape community plays through. It is a free, open-source alternative to the official client, and it plays the same game on the same servers while adding a lot of useful information and a smoother picture. A live counter on its website regularly shows well over 100,000 people using it, which says more than any feature list could.\n\nThe graphics come first. GPU rendering raises the frame rate and pushes the draw distance far past what the original offers, and it adds better scaling and anti-aliasing, so a 2007-style world looks noticeably cleaner on a modern screen.\n\nThen there is what it tells you. A loot tracker records kill counts and drops along with their prices, while status overlays put boost timers and enemy health on screen so you stop doing that arithmetic in your head. Discord integration shows what you are doing and helps form in-game parties, and the Plugin Hub adds a long list of community extras beyond those. There are builds for Windows, macOS and Linux, including ARM. You still sign in with your own Old School RuneScape account, and support and source are on its Discord and GitHub."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openttd/jgrpp",
+      "expected": {
+        "version": null,
+        "links.forum": null,
+        "longDescription": "JGR's Patchpack is a long-running fork of OpenTTD with many extra features - for example improved signalling, bigger limits and extra tools. It is a different executable you install next to vanilla OpenTTD, not a patch for your existing install."
+      },
+      "set": {
+        "version": "0.73.5",
+        "links.forum": "https://www.tt-forums.net/viewtopic.php?f=33&t=73469",
+        "longDescription": "JGR's Patch Pack is OpenTTD for people who have already outgrown OpenTTD. It is a large collection of features and modifications built on the standard game, and it installs alongside it as a separate program rather than as a mod. The project itself says that it is aimed at experienced players and that some of its features have steep learning curves.\n\nRailways get the deepest changes. Realistic braking makes trains need real stopping distance, routing restrictions and programmable pre-signals let you control exactly who goes where, and template-based replacement renews a whole fleet in one step. Drive-through depots and several rail types on a tile open up tighter layouts.\n\nTimetabling is the other headline. Automated timetables and separation keep vehicles evenly spaced, scheduled dispatch sends them at set times, and extra conditional orders handle cases the base game cannot express. Departure boards, ship collision avoidance, road waypoints and maps of up to 256 million tiles round it out.\n\nSaves only move one way: standard OpenTTD saves generally load here up to the last merged version, but patch pack saves will not load back in the standard game. So treat it as a commitment for a given network, and expect to spend an evening reading the options."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "teeworlds/ddnet",
+      "expected": {
+        "longDescription": "DDNet turns Teeworlds' hook, jump and weapon physics into cooperative obstacle courses where teams help each other, save progress and chase leaderboards."
+      },
+      "set": {
+        "longDescription": "DDraceNetwork turns Teeworlds from a frantic little shooter into a game about getting through a map together. It is an actively maintained version of DDRace, a Teeworlds modification, and it replaces fragging with co-operation: the weapons are still there, but mostly you use them to fling, freeze and rescue each other, and the hook is how you get across gaps that nobody could cross alone.\n\nMaps are custom-built obstacle courses, and many of them are puzzles that only work with a partner in the right place at the right moment. Servers hold up to 128 players, so a popular map can be anything from a quiet two-person climb to a chaotic crowd of round characters falling into the same pit.\n\nThere is also a long game behind that. Finishing maps on the official servers earns points and worldwide ranks, there are international tournaments, and you can design your own maps or host your own server. Its community is large and long-lived, with a wiki, a skin database and public statistics. It is free on its own website and on Steam, and it costs nothing but your dignity the first time a stranger hooks you back into the freeze you just escaped."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "wolfenstein-enemy-territory/et-legacy",
+      "expected": {
+        "version": null,
+        "longDescription": "ET: Legacy is the recommended, fully open-source modern engine for Wolfenstein: Enemy Territory, compatible with original mods."
+      },
+      "set": {
+        "version": "2.86.2",
+        "longDescription": "ET: Legacy keeps a 2003 classic playable without splitting its community. It is an open-source client and server for Wolfenstein: Enemy Territory, built to be fully compatible with the original 2.60b release, so it can still join the servers and players that game has kept all these years. The class-based objective matches stay exactly what they were: Axis against Allies, engineers planting dynamite, medics reviving, and field ops calling in airstrikes.\n\nWhat changes is everything around that. The original was released before modern systems existed; this one has current builds for Windows, Linux and macOS, with ongoing renderer work that includes Vulkan and steady performance and crash fixes.\n\nPlayers who record matches get some of the most obvious new tools. The demo playback controls have been updated, and a democlip command can turn a section of a demo straight into a video file, which removes a lot of old frag-movie hassle.\n\nIt is released under the GPL version 3 and developed in the open, with an official test server, a Discord and an active release schedule. The community is still there too: the project's own site tracks hundreds of people online at once across Enemy Territory and ET: Legacy."
+      }
+    }
+  ]
 }
