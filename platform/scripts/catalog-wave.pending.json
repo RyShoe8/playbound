@@ -58,20 +58,20 @@
       "kind": "edition",
       "key": "daggerfall/daggerfall-unity",
       "expected": {
-        "requirements": {},
         "links.discord": null,
         "links.forum": null,
-        "longDescription": "Daggerfall is an enormous, procedurally filled RPG, and Daggerfall Unity is the reimplementation most players use to run it today. It keeps the original game's data and rules while adding widescreen and high-resolution support, modern input, a large library of quality-of-life options, and a mod system that has produced everything from texture packs to new quests.\n\nThe game data is Bethesda's: Daggerfall was released free in 2009, and PlayBound sets that data up for the engine instead of asking you to find and prepare it. The Elder Scrolls and Daggerfall are trademarks of ZeniMax Media Inc.; Daggerfall Unity is an independent project."
+        "longDescription": "Daggerfall is an enormous, procedurally filled RPG, and Daggerfall Unity is the reimplementation most players use to run it today. It keeps the original game's data and rules while adding widescreen and high-resolution support, modern input, a large library of quality-of-life options, and a mod system that has produced everything from texture packs to new quests.\n\nThe game data is Bethesda's: Daggerfall was released free in 2009, and PlayBound sets that data up for the engine instead of asking you to find and prepare it. The Elder Scrolls and Daggerfall are trademarks of ZeniMax Media Inc.; Daggerfall Unity is an independent project.",
+        "requirements.min": null,
+        "requirements.recommended": null,
+        "requirements.notes": null
       },
       "set": {
-        "requirements": {
-          "min": "Windows, Linux or macOS; Intel i3 (Skylake) equivalent; DirectX 11-capable GPU with 1 GB VRAM; 2 GB RAM",
-          "recommended": "Windows, Linux or macOS; Intel i5 (Skylake) equivalent; GTX 660 with 2 GB VRAM; 4 GB RAM",
-          "notes": "Optional mods can raise these substantially."
-        },
         "links.discord": "https://discord.gg/rn95kxPGpg",
         "links.forum": "http://forums.dfworkshop.net/",
-        "longDescription": "Daggerfall Unity is the reason most people can comfortably play The Elder Scrolls II today. It rebuilds Bethesda's 1996 role-playing game in the Unity engine while using the original game's own data, so the enormous world, its towns and dungeons and its quests all remain Daggerfall, without the need to run it through a DOS emulator.\n\nThe practical differences start with the platform: it runs natively on Windows, Linux and macOS, with mouselook and modern input in place of the old DOS setup. The original's assets are still required, but they are free, and PlayBound sets them up for you during install.\n\nIts real strength is the mod scene the rebuild made possible. DREAM reworks the textures, sounds and interface; Physical Combat and Armor Overhaul changes how fights resolve; World of Daggerfall fills out the sparse countryside; and quest packs add new things to do. The base game asks for little, just a Skylake-era i3 and 2 GB of RAM, though a long mod list can raise that a lot. The project is open source under the MIT license, with its development discussed on the Workshop forums and on Discord."
+        "longDescription": "Daggerfall Unity is the reason most people can comfortably play The Elder Scrolls II today. It rebuilds Bethesda's 1996 role-playing game in the Unity engine while using the original game's own data, so the enormous world, its towns and dungeons and its quests all remain Daggerfall, without the need to run it through a DOS emulator.\n\nThe practical differences start with the platform: it runs natively on Windows, Linux and macOS, with mouselook and modern input in place of the old DOS setup. The original's assets are still required, but they are free, and PlayBound sets them up for you during install.\n\nIts real strength is the mod scene the rebuild made possible. DREAM reworks the textures, sounds and interface; Physical Combat and Armor Overhaul changes how fights resolve; World of Daggerfall fills out the sparse countryside; and quest packs add new things to do. The base game asks for little, just a Skylake-era i3 and 2 GB of RAM, though a long mod list can raise that a lot. The project is open source under the MIT license, with its development discussed on the Workshop forums and on Discord.",
+        "requirements.min": "Windows, Linux or macOS; Intel i3 (Skylake) equivalent; DirectX 11-capable GPU with 1 GB VRAM; 2 GB RAM",
+        "requirements.recommended": "Windows, Linux or macOS; Intel i5 (Skylake) equivalent; GTX 660 with 2 GB VRAM; 4 GB RAM",
+        "requirements.notes": "Optional mods can raise these substantially."
       }
     }
   ]
