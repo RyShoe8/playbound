@@ -1,4 +1,115 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261106-07",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "theme-hospital/corsixth",
+      "expected": {
+        "description": "",
+        "links.website": null,
+        "links.github": null,
+        "links.discord": null,
+        "longDescription": "CorsixTH is an open-source engine reimplementation of Theme Hospital with modern resolutions, bug fixes and extra features. It needs the original game data."
+      },
+      "set": {
+        "description": "CorsixTH is an open-source reimplementation of Bullfrog's 1997 Theme Hospital, with modern resolutions, a map editor and custom campaigns. It plays from your own copy of the original game's data.",
+        "links.website": "https://corsixth.com/",
+        "links.github": "https://github.com/CorsixTH/CorsixTH",
+        "links.discord": "https://discord.gg/Mxeztvh",
+        "longDescription": "CorsixTH is the way to keep running a hospital badly on a modern computer. It is an open-source reimplementation of Bullfrog's 1997 business sim Theme Hospital, so the bloated-headed patients, the queues and the increasingly desperate announcements are all still here. Only the ageing program underneath has been replaced, and you still bring the graphics and sound from your own copy, whether that is an old CD or a download from GOG or EA.\n\nWhat you get is the game you remember with the friction removed. It runs at Full HD and 4K with zoom and interface scaling, and it adds subtitles, more than 20 languages and unlimited save files. You can build while paused, which alone changes how the later levels feel, and full hotkeys and an adviser message history make it easier to keep track of the chaos. Custom music, custom levels and campaigns plus a built-in map editor give it life beyond the original game.\n\nIt is not quite a complete copy yet. Multiplayer and AI-run rival hospitals are missing, along with rats and vomit waves, and a few graphics can glitch. For a solo campaign, though, this is the best way to play. Builds exist for Windows, macOS and Linux."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dungeon-keeper-gold/keeperfx",
+      "expected": {
+        "version": null,
+        "longDescription": "KeeperFX rebuilds the Dungeon Keeper engine as an open-source project. It adds modern widescreen and 4K resolutions, rewritten creature behaviour, custom campaigns, many bug fixes and a lot of room for community content, while keeping the original game's tone and rules.\n\nYou need your own copy of the original game data; PlayBound sets the engine up around it."
+      },
+      "set": {
+        "version": "1.4.0",
+        "longDescription": "KeeperFX is how Dungeon Keeper survives. It is an open-source remake and fan expansion of Bullfrog's 1997 game that sets out to preserve the original experience while building on it, so slapping your imps and sending your Horned Reapers to ruin a do-gooder's day feels just as it should, only on Windows 10 and 11, at higher resolutions and with modern controls. It needs the original game's files, from an old CD or the digital Gold edition on EA, Steam or GOG.\n\nIt goes well beyond a compatibility patch. There are hundreds of bug fixes, along with new creatures, textures and sprites. The original campaign is here, and additional campaigns and maps are available from the community's Workshop, helped along by new level scripting commands that give map makers more to work with.\n\nMultiplayer is the big recent change. Version 1.4, released in July 2026, made global matches work with no setup, which for a game of this age is remarkable: you can now fight another dungeon keeper anywhere in the world without any networking trouble. So it suits both old fans wanting more and newcomers curious why people still talk about this game. The project has no affiliation with Bullfrog or EA, and its community is active on Discord."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "medal-of-honor-allied-assault/openmohaa",
+      "expected": {
+        "longDescription": "OpenMoHAA is an actively maintained, GPL-2.0 re-implementation of Medal of Honor: Allied Assault, Spearhead and Breakthrough on the ioquake3 engine. It runs on current systems and supports modern online play."
+      },
+      "set": {
+        "longDescription": "OpenMoHAA brings 2002's Medal of Honor: Allied Assault onto modern systems without giving up what it was. This open re-implementation, built on ioquake3 and the F.A.K.K SDK, covers the base game and both expansions, Spearhead and Breakthrough, and it aims for full compatibility with the original's assets, scripts and multiplayer. So the Omaha Beach landing still happens, and you still bring your own game files for it.\n\nThe practical gains start with native builds for Windows, Linux and macOS and much better behaviour on current hardware. It also folds in the fixes from Spearhead 2.15 and Breakthrough 2.40b, and it adds a few things the original never had, including built-in bots and a ban system for people running servers.\n\nThe single-player campaign should now work from start to finish. Multiplayer is described as almost fully stable, with Free-For-All, Team Deathmatch, round-based and objective modes, as well as Tug-of-War from Spearhead and Liberation from Breakthrough. Mods such as Freeze-Tag are supported, and you can host your own server or join others. The project has not reached version 1.0 yet, so expect the odd rough edge. It is free and open source under the GPL version 2, and it is actively maintained."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "tes-arena/opentesarena",
+      "expected": {
+        "longDescription": "Recreates the Arena engine in modern C++. Adds native modern resolutions, smooth frame rates and mouselook controls. It needs the original game data."
+      },
+      "set": {
+        "longDescription": "OpenTESArena is a from-scratch engine for The Elder Scrolls: Arena, Bethesda's 1994 DOS game and the start of the entire series. It distributes no game assets, so you need your own copy of Arena from Steam, GOG or Bethesda, but the code running it is new: it aims to reproduce the original while adding quality-of-life changes, including modern resolutions and two control schemes, one with WASD and mouselook and a classic one that turns with A and D.\n\nYou should think of it as a work in progress rather than a finished way to play, and that matters here. A lot does work. You can fight enemies for loot and experience, pick up and equip items, trade with shopkeepers, rent tavern rooms, ask citizens for directions and rumours, and fast travel anywhere on the world map.\n\nBut several major parts are still missing. Quests, spells, potions and on-use items have not been implemented, and neither has saving or loading, so you cannot yet play Arena through on it. It is best for the curious and for anyone who wants to see how the project is coming along. For a complete playthrough, use the official edition. It is free under the MIT license, runs on Windows, Linux and macOS, and works best with Vulkan."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/gzdoom",
+      "expected": {
+        "longDescription": "The recommended way to play Freedoom on your own: Phase 1, Phase 2 and FreeDM bundled with GZDoom for uncapped frame rates, widescreen and 4K resolutions, mouselook and a large library of community mods.\n\nGZDoom is built for singleplayer and mod play rather than strict network compatibility."
+      },
+      "set": {
+        "longDescription": "This edition pairs Freedoom with GZDoom, and it is the easiest way to start. Freedoom is the free game content: Phase 1, Phase 2 and the FreeDM deathmatch set, all made by the community so that nobody needs an id Software licence or a store purchase to play. GZDoom is what runs it, a modder-friendly source port based on ZDoom, with OpenGL and Vulkan renderers and powerful scripting.\n\nFor a first-time player, that means classic Doom-style shooting with none of the old limits. You get uncapped frame rates and widescreen resolutions up to 4K, plus ambient lighting and controller support, so it looks and feels like a game from this decade if you want it to, while the demons, keys and secret walls remain gloriously old-fashioned.\n\nIt is also the natural choice if you plan to try mods, because GZDoom is the port that many of the most ambitious ones target. If you care more about exact original behaviour or speedrunning, DSDA-Doom is listed here for that, and Zandronum is the better option for online play. Nothing here costs anything, and nothing needs a copy of Doom. GZDoom itself is open source under the GPL version 3."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/dsda-doom",
+      "expected": {
+        "longDescription": "DSDA-Doom is a source port built for accuracy: it plays back classic demos faithfully and includes the tools used by the Doom Speedrun Archive community. This edition bundles it with Freedoom so you can try speedrunning and demo analysis without any commercial game files."
+      },
+      "set": {
+        "longDescription": "DSDA-Doom is the source port for people who take Doom's physics seriously. It describes itself as modern but conservative, and as a successor to PrBoom+, and it focuses on speedrunning and quality of life, with extra tooling for recording and playing back demos. This edition runs it with Freedoom, so you get free game content with no id Software purchase required.\n\nThat conservatism is the appeal. It sticks closely to the original's behaviour, which is what matters when a demo has to play back identically on another machine. A strict mode exists for speedrunning, while TAS tools, rewind and debugging tools cater to those who study the game frame by frame. It is a modern program too, with an in-game console that supports scripting, full controller support and a palette-based OpenGL renderer that keeps the classic look.\n\nModern mapping standards are covered, including MBF21 and UDMF, along with demo-compatible Heretic and Hexen. It is not the port to choose for flashy lighting or big gameplay mods; GZDoom is better for that. Choose it if you want Doom to behave as Doom always has, or if you have seen a world-record run and want to find out how much harder it is than it looks. It runs on Windows, Linux and macOS."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/zandronum",
+      "expected": {
+        "longDescription": "This edition pairs Freedoom's free game content with Zandronum, a Doom source port built around client/server multiplayer. It supports up to 64 players, spectator modes and a large server browser, and it is the build PlayBound uses for party play.\n\nBecause Freedoom replaces Doom's art and levels with free content, nothing needs to be bought."
+      },
+      "set": {
+        "longDescription": "Zandronum exists so that Doom can be played online properly. It is a multiplayer-focused source port that continues the old Skulltag project, with a client-server design rather than the shaky peer-to-peer setup of the original game. This edition runs it with Freedoom, which means you and your friends can all get playing without anybody needing to buy Doom.\n\nIt handles up to 64 players and has a long menu of modes. Co-operative and deathmatch are the obvious ones, joined by team deathmatch, capture the flag, possession, domination, invasion, Last Man Standing and survival, with modifiers like Instagib layered on top. Bots, announcers and skins round out the online experience, and spectating and voting help keep a server running smoothly.\n\nIt stays tied to the ZDoom and GZDoom codebases, so it supports most of their features, including hardware-accelerated rendering, and it can also run Heretic, Hexen and Strife if you have them. Its long-standing competitive scene shows how far it can go: the International Doom League adopted it as its port of choice in 2014. For solo play GZDoom is the simpler pick. For a party that wants a server up and everyone shooting each other inside five minutes, this one is hard to beat."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "heroes-of-might-and-magic-3-complete/hota",
+      "expected": {
+        "longDescription": "Horn of the Abyss is the community expansion for Heroes of Might and Magic III. It adds the Cove town, new creatures, artifacts and map objects, new campaigns, balance changes and online play, and it is actively updated by the HotA Crew."
+      },
+      "set": {
+        "longDescription": "Horn of the Abyss is the expansion Heroes of Might and Magic III fans have kept making for themselves. This enormous community project keeps the 1999 strategy game's turn-based castle-building and hex battles, then builds on them so carefully that many players now treat it as the default way to play. It needs the Complete edition, or the GOG version, to run on top of.\n\nThe headline additions are two new towns. Cove is a seafaring faction with Captains and Navigators and a Cannon that replaces the usual ballista. Factory takes inspiration from the infamous cancelled Forge town, with Halflings, Mechanics and Automatons among its lines. In all, the project adds 54 new playable heroes across its towns and campaign figures, along with creatures, artifacts and maps.\n\nWhat makes it so respected is the balance work. Numbers still get adjusted right down to changes like how many Hell Hounds appear in a starting army, and those changes come with long changelogs that competitive players actually read. The project also has a strong online scene. Its most recent major release is 1.8.0, from the end of 2025. It is a free fan expansion and it asks very little of a modern PC, so it is an easy recommendation for anyone who has ever said 'one more turn'."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "stalker-anomaly/gamma",
+      "expected": {
+        "longDescription": "G.A.M.M.A. - Grok's Automated Modular Modpack for Anomaly - is a curated hardcore survival overhaul with crafting, economy and balance changes layered over Anomaly."
+      },
+      "set": {
+        "longDescription": "G.A.M.M.A. is S.T.A.L.K.E.R. with every comfortable shortcut removed. Grok's Automated Modular Modpack for Anomaly is a hardcore, curated survival experience that combines hundreds of community mods on top of the free S.T.A.L.K.E.R. Anomaly, then tunes them to work as one game. It is single-player only and free, though you do need to own at least one of the original S.T.A.L.K.E.R. games.\n\nThe Zone becomes much more dangerous and far more involved. Health is tracked by limb, so bleeding, pain and infection all matter. Weapons and armour must be repaired, and crafting and cooking are part of daily life. Traders will not hand you a working rifle, so you tend to build your kit from what you find, and artifacts have to be empowered and combined to be worth much. Ammunition types behave differently, too. By default you can only quicksave at campfires, which does a lot to make each trip out feel tense, though you can change that and much else in its configuration menu.\n\nThis is a serious commitment in every way. It needs about 100 to 120 GB of storage, 16 GB of RAM and at least a GTX 1060 or RX 580. Expect a slow start and many deaths; that is what its fans come for."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-classic",
+      "expected": {
+        "longDescription": "The original 1992 presentation with classic MIDI sound and unmodified balance, running natively on modern systems."
+      },
+      "set": {
+        "longDescription": "The Ur-Quan Masters is one of gaming's great gifts. In 2002, Fred Ford and Paul Reiche, the creators of Star Control II, released the source code of its 3DO version and gave fans a free, perpetual licence to the game's content, and this project grew from that. The result is a true classic, free and running natively on modern systems, under the only name the licence allowed it to use. This edition keeps it close to how it first appeared in 1992, with classic MIDI sound and unmodified balance.\n\nThe premise holds up remarkably well. You captain the last hope of a defeated humanity, and you roam a whole galaxy in a ship built from scavenged alien technology, mining planets, building an alliance and learning what really happened from some of the funniest and strangest aliens ever written. Its conversations are the heart of the game, and there is real mystery to solve. Then there is Super Melee, the one-on-one ship combat, which is still great fun on its own.\n\nPick this edition if you want the original presentation, or the other Ur-Quan Masters editions if you prefer a higher resolution. The code is under the GPL, with the game's content under a Creative Commons license."
+      }
+    }
+  ]
 }
