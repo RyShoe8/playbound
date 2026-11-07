@@ -1,4 +1,85 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261107-13",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "deus-ex-goty-edition/playbound-hx-coop",
+      "expected": {
+        "longDescription": "HX turns Deus Ex's single-player campaign into a shared mission. It is the work of Hanfling, distributed from the project's testing builds, and its community maintains a wiki with installation and play guidance. Because it modifies the game, PlayBound works on a copy: your own GOG or Steam GOTY install is copied to a dedicated folder, HX is applied there, and the original stays untouched.\n\nPlayBound's part is the safe copy-and-patch installer and, optionally, a dedicated host running the HX server so a group does not have to host from a home connection. The mod itself, its netcode and its content are Hanfling's."
+      },
+      "set": {
+        "longDescription": "HX turns Deus Ex's single-player campaign into a shared mission, and it changes the game more than you might expect. A patrol is much easier to outsmart when one agent watches the cameras while another slips through the back door, and Liberty Island becomes a real planning exercise once you are arguing over who gets the lockpicks. It is the work of Hanfling, distributed from the project's testing builds, and its community keeps a wiki with installation and play guidance.\n\nBecause the mod changes so much, PlayBound works on a copy. Your own GOG or Steam GOTY install is copied to a dedicated folder, Hanfling's original HX archive is applied there, and HX.exe launches from it, so your untouched game stays exactly where it is. You can host from your own PC through PlayBound Connect, or use a PlayBound server that runs the dedicated HX host so the group does not depend on one home connection.\n\nGo in knowing what it is. HX is still an alpha, normal campaign saves are unavailable, and it is not compatible with GMDX, which is listed as a separate edition. Think of it as a co-op night with a much-loved game, rather than the way to play it for the first time. The mod, its netcode and its content are Hanfling's work."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dota-2/dota-2-workshop",
+      "expected": {
+        "longDescription": "Dota 2's Arcade is the home of custom games: auto-battlers, tower defences, survival modes and map remixes built with the Source 2 Workshop tools. You launch them from inside the regular Dota 2 client, so there is nothing extra to download beyond the game itself.\n\nThis edition points you at the Workshop and Arcade rather than ranked play. Quality varies by creator, so look at player counts and recent updates before settling in."
+      },
+      "set": {
+        "longDescription": "Dota 2's Arcade is a whole second game hiding in the same client. Instead of the standard battle arena, this edition points you at the custom games that the community has built with the Source 2 Workshop tools: auto-battlers, tower defences, survival modes, map remixes and plenty of odd little mini-games that have nothing to do with pushing lanes. Dota has a long history here, since this is the kind of place that genre-defining ideas like Auto Chess first took off.\n\nThere is nothing extra to install beyond Dota 2 itself, which is free. You launch these from inside the regular client, browse what is available and join in. That makes it a good way in for people who like the look of Dota but do not want to spend a hundred hours learning its ranked game, and for groups of friends who want something silly and quick at the end of a night.\n\nThe catch is that quality varies widely by creator, so it helps to check player counts and recent updates before you settle in. Some games depend on having a lobby full of people, and older favourites can go quiet. Dota 2 needs a sizeable 60 GB of storage, so keep that in mind if you only plan on playing the extras."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/ashes-2063-standalone",
+      "expected": {
+        "longDescription": "This is the author's official standalone package of Ashes 2063, downloaded from ModDB and installed unchanged. It bundles Episode 1, Dead Man Walking, Afterglow and Hard Reset with GZDoom and Freedoom 2, so no Doom purchase and no separate source port are needed."
+      },
+      "set": {
+        "longDescription": "This is the easiest way to play Ashes 2063 in full. It is Vostyok's official standalone package from ModDB, installed unchanged, and it collects Episode 1, Dead Man Walking, Afterglow and Hard Reset together with GZDoom and Freedoom 2. So no Doom purchase and no separate source port are needed, and there is no load order to get wrong. You click install and you are in the wasteland.\n\nThe series is a post-apocalyptic total conversion for the Doom engine, inspired by Mad Max, Fallout, S.T.A.L.K.E.R. and Metro 2033, with a tongue-in-cheek story to match. It replaces virtually everything from the original game, including a new arsenal with reloading, new power-ups and enemies with more advanced AI. Doom's speed is still there underneath, but it is carried through rusted roads and lonely settlements that feel far more like real places than a techbase ever did.\n\nChoose this edition over the other Ashes 2063 listing if you simply want everything in one place, particularly the later episodes. Those add a good deal of length and ambition to what began as a ten-level release, so you are looking at a surprisingly big game for the price of nothing. The Ashes work is all Vostyok's; PlayBound only handles the install."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "holocure/playbound",
+      "expected": {
+        "longDescription": "Adds PippleCultist's multiplayer mod to HoloCure so you can run stages in co-op with friends. PlayBound installs the mod and wires it into party play. It is experimental, so expect occasional rough edges."
+      },
+      "set": {
+        "longDescription": "HoloCure is a great single-player game, and this edition makes it possible to share with friends. It adds PippleCultist's HoloCure Multiplayer Mod to Save the Fans!, so a group can run stages together, with PlayBound installing the Aurie mod loader and the mod in a single click. Surviving those waves of enemies is an entirely different kind of chaos when somebody else is filling the screen with attacks too.\n\nThe mod itself works over LAN, with one player hosting and everyone else joining on the same network. PlayBound's party system removes that limit: Join Game puts every member on one shared Connect network and points HoloCure at it, so a LAN session works across the internet. In the game, you go to Play, then Multiplayer, then the saved network adapter, then Host LAN Session for the leader and Join LAN Session for everyone else.\n\nSome of the mod's menus only work with a mouse, which is worth knowing if you are on a controller. This is also experimental community software rather than an official HoloCure feature, and the mod's author notes that it may crash occasionally because so much of the game is modified to add networking. Your saves stay in their usual folder, and you can go back to the unmodded game at any time. If you only want to play alone, use the official edition."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-playbound-edition",
+      "expected": {
+        "longDescription": "Pre-configured Star Control II with the full content package, the complete 3DO voice acting and music. Ready to play on launch."
+      },
+      "set": {
+        "longDescription": "This edition is the recommended starting point for The Ur-Quan Masters, and it is the easiest one to get going. It installs the UQM project's official 0.8 release for Windows and macOS, with the game's content and the complete 3DO voice acting and music, plus gamepad support, so there are no separate packs to find. It is ready to play on launch, and PlayBound keeps the controls and party notes in one place.\n\nThe game is the open-source port of Star Control II, maintained from the 3DO-era source released by Toys for Bob. You captain a ship built from alien technology, sent out to rally a defeated galaxy, and you spend the game mining planets, trading, fighting and talking with some of the funniest aliens ever written. Those conversations are helped enormously by the 3DO voice cast, which is a big part of why this package is worth having. Super Melee, the head-to-head ship battle mode, is also here and is still a lot of fun with a friend.\n\nOf the three editions, this is the balanced choice. Classic keeps the original presentation with MIDI sound, while HD redraws the art at a much higher resolution. The story, Super Melee and add-on packs come from the UQM project; PlayBound simply installs the official release."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "ysoccer/ysoccer-tournament",
+      "expected": {
+        "longDescription": "A tournament-tailored YSoccer profile with classic pitch textures, tuned camera speeds and a four-player setup."
+      },
+      "set": {
+        "longDescription": "This is YSoccer set up for a night of competition. It is a tournament-tailored profile of the free, open-source football game, with classic Sensible Soccer pitch textures, tuned camera follow speeds, gamepad mappings calibrated for four players and retro tactical formations. The idea is to save you the fiddling, so that a group of friends can plug in controllers and start a cup instead of working through options screens.\n\nThe game underneath is the same love letter to Sensible World of Soccer: a tiny top-down pitch, quick passing and a control scheme that does almost everything with one button, with volleys and bicycle kicks for those who can time them. Weather such as rain, snow, fog and wind can change a match, and custom leagues and cups are perfect for settling arguments. Automatic or fixed player control lets you match the setup to your group's skill.\n\nIt makes the most sense on a shared screen with several people and enough controllers to go around. If you only want a quick solo game, or prefer the default setup, the portable edition is a simpler choice. Everything here remains free, with YSoccer itself released under the GPL version 2. Expect shouting, a few unfair goals, and at least one rematch that nobody agreed to."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "deus-ex-goty-edition/gmdx",
+      "expected": {
+        "longDescription": "GMDX is one of the largest overhauls ever made for Deus Ex. Enemies are smarter, textures are redone, new mechanics and refined systems give more ways to approach each mission, and the campaign is rebalanced around them. It installs over a copy of the original game.\n\nBecause it replaces many game files, PlayBound installs it on a copy: your own GOG or Steam Deus Ex GOTY is copied to a dedicated folder, the official GMDX AE 1.2 Lite installer is verified and run there, and your original install stays untouched."
+      },
+      "set": {
+        "longDescription": "GMDX is one of the largest overhauls ever made for Deus Ex, and it manages the tricky thing of feeling like the same game, only sharper. Enemies are smarter: they flank you, use suppressive fire and react better to alerts. New player abilities such as mantling and weapon scopes open up different routes, and the skills, perks, weapon customisation and augmentations have all been rebalanced around them, which gives you even more ways of approaching a mission that you may already know by heart.\n\nThe story and missions are deliberately left alone, while the presentation gets the attention it needs. Higher-resolution textures, new lighting and improved sound bring it closer to how you remember it looking, and it is compatible with the HDTP and New Vision mods. Quality-of-life touches like inventory shortcuts, custom HUD colours and difficulty options help as well.\n\nBecause it replaces many game files, PlayBound installs it on a copy. Your own GOG or Steam Deus Ex GOTY is copied to a dedicated folder, the official GMDX AE 1.2 Lite installer is verified and run there, and your original stays untouched. It is best for returning players, since it makes the game harder and more involved, and newcomers may prefer to play the original once. It does not work with the HX co-op mod."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dune-legacy/dunecity",
+      "expected": {
+        "longDescription": "DuneCity is a branch of Dune Legacy that combines Dune II's structure with a city-simulation layer in the style of Micropolis. Instead of only placing a refinery and a few turrets, you manage a growing settlement on Arrakis.\n\nIt is distributed from the author's GitHub project and PlayBound installs the current release as a standalone build."
+      },
+      "set": {
+        "longDescription": "DuneCity is the bold branch of Dune Legacy, and it asks a question that nobody expected: what if Dune II were also SimCity? It fuses the bones of the 1992 real-time strategy game with a Micropolis-style city simulation, so instead of dropping a refinery and rushing tanks, you zone residential, commercial and industrial districts, lay roads and power lines, fund civic services and try to keep a spice economy alive long enough to survive the war outside town.\n\nThat changes the purpose of the whole game rather than a few units, which is why it counts as its own edition. City planning, public services, taxation and RTS combat all compete for the same attention. A budget crisis and a Harkonnen attack can easily arrive at the same time, and neither of them cares about the other. The result is stranger and more ambitious than a balance mod, and it plays like an alternate history of the genre.\n\nIt suits players who already know Dune II and want something truly different, more than newcomers, who should probably start with Dune Legacy itself. The current Windows package is a portable ZIP, and PlayBound fetches that release directly, keeps it separate from classic Dune Legacy, and launches it without Steam or a third-party storefront. It is free."
+      }
+    }
+  ]
 }
