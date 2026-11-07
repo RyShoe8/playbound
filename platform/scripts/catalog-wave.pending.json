@@ -1,4 +1,41 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261106-04",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "star-wars-jedi-knight-ii/jk2mv",
+      "expected": {
+        "shortDescription": "Edition of star-wars-jedi-knight-ii.",
+        "description": "Edition of star-wars-jedi-knight-ii.",
+        "developerName": null,
+        "license": null,
+        "links.github": null,
+        "longDescription": null
+      },
+      "set": {
+        "shortDescription": "A modern multiplayer client for Jedi Outcast that joins 1.02, 1.03 and 1.04 servers from one program.",
+        "description": "JK2MV is a modified client and server for Jedi Knight II: Jedi Outcast that handles all three major multiplayer versions in a single executable, with modern resolutions, raw mouse input and in-game downloads.",
+        "developerName": "mvdevs",
+        "license": "GPL-2.0",
+        "links.github": "https://github.com/mvdevs/jk2mv",
+        "longDescription": "Jedi Outcast's multiplayer never really left, but its community is split across versions. Servers run 1.02, 1.03 or 1.04, and the original game can only join the one it is patched to. JK2MV removes that problem: it is a modified client and server that speaks all three from a single executable, so you pick a server and join it.\n\nThe rest brings a 2002 game into the present. It supports modern resolutions and desktop scaling, a widescreen interface and high-resolution fonts, plus raw mouse input, which matters a lot in a game where saber fights turn on tiny movements. Lightsabers get dynamic glow, gamma correction is improved, and old sound problems are fixed through OpenAL. A key press minimizes the game in fullscreen, a small thing that the original handled badly.\n\nMost JK2 maps, skins and code mods still work, and in-game HTTP downloads fetch what a server needs after asking your permission. Demo recorders get fast AVI capture too. It runs on Windows, Linux, macOS and FreeBSD, on x86 and ARM, under the GPL version 2. It is a client rather than a whole game, so you still need Jedi Outcast itself."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "quake-ii-enhanced/quake-ii-rtx",
+      "expected": {
+        "releaseYear": null,
+        "languages": [],
+        "longDescription": null
+      },
+      "set": {
+        "releaseYear": 2019,
+        "languages": [
+          "English"
+        ],
+        "longDescription": "Quake II RTX is a 1997 shooter used as a showcase for what lighting can do. NVIDIA's Lightspeed Studios released it in June 2019, building on Q2VKPT, a research project by Christoph Schied and a team at the Karlsruhe Institute of Technology. The geometry and the pace of Strogg-killing are still recognisably id Software's, but every light, shadow and reflection is now path-traced in real time.\n\nThat changes how old levels feel. Corridors that were once evenly lit now fall into real darkness, muzzle flashes light up the walls around you, and water and glass reflect what is actually in the room. Improved textures and materials were added so that the surfaces hold up under that lighting, which gives the whole game a strange and handsome mix of old shapes and new light.\n\nThe download is free and DRM-free, and it includes the three levels from the original shareware release. To play the whole campaign and multiplayer you need the full Quake II as well. The catch is hardware: it needs a ray-tracing graphics card, with a GeForce RTX 2060 as the stated minimum, along with 8 GB of RAM and Vulkan support. It is officially supported on Windows."
+      }
+    }
+  ]
 }
