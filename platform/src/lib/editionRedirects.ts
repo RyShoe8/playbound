@@ -16,3 +16,17 @@ export function retiredEditionRedirect(gameSlug: string, editionSlug: string): s
   const target = RETIRED_EDITION_REDIRECTS[`${gameSlug}/${editionSlug}`];
   return target === undefined ? null : `/games/${gameSlug}${target}`;
 }
+
+/**
+ * Editions whose slug changed. Parties, library entries and links saved under
+ * the old slug keep working, because lookups resolve it to the current one.
+ */
+const RENAMED_EDITION_SLUGS: Readonly<Record<string, string>> = {
+  // Valve asked the project to drop the name Team Fortress 2 Classic in December 2025.
+  "team-fortress-2/tf2-classic": "tf2-classified",
+};
+
+/** The slug an edition goes by now; unchanged if it was never renamed. */
+export function currentEditionSlug(gameSlug: string, editionSlug: string): string {
+  return RENAMED_EDITION_SLUGS[`${gameSlug}/${editionSlug}`] ?? editionSlug;
+}

@@ -184,6 +184,8 @@ export default async function EditionPage({
     if (moved) permanentRedirect(moved);
     notFound();
   }
+  // Reached through a slug the edition has since changed from.
+  if (edition.slug !== editionSlug) permanentRedirect(`/games/${game.slug}/editions/${edition.slug}`);
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const action = resolveInstallAction(edition);

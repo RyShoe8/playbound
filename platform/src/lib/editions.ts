@@ -1,3 +1,4 @@
+import { currentEditionSlug } from "@/lib/editionRedirects";
 import { cache } from "react";
 import { instanceMemo } from "@/lib/instanceMemo";
 import { unstable_cache } from "next/cache";
@@ -863,7 +864,9 @@ export async function getEditionBySlug(
   opts: EditionQuery = {}
 ): Promise<Edition | undefined> {
   const editions = await listEditionsForGame(game, { includeHidden: true, ...opts });
-  const found = editions.find((e) => e.slug === editionSlug);
+  const found =
+    editions.find((e) => e.slug === editionSlug) ??
+    editions.find((e) => e.slug === currentEditionSlug(game.slug, editionSlug));
   if (!found) return undefined;
   if (!opts.includeHidden && found.visibility === "hidden") return undefined;
   return found;

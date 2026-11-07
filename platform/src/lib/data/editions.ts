@@ -3243,7 +3243,7 @@ export const editions: EditionSeed[] = [
   },
   {
     gameSlug: "team-fortress-2",
-    slug: "tf2-classic",
+    slug: "tf2-classified",
     name: "Team Fortress 2 Classic",
     shortDescription: "The acclaimed community reimagining of 2008–2009 era TF2 with 4-team and VIP modes.",
     description:

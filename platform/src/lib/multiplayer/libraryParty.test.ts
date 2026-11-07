@@ -98,7 +98,7 @@ describe("Library party button support for games and editions", () => {
 
     // Team Fortress 2 editions
     const tf2Official = editions.find((e) => e.gameSlug === "team-fortress-2" && e.slug === "official");
-    const tf2Classic = editions.find((e) => e.gameSlug === "team-fortress-2" && e.slug === "tf2-classic");
+    const tf2Classic = editions.find((e) => e.gameSlug === "team-fortress-2" && e.slug === "tf2-classified");
     const tf2 = games.find((g) => g.slug === "team-fortress-2");
     expect(editionSupportsMultiplayer(tf2Official, tf2)).toBe(true);
     expect(editionSupportsMultiplayer(tf2Classic, tf2)).toBe(true);

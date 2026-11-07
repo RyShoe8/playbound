@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { retiredEditionRedirect } from "./editionRedirects";
+import { currentEditionSlug, retiredEditionRedirect } from "./editionRedirects";
 import { editionPayloadSchema } from "./editionPayload";
 
 describe("retired edition redirects", () => {
@@ -35,5 +35,13 @@ describe("edition install links", () => {
       installConfig: { external_installer: { url: "reactivedrop.com" } },
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe("renamed edition slugs", () => {
+  it("resolves the old slug only for its own game", () => {
+    expect(currentEditionSlug("team-fortress-2", "tf2-classic")).toBe("tf2-classified");
+    expect(currentEditionSlug("team-fortress-2", "official")).toBe("official");
+    expect(currentEditionSlug("other-game", "tf2-classic")).toBe("tf2-classic");
   });
 });

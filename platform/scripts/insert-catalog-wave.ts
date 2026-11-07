@@ -15,6 +15,9 @@ const FORBIDDEN_FIELDS = new Set([
   "status", "published", "publishedAt", "managedBy",
 ]);
 
+/** A slug is identity, so changing one is named here on purpose, not left to a wave file. */
+const SLUG_RENAMES = new Set(["edition:team-fortress-2/tf2-classic"]);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -90,7 +93,7 @@ export function parseWave(raw: unknown): Wave {
     for (const field of fields) {
       const parts = field.split(".");
       if (parts.some((part) => !/^[A-Za-z][A-Za-z0-9_]*$/.test(part)) ||
-        parts.some((part) => FORBIDDEN_FIELDS.has(part))) {
+        (parts.some((part) => FORBIDDEN_FIELDS.has(part)) && !(field === "slug" && SLUG_RENAMES.has(identity)))) {
         throw new Error(`${identity}: forbidden field ${field}`);
       }
       if (fields.some((other) => other !== field && other.startsWith(`${field}.`))) {
