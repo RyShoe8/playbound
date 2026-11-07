@@ -10171,6 +10171,20 @@ ipcMain.on("join-capability", (event, slug) => {
  * failure returns a reason rather than throwing, because the button turns each
  * one into different words.
  */
+ipcMain.handle("search-site", async (_event, query) => {
+  const q = String(query || "").trim().slice(0, 100);
+  if (!q) return null;
+  try {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/search?q=${encodeURIComponent(q)}`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+      signal: AbortSignal.timeout(12000),
+    });
+    return res.ok ? await res.json() : null;
+  } catch (err) {
+    console.warn("[search] lookup failed:", err?.message || err);
+    return null;
+  }
+});
 ipcMain.handle("find-best-server", async (_event, slug, editionSlug) => {
   const clean = String(slug || "").trim();
   if (!/^[a-z0-9][a-z0-9-]*$/.test(clean)) return { server: null, reason: "unsupported" };

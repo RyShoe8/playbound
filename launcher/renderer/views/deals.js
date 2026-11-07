@@ -135,7 +135,7 @@ function createDiscountCard(game) {
  * filters, nobody expects a deals filter to persist across a session, and a
  * remembered "Steam only" would quietly hide a new Epic giveaway next launch.
  */
-let current = { kind: "all", store: "all", genre: "all", freeOffers: [], discounted: [] };
+let current = { kind: "all", content: "all", store: "all", genre: "all", freeOffers: [], discounted: [] };
 
 /**
  * Stores present in the data, for the filter row.
@@ -169,14 +169,14 @@ function chipsHtml(options, activeValue, attr) {
 }
 
 function paintDeals() {
-  const { kind, store, genre, freeOffers, discounted } = current;
+  const { kind, content, store, genre, freeOffers, discounted } = current;
 
   const visibleFree =
     kind === "discounted"
       ? []
-      : freeOffers.filter((o) => matchesDealFilters(o, store, genre));
+      : freeOffers.filter((o) => matchesDealFilters(o, store, genre, content));
   const visibleDiscounted =
-    kind === "free" ? [] : discounted.filter((g) => matchesDealFilters(g, store, genre));
+    kind === "free" ? [] : discounted.filter((g) => matchesDealFilters(g, store, genre, content));
 
   const discountSection = document.getElementById("deals-discount-section");
   const freeSection = document.getElementById("deals-free-section");
@@ -209,7 +209,7 @@ function paintDeals() {
         ? "Could not reach PlayBound to load deals. Check your connection and try again."
         : "No free giveaways or discounts right now. Check back soon.";
   } else {
-    status.textContent = "Nothing matches those filters. Try All deals, All stores, and All genres.";
+    status.textContent = "Nothing matches those filters. Try All deals, All types, All stores, and All genres.";
   }
 }
 
@@ -220,15 +220,38 @@ function syncFilterChips() {
   if (!kindHost || !storeHost || !storeRow) return;
 
   const { freeOffers, discounted } = current;
+  // Counts follow the other filters, so a chip never promises what it won't show.
+  const count = (list) => list.filter((d) => matchesDealFilters(d, current.store, current.genre, current.content)).length;
   kindHost.innerHTML = chipsHtml(
     [
       { key: "all", label: "All deals" },
-      { key: "free", label: `Free (${freeOffers.length})` },
-      { key: "discounted", label: `75% off or more (${discounted.length})` },
+      { key: "free", label: `Free (${count(freeOffers)})` },
+      { key: "discounted", label: `75% off or more (${count(discounted)})` },
     ],
     current.kind,
     "kind"
   );
+
+  const contentHost = document.getElementById("deals-content-chips");
+  if (contentHost) {
+    contentHost.innerHTML = chipsHtml(
+      [
+        { key: "all", label: "All" },
+        { key: "game", label: "Games" },
+        { key: "soundtrack", label: "Soundtracks" },
+        { key: "dlc", label: "DLC" },
+      ],
+      current.content,
+      "content"
+    );
+    contentHost.querySelectorAll("[data-content]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        current.content = btn.dataset.content;
+        syncFilterChips();
+        paintDeals();
+      });
+    });
+  }
 
   const options = storeOptions(freeOffers, discounted);
   // One store is not a choice; hide the row rather than show a single chip.
@@ -281,7 +304,7 @@ async function renderDealsView() {
         <h1 class="view-title">Game Deals</h1>
         <p class="view-sub">
           Everything worth playing that costs little or nothing right now — live store
-          giveaways alongside catalog games at 75% off or deeper.
+          giveaways alongside store discounts of 75% or deeper.
         </p>
       </div>
       <button class="btn-secondary btn-sm" id="btn-open-deals-web">Open playbound.club/deals</button>
@@ -290,6 +313,10 @@ async function renderDealsView() {
       <div class="games-filter-row">
         <span class="games-filter-label">Show:</span>
         <div class="search-chips-wrap" id="deals-kind-chips"></div>
+      </div>
+      <div class="games-filter-row">
+        <span class="games-filter-label">Type:</span>
+        <div class="search-chips-wrap" id="deals-content-chips"></div>
       </div>
       <div class="games-filter-row hidden" id="deals-store-row">
         <span class="games-filter-label">Store:</span>
@@ -327,6 +354,7 @@ async function renderDealsView() {
   current = {
     // Filters reset on open; see the note on `current` above.
     kind: "all",
+    content: "all",
     store: "all",
     genre: "all",
     ok: res.ok,

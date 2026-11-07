@@ -50,6 +50,7 @@ export type DiscountedGame = {
   /** Null for an unmatched store find — no curated hue exists for it. Card/list fall back to one shared gradient. */
   art: Game["art"] | null;
   genres: string[];
+  contentType: DealContentType;
   regularPriceCents: Cents;
   currentPriceCents: Cents;
   currency: string;
@@ -71,6 +72,24 @@ export type DiscountedGame = {
 };
 
 export { inferGameGenres } from "./storeDiscounts/genreInference";
+
+export type DealContentType = "game" | "soundtrack" | "dlc";
+
+const SOUNDTRACK_TITLE = /\b(soundtracks?|ost|original score|music pack)\b/i;
+const DLC_TITLE = /\b(dlc|season pass|expansion( pass| pack)?|add-?on|content pack|costume pack|skin pack|character pack|map pack|weapons? pack|upgrade pack)\b/i;
+
+/**
+ * What a deal sells. Most feeds only give a title, so the title decides, and a
+ * store that labels the product (GOG's `dlc`) settles anything the title does
+ * not. GOG files soundtracks under `dlc`, so the soundtrack check comes first.
+ * Anything unrecognised counts as a game.
+ */
+export function dealContentType(title: string | null | undefined, storeType?: unknown): DealContentType {
+  const text = String(title || "");
+  if (SOUNDTRACK_TITLE.test(text)) return "soundtrack";
+  if (storeType === "dlc" || DLC_TITLE.test(text)) return "dlc";
+  return "game";
+}
 
 /**
  * Format remaining time until expiration in a clean "Days, hours minutes" string.

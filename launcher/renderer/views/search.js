@@ -78,6 +78,100 @@ const SORT_OPTIONS = [
 
 let searchPlayingNow = new Map();
 
+const SITE_URL = "https://playbound.club";
+let siteResults = null;
+let siteResultsFor = "";
+let siteTimer = null;
+
+function filterSection(title, chipsId, countId) {
+  return `<details class="search-filter-section">
+    <summary>${title}<span id="${countId}" class="search-badge hidden">0</span><span class="search-section-chevron">▾</span></summary>
+    <div class="search-chips-wrap" id="${chipsId}"></div>
+  </details>`;
+}
+
+function setCount(id, count) {
+  const badge = document.getElementById(id);
+  if (!badge) return;
+  badge.textContent = String(count);
+  badge.classList.toggle("hidden", count === 0);
+}
+
+function resultCard(artStyle, artContent, bodyHtml, onClick) {
+  const card = document.createElement("div");
+  card.className = "game-card catalog-game-card";
+  const art = document.createElement("div");
+  art.className = "card-art";
+  art.style.background = artStyle;
+  art.innerHTML = artContent;
+  const body = document.createElement("div");
+  body.className = "card-meta";
+  body.innerHTML = `<div class="card-meta-copy">${bodyHtml}</div>`;
+  card.append(art, body);
+  card.addEventListener("click", onClick);
+  return card;
+}
+
+function editionCard(hit) {
+  const card = resultCard(
+    `linear-gradient(135deg, ${hit.art?.from || "#312e81"}, ${hit.art?.to || "#a78bfa"})`,
+    `<div class="card-art-title"><span class="card-title-text">${escapeHtml(hit.name)}</span></div>`,
+    `<p class="search-card-sub">${escapeHtml(hit.gameTitle)}</p>${hit.shortDescription ? `<p class="search-card-text">${escapeHtml(hit.shortDescription)}</p>` : ""}`,
+    () => api.openEditionDetail?.(hit.gameSlug, hit.slug)
+  );
+  if (hit.coverImage) {
+    const img = document.createElement("img");
+    img.className = "card-cover is-loaded";
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("error", () => img.remove());
+    img.src = hit.coverImage;
+    card.querySelector(".card-art").prepend(img);
+  }
+  return card;
+}
+
+function developerCard(dev) {
+  const hue = Number(dev.artHue) || 0;
+  return resultCard(
+    `linear-gradient(135deg, hsl(${hue} 55% 28%), hsl(${hue} 65% 16%))`,
+    `<span class="search-dev-avatar" style="background:hsl(${hue} 60% 45%)">${escapeHtml((dev.name || "?").charAt(0))}</span>`,
+    `<h3 class="search-card-title">${escapeHtml(dev.name)}</h3><p class="search-card-text">${escapeHtml(dev.tagline || "")}</p>`,
+    () => window.playbound.openExternal?.(`${SITE_URL}/developers/${encodeURIComponent(dev.slug)}`)
+  );
+}
+
+function collectionCard(collection) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "search-collection-card";
+  card.innerHTML = `<strong>${escapeHtml(collection.title)}</strong><span>${escapeHtml(collection.description || "")}</span>`;
+  card.addEventListener("click", () => window.playbound.openExternal?.(`${SITE_URL}/collections/${encodeURIComponent(collection.slug)}`));
+  return card;
+}
+
+function paintSection(name, items, build) {
+  document.getElementById(`search-${name}-section`)?.classList.toggle("hidden", items.length === 0);
+  const title = document.getElementById(`search-${name}-title`);
+  if (title) title.textContent = `${name[0].toUpperCase()}${name.slice(1)} (${items.length})`;
+  document.getElementById(`search-${name}-grid`)?.replaceChildren(...items.map(build));
+}
+
+/** Waits for a pause in typing, and ignores an answer to a query since replaced. */
+function loadSiteResults(q, catalog) {
+  if (q === siteResultsFor) return;
+  siteResultsFor = q;
+  siteResults = null;
+  clearTimeout(siteTimer);
+  if (!q) return;
+  siteTimer = setTimeout(async () => {
+    const results = await window.playbound.searchSite?.(q);
+    if (siteResultsFor !== q) return;
+    siteResults = results;
+    if (state.currentView === "search") paintSearchResults(catalog);
+  }, 250);
+}
+
 function ensureSearchShell() {
   const container = views.search || document.getElementById("view-search");
   if (!container) return false;
@@ -85,77 +179,49 @@ function ensureSearchShell() {
 
   container.innerHTML = `
     <div class="search-filters-card">
-      <div class="search-filters-header">
-        <div class="search-filters-title-row">
-          <svg class="search-filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="4" y1="21" x2="4" y2="14"></line>
-            <line x1="4" y1="10" x2="4" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12" y2="3"></line>
-            <line x1="20" y1="21" x2="20" y2="16"></line>
-            <line x1="20" y1="12" x2="20" y2="3"></line>
-            <line x1="1" y1="14" x2="7" y2="14"></line>
-            <line x1="9" y1="8" x2="15" y2="8"></line>
-            <line x1="17" y1="16" x2="23" y2="16"></line>
-          </svg>
-          <span class="search-filters-heading">Filters</span>
-          <span id="search-active-count" class="search-badge hidden">0</span>
+      <div class="search-page-top">
+        <p class="search-summary-sub" id="search-result-label">Search games, developers, and collections — or use the filters below.</p>
+        <div class="search-page-actions">
+          <button type="button" id="search-toggle-all" class="btn-secondary btn-xs">Expand all</button>
+          <button type="button" id="search-clear-all" class="search-clear-btn-text hidden">Clear all</button>
         </div>
-        <button type="button" id="search-clear-all" class="search-clear-btn-text hidden">
-          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-          Clear all
-        </button>
       </div>
-
-      <div class="search-filter-group">
-        <p class="search-filter-group-label">Genres</p>
-        <div class="search-chips-wrap" id="search-genre-chips"></div>
-      </div>
-
-      <div class="search-filter-group">
-        <p class="search-filter-group-label">Tags</p>
-        <div class="search-chips-wrap" id="search-tag-chips"></div>
-      </div>
-
-      <div class="search-filter-group">
-        <p class="search-filter-group-label">Platforms</p>
-        <div class="search-chips-wrap" id="search-platform-chips"></div>
-      </div>
-
-      <details class="search-details-group">
-        <summary class="search-filter-group-label search-details-summary">
-          <svg class="chevron-icon" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-          Features
-          <span id="search-features-count" class="search-badge hidden">0</span>
-        </summary>
-        <div class="search-chips-wrap" id="search-feature-chips" style="margin-top: 8px;"></div>
-      </details>
-
-      <div class="search-filter-group" id="search-price-group">
-        <p class="search-filter-group-label">Price</p>
-        <div class="search-chips-wrap" id="search-price-chips"></div>
-      </div>
-
-      <div class="search-sort-row">
-        <div class="search-sort-group">
-          <p class="search-filter-group-label">Sort by</p>
-          <div class="search-chips-wrap" id="search-sort-chips"></div>
-        </div>
-        <div class="search-result-summary">
-          <h1 class="search-summary-title">Search</h1>
-          <p class="search-summary-sub" id="search-result-label">Search games or use the filters above.</p>
-        </div>
+      <div id="search-active-pills" class="search-active-pills hidden"></div>
+      <div class="search-filter-sections">
+        ${filterSection("Genres", "search-genre-chips", "search-genres-count")}
+        ${filterSection("Tags", "search-tag-chips", "search-tags-count")}
+        ${filterSection("Platforms", "search-platform-chips", "search-platforms-count")}
+        ${filterSection("Features", "search-feature-chips", "search-features-count")}
+        <div id="search-price-group">${filterSection("Price", "search-price-chips", "search-price-count")}</div>
+        ${filterSection("Sort", "search-sort-chips", "search-sort-count")}
       </div>
     </div>
 
     <div id="search-empty-hint" class="search-empty-hint hidden"></div>
-    <div id="search-games-grid" class="game-grid" style="margin-top: 20px;"></div>
+    <section id="search-games-section" class="search-result-section">
+      <h2 class="search-section-title" id="search-games-title">Games</h2>
+      <div id="search-games-grid" class="game-grid search-card-grid"></div>
+    </section>
+    <section id="search-editions-section" class="search-result-section hidden">
+      <h2 class="search-section-title" id="search-editions-title">Editions</h2>
+      <div id="search-editions-grid" class="game-grid search-card-grid"></div>
+    </section>
+    <section id="search-developers-section" class="search-result-section hidden">
+      <h2 class="search-section-title" id="search-developers-title">Developers</h2>
+      <div id="search-developers-grid" class="game-grid search-card-grid"></div>
+    </section>
+    <section id="search-collections-section" class="search-result-section hidden">
+      <h2 class="search-section-title" id="search-collections-title">Collections</h2>
+      <div id="search-collections-grid" class="search-collection-grid"></div>
+    </section>
   `;
+
+  document.getElementById("search-toggle-all")?.addEventListener("click", (event) => {
+    const sections = [...container.querySelectorAll(".search-filter-section")];
+    const open = !sections.every((section) => section.open);
+    sections.forEach((section) => { section.open = open; });
+    event.currentTarget.textContent = open ? "Collapse all" : "Expand all";
+  });
 
   document.getElementById("search-clear-all")?.addEventListener("click", () => {
     state.searchFilters.genres = [];
@@ -214,30 +280,36 @@ export function paintSearchResults(catalog = state.catalogCache) {
     featureSet.size +
     (showPrice && price !== "any" ? 1 : 0);
 
-  const activeBadge = document.getElementById("search-active-count");
   const clearAllBtn = document.getElementById("search-clear-all");
-  const featuresCountBadge = document.getElementById("search-features-count");
-
-  if (activeBadge) {
-    if (activeCount > 0) {
-      activeBadge.textContent = String(activeCount);
-      activeBadge.classList.remove("hidden");
-    } else {
-      activeBadge.classList.add("hidden");
-    }
-  }
 
   if (clearAllBtn) {
     clearAllBtn.classList.toggle("hidden", activeCount === 0 && !q);
   }
 
-  if (featuresCountBadge) {
-    if (featureSet.size > 0) {
-      featuresCountBadge.textContent = String(featureSet.size);
-      featuresCountBadge.classList.remove("hidden");
-    } else {
-      featuresCountBadge.classList.add("hidden");
-    }
+  setCount("search-genres-count", genreSet.size);
+  setCount("search-tags-count", tagSet.size);
+  setCount("search-platforms-count", platformSet.size);
+  setCount("search-features-count", featureSet.size);
+  setCount("search-price-count", showPrice && price !== "any" ? 1 : 0);
+
+  const pills = document.getElementById("search-active-pills");
+  if (pills) {
+    const removable = [
+      ...[...genreSet].map((v) => ["genres", "Genre", v]),
+      ...[...tagSet].map((v) => ["tags", "Tag", v]),
+      ...[...platformSet].map((v) => ["platforms", "Platform", v]),
+      ...[...featureSet].map((v) => ["features", "Feature", v]),
+    ];
+    pills.classList.toggle("hidden", removable.length === 0);
+    pills.innerHTML = removable.length
+      ? `<span class="search-active-label">Active:</span>${removable.map(([key, label, value]) => `<button type="button" class="search-active-pill" data-key="${key}" data-value="${escapeHtml(value)}">${label}: ${escapeHtml(value)} ✕</button>`).join("")}`
+      : "";
+    pills.querySelectorAll(".search-active-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        state.searchFilters[pill.dataset.key] = state.searchFilters[pill.dataset.key].filter((v) => v !== pill.dataset.value);
+        paintSearchResults(catalog);
+      });
+    });
   }
 
   // Render filter chips
@@ -357,14 +429,25 @@ export function paintSearchResults(catalog = state.catalogCache) {
     list.sort((a, b) => String(a.title).localeCompare(String(b.title)) * dir);
   }
 
+  loadSiteResults(q, catalog);
+  const visibleSlugs = new Set(filterCatalogGames(catalog).map((g) => g.slug));
+  const editions = (siteResults?.editions || []).filter((hit) => visibleSlugs.has(hit.gameSlug));
+  const developers = siteResults?.developers || [];
+  const collections = (siteResults?.collections || []).filter((c) => (c.gameSlugs || []).some((slug) => visibleSlugs.has(slug)));
+  paintSection("editions", editions, editionCard);
+  paintSection("developers", developers, developerCard);
+  paintSection("collections", collections, collectionCard);
+  const total = list.length + editions.length + developers.length + collections.length;
+  const gamesTitle = document.getElementById("search-games-title");
+  if (gamesTitle) gamesTitle.textContent = `Games (${list.length})`;
+  document.getElementById("search-games-section")?.classList.toggle("hidden", list.length === 0);
+
   const resultLabel = document.getElementById("search-result-label");
   if (resultLabel) {
     if (!q && activeCount === 0) {
       resultLabel.textContent = `Browsing all ${list.length} games. Click any tag or type above to filter.`;
     } else {
-      resultLabel.textContent = `${list.length} result${list.length === 1 ? "" : "s"}${
-        q ? ` for “${escapeHtml(q)}”` : ""
-      }`;
+      resultLabel.textContent = `${total} result${total === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}`;
     }
   }
 
@@ -373,7 +456,7 @@ export function paintSearchResults(catalog = state.catalogCache) {
 
   if (!grid) return;
 
-  if (list.length === 0) {
+  if (total === 0) {
     if (emptyHint) {
       emptyHint.innerHTML = `
         <div class="search-empty-box">

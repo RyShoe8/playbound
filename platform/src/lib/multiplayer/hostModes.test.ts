@@ -30,12 +30,12 @@ describe("host mode configuration", () => {
       expect(hostModesFor(slug)).toContain("self");
       expect(getMultiplayerAdapter(slug).virtualLan?.inGameSteps?.length).toBeGreaterThan(0);
     }
-    for (const slug of ["counter-strike-source", "terraria", "core-keeper", "factorio", "necesse", "barotrauma", "unturned", "dont-starve-together", "rimworld-together", "trackmania"]) {
+    for (const slug of ["vintage-story", "counter-strike-source", "terraria", "core-keeper", "factorio", "necesse", "barotrauma", "unturned", "dont-starve-together", "rimworld-together", "trackmania"]) {
       expect(canUseDedicated(slug)).toBe(true);
       expect(lanPayloadFromDoc(slug, "dedicated").enabled).toBe(false);
       expect(getHostedInGameSteps(slug).length).toBeGreaterThan(0);
     }
-    for (const slug of ["battlefield-1942-anthology", "aneurism-iv", "stardew-valley", "starbound", "vintage-story", "risk-of-rain-2", "rimworld"]) {
+    for (const slug of ["battlefield-1942-anthology", "aneurism-iv", "stardew-valley", "starbound", "risk-of-rain-2", "rimworld"]) {
       expect(canUseDedicated(slug)).toBe(false);
     }
     expect(hostModesFor("stardew-valley")).toContain("couch");

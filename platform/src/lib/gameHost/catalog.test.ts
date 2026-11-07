@@ -30,7 +30,7 @@ describe("game host catalog", () => {
       expect(bySlug[slug]?.protocol).toBe(game.protocol);
       expect(getHostableGame(slug)).toEqual(game);
     }
-    for (const slug of ["witchbrook", "risk-of-rain-2", "starbound", "stardew-valley", "vintage-story", "aneurism-iv", "rimworld", "quake-ii-enhanced", "quake-ii"]) {
+    for (const slug of ["witchbrook", "risk-of-rain-2", "starbound", "stardew-valley", "aneurism-iv", "rimworld", "quake-ii-enhanced", "quake-ii"]) {
       expect(PARTY_DEDICATED_GAMES[slug]).toBeUndefined();
     }
     expect(getPartyHostableGame("team-fortress-2", "open-fortress")?.slug).toBe("open-fortress");

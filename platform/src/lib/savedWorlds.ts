@@ -56,7 +56,7 @@ export async function resolvePartyWorld(party: {
   }
   const created = await SavedWorld.create({
     gameSlug,
-    name: (typeof party.name === "string" && party.name.trim()) || "Morrowind world",
+    name: (typeof party.name === "string" && party.name.trim()) || (gameSlug === "morrowind" ? "Morrowind world" : "Vintage Story world"),
     createdBy: new Types.ObjectId(String(party.leaderId)),
     memberIds,
     lastPlayedAt: now,

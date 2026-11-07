@@ -21,6 +21,7 @@ const RECORDS: DiscountedGame[] = [
     coverImage: null,
     art: null,
     genres: [],
+    contentType: "game",
     regularPriceCents: 999,
     currentPriceCents: 149,
     currency: "USD",

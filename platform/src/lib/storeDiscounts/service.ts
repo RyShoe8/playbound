@@ -21,6 +21,7 @@ import { withStoreAffiliate } from "@/lib/access/storeUrls";
 import { withOutboundUtm } from "@/lib/utm";
 import {
   cleanDealTitle,
+  dealContentType,
   upgradeCoverImage,
   inferGameGenres,
   type DiscountedGame,
@@ -78,6 +79,7 @@ async function toRecord(
     coverImage: upgradeCoverImage(rawCover, steamAppId),
     art: null,
     genres: inferGameGenres(cleanTitle, doc.genres as string[]),
+    contentType: dealContentType(cleanTitle, (doc.metadata as Record<string, unknown> | undefined)?.gogProductType),
     regularPriceCents: Number(doc.regularPriceCents),
     currentPriceCents: Number(doc.currentPriceCents),
     currency: (doc.currency as string) || "USD",

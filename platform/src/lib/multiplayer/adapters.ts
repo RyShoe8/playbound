@@ -324,6 +324,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "vintage-story": {
     gameSlug: "vintage-story", title: "Vintage Story", tier: "tier1_improved",
     adapterType: "virtual-lan", protocol: "tcp",
+    client: { inGameJoinPrompt: true, inGameSteps: ["Multiplayer → Direct connect; enter the PlayBound server address and port"] },
     virtualLan: { inGameSteps: ["Host: open the world to LAN", "Friends: join the world from the LAN list or use the host's PlayBound network address"] },
   },
   "counter-strike-source": {

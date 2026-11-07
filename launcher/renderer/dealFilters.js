@@ -12,8 +12,10 @@ export function dealGenres(deals) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export function matchesDealFilters(deal, store, genre) {
-  return (store === 'all' || (deal.storeKey || deal.store) === store)
+/** Older cached responses have no type; those predate the filter and count as games. */
+export function matchesDealFilters(deal, store, genre, content = 'all') {
+  return (content === 'all' || (deal.contentType || 'game') === content)
+    && (store === 'all' || (deal.storeKey || deal.store) === store)
     && (genre === 'all' || (deal.genres || []).some(
       value => typeof value === 'string' && value.trim().toLowerCase() === genre
     ));

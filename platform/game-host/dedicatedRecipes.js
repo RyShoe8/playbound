@@ -66,6 +66,12 @@ export function createDedicatedRecipes(deps) {
     if(ctx.identityProfile==="factorio-unix-v1" && dirName==="factorio-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
     if(ctx.identityProfile==="terraria-unix-v1" && dirName==="terraria-servers")return path.join(HOST_HOME,dirName,`pb-${ctx.partyId}`);
     if (ctx.customerOwned) return customerHomeDir(dirName, ctx);
+    // A party's saved world outlives the party, so the group can reopen it later.
+    if (dirName === "vintage-story-servers" && /^[A-Za-z0-9_-]{1,64}$/.test(String(ctx.saveKey || ""))) {
+      const world = path.join(HOST_HOME, `${dirName}-rooms`, `world-${ctx.saveKey}`);
+      fs.mkdirSync(world, { recursive: true, mode: 0o700 });
+      return world;
+    }
     const id = String(ctx.partyId || "room").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
     const dir = path.join(HOST_HOME, `${dirName}-rooms`, `pb-${id}`);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });

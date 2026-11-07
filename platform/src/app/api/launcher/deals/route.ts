@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { listActiveOffers } from "@/lib/freeOffers/service";
 import { listDiscountedGames } from "@/lib/deals";
+import { cleanDealTitle, dealContentType, inferGameGenres } from "@/lib/dealsShared";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { absoluteMediaUrl } from "@/lib/launcherInstall";
 
@@ -43,7 +44,15 @@ export async function GET(req: Request) {
          * Offers pass through unchanged so the launcher can reuse the card
          * builder it already has for /api/free-offers.
          */
-        freeOffers,
+        freeOffers: freeOffers.map((offer) => {
+          const title = cleanDealTitle(offer.unmatchedTitle || (offer.metadata?.title as string) || offer.gameSlug || "");
+          return {
+            ...offer,
+            // Worked out here so the launcher filters exactly as the website does.
+            genres: offer.genres?.length ? offer.genres : inferGameGenres(title),
+            contentType: dealContentType(title),
+          };
+        }),
         /*
          * Covers are absolutised for the same reason the editions endpoint does
          * it: the launcher renders from a file:// page, where a root-relative

@@ -369,7 +369,7 @@ export const DEDICATED_ONLY_GAMES: Record<string, HostableGame> = {
 /** Dedicated recipes offered to parties, without enrolling them in community rotation. */
 export const PARTY_DEDICATED_GAMES: Record<string, HostableGame> = Object.fromEntries(
   [
-    "counter-strike-source", "terraria", "core-keeper",
+    "counter-strike-source", "terraria", "core-keeper", "vintage-story",
     "factorio", "necesse", "barotrauma", "unturned",
     "rimworld-together", "dont-starve-together", "trackmania", "open-fortress", "soldier-of-fortune-platinum-edition",
   ].map((slug) => [slug, DEDICATED_ONLY_GAMES[slug]])

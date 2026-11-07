@@ -287,3 +287,7 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 .home-play-panel .play-recent li { border:1px solid var(--border); border-radius:.4rem; padding:.15rem .45rem; font-size:.8rem; overflow-wrap:anywhere; }
 
 .play-friend-list { display:grid; gap:.4rem; }
+
+/* Search results: Discover's card size, with columns that fit the cards exactly. */
+html[data-warm-preview] .search-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,287.5px),1fr));gap:16px}
+html[data-warm-preview] .search-card-grid .new-game-card{width:100%;max-width:100%;min-width:0}

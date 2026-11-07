@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
+import { FolderHeart, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
 import { getDiscoveryContext } from "@/lib/access/discover";
 import {
@@ -144,20 +144,22 @@ export default async function SearchPage({
       {developerResults.length > 0 && (
         <section>
           <SectionHeader title={`Developers (${developerResults.length})`} />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="search-card-grid">
             {developerResults.map((d) => (
               <Link
                 key={d.slug}
                 href={`/developers/${d.slug}`}
-                className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+                className="new-game-card flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40"
               >
-                <Avatar name={d.name} hue={d.artHue} />
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 font-bold">
-                    <Hammer className="size-3.5 shrink-0 text-primary" />
-                    <span className="truncate">{d.name}</span>
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">{d.tagline}</p>
+                <div
+                  className="new-card-art flex w-full shrink-0 items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, hsl(${d.artHue} 55% 28%), hsl(${d.artHue} 65% 16%))` }}
+                >
+                  <Avatar name={d.name} hue={d.artHue} size="xl" />
+                </div>
+                <div className="flex-1 border-t border-border/70 bg-card/90 px-2.5 py-2">
+                  <h3 className="new-card-title">{d.name}</h3>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{d.tagline}</p>
                 </div>
               </Link>
             ))}

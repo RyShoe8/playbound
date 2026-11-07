@@ -35,6 +35,7 @@ type GogCatalogProduct = {
   id?: string;
   slug?: string;
   title?: string;
+  productType?: string;
   storeLink?: string;
   coverHorizontal?: string;
   coverVertical?: string;
@@ -111,7 +112,7 @@ function toDiscoveredDiscount(product: GogCatalogProduct): DiscoveredDiscount | 
     currency: product.price?.finalMoney?.currency || "USD",
     regularPriceCents,
     currentPriceCents,
-    metadata: { gogId: product.id, gogSlug: product.slug, discountPercentRaw: product.price?.discount },
+    metadata: { gogId: product.id, gogSlug: product.slug, gogProductType: product.productType, discountPercentRaw: product.price?.discount },
   };
 }
 

@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld("playbound", {
    */
   getRunAsAdmin: (slug) => ipcRenderer.invoke("get-run-as-admin", slug),
   setRunAsAdmin: (slug, on) => ipcRenderer.invoke("set-run-as-admin", slug, Boolean(on)),
+  searchSite: (query) => ipcRenderer.invoke("search-site", query),
   findBestServer: (slug, editionSlug) => ipcRenderer.invoke("find-best-server", slug, editionSlug),
   postTelemetry: (payload) => ipcRenderer.invoke("post-telemetry", payload),
   uninstall: (slug, editionSlug) => ipcRenderer.invoke("uninstall", slug, editionSlug || null),

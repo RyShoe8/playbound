@@ -1,3 +1,4 @@
+import { dealContentType } from "./dealsShared";
 import { describe, it, expect } from "vitest";
 import {
   cleanDealTitle,
@@ -131,3 +132,14 @@ describe("formatDetailedTimeLeft", () => {
   });
 });
 
+
+describe("dealContentType", () => {
+  it("separates games, soundtracks and DLC", () => {
+    expect(dealContentType("Cris Tales Original Soundtrack", "dlc")).toBe("soundtrack");
+    expect(dealContentType("Hades OST")).toBe("soundtrack");
+    expect(dealContentType("Borderlands 3 Season Pass")).toBe("dlc");
+    expect(dealContentType("In Sound Mind - Digital Artbook", "dlc")).toBe("dlc");
+    expect(dealContentType("Ghost of a Tale", "game")).toBe("game");
+    expect(dealContentType("Warhammer: Chaosbane Slayer Edition", "pack")).toBe("game");
+  });
+});

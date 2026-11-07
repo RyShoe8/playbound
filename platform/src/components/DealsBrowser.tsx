@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Gift, Tag } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
 import { storeShortName, storeColor } from "@/lib/freeOffers/labels";
-import type { DiscountedGame } from "@/lib/dealsShared";
-import { inferGameGenres, cleanDealTitle } from "@/lib/dealsShared";
+import type { DealContentType, DiscountedGame } from "@/lib/dealsShared";
+import { inferGameGenres, cleanDealTitle, dealContentType } from "@/lib/dealsShared";
 import { ActiveOffersGrid } from "@/components/ActiveOffersGrid";
 import { DiscountedGameCard } from "@/components/DiscountedGameCard";
 import { EmptyHint } from "@/components/ui/bits";
@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
  * worse. The server component above it keeps the fetching, the JSON-LD and the
  * standing editorial copy.
  *
- * Three independent filters:
+ * Four independent filters:
+ *   - **Type** narrows to games, soundtracks or DLC.
  *   - **Kind** narrows to free giveaways or discounts.
  *   - **Store** narrows both at once on the shared store key vocabulary.
  *   - **Genre** narrows deals and giveaways by inferred or catalog genre.
@@ -33,6 +34,21 @@ import { cn } from "@/lib/utils";
 type Kind = "all" | "free" | "discounted";
 const ALL_STORES = "all" as const;
 const ALL_GENRES = "all" as const;
+
+type ContentFilter = "all" | DealContentType;
+const CONTENT_OPTIONS: { key: ContentFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "game", label: "Games" },
+  { key: "soundtrack", label: "Soundtracks" },
+  { key: "dlc", label: "DLC" },
+];
+function contentFromUrl(): ContentFilter {
+  const value = new URL(window.location.href).searchParams.get("content");
+  return value === "game" || value === "soundtrack" || value === "dlc" ? value : "all";
+}
+function offerTitle(o: FreeOfferRecord): string {
+  return cleanDealTitle(o.unmatchedTitle || (o.metadata?.title as string) || o.gameSlug || "");
+}
 
 type StoreOption = { key: string; label: string; color?: string };
 
@@ -50,12 +66,16 @@ export function DealsBrowser({
   const [kind, setKind] = useState<Kind>(initialKind);
   const [store, setStore] = useState<string>(ALL_STORES);
   const [genre, setGenre] = useState<string>(ALL_GENRES);
+  const [content, setContent] = useState<ContentFilter>("all");
 
   useEffect(() => {
     const syncFromUrl = () => {
       const type = new URL(window.location.href).searchParams.get("type");
       setKind(type === "free" ? "free" : type === "75-off" ? "discounted" : "all");
+      syncContent();
     };
+    const syncContent = () => setContent(contentFromUrl());
+    syncContent();
     window.addEventListener("popstate", syncFromUrl);
     return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
@@ -65,6 +85,14 @@ export function DealsBrowser({
     const url = new URL(window.location.href);
     if (next === "all") url.searchParams.delete("type");
     else url.searchParams.set("type", next === "free" ? "free" : "75-off");
+    window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function selectContent(next: ContentFilter) {
+    setContent(next);
+    const url = new URL(window.location.href);
+    if (next === "all") url.searchParams.delete("content");
+    else url.searchParams.set("content", next);
     window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
   }
 
@@ -117,6 +145,9 @@ export function DealsBrowser({
 
   const visibleOffers = useMemo(() => {
     let list = offers;
+    if (content !== "all") {
+      list = list.filter((o) => dealContentType(offerTitle(o)) === content);
+    }
     if (store !== ALL_STORES) {
       list = list.filter((o) => o.store === store);
     }
@@ -131,10 +162,13 @@ export function DealsBrowser({
       });
     }
     return list;
-  }, [offers, store, genre]);
+  }, [offers, store, genre, content]);
 
   const visibleDiscounted = useMemo(() => {
     let list = discounted;
+    if (content !== "all") {
+      list = list.filter((g) => g.contentType === content);
+    }
     if (store !== ALL_STORES) {
       list = list.filter((g) => g.storeKey === store);
     }
@@ -146,12 +180,12 @@ export function DealsBrowser({
       });
     }
     return list;
-  }, [discounted, store, genre]);
+  }, [discounted, store, genre, content]);
 
   // Sale cards appear in batches as the reader scrolls (no pagination); the
   // counts and filters above still cover every deal.
   const { visible: shownDiscounted, sentinel: discountedSentinel, hasMore: moreDiscounted, loadMore } = useProgressiveList(visibleDiscounted, {
-    resetKey: `${store}|${genre}|${kind}`,
+    resetKey: `${store}|${genre}|${kind}|${content}`,
   });
 
   const showFree = kind !== "discounted";
@@ -167,16 +201,23 @@ export function DealsBrowser({
         <FilterRow label="Show">
           <Chip label="All deals" active={kind === "all"} onClick={() => selectKind("all")} />
           <Chip
-            label={`Free (${offers.length})`}
+            label={`Free (${visibleOffers.length})`}
             active={kind === "free"}
             onClick={() => selectKind("free")}
           />
           <Chip
-            label={`${minPercentOff}% off or more (${discounted.length})`}
+            label={`${minPercentOff}% off or more (${visibleDiscounted.length})`}
             active={kind === "discounted"}
             onClick={() => selectKind("discounted")}
           />
         </FilterRow>
+
+        <label className="new-mobile-genre"><span>Type</span><select value={content} onChange={event => selectContent(event.target.value as ContentFilter)}>{CONTENT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}</select></label>
+        <div className="new-desktop-genres"><FilterRow label="Type">
+          {CONTENT_OPTIONS.map((o) => (
+            <Chip key={o.key} label={o.label} active={content === o.key} onClick={() => selectContent(o.key)} />
+          ))}
+        </FilterRow></div>
 
         {storeOptions.length > 1 && (
           <>
@@ -222,7 +263,7 @@ export function DealsBrowser({
           </FilterRow></div>
           </>
         )}
-        {(kind !== "all" || store !== ALL_STORES || genre !== ALL_GENRES) && <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => {selectKind("all");setStore(ALL_STORES);setGenre(ALL_GENRES);}}>Clear filters</button>}
+        {(kind !== "all" || content !== "all" || store !== ALL_STORES || genre !== ALL_GENRES) && <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => {selectKind("all");selectContent("all");setStore(ALL_STORES);setGenre(ALL_GENRES);}}>Clear filters</button>}
       </div>
 
       {nothingAtAll && (
@@ -244,7 +285,7 @@ export function DealsBrowser({
               <h2 className="text-2xl font-bold tracking-tight">On sale now</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {visibleDiscounted.length === 1 ? "One game" : `${visibleDiscounted.length} games`}{" "}
+              {visibleDiscounted.length === 1 ? "One deal" : `${visibleDiscounted.length} deals`}{" "}
               at {minPercentOff}% off or more, found across the stores.
             </p>
           </div>

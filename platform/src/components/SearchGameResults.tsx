@@ -17,7 +17,7 @@ export function SearchGameResults({
   return (
     <section className="space-y-4">
       <SectionHeader title={`Games (${filtered.length})`} />
-      <CompatibleGameCardGrid games={games} playingNowBySlug={playingNowBySlug} />
+      <CompatibleGameCardGrid className="search-card-grid" games={games} playingNowBySlug={playingNowBySlug} />
     </section>
   );
 }

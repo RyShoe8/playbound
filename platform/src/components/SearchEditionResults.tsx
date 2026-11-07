@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Layers } from "lucide-react";
 import type { EditionSearchHit } from "@/lib/catalog";
+import { GameArt } from "@/components/GameArt";
 import { SectionHeader } from "@/components/ui/bits";
 import { EditionTypeBadge, VerificationBadge } from "@/components/editions/EditionBadges";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -27,26 +27,26 @@ export function SearchEditionResults({ hits }: { hits: EditionSearchHit[] }) {
   return (
     <section>
       <SectionHeader title={`Editions (${visible.length})`} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="search-card-grid">
         {visible.map(({ edition, game }) => (
           <Link
             key={edition.id}
             href={`/games/${game.slug}/editions/${edition.slug}`}
-            className="min-w-0 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+            className="new-game-card flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40"
           >
-            <p className="truncate text-xs font-semibold text-muted-foreground">{game.title}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 font-bold">
-              <Layers className="size-3.5 shrink-0 text-primary" />
-              <span className="truncate">{edition.name}</span>
-            </p>
-            {edition.shortDescription && (
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                {edition.shortDescription}
-              </p>
-            )}
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <EditionTypeBadge edition={edition} />
-              <VerificationBadge level={edition.verificationLevel} showLabel={false} />
+            <div className="new-card-art relative w-full shrink-0 overflow-hidden">
+              {/* An edition is shown on its game's art, titled with its own name. */}
+              <GameArt game={{ ...game, title: edition.name }} className="size-full" />
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5 border-t border-border/70 bg-card/90 px-2.5 py-2">
+              <p className="truncate text-xs font-semibold text-muted-foreground">{game.title}</p>
+              {edition.shortDescription && (
+                <p className="line-clamp-2 text-xs text-muted-foreground">{edition.shortDescription}</p>
+              )}
+              <div className="mt-auto flex flex-wrap items-center gap-1.5">
+                <EditionTypeBadge edition={edition} />
+                <VerificationBadge level={edition.verificationLevel} showLabel={false} />
+              </div>
             </div>
           </Link>
         ))}
