@@ -1,4 +1,26 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-tf2-classified-launcher-20261106",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/tf2-classified",
+      "expected": {
+        "installMethod": "steam",
+        "installConfig": {
+          "steam": {
+            "appId": "3545060"
+          }
+        }
+      },
+      "set": {
+        "installMethod": "external_installer",
+        "installConfig": {
+          "external_installer": {
+            "url": "steam://run/3545060",
+            "instructions": "Install and launch Team Fortress 2 Classified for free on Steam. Team Fortress 2 must be installed too."
+          }
+        }
+      }
+    }
+  ]
 }
