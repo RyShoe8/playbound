@@ -661,8 +661,8 @@ async function pushDiscoveryPreference(mode) {
 }
 
 async function fetchLauncherEditions(gameSlug) {
-  const qs = gameSlug ? `?game=${encodeURIComponent(gameSlug)}` : "";
-  const res = await apiFetch(`${getApiBase()}/api/launcher/editions${qs}`, {
+  const qs = gameSlug ? `&game=${encodeURIComponent(gameSlug)}` : "";
+  const res = await apiFetch(`${getApiBase()}/api/launcher/editions?stores=1${qs}`, {
     headers: launcherApiHeaders(),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

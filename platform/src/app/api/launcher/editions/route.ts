@@ -23,12 +23,23 @@ import { supportsController } from "@/lib/controller/support";
  */
 
 /** Editions the desktop launcher can actually act on. */
-function isLauncherInstallable(edition: Edition): boolean {
+function isLauncherInstallable(edition: Edition, handsOffToStores: boolean): boolean {
   if (edition.status === "archived" || edition.status === "coming_soon") return false;
-  return (
+  if (
     edition.installMethod === "playbound_installer" ||
     edition.installMethod === "official_download" ||
     edition.installMethod === "external_installer"
+  ) {
+    return true;
+  }
+  // Older launchers would install the parent game for these, so a launcher has to ask.
+  return (
+    handsOffToStores &&
+    (edition.installMethod === "steam" ||
+      edition.installMethod === "gog" ||
+      edition.installMethod === "epic" ||
+      edition.installMethod === "browser" ||
+      edition.installMethod === "manual")
   );
 }
 
@@ -37,6 +48,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const origin = url.origin || "https://playbound.club";
     const gameSlug = url.searchParams.get("game");
+    const handsOffToStores = url.searchParams.get("stores") === "1";
     const includeTesting = await requestIncludesTesting(req);
 
     const games = gameSlug
@@ -52,7 +64,7 @@ export async function GET(req: Request) {
       const editions = await listEditionsForGame(game);
       for (const edition of editions) {
         if (edition.visibility !== "public") continue;
-        if (!isLauncherInstallable(edition)) continue;
+        if (!isLauncherInstallable(edition, handsOffToStores)) continue;
 
         entries.push({
           // Identity — every launcher analytics event echoes these back.
