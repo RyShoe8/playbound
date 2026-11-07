@@ -1,4 +1,43 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261107-14",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "dune-legacy/playbound-edition",
+      "expected": {
+        "longDescription": "The PlayBound Edition is Dune Legacy with the useful settings already chosen. It uses the current standalone Windows build and ships with sensible display, audio and control defaults so a first launch lands in a playable game rather than an options menu.\n\nThe underlying engine, campaigns and multiplayer are the same as the standard edition; the difference is that someone has already done the setup."
+      },
+      "set": {
+        "longDescription": "Dune Legacy is the open-source remake engine for Westwood's 1992 Dune II, the game that set the template for real-time strategy, and this is the setup we would hand a friend. It installs the project's own current Windows build, 0.99.5, with sensible display, audio and control settings already chosen, so a first launch lands you in a playable game rather than an options menu. The HD graphics come first, and the original pixel-art look is still available if you prefer it.\n\nThe features here belong to Dune Legacy and its community, and there are plenty of them. You get the Super Dune campaign, established community maps, a rebalanced QuantBot AI, and an in-game mod editor and loader. The old game's clumsy controls are long gone too, with drag-box selection and right-click orders replacing a system that was notorious even at the time. House Atreides, Ordos and Harkonnen are still fighting over the same spice.\n\nIt is also the easiest way to play together. Everyone in a party should use this same setup, since Dune Legacy can share the active mod and map with joining players, and PlayBound Connect handles the private network when direct hosting refuses to cooperate. PlayBound's part is only the install recipe and starting settings. Classic Dune Legacy remains separate and recoverable."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "star-wars-galaxies/restoration",
+      "expected": {
+        "longDescription": "SWG Restoration emphasises classic Star Wars Galaxies gameplay. Obtain their client package from Restoration's official channels only.",
+        "links.website": "https://www.swgemu.com/"
+      },
+      "set": {
+        "longDescription": "SWG Restoration takes a different route from most Star Wars Galaxies servers. Rather than recreating one moment in the game's history, it combines parts of several: a deep multi-profession system and a combat style reminiscent of the Combat Upgrade, along with all of the NGE-era content and expansions, including Jump to Lightspeed. So you can fly starships in a game that still has the old profession system, which the original never really offered in that form.\n\nIt is also not standing still. The project has been delivering large updates for years, with massive quality-of-life improvements and server content that progresses according to player actions. PC Gamer covered it 15 years after Sony shut the game down, with its Shatterpoint update adding a large-scale civil war event in the style of Helldivers, where the whole server pushes the front lines together.\n\nChoose it if you like Galaxies' sandbox but want something that keeps growing, rather than a faithful preservation of one era. For a stricter Pre-CU experience, Infinity is listed here too, and Legends covers the NGE. Restoration is free and fan-run, with no connection to Sony or Lucasfilm. PlayBound runs the project's own installer, and you get your account and any further guidance through Restoration's official channels. Its community gathers on Discord.",
+        "links.website": "https://swgr.org/"
+      }
+    },
+    {
+      "kind": "game",
+      "key": "genshin-impact",
+      "expected": {
+        "launcherInstall.kind": "external",
+        "launcherInstall.url": "https://genshin.hoyoverse.com",
+        "launcherInstall.exeHint": null,
+        "launcherInstall.fileName": null
+      },
+      "set": {
+        "launcherInstall.kind": "direct-installer",
+        "launcherInstall.url": "https://sg-hyp-public.hoyoverse.com/hyp/hyp-prod/pkg/installer/HYP_1.0.0.0_Setup.exe",
+        "launcherInstall.exeHint": "GenshinImpact|HoYoPlay",
+        "launcherInstall.fileName": "HYP_Genshin_Setup.exe"
+      }
+    }
+  ]
 }
