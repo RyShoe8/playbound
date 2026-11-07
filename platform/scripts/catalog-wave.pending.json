@@ -1,4 +1,15 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-restore-valorant-official-20261107",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "valorant/official",
+      "expected": {
+        "visibility": "hidden"
+      },
+      "set": {
+        "visibility": "public"
+      }
+    }
+  ]
 }
