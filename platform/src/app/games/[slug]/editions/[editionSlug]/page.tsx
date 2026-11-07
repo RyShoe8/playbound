@@ -632,22 +632,11 @@ function OverviewTab({
           </section>
         )}
 
-        {edition.description && (
-          <section>
-            <SectionHeader title={`About ${edition.name}`} />
+        {(edition.longDescription || edition.description) && (
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h2 className="text-lg font-bold">About {edition.name}</h2>
             <div className="mt-3 space-y-4 leading-relaxed text-muted-foreground">
-              {edition.description.split("\n\n").map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {edition.longDescription && (
-          <section>
-            <SectionHeader title={`${edition.name} in depth`} />
-            <div className="mt-3 space-y-4 leading-relaxed text-muted-foreground">
-              {edition.longDescription.split("\n\n").map((para, i) => (
+              {(edition.longDescription || edition.description).split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
             </div>
@@ -662,27 +651,42 @@ function OverviewTab({
         )}
 
         {((edition.bestFor?.length ?? 0) > 0 || (edition.notFor?.length ?? 0) > 0) && (
-          <section className="grid gap-4 sm:grid-cols-2">
-            {(edition.bestFor?.length ?? 0) > 0 && (
-              <div className="rounded-xl border border-border bg-card p-5">
-                <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Best for</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground/90">
-                  {edition.bestFor!.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {(edition.notFor?.length ?? 0) > 0 && (
-              <div className="rounded-xl border border-border bg-card p-5">
-                <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Not for</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground/90">
-                  {edition.notFor!.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          <section>
+            <h2 className="text-lg font-bold">Who it&apos;s for</h2>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              {edition.bestFor?.length ? (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-xs font-semibold tracking-wide text-primary uppercase">
+                    Great if you want
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                    {edition.bestFor.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span aria-hidden className="text-primary">
+                          +
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {edition.notFor?.length ? (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Look elsewhere if
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                    {edition.notFor.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span aria-hidden>−</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
           </section>
         )}
 

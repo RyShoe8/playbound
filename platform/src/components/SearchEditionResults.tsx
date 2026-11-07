@@ -35,10 +35,15 @@ export function SearchEditionResults({ hits }: { hits: EditionSearchHit[] }) {
             className="new-game-card flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40"
           >
             <div className="new-card-art relative w-full shrink-0 overflow-hidden">
-              {/* An edition is shown on its game's art, titled with its own name. */}
-              <GameArt game={{ ...game, title: edition.name }} className="size-full" />
+              {/* The edition's own art when it has some, otherwise its game's. */}
+              <GameArt
+                game={{ ...game, title: edition.name, coverImage: edition.branding?.heroImage || edition.branding?.screenshots?.[0] || game.coverImage }}
+                className="size-full"
+                showTitle={false}
+              />
             </div>
             <div className="flex flex-1 flex-col gap-1.5 border-t border-border/70 bg-card/90 px-2.5 py-2">
+              <h3 className="new-card-title">{edition.name}</h3>
               <p className="truncate text-xs font-semibold text-muted-foreground">{game.title}</p>
               {edition.shortDescription && (
                 <p className="line-clamp-2 text-xs text-muted-foreground">{edition.shortDescription}</p>

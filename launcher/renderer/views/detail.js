@@ -2819,7 +2819,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
 
             <section class="detail-section detail-about-card">
               <h2 class="detail-section-title">About ${escapeHtml(edition.editionName)}</h2>
-              ${(edition.description || edition.shortDescription || "")
+              ${(edition.longDescription || edition.description || edition.shortDescription || "")
                 .split(/\n\n+/)
                 .filter(Boolean)
                 .map((para) => `<p class="detail-prose">${escapeHtml(para)}</p>`)

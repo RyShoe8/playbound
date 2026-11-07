@@ -67,6 +67,7 @@ export async function GET(req: Request) {
 
           shortDescription: edition.shortDescription || game.tagline,
           description: edition.description || "",
+          longDescription: edition.longDescription || null,
           faq: Array.isArray(edition.faq) ? edition.faq : [],
           version: edition.version ?? null,
           // Accreditation, shown in the launcher's Edition Facts and Credits card.

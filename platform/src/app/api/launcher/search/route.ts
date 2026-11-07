@@ -24,7 +24,7 @@ export async function GET(req: Request) {
           gameSlug: game.slug,
           gameTitle: game.title,
           art: game.art,
-          coverImage: absoluteMediaUrl(game.coverImage, url.origin),
+          coverImage: absoluteMediaUrl(edition.branding?.heroImage || edition.branding?.screenshots?.[0] || game.coverImage, url.origin),
         })),
         developers: developers.map((d) => ({ slug: d.slug, name: d.name, tagline: d.tagline, artHue: d.artHue })),
         collections: collections.map((c) => ({ slug: c.slug, title: c.title, description: c.description, gameSlugs: c.gameSlugs })),
