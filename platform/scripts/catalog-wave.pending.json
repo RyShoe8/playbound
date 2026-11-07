@@ -85,11 +85,9 @@
       "kind": "edition",
       "key": "shattered-pixel-dungeon/rat-king-adventure",
       "expected": {
-        "license": "GPL-3.0",
         "longDescription": "A long-running fork of Shattered Pixel Dungeon that expands well past the original with extra classes, more items and a much longer set of challenges."
       },
       "set": {
-        "license": "GPL-3.0",
         "longDescription": "Rat King Adventure is what happens when a joke mod's own joke mod keeps growing. It is an expansive fork of RKPD2, which is itself built on Shattered Pixel Dungeon, and it stays in sync with updates from both. Where Shattered ends, this one keeps going: past Yog lies the Abyss, a new area of tough enemies with no set end, for anybody who thought the final boss should have been a starting point.\n\nThe additions are as wild as that suggests. Tier-6 weapons have unusual effects, expanded talents reach tier 4, and every class has secret subclasses to find. Rats also turn up in place of some common enemies. Kromers are unpredictable items with high risk and high reward, special seeds grant unique effects or whole new mechanics, and new challenges build on the existing ones if you somehow still need a harder time.\n\nNobody should start here. It assumes you already know Shattered's rules and want them stretched until they snap, and the balance is firmly on the side of fun. It installs and saves separately, so it never disturbs a normal Shattered run, and PlayBound installs a Java runtime on desktop if you need one. It is free under the GPL version 3, on Android and desktop."
       }
     },
