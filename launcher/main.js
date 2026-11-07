@@ -5272,7 +5272,11 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   // A store or fan-server edition is its own destination, even when the parent
   // game has an installer: choosing it must never install the parent instead.
   if (editionSlug && ["steam", "gog", "epic", "browser", "manual"].includes(editionMeta?.installMethod)) {
-    const url = editionMeta.installAction?.href || editionMeta.links?.website;
+    // The launcher only opens Epic store pages, never Epic's launch commands.
+    const epicSlug = editionMeta.installMethod === "epic" && editionMeta.installConfig?.epic?.productSlug;
+    const url = epicSlug
+      ? `https://store.epicgames.com/p/${encodeURIComponent(epicSlug)}`
+      : editionMeta.installAction?.href || editionMeta.links?.website;
     if (url) {
       await openExternalInstallHandoff(url, slug);
       return { status: "external", editionSlug: editionMeta.editionSlug };
