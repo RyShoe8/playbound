@@ -19,9 +19,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/**
+ * Missing, null, "" and [] all mean "nothing here". The CMS saves blank fields
+ * as "" while the public API omits them, so a reviewer cannot tell them apart,
+ * and none of them holds anything a wave could overwrite.
+ */
+export function isEmptyValue(value: unknown): boolean {
+  return value === null || value === undefined || value === "" ||
+    (Array.isArray(value) && value.length === 0);
+}
+
 function same(a: unknown, b: unknown): boolean {
+  if (isEmptyValue(a) && isEmptyValue(b)) return true;
   // Lean Mongo documents contain Dates/ObjectIds; the manifest is plain JSON.
   return isDeepStrictEqual(JSON.parse(JSON.stringify(a ?? null)), b ?? null);
+}
+
+/** The write guard: an empty expected value matches any stored form of empty. */
+export function expectedFilter(expected: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(expected).map(([field, value]) =>
+    [field, isEmptyValue(value) ? { $in: [null, "", []] } : value]));
 }
 
 function atPath(row: Record<string, unknown>, path: string): unknown {
@@ -139,7 +156,7 @@ async function main() {
   }
 
   for (const op of pending) {
-    const filter = { ...filterFor(op), ...op.expected };
+    const filter = { ...filterFor(op), ...expectedFilter(op.expected) };
     const update = { $set: op.set };
     const options = { upsert: false, runValidators: true, timestamps: false };
     const result = op.kind === "game"

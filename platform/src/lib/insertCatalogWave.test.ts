@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parseWave } from "../../scripts/insert-catalog-wave";
+import { expectedFilter, isEmptyValue, parseWave } from "../../scripts/insert-catalog-wave";
 
 const pendingPath = resolve(process.cwd(), "scripts/catalog-wave.pending.json");
 const workflowPath = resolve(process.cwd(), "../.github/workflows/apply-catalog-wave.yml");
@@ -11,6 +11,12 @@ const operation = {
 };
 
 describe("one-use catalog wave", () => {
+  it("treats every stored form of empty alike, and only empty", () => {
+    for (const value of [null, undefined, "", []]) expect(isEmptyValue(value)).toBe(true);
+    for (const value of ["x", 0, false, ["x"]]) expect(isEmptyValue(value)).toBe(false);
+    expect(expectedFilter({ a: null, b: "kept" })).toEqual({ a: { $in: [null, "", []] }, b: "kept" });
+  });
+
   it("starts with no pending database updates", () => {
     expect(parseWave(JSON.parse(readFileSync(pendingPath, "utf8")))).toEqual({ id: null, operations: [] });
   });
