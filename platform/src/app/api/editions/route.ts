@@ -1,3 +1,4 @@
+import { isBaseGameEditionRow } from "@/lib/editionRedirects";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
@@ -42,6 +43,13 @@ export async function POST(req: Request) {
     await dbConnect();
     const ownerUserId = await resolveGameOwnerUserId(body.ownerUserId ?? null);
     if (body.ownerUserId && !ownerUserId) return NextResponse.json({ error: "No user with that username or email" }, { status: 400 });
+
+    if (isBaseGameEditionRow(body)) {
+      return NextResponse.json(
+        { error: "The base game is listed automatically. Add an edition only for a genuinely different build." },
+        { status: 400 }
+      );
+    }
 
     // The parent game must exist, or the edition would be unreachable: every
     // edition URL is nested under a game page.

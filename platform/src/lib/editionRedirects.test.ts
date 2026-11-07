@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentEditionSlug, retiredEditionRedirect } from "./editionRedirects";
+import { currentEditionSlug, isBaseGameEditionRow, retiredEditionRedirect } from "./editionRedirects";
 import { editionPayloadSchema } from "./editionPayload";
 
 describe("retired edition redirects", () => {
@@ -43,5 +43,17 @@ describe("renamed edition slugs", () => {
     expect(currentEditionSlug("team-fortress-2", "tf2-classic")).toBe("tf2-classified");
     expect(currentEditionSlug("team-fortress-2", "official")).toBe("official");
     expect(currentEditionSlug("other-game", "tf2-classic")).toBe("tf2-classic");
+  });
+});
+
+describe("base game rows", () => {
+  it("recognises a row standing for the base game, by slug or by type", () => {
+    expect(isBaseGameEditionRow({ slug: "official", type: "community" })).toBe(true);
+    expect(isBaseGameEditionRow({ slug: "steam-build", type: "official" })).toBe(true);
+    expect(isBaseGameEditionRow({ slug: "ddnet", type: "community" })).toBe(false);
+  });
+  it("sends retired duplicates to their game page", () => {
+    expect(retiredEditionRedirect("trigger-rally", "trigger-rally-portable")).toBe("/games/trigger-rally");
+    expect(retiredEditionRedirect("quake-champions", "qc-steam")).toBe("/games/quake-champions");
   });
 });
