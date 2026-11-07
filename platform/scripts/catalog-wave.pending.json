@@ -1,4 +1,45 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-retire-official-20261107-2",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "genshin-impact/genshin-pc-hoyoplay",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/official",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "stalker-anomaly/official",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "valorant/official",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    }
+  ]
 }
