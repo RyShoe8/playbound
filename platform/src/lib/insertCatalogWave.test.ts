@@ -14,7 +14,19 @@ describe("one-use catalog wave", () => {
   it("treats every stored form of empty alike, and only empty", () => {
     for (const value of [null, undefined, "", []]) expect(isEmptyValue(value)).toBe(true);
     for (const value of ["x", 0, false, ["x"]]) expect(isEmptyValue(value)).toBe(false);
-    expect(expectedFilter({ a: null, b: "kept" })).toEqual({ a: { $in: [null, "", []] }, b: "kept" });
+    expect(expectedFilter({ a: null, b: "kept", "c.d": null }, { a: "", c: {} })).toEqual({ a: "", b: "kept", "c.d": null });
+  });
+
+  it("builds write guards Mongoose can cast for each field type", async () => {
+    const Edition = (await import("./models/Edition")).default;
+    const expected = { requirements: null, "requirements.min": null, "branding.heroImage": null, "branding.screenshots": null, languages: null, releaseYear: null };
+    for (const current of [
+      {},
+      { requirements: null, branding: { heroImage: "", screenshots: [] }, languages: [], releaseYear: null },
+      { requirements: { min: "" }, branding: { heroImage: null } },
+    ]) {
+      expect(() => Edition.find(expectedFilter(expected, current)).cast(Edition)).not.toThrow();
+    }
   });
 
   it("starts with no pending database updates", () => {

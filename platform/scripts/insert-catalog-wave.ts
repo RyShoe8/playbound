@@ -35,15 +35,19 @@ function same(a: unknown, b: unknown): boolean {
   return isDeepStrictEqual(JSON.parse(JSON.stringify(a ?? null)), b ?? null);
 }
 
-/** The write guard: an empty expected value matches any stored form of empty. */
-export function expectedFilter(expected: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(expected).map(([field, value]) =>
-    [field, isEmptyValue(value) ? { $in: [null, "", []] } : value]));
-}
-
 function atPath(row: Record<string, unknown>, path: string): unknown {
   return path.split(".").reduce<unknown>((value, part) =>
     isRecord(value) ? value[part] : undefined, row);
+}
+
+/**
+ * The write guard. An empty expected value matches exactly the empty form just
+ * read from this record, because Mongoose casts query values to the field's
+ * type and rejects "" on a subdocument or [] on a string.
+ */
+export function expectedFilter(expected: Record<string, unknown>, current: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(expected).map(([field, value]) =>
+    [field, isEmptyValue(value) ? atPath(current, field) ?? null : value]));
 }
 
 function safeValue(value: unknown): boolean {
@@ -139,7 +143,7 @@ async function main() {
 
   // Check every target before the first write. A changed Admin value blocks
   // the wave instead of allowing the old patch to overwrite that person's edit.
-  const pending: Operation[] = [];
+  const pending: { op: Operation; current: Record<string, unknown> }[] = [];
   for (const op of wave.operations) {
     const current = await read(op);
     if (!current) throw new Error(`${op.kind}:${op.key} does not exist; no upsert allowed`);
@@ -152,11 +156,11 @@ async function main() {
     if (changed.length > 0) {
       throw new Error(`${op.kind}:${op.key} changed since review at [${changed.join(", ")}]; wave stopped without overwriting Admin data`);
     }
-    pending.push(op);
+    pending.push({ op, current });
   }
 
-  for (const op of pending) {
-    const filter = { ...filterFor(op), ...expectedFilter(op.expected) };
+  for (const { op, current } of pending) {
+    const filter = { ...filterFor(op), ...expectedFilter(op.expected, current) };
     const update = { $set: op.set };
     const options = { upsert: false, runValidators: true, timestamps: false };
     const result = op.kind === "game"
