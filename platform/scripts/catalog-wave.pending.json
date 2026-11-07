@@ -1,4 +1,86 @@
 {
-  "id": null,
-  "operations": []
+  "operations": [
+    {
+      "set": {
+        "links.github": "https://github.com/MustaphaTR/Romanovs-Vengeance",
+        "credits": [
+          {
+            "name": "MustaphaTR and contributors",
+            "role": "Romanov's Vengeance development",
+            "url": "https://github.com/MustaphaTR/Romanovs-Vengeance"
+          },
+          {
+            "name": "OpenRA contributors",
+            "role": "Engine and upstream Red Alert 2 mod",
+            "url": "https://github.com/OpenRA/ra2"
+          },
+          {
+            "name": "Westwood Studios",
+            "role": "Original Red Alert 2",
+            "url": ""
+          }
+        ],
+        "whyWePickedIt": "We'd pick this for the Red Alert 2 friend who wants another reason to argue about balance. Romanov's Vengeance takes that familiar battlefield and gives its developers room to change it. Bring a willingness to learn the differences, and treat the occasional rough edge as part of trying a work in progress.",
+        "faq": [
+          {
+            "a": "It builds on the OpenRA RA2 project, with its own multiplayer balancing and changes inspired by later Command & Conquer games. Expect differences from the original.",
+            "q": "Is this the original Red Alert 2 on a newer engine?"
+          },
+          {
+            "a": "The developers describe a custom campaign as planned, with little work completed. Choose this for its multiplayer focus rather than a finished campaign.",
+            "q": "Can I play a campaign?"
+          },
+          {
+            "a": "No. The project warns about bugs, missing original features, placeholder artwork and changing balance. Get your group onto the same release before arranging a match.",
+            "q": "Is the playtest finished?"
+          }
+        ]
+      },
+      "key": "openra/ra2",
+      "expected": {
+        "links.github": "https://github.com/OpenRA/ra2",
+        "credits": [
+          {
+            "name": "MustaphaTR and contributors",
+            "role": "Romanov's Vengeance / OpenRA RA2",
+            "url": "https://github.com/OpenRA/ra2"
+          },
+          {
+            "name": "Westwood Studios",
+            "role": "Original Red Alert 2",
+            "url": ""
+          }
+        ],
+        "whyWePickedIt": "Red Alert 2 on a modern, supported engine.",
+        "faq": []
+      },
+      "kind": "edition"
+    },
+    {
+      "set": {
+        "whyWePickedIt": "The appeal is seeing familiar C&C battlefields through OpenRA with the remastered artwork. We'd treat this as a side project for a curious fan who already owns the Remastered Collection. For a low-fuss game night, start with stock OpenRA; come here when experimenting with the presentation is part of the fun.",
+        "faq": [
+          {
+            "a": "Yes. Tiberian Dawn HD reads artwork from an existing digital installation of Command & Conquer Remastered Collection. Installing the engine alone does not provide those assets.",
+            "q": "Do I need to own another game?"
+          },
+          {
+            "a": "The project recommends a dedicated GPU but does not provide finalized requirements. Performance, memory use and loading times remain unoptimized, so we cannot promise that stock OpenRA requirements are sufficient.",
+            "q": "What hardware does it need?"
+          },
+          {
+            "a": "We would start with stock OpenRA. Tiberian Dawn HD is explicitly a proof of concept; choose it when you want to experiment and can tolerate extra setup.",
+            "q": "Is this the recommended version for a first game night?"
+          }
+        ]
+      },
+      "key": "openra/tiberian-dawn-hd",
+      "expected": {
+        "whyWePickedIt": "The original C&C in high definition.",
+        "faq": []
+      },
+      "kind": "edition"
+    }
+  ],
+  "id": "edition-info-20261107-openra-guidance-credits"
 }
