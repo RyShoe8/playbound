@@ -1,15 +1,4 @@
 {
-  "id": "edition-hide-openlara-web-20261106",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "tomb-raider-123/web-wasm",
-      "expected": {
-        "visibility": "public"
-      },
-      "set": {
-        "visibility": "hidden"
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
