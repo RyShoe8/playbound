@@ -1,4 +1,105 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261107-11",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "dota-2/dota-2-steam",
+      "expected": {
+        "longDescription": "This is the standard Steam release of Dota 2: every hero unlocked from the start, ranked and casual matchmaking, Turbo mode and the full set of in-game modes. There is no pay-to-win layer; purchases are cosmetic. The game continues the Defense of the Ancients line of Warcraft III maps, rebuilt by Valve on the Source 2 engine.\n\nPlayBound opens the Steam install for you and keeps the controls, party and compatibility notes next to it."
+      },
+      "set": {
+        "longDescription": "Dota 2 is Valve's enormous five-on-five battle arena, and it has one of the fairest business models in online games: every hero is available to every player from the first match, and the only things for sale are cosmetics and optional add-ons. There are over a hundred heroes, and any of them can fill several roles, which is a large part of why matches stay unpredictable after thousands of hours. It has been on Steam since July 2013 and shows little sign of slowing.\n\nThe basic shape is simple. Two teams push down three lanes to destroy the enemy's Ancient, buying items and levelling up along the way. The depth is in everything else: when to fight, what to buy, and how your hero's abilities combine with those of your teammates. Be prepared for a steep learning curve and for teammates with opinions.\n\nThe game does a fair amount to ease you in, with co-op matches against bots, a hero demo mode for trying abilities, and matchmaking based on both skill and behaviour. It needs a dual-core 2.8 GHz processor, 4 GB of RAM and a sizeable 60 GB of storage, and it runs on Windows, macOS and Linux. Choose this edition for the standard ranked and casual game."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/official",
+      "expected": {
+        "longDescription": "The complete official release of Team Fortress 2 on Steam: all nine classes, casual and competitive matchmaking, Mann vs. Machine and community servers, free to play."
+      },
+      "set": {
+        "longDescription": "Team Fortress 2 has been running since October 2007, and it remains one of the most purely enjoyable team shooters ever made. Valve's class-based game gives you nine very different characters, from the heavily armed Heavy to the backstabbing Spy, and it trusts you to work out how they fit together. Its humour and its art style have aged so well that it barely looks its age.\n\nEach class changes how you see the map. A Medic keeps an eye on health bars, an Engineer thinks about where a sentry gun should go, and a Scout is mostly thinking about getting there first. Modes include Capture the Flag, Control Point, Payload, Arena and King of the Hill, with training and offline practice for newcomers, and Mann vs. Machine for co-op against robots. Free updates have added maps, modes and equipment for many years.\n\nIt is completely free to play, and hundreds of weapons and hats can be collected, crafted, bought and traded, with nearly all of it obtainable just by playing. It runs on almost anything, needing as little as a 1.7 GHz processor and 15 GB of storage, on Windows and Linux. PlayBound opens it through Steam. Jump in, pick a class and try not to set anybody on fire by accident, unless that is your job."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "war-thunder/gaijin-client",
+      "expected": {
+        "longDescription": "Gaijin's direct launcher for War Thunder, with modular downloads including Ultra HQ vehicle texture packs."
+      },
+      "set": {
+        "longDescription": "War Thunder is a free-to-play military sandbox with a scope that few games attempt. Gaijin Entertainment has been building it since 2013, and it now covers over 3,000 aircraft, attack helicopters, tanks, warships and other vehicles, all modelled from historical sources. You fly, drive or sail them across about 100 maps that represent the main theatres of historical battles, often with land, air and sea all fighting in the same match.\n\nIts appeal depends on how seriously you want to take it. Difficulty settings range from approachable arcade battles to much more demanding realistic and simulator modes, so a newcomer and a flight-stick obsessive can both find a place. Alongside the competitive PvP, there are dynamic historical campaigns and solo missions for those who want to play alone. Regular updates keep adding vehicles, maps, missions and nations.\n\nBe aware of the long grind, because researching your way up to the most advanced vehicles takes a lot of matches, and that is where the game's premium options tempt you. Crossplay reaches PlayStation and Xbox as well as PC, so finding a match is easy. It needs a lot of storage, 70 GB at minimum and 95 GB recommended. This edition uses Gaijin's own client rather than Steam."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "war-thunder/official",
+      "expected": {
+        "longDescription": null
+      },
+      "set": {
+        "longDescription": "This is War Thunder through Steam: the same free-to-play military sandbox from Gaijin Entertainment, with its 3,000-plus aircraft, attack helicopters, tanks and warships, handled by Steam's updates and library instead of Gaijin's own client. If you already keep your games on Steam, it is the simpler choice, and it adds achievements and easy access for your Steam friends.\n\nThe game itself has been running since August 2013. Vehicles are modelled from historical sources and fight on about 100 maps covering the main theatres of historical battles, frequently mixing land, air and sea in a single match. Competitive PvP comes at various difficulty settings, from arcade to much stricter realistic modes, and PvE offers dynamic historical campaigns and solo missions. Crossplay includes PlayStation and Xbox players.\n\nIt is an easy game to try and a long one to master. Research trees take many matches to climb, so expect a slow march towards the fastest jets and heaviest tanks. Storage is the main hardware requirement, at 70 GB minimum and 95 GB recommended, with a dual-core processor and 4 GB of RAM at the low end. It runs on Windows, macOS and Linux. PlayBound opens it on Steam, where installing it takes a click."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "starcraft/official",
+      "expected": {
+        "longDescription": "Blizzard's free release of the original StarCraft and Brood War through the Battle.net client, patched for modern Windows. Includes online play."
+      },
+      "set": {
+        "longDescription": "StarCraft is the game that helped define competitive real-time strategy, and it is free. Blizzard made the 1998 original and its Brood War expansion free to download in April 2017 with patch 1.18, with no DRM and no strings attached. That patch also added windowed modes, an Observer mode, automatic replay saving, and better compatibility with modern Windows.\n\nThree races are at its heart, and they are famously different from one another. Terrans are human exiles with flexible machines, Zerg are a swarming insectoid hive, and Protoss are powerful psionic aliens with expensive, sturdy units. Those differences are so well balanced that Brood War was played professionally for many years. The single-player story is great in its own right too, with campaigns for each race, then more campaigns, units and graphics in Brood War.\n\nYou should know what you are getting: this is the original presentation, with its low-resolution art and 1998 interface, and it asks for a lot of clicking by modern standards. Blizzard's paid StarCraft: Remastered is a separate product that offers ultra-high-definition graphics, re-recorded audio and modern online features with the same gameplay. Start here for free, and if it grabs you, you will know whether the upgrade is worth it."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "valorant/official",
+      "expected": {
+        "longDescription": "The primary PC client for VALORANT, with Riot Vanguard anti-cheat, instant patches and all official modes."
+      },
+      "set": {
+        "longDescription": "Valorant is Riot Games' answer to Counter-Strike: a free-to-play, five-on-five tactical shooter where precise gunplay meets character abilities. One team plants a device while the other tries to stop it, and a single bullet to the head can end you, so aim and positioning stay in charge. What changes things is the agents, each with their own set of abilities like smokes, flashes and traps, which give a team many ways to take a site.\n\nThat blend is why it attracts both shooter veterans and people who bounced off older tactical games. Rounds are tense and short, with money carrying over between them, so buying decisions matter as much as your shot. It also has a big competitive scene and a ranked ladder, though it can be a demanding, sometimes unfriendly place to learn. Character skins are what Riot sells, and they do not affect play.\n\nYou should know one thing before you install it. Valorant requires Vanguard, Riot's anti-cheat, which runs deep within the operating system with administrator rights, and it is active whenever your computer is on. Some people are not comfortable with that, so decide for yourself. It is PC-focused and not demanding on hardware, and it is installed through Riot's own client in this edition."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "space-station-14/official",
+      "expected": {
+        "longDescription": "The official release of Space Station 14. It installs the SS14 launcher, which manages server assets and builds for all official servers. SS14 is a multiplayer station simulation inspired by Space Station 13."
+      },
+      "set": {
+        "longDescription": "Space Station 14 is a game about going to work on a space station and watching everything go wrong. It is an open-source, round-based multiplayer role-playing game, a remake and successor to the cult classic Space Station 13. You create a character and spawn as one of dozens of crew or enemy jobs, from engineer to captain, or perhaps as a traitor who has very different goals for the shift.\n\nEach job has its own gear and responsibilities, and those systems run deep. Someone has to manage supplies and someone has to set up the reactor, and doctors have to figure out what happened to that person on the floor. Then asteroid damage, revolutions or sabotage arrive to force hard choices. Most of the stories come out of how a crew of real people reacts, which is usually with incompetence and panic, and that is where the comedy lives.\n\nPrepare for a steep learning curve. Nothing here is simple, and your first shifts will involve a lot of confusion, so choosing a beginner-friendly job and server will help. Communities run their own servers with their own rules, so read them first, particularly on role-play. It is under active development, and you can join through its launcher. Frontier Station, its open-universe fork, is also listed here."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "re-volt-rvgl/rvgl-online",
+      "expected": {
+        "longDescription": "An expanded RVGL installation with community-created multiplayer tracks, bonus vehicles, custom sound packs and competitive online presets."
+      },
+      "set": {
+        "longDescription": "This edition of RVGL is for playing Re-Volt the way its community still does: online, with other people, on a schedule. RVGL is an open-source, cross-platform rewrite of Acclaim's 1999 radio-controlled car racer, and this setup points you at the community around Re-Volt I/O, which holds regular online races with published schedules of allowed cars, tracks and hosts.\n\nRe-Volt's premise is wonderful and has not aged at all. You race tiny RC cars through suburbs, supermarkets and museums, where a kerb is a cliff and a weapon pickup can turn a lead into a pile of wreckage. The cars handle with a light, skittish feel that takes practice, and the difference between a good racer and a beginner shows quickly.\n\nRVGL's networking is what makes online play worthwhile, with low-latency peer-to-peer races for up to 16 players and multiplayer that works across platforms. It remains compatible with the huge library of user-made cars and tracks, and the community's downloads keep everyone on the same content. There is also split-screen for up to four people on one machine if you have friends on the couch. It is free, it runs on modern systems natively, and joining a scheduled race is the best way to find out how good you actually are."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "holocure/official",
+      "expected": {
+        "longDescription": "The original single-player HoloCure from its official release, unmodified. It is a fan-made, survivor-style action game starring hololive characters, with dozens of characters and weapons to unlock."
+      },
+      "set": {
+        "longDescription": "HoloCure is a fan game with far more care in it than anybody could reasonably expect. Kay Yu's completely free and unofficial game takes the Vampire Survivors formula and fills it with Hololive VTubers, and its enormous rating, 4.9 out of 5 from over 5,000 people on itch.io, suggests that you do not need to know who any of them are to get hooked. There is no monetisation of any kind.\n\nYou pick a character, walk around and try to survive endless waves of enemies while your attacks fire on their own. The decisions come from building your run: which weapons and passive items you take as you level up, and how they combine. A session lasts about half an hour, so it is easy to tell yourself just one more. There are 47 characters to unlock through a gacha system that uses only in-game currency, each with unique skills and special attacks, along with song remixes by Eufrik that are good enough to listen to on their own.\n\nIt is not affiliated with Hololive or Cover Corp, and it is still in development, with no mobile version planned. This official edition is the plain single-player game on Windows. For playing together, PlayBound's co-op edition is listed separately. It supports English, Japanese and Indonesian."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "rimworld/rimworld-together",
+      "expected": {
+        "longDescription": "A community-driven multiplayer mod for RimWorld. It requires a copy of RimWorld and lets groups run colonies together on a server."
+      },
+      "set": {
+        "longDescription": "RimWorld Together does something the base game never considered: it lets other people share your rim. It is a community-made multiplayer mod where several players live on the same world map, each running their own colony at their own pace. That is the key difference from the other big option, Zetrith's Multiplayer, which puts everybody in one shared game. Here, you keep your own tragedy, and it just has neighbours now.\n\nThe world becomes the shared space. Players can trade with one another and through a global market, visit or inspect other colonies, and deal with custom factions and diplomacy. Roads can connect settlements for caravans, and the server keeps the world persistent, so the map carries on developing whether or not everyone is online. It suits groups of friends who like comparing disasters as much as those who prefer a bigger community server.\n\nIt takes a little care to keep running. Every player's mod must be the same version as the server, and it needs Harmony alongside it and does not get along with Prepatcher. Start with a modest mod list and add to it slowly, because everyone has to match. You need your own copy of RimWorld. PlayBound can host a server for your party, which takes care of the most awkward part of getting started."
+      }
+    }
+  ]
 }
