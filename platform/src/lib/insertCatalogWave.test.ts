@@ -29,8 +29,10 @@ describe("one-use catalog wave", () => {
     }
   });
 
-  it("starts with no pending database updates", () => {
-    expect(parseWave(JSON.parse(readFileSync(pendingPath, "utf8")))).toEqual({ id: null, operations: [] });
+  // A push carrying a reviewed wave runs this before the wave's Action clears the file.
+  it("keeps the pending file valid, with an id exactly when it has operations", () => {
+    const wave = parseWave(JSON.parse(readFileSync(pendingPath, "utf8")));
+    expect(wave.id === null).toBe(wave.operations.length === 0);
   });
 
   it("requires one exact existing record and old values for every field", () => {
