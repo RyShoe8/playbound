@@ -1,4 +1,99 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261106-08",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rkpd2",
+      "expected": {
+        "version": null,
+        "longDescription": "RKPD2 is Shattered Pixel Dungeon with the sense of balance deliberately removed. It is a mod by Zrp200, first released in July 2021, that builds on Shattered and turns its playable Rat King into a ridiculous power trip. The developer's own release notes joked about how far the balance changes went, and that sense of humour is a fair guide to what you are in for.\n\nThe Rat King is the star. Rather than a normal hero with one path, he gets absurdly strong abilities, and the mod piles on further buffs to subclasses, armour abilities and tier 4 talents, including a big set of improvements to Ratmogrify. Quality-of-life changes and smaller levels mean that runs also move along more quickly than in the base game.\n\nSo it is not the place to learn Shattered, and it is not trying to be a fair challenge by default. It is what you play once you know the game and want to feel unreasonably strong for a while. There is still a test waiting for those who want one: the developer suggests a win with all nine challenges switched on as the true measure. Note that it is a different project from Rat King Adventure, which is listed separately."
+      },
+      "set": {
+        "version": "1.0.0",
+        "longDescription": "RKPD2, short for Rat King Pixel Dungeon 2, is Shattered Pixel Dungeon with the difficulty deliberately turned down and the power turned up. Zrp200's fork carries the spirit of Rat King Dungeon, an April Fools spoof of Shattered, into a proper game that keeps up with Shattered's development. Its stated aim is a game that is both easier and shorter than the original, which is an unusual promise from a roguelike.\n\nIts signature is the Rat King himself, who effectively lets you play as every class at once. The other heroes are heavily buffed as well, and that power creep is the whole joke: you get to feel unreasonably strong in a genre that usually punishes you for trying. Levels are smaller, so runs move along more quickly, and there are a few quality-of-life changes along the way.\n\nThat makes it surprisingly useful as well as silly. If Shattered's difficulty has always bounced you off, this is a friendlier way to learn its items and enemies. If you already know Shattered well, it is a holiday from careful play. It installs and saves separately, so your normal runs stay untouched. It is free under the GPL version 3, on Windows, macOS, Linux and Android. It is a different project from Rat King Adventure, its much wilder descendant."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/crystallized-nexus",
+      "expected": {
+        "longDescription": "Crystallized Nexus is a free RTS built on the OpenRA engine by DoGyAUT. It is a standalone OpenRA build with its own mods folder, currently in public playtest, released under the GPL-3.0."
+      },
+      "set": {
+        "longDescription": "Crystallized Nexus is a reimagining of the old Crystallized Doom mod, and it is one of the more technically ambitious things anyone has done with OpenRA. DoGyAUT's standalone real-time strategy game pits GDI against Nod in a Tiberian Sun-style war, and much of its appeal is a battlefield that actively changes under you.\n\nTerrain matters here. Weapon and sight ranges scale with height, units slow down going uphill and speed up on the way down, cliffs can be collapsed to open new paths, and weapons can deform the ground itself. Ion storms roll through in phases, granting effects and throwing random lightning at everyone. Blue and red Tiberium chain-react when hit, and veinholes can be destroyed, leaving a pit you can walk through.\n\nThe rest of the design is just as busy, with mob squads that share a health pool, formation movement, and units that dodge when a crusher approaches. Bots come in profiles from Rush to Adaptive, across difficulty tiers from Easy to Brutal, and an adaptive soundtrack shifts with the fighting. It is a playtest build rather than a finished release, so expect changes and rough edges. It is free, self-contained and open source under the GPL version 3, with no other game needed."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/tes3mp",
+      "expected": {
+        "version": null,
+        "longDescription": "TES3MP brings true multiplayer to Morrowind. Built on OpenMW, it synchronises players, quests and the world."
+      },
+      "set": {
+        "version": "0.8.1",
+        "longDescription": "TES3MP does something Morrowind was never meant to do: it lets other people walk around Vvardenfell with you. It is a multiplayer mod built as a fork of OpenMW, the open-source engine for The Elder Scrolls III, and it synchronises players, NPCs, the world and quests, along with saving and loading server state. The project itself calls it fully playable, which is impressive for a 2002 single-player RPG.\n\nIn practice you can play the main story with friends, or run around together ignoring it and getting lost in Balmora. Most things work as you would hope, with the remaining problems mostly involving AI, so an NPC may occasionally behave strangely when several players are involved. Everyone needs their own copy of Morrowind.\n\nServers are where it gets interesting. Their behaviour is customised through server-side Lua scripts, so a host can set up anything from a quiet private co-op world to a public persistent server with its own custom rules. PlayBound can also run this as a party server, with the world saved between sessions, so your group can come back to it week after week. There is a separate VR branch for the adventurous. It is free under the GPL version 3."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/tf2-classic",
+      "expected": {
+        "longDescription": "Team Fortress 2 Classic is a standalone Source SDK mod reimagining TF2's early years, with restored beta-era weapons, new modes and classic-style gameplay."
+      },
+      "set": {
+        "longDescription": "This fan project takes Team Fortress 2 back to its early years. Long known as Team Fortress 2 Classic, it was renamed Team Fortress 2 Classified in December 2025 at Valve's request, because the old name was too close to Team Fortress Classic. It re-imagines the period around 2008 and 2009, when the game was simpler, and then adds the kind of ideas that never made it into the official version. After more than a decade in development, it reached Steam in January 2026 thanks to Valve's release of the Source SDK.\n\nThe biggest addition is four-team play. Global Radio Network and Yard Logistics Workers join RED and BLU, and PC Gamer singled out those chaotic four-way maps as its most exciting feature. VIP mode comes from Team Fortress Classic: BLU escorts the Civilian to the end of the map while RED tries to eliminate him, and in this version the Civilian can buff his nearby teammates.\n\nRestored beta weapons complete the appeal for anyone who still remembers what the game was like before hats. PC Gamer called the whole thing remarkably well-produced, and it is free. If you only want the modern game with its current balance and matchmaking, the official edition is what you want instead."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/open-fortress",
+      "expected": {
+        "longDescription": "Open Fortress brings classic arena-shooter play - deathmatch, weapon pickups and the Quake and Unreal style - into the Source engine with Team Fortress characters."
+      },
+      "set": {
+        "longDescription": "Open Fortress asks what would happen if Team Fortress 2's mercenaries forgot about teamwork and went back to the arena. It is a fan-made, free project on the Source engine, unaffiliated with Valve, that takes TF2's look and sense of humour and fits them to 1990s arena shooter rules in the spirit of Quake and Unreal.\n\nThe core changes come quickly. Instead of choosing a class loadout, the Mercenary class grabs weapons from pickups around the map, so controlling the good items is half the battle. Movement is fast too, with bunnyhopping that rewards anyone willing to learn it. Deathmatch is the natural home for all this, and matches have the simple, frantic rhythm that the genre is known for.\n\nIt suits people who love TF2's world but find themselves wanting something more direct, and players who grew up on arena shooters and want one with a current, lively personality. Do keep the status in mind: this is still an alpha, so expect unfinished corners and changes between versions. Finding a full server can also depend on the time of day, so it helps to bring friends. PlayBound can also run it as a party server. The project posts news on Steam, and its community gathers on Discord."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "stalker-anomaly/official",
+      "expected": {
+        "longDescription": "Anomaly is a large, open-ended standalone take on the Zone, with all major regions, faction starts, story routes and an economy and difficulty system tuned for replay. It is free and does not require the original games."
+      },
+      "set": {
+        "longDescription": "S.T.A.L.K.E.R. Anomaly is the open-ended Zone many fans wanted the original trilogy to become. It is a free standalone mod running on XRay-Monolith, an enhanced version of the X-Ray engine GSC GameWorld used for its games, and you do not need another S.T.A.L.K.E.R. game installed to play it. Just unpack it and go.\n\nIts three modes offer very different things. Story mode has four chapters of quests, a lore-friendly campaign that bridges the series' timeline and shows it from several factions' perspectives. Sandbox drops the plot and leaves you to survive however you can, which is where most people end up spending their time. Warfare turns the Zone into a strategy game, with factions fighting for territory and you commanding units to help yours conquer it.\n\nEvery major region comes together in one map, and you can start from any of a range of factions, with an economy and difficulty settings deep enough that the same road feels different the second time. Systems like gas masks, weather and day and night make every trip matter. It also supports a huge community of add-ons, including G.A.M.M.A., the hardcore modpack listed as its own edition. Start here if you want the base experience before committing to something far harsher."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "thief-2-the-metal-age/t2x-shadows-of-the-metal-age",
+      "expected": {
+        "longDescription": "T2X spans thirteen missions with original art and design, one of the biggest fan expansions for Thief II."
+      },
+      "set": {
+        "longDescription": "T2X: Shadows of the Metal Age is one of the projects that taught players how large a fan expansion could be. Built on Thief II's engine, Zaya's campaign has thirteen missions, with original art and audio, new locations and a story of its own that stands beside the game instead of simply borrowing Garrett's errands.\n\nThat independence is what makes it special. You spend your time with a new protagonist, and the writing and voice work have to carry the whole thing without any of Thief's familiar characters doing the heavy lifting. New places to break into give veterans a reason to come back to the same old tools: the water arrows, the moss arrows and the careful watching of guards' patrol routes, with shadows and sound as your real defence. If you know the base game well, you will quickly feel at home and then find yourself lost in very enjoyable ways.\n\nIt is a good choice once you have finished Thief II and want something on the same scale rather than a single short fan mission. PlayBound keeps it in a dedicated folder, so the base campaign and your other fan missions remain untouched. You will still need your own copy of Thief II for it to run."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "privateer-gemini-gold/openprivateer",
+      "expected": {
+        "longDescription": "OpenPrivateer is a from-scratch SDL3 reimplementation of Wing Commander: Privateer that reads the original 1993 game data directly, keeping the original game while running on modern systems."
+      },
+      "set": {
+        "longDescription": "OpenPrivateer is a modern reimplementation of Wing Commander: Privateer, Origin's 1993 space trading game, and it is built around being faithful. It reads the original game's data and keeps the original cockpits, flight model, weapons and 320x200 look, so landing at a base to browse the Commodity Exchange feels the way it did. It includes no game files: you need a legally owned copy of Privateer, and Righteous Fire if you want the add-on.\n\nMuch of the game is already here, in public alpha form. You get the full Privateer story, the Ship Dealer, the bar and the mission boards, along with saves in the original format. Three modes let you choose how purist you want to be: Classic, or Enhanced and Modern, which add conveniences and options such as multiple ships and hired wingmen. There is optional xBRZ scaling, a CRT filter and HOTAS support for anyone with a proper flight stick.\n\nIt also adds things the 1993 game never had. Navigation extends to wider Wing Commander sectors, modding covers custom missions and equipment, and basic multiplayer works over direct IP, although missions and progression are not networked yet. It is free, independent and unaffiliated with EA, and it runs on Windows, Linux and macOS. Expect some alpha roughness."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-hd",
+      "expected": {
+        "longDescription": "A community remaster of the same engine: sprites, planets and aliens redrawn at four times the original resolution."
+      },
+      "set": {
+        "longDescription": "Ur-Quan Masters HD gives one of the best space adventures ever made a very thorough repaint. It is a community remaster of the same open-source engine, with every sprite, planet and alien redrawn at four times the original resolution, and with the 3DO voice acting and music bundled in the installer so there is nothing else to fetch. The game underneath is the same one people have loved since 1992: the same story, the same ships and the same Super Melee.\n\nThat matters because Star Control II is mostly about the people you meet, and those alien portraits are the face of its writing. Seeing the Spathi panic or the Syreen flirt with you in crisp detail is a real pleasure, and it makes the game easier to recommend to anybody put off by low-resolution art. The rest of the adventure is as you would hope: exploring a whole galaxy, mining planets for resources, building an alliance and working out what really happened to Earth before time runs out.\n\nChoose this edition if you want a first playthrough to look its best. Purists may prefer the Classic edition, which keeps the 1992 presentation, but nobody will be disappointed by the story here. It is free."
+      }
+    }
+  ]
 }
