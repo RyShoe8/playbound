@@ -1,4 +1,181 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-requirements-steam-20261108",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "old-school-runescape/steam",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 or later \u0001\u0001; Network: Broadband Internet connection \u0001",
+          "recommended": "OS: Windows 10 or higher ; Processor: Intel i3-6100 / any AMD Ryzen CPU ; Memory: 8 GB RAM ; Graphics: GeForce GTX 600 series, Intel UHD Graphics 610, AMD Radeon R7 260 ; Network: Broadband Internet connection ; Storage: 2 GB available space \u0001",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "old-school-runescape/official",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 or later \u0001\u0001; Network: Broadband Internet connection \u0001",
+          "recommended": "OS: Windows 10 or higher ; Processor: Intel i3-6100 / any AMD Ryzen CPU ; Memory: 8 GB RAM ; Graphics: GeForce GTX 600 series, Intel UHD Graphics 610, AMD Radeon R7 260 ; Network: Broadband Internet connection ; Storage: 2 GB available space \u0001",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "war-thunder/official",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 (64bit) ; Processor: Dual-Core 2.2 GHz ; Memory: 4 GB RAM ; Graphics: DirectX 11 level video card: AMD Radeon 77XX / NVIDIA GeForce GTX 660. The minimum supported resolution for the game is 720p. ; DirectX: Version 11 ; Network: Broadband Internet connection ; Storage: 70 GB available space ; VR Support: SteamVR. Keyboard or gamepad required",
+          "recommended": "OS: Windows 10/11 (64bit) ; Processor: Intel Core i5 or Ryzen 5 3600 or better ; Memory: 16 GB RAM ; Graphics: DirectX 11 level video card or higher and drivers: Nvidia GeForce 1060 and higher, Radeon RX 570 and higher ; DirectX: Version 12 ; Network: Broadband Internet connection ; Storage: 95 GB available space",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "war-thunder/gaijin-client",
+      "expected": {
+        "requirements.min": null,
+        "requirements.recommended": null
+      },
+      "set": {
+        "requirements.min": "OS: Windows 10 (64bit) ; Processor: Dual-Core 2.2 GHz ; Memory: 4 GB RAM ; Graphics: DirectX 11 level video card: AMD Radeon 77XX / NVIDIA GeForce GTX 660. The minimum supported resolution for the game is 720p. ; DirectX: Version 11 ; Network: Broadband Internet connection ; Storage: 70 GB available space ; VR Support: SteamVR. Keyboard or gamepad required",
+        "requirements.recommended": "OS: Windows 10/11 (64bit) ; Processor: Intel Core i5 or Ryzen 5 3600 or better ; Memory: 16 GB RAM ; Graphics: DirectX 11 level video card or higher and drivers: Nvidia GeForce 1060 and higher, Radeon RX 570 and higher ; DirectX: Version 12 ; Network: Broadband Internet connection ; Storage: 95 GB available space"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/open-fortress",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 21H2 or later ; Processor: Quad-Core 2.5GHz Processor or better ; Memory: 4 GB RAM ; Graphics: Intel HD Graphics 400 or equivalent ; DirectX: Version 8.1 ; Network: Broadband Internet connection ; Storage: 15 GB available space ; Additional Notes: Additional disk space may be required since Open Fortress requires Team Fortress 2 to be installed.",
+          "recommended": "OS: Windows 10 21H2 or later ; Processor: Intel Core i5-6500 (Quad-Core ~3.0 GHz or better) ; Memory: 8 GB RAM ; Graphics: Nvidia GeForce 950 or better ; DirectX: Version 9.0c ; Network: Broadband Internet connection ; Storage: 30 GB available space",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "space-station-14/official",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 or 11 ; Memory: 2 GB RAM ; DirectX: Version 10 ; Storage: 512 MB available space",
+          "recommended": "OS: Windows 10 or 11 ; Memory: 4 GB RAM ; Graphics: OpenGL 3.3 or greater ; Storage: 1 GB available space",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/classic-goty",
+      "expected": {
+        "requirements.min": null
+      },
+      "set": {
+        "requirements.min": "OS: Windows ME/98/XP/2000 ; Processor: 500 MHz Intel Pentium III, Celeron, or AMD Athlon ; Memory: 256 MB ; Graphics: 32MB Direct3D Compatible video card with 32-bit color support and DirectX 8.1 ; DirectX®: 8.1 ; Hard Drive: 1GB free hard disk space ; Sound: DirectX 8.1 compatible sound card"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "heroes-of-might-and-magic-3-complete/hota",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows XP ; Processor: Any x86-compatible 500 MHz CPU ; Memory: 64 MB RAM ; Graphics: DirectX 7.0 compatible video adapter ; Storage: 1500 MB available space",
+          "recommended": "OS: Windows 10 ; Processor: Any x86-compatible 1.5 GHz CPU ; Memory: 512 MB RAM ; Graphics: OpenGL-compatible video adapter ; Storage: 1500 MB available space",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dungeon-keeper-gold/classic-dos",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows XP or Vista ; Processor: 1.8 GHz ; Memory: 512 MB RAM ; Graphics: 3D graphics card compatible with DirectX 7 (compatible with DirectX 9recommended) ; DirectX: Version 7.0 ; Storage: 300 MB available space",
+          "recommended": "OS: Windows XP or Vista ; Processor: 1.8 GHz ; Memory: 512 MB RAM ; Graphics: 3D graphics card compatible with DirectX 7 (compatible with DirectX 9recommended) ; DirectX: Version 7.0 ; Storage: 200 MB available space",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/official",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 ; Graphics: OpenGL 2.0+ compatible ; Storage: 250 MB available space",
+          "recommended": "OS: Windows 11",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "marathon-2/official",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 ; Processor: 64-bit Processor ; Memory: 4 GB RAM ; Storage: 100 MB available space",
+          "recommended": "OS: Windows 10 ; Processor: 64-bit Processor ; Memory: 4 GB RAM ; Storage: 100 MB available space",
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "marathon-2/marathon-infinity",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 ; Processor: 64-bit Processor ; Memory: 4 GB RAM ; Storage: 100 MB available space",
+          "recommended": null,
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "marathon-2/marathon-1",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "OS: Windows 10 ; Processor: 64-bit Processor ; Memory: 4 GB RAM ; Storage: 100 MB available space",
+          "recommended": null,
+          "notes": null
+        }
+      }
+    }
+  ]
 }
