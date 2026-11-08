@@ -1,4 +1,41 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-faq-fix-open-fortress-20261108",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "team-fortress-2/open-fortress",
+      "expected": {
+        "faq": [
+          {
+            "q": "Do I need Team Fortress 2?",
+            "a": "It runs on the Source engine as a free standalone fan project, and PlayBound links its installer."
+          },
+          {
+            "q": "Is it finished?",
+            "a": "No. It is still in alpha, so expect unfinished corners."
+          },
+          {
+            "q": "What is different from TF2?",
+            "a": "Arena shooter rules: the Mercenary picks weapons up from the map, and movement is fast, with bunnyhopping."
+          }
+        ]
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "What do I need to run it?",
+            "a": "Open Fortress is a free standalone fan game. It launches through Steam using Source SDK Base 2013 Multiplayer, which is free; PlayBound links the installer."
+          },
+          {
+            "q": "Is it finished?",
+            "a": "No. It is still in alpha, so expect unfinished corners."
+          },
+          {
+            "q": "What is different from TF2?",
+            "a": "Arena shooter rules: the Mercenary picks weapons up from the map, and movement is fast, with bunnyhopping."
+          }
+        ]
+      }
+    }
+  ]
 }
