@@ -1,4 +1,65 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-images-20261108-4",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "luanti/official",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://www.luanti.org/media/gallery/2.jpg",
+        "branding.screenshots": [
+          "https://www.luanti.org/media/gallery/2.jpg",
+          "https://www.luanti.org/media/gallery/1.jpg",
+          "https://www.luanti.org/media/gallery/3.jpg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "ysoccer/ysoccer-portable",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://ysoccer.sourceforge.io/images/screenshot_kick_off.jpg",
+        "branding.screenshots": [
+          "https://ysoccer.sourceforge.io/images/screenshot_kick_off.jpg",
+          "https://ysoccer.sourceforge.io/images/screenshot_corner_kick.jpg",
+          "https://ysoccer.sourceforge.io/images/screenshot_goal.jpg",
+          "https://ysoccer.sourceforge.io/images/screenshot_rain.jpg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "ysoccer/ysoccer-tournament",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://ysoccer.sourceforge.io/images/screenshot_corner_kick.jpg",
+        "branding.screenshots": [
+          "https://ysoccer.sourceforge.io/images/screenshot_corner_kick.jpg",
+          "https://ysoccer.sourceforge.io/images/screenshot_kick_off.jpg",
+          "https://ysoccer.sourceforge.io/images/screenshot_goal.jpg",
+          "https://ysoccer.sourceforge.io/images/screenshot_snow.jpg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/ra2",
+      "expected": {
+        "branding.heroImage": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/44/43239/resim_2024-12-11_111647862.png"
+      }
+    }
+  ]
 }
