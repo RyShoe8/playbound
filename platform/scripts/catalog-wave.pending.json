@@ -1,4 +1,94 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-images-github-20261108",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "medal-of-honor-allied-assault/openmohaa",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://raw.githubusercontent.com/openmoh/openmohaa/HEAD/docs/assets/images/v0.60.0-x86_64/mohdm1_1.png",
+        "branding.screenshots": [
+          "https://raw.githubusercontent.com/openmoh/openmohaa/HEAD/docs/assets/images/v0.60.0-x86_64/mohdm1_1.png",
+          "https://raw.githubusercontent.com/openmoh/openmohaa/HEAD/docs/assets/images/v0.60.0-x86_64/training_1.png",
+          "https://raw.githubusercontent.com/openmoh/openmohaa/HEAD/docs/assets/images/v0.60.0-x86_64/flughafen_1.png",
+          "https://raw.githubusercontent.com/openmoh/openmohaa/HEAD/docs/assets/images/v0.60.0-x86_64/mohdm2_1.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "tes-arena/opentesarena",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://raw.githubusercontent.com/afritz1/OpenTESArena/HEAD/Preview.PNG",
+        "branding.screenshots": [
+          "https://raw.githubusercontent.com/afritz1/OpenTESArena/HEAD/Preview.PNG"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dungeon-keeper-gold/keeperfx",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://raw.githubusercontent.com/dkfans/keeperfx/HEAD/docs/assets/readme-banner.png",
+        "branding.screenshots": [
+          "https://raw.githubusercontent.com/dkfans/keeperfx/HEAD/docs/assets/readme-banner.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "triplea/triplea-official",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://user-images.githubusercontent.com/12397753/132109225-71e6c02d-425e-4b8d-9537-7ac66baebbfd.jpeg",
+        "branding.screenshots": [
+          "https://user-images.githubusercontent.com/12397753/132109225-71e6c02d-425e-4b8d-9537-7ac66baebbfd.jpeg",
+          "https://user-images.githubusercontent.com/12397753/132109223-14a0aa2e-a950-4a5e-9937-3c4b52211cd9.jpeg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "triplea/triplea-portable",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://user-images.githubusercontent.com/12397753/132109225-71e6c02d-425e-4b8d-9537-7ac66baebbfd.jpeg",
+        "branding.screenshots": [
+          "https://user-images.githubusercontent.com/12397753/132109225-71e6c02d-425e-4b8d-9537-7ac66baebbfd.jpeg",
+          "https://user-images.githubusercontent.com/12397753/132109223-14a0aa2e-a950-4a5e-9937-3c4b52211cd9.jpeg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rkpd2",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://user-images.githubusercontent.com/7078074/119247071-a6277380-bb3b-11eb-9452-e9f0d8c040d2.png",
+        "branding.screenshots": [
+          "https://user-images.githubusercontent.com/7078074/119247071-a6277380-bb3b-11eb-9452-e9f0d8c040d2.png"
+        ]
+      }
+    }
+  ]
 }
