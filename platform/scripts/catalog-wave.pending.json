@@ -1,5 +1,5 @@
 {
-  "id": "edition-requirements-20261108-2",
+  "id": "edition-requirements-20261108-2-b",
   "operations": [
     {
       "kind": "edition",
@@ -65,12 +65,10 @@
       "kind": "edition",
       "key": "morrowind/openmw",
       "expected": {
-        "requirements.min": null,
-        "requirements.notes": null
+        "requirements.min": null
       },
       "set": {
-        "requirements.min": "64-bit Windows, macOS or Linux ; OpenGL 2.0 or later",
-        "requirements.notes": "Requires your own copy of Morrowind. Hardware needs depend on settings and mods."
+        "requirements.min": "64-bit Windows, macOS or Linux ; OpenGL 2.0 or later"
       }
     }
   ]
