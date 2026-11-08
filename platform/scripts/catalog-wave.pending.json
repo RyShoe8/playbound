@@ -1,4 +1,97 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-images-moddb-20261108",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "freedoom/ashes-2063",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/53/52091/16933007-ashes-2063-windows-in-the-blood-arena-level-you-have-to-fight-hu.png",
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/53/52091/16933007-ashes-2063-windows-in-the-blood-arena-level-you-have-to-fight-hu.png",
+          "https://media.moddb.com/images/mods/1/53/52091/16933595-ashes-2063-windows-a-concert-stage-carrying-the-musket-ltigtashe.png",
+          "https://media.moddb.com/images/mods/1/53/52091/16934036-ashes-2063-windows-because-your-bike-has-been-stolen-you-get-to-.png",
+          "https://media.moddb.com/images/mods/1/53/52091/16937041-ashes-2063-windows-an-underground-toxic-waste-dump-ltigtashes-af.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/ashes-2063-standalone",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/53/52091/16933007-ashes-2063-windows-in-the-blood-arena-level-you-have-to-fight-hu.png",
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/53/52091/16933007-ashes-2063-windows-in-the-blood-arena-level-you-have-to-fight-hu.png",
+          "https://media.moddb.com/images/mods/1/53/52091/16933595-ashes-2063-windows-a-concert-stage-carrying-the-musket-ltigtashe.png",
+          "https://media.moddb.com/images/mods/1/53/52091/16934036-ashes-2063-windows-because-your-bike-has-been-stolen-you-get-to-.png",
+          "https://media.moddb.com/images/mods/1/53/52091/16937041-ashes-2063-windows-an-underground-toxic-waste-dump-ltigtashes-af.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/pirate-doom",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/26/25289/Screenshot_Doom_20140610_233224.png",
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/26/25289/Screenshot_Doom_20140610_233224.png",
+          "https://media.moddb.com/images/mods/1/26/25289/Screenshot_Doom_20140314_122030.png",
+          "https://media.moddb.com/images/mods/1/26/25289/Screenshot_Doom_20131108_190903.png",
+          "https://media.moddb.com/images/mods/1/26/25289/Screenshot_Doom_20131108_071347.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/rebirth",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/17/16542/courtyard.png",
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/17/16542/courtyard.png",
+          "https://media.moddb.com/images/mods/1/17/16542/Namnls.4.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "stronghold-crusader-hd/stronghold-europe",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/35/34726/screen3.png",
+        "branding.screenshots": [
+          "https://media.moddb.com/images/mods/1/35/34726/screen3.png",
+          "https://media.moddb.com/images/mods/1/35/34726/screen2.png",
+          "https://media.moddb.com/images/mods/1/35/34726/screen1.png"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "star-wars-galactic-battlegrounds-saga/expanding-fronts",
+      "expected": {
+        "branding.heroImage": null
+      },
+      "set": {
+        "branding.heroImage": "https://media.moddb.com/images/mods/1/20/19730/ir_vs_nr_sea.png"
+      }
+    }
+  ]
 }
