@@ -1,5 +1,5 @@
 {
-  "id": "edition-images-moddb-20261108",
+  "id": "edition-images-moddb-20261108-b",
   "operations": [
     {
       "kind": "edition",
@@ -81,16 +81,6 @@
           "https://media.moddb.com/images/mods/1/35/34726/screen2.png",
           "https://media.moddb.com/images/mods/1/35/34726/screen1.png"
         ]
-      }
-    },
-    {
-      "kind": "edition",
-      "key": "star-wars-galactic-battlegrounds-saga/expanding-fronts",
-      "expected": {
-        "branding.heroImage": null
-      },
-      "set": {
-        "branding.heroImage": "https://media.moddb.com/images/mods/1/20/19730/ir_vs_nr_sea.png"
       }
     }
   ]
