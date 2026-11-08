@@ -1,4 +1,35 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-release-years-20261108-2",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-playbound-edition",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2002
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "triplea/triplea-official",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2001
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "triplea/triplea-portable",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2001
+      }
+    }
+  ]
 }
