@@ -1,4 +1,55 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-release-years-20261108",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "freedoom/ashes-2063",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2018
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/ashes-2063-standalone",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2018
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/pirate-doom",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2012
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/rkpd2",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2021
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "star-wars-galaxies/infinity",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2017
+      }
+    }
+  ]
 }
