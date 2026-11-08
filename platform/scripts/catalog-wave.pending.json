@@ -1,4 +1,61 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-images-sites-20261108-2",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "morrowind/openmw",
+      "expected": {
+        "branding.heroImage": null
+      },
+      "set": {
+        "branding.heroImage": "https://openmw.org/wp-content/uploads/2025/11/image-1024x576.png"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "wolfenstein-enemy-territory/et-legacy",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://www.etlegacy.com/storage/shots/shot0074.jpeg",
+        "branding.screenshots": [
+          "https://www.etlegacy.com/storage/shots/shot0074.jpeg",
+          "https://www.etlegacy.com/storage/shots/shot0233.jpeg",
+          "https://www.etlegacy.com/storage/shots/shot0098.jpeg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "re-volt-rvgl/rvgl-original",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://re-volt.io/user/pages/home/home/race.jpg",
+        "branding.screenshots": [
+          "https://re-volt.io/user/pages/home/home/race.jpg",
+          "https://re-volt.io/user/pages/home/home/multi.jpg"
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "re-volt-rvgl/rvgl-online",
+      "expected": {
+        "branding.heroImage": null,
+        "branding.screenshots": null
+      },
+      "set": {
+        "branding.heroImage": "https://re-volt.io/user/pages/home/home/multi.jpg",
+        "branding.screenshots": [
+          "https://re-volt.io/user/pages/home/home/multi.jpg",
+          "https://re-volt.io/user/pages/home/home/race.jpg"
+        ]
+      }
+    }
+  ]
 }
