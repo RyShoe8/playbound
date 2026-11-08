@@ -1,15 +1,4 @@
 {
-  "id": "edition-requirements-fix-jgrpp-20261108",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "openttd/jgrpp",
-      "expected": {
-        "requirements.min": "OS: Windows 11, 10, 8, 7 (32 Bit and 64 Bit) ; Processor: Yes ; Memory: 256 MB RAM"
-      },
-      "set": {
-        "requirements.min": "OS: Windows 11, 10, 8, 7 (32 Bit and 64 Bit) ; Memory: 256 MB RAM"
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
