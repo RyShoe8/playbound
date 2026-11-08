@@ -1,29 +1,4 @@
 {
-  "id": "edition-requirements-fix-20261108",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "old-school-runescape/steam",
-      "expected": {
-        "requirements.min": "OS: Windows 10 or later \u0001\u0001; Network: Broadband Internet connection \u0001",
-        "requirements.recommended": "OS: Windows 10 or higher ; Processor: Intel i3-6100 / any AMD Ryzen CPU ; Memory: 8 GB RAM ; Graphics: GeForce GTX 600 series, Intel UHD Graphics 610, AMD Radeon R7 260 ; Network: Broadband Internet connection ; Storage: 2 GB available space \u0001"
-      },
-      "set": {
-        "requirements.min": "OS: Windows 10 or later ; Network: Broadband Internet connection",
-        "requirements.recommended": "OS: Windows 10 or higher ; Processor: Intel i3-6100 / any AMD Ryzen CPU ; Memory: 8 GB RAM ; Graphics: GeForce GTX 600 series, Intel UHD Graphics 610, AMD Radeon R7 260 ; Network: Broadband Internet connection ; Storage: 2 GB available space"
-      }
-    },
-    {
-      "kind": "edition",
-      "key": "old-school-runescape/official",
-      "expected": {
-        "requirements.min": "OS: Windows 10 or later \u0001\u0001; Network: Broadband Internet connection \u0001",
-        "requirements.recommended": "OS: Windows 10 or higher ; Processor: Intel i3-6100 / any AMD Ryzen CPU ; Memory: 8 GB RAM ; Graphics: GeForce GTX 600 series, Intel UHD Graphics 610, AMD Radeon R7 260 ; Network: Broadband Internet connection ; Storage: 2 GB available space \u0001"
-      },
-      "set": {
-        "requirements.min": "OS: Windows 10 or later ; Network: Broadband Internet connection",
-        "requirements.recommended": "OS: Windows 10 or higher ; Processor: Intel i3-6100 / any AMD Ryzen CPU ; Memory: 8 GB RAM ; Graphics: GeForce GTX 600 series, Intel UHD Graphics 610, AMD Radeon R7 260 ; Network: Broadband Internet connection ; Storage: 2 GB available space"
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
