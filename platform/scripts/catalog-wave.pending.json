@@ -1,4 +1,77 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-requirements-20261108-2",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "holocure/official",
+      "expected": {
+        "requirements.min": null,
+        "requirements.recommended": null
+      },
+      "set": {
+        "requirements.min": "OS: Windows 10 ; Memory: 300 MB RAM ; Storage: 250 MB available space",
+        "requirements.recommended": "OS: Windows 10+ ; Memory: 500 MB RAM ; Storage: 250 MB available space"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "holocure/playbound",
+      "expected": {
+        "requirements.min": null,
+        "requirements.recommended": null
+      },
+      "set": {
+        "requirements.min": "OS: Windows 10 ; Memory: 300 MB RAM ; Storage: 250 MB available space",
+        "requirements.recommended": "OS: Windows 10+ ; Memory: 500 MB RAM ; Storage: 250 MB available space"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "teeworlds/ddnet",
+      "expected": {
+        "requirements.min": null
+      },
+      "set": {
+        "requirements.min": "OS: Windows 10 or newer ; Processor: 1.4GHz or faster ; Memory: 2048 MB RAM ; Graphics: OpenGL 2.1 capable ; Storage: 200 MB available space"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "openra/official",
+      "expected": {
+        "requirements": null
+      },
+      "set": {
+        "requirements": {
+          "min": "Windows 7 or later with DirectX 11 or OpenGL 3+ ; macOS 10.11 or later ; most modern 64-bit Linux distributions",
+          "recommended": null,
+          "notes": null
+        }
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "deus-ex-goty-edition/gmdx",
+      "expected": {
+        "requirements.min": null,
+        "requirements.notes": null
+      },
+      "set": {
+        "requirements.min": "Windows 10 ; 1.8 GHz processor ; 2 GB RAM ; DirectX 9.0c compatible 3D graphics card",
+        "requirements.notes": "Requires Deus Ex GOTY Edition."
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/openmw",
+      "expected": {
+        "requirements.min": null,
+        "requirements.notes": null
+      },
+      "set": {
+        "requirements.min": "64-bit Windows, macOS or Linux ; OpenGL 2.0 or later",
+        "requirements.notes": "Requires your own copy of Morrowind. Hardware needs depend on settings and mods."
+      }
+    }
+  ]
 }
