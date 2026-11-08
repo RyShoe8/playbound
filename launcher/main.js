@@ -4705,6 +4705,46 @@ function reportInstallFailed(slug, editionSlug, err, phase = "install") {
   }
 }
 
+async function offerInstallFolderAfterDiskFull(error) {
+  const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
+    type: "warning",
+    title: "Not enough disk space",
+    message: "Choose where to install your games",
+    detail: error.message,
+    buttons: ["Change default install folder", "Close"],
+    defaultId: 0,
+    cancelId: 1,
+  });
+  if (response !== 0) return;
+  const picked = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, {
+    title: "Choose default game install folder",
+    defaultPath: loadSettings().gamesDir,
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (picked.canceled || !picked.filePaths[0]) return;
+  const settings = loadSettings();
+  updateDefaultGamesDir(settings, picked.filePaths[0]);
+  saveSettings(settings);
+  error.message = "Default install folder changed. Click Install again to retry. Existing installed games stay in their current folders.";
+}
+
+function updateDefaultGamesDir(settings, directory) {
+  const prev = String(settings.gamesDir || DEFAULT_GAMES_DIR || "").trim();
+  const next = String(directory || "").trim();
+  if (prev && next && !sameFsPath(prev, next)) {
+    rememberFormerGamesDir(prev, { force: true });
+    const list = Array.isArray(settings.formerGamesDirs)
+      ? settings.formerGamesDirs.map((r) => String(r || "").trim()).filter(Boolean)
+      : [];
+    if (!list.some((r) => sameFsPath(r, prev))) {
+      list.push(prev);
+      settings.formerGamesDirs = list.slice(-12);
+    }
+  }
+  settings.gamesDir = next;
+  healFormerGamesDirsFromInstalls();
+}
+
 /** One in-flight game install per slug+edition — overlapping calls shared the same temp file and restarted each other. */
 const gameInstallJobs = new Map();
 const modInstallJobs = new Map();
@@ -5009,6 +5049,10 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     } catch (err) {
       task.status = "error";
       task.phase = "error";
+      if (require("./services/installDiskSpace").isDiskSpaceError(err)) {
+        err.code = "DISK_FULL";
+        err.message = require("./services/installDiskSpace").diskSpaceMessage(err);
+      }
       task.message = err?.message || String(err);
       sendProgress({
         phase: "error",
@@ -5029,9 +5073,13 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       void beatLauncherPresence();
     }
   })()
-    .catch((err) => {
+    .catch(async (err) => {
       if (err?.code !== "INSTALL_CANCELLED" && !String(err?.message || "").includes("Download cancelled")) {
         reportInstallFailed(slug, editionSlug || null, err, "install");
+      }
+      if (installErrorCode(err) === "DISK_FULL") {
+        try { await offerInstallFolderAfterDiskFull(err); }
+        catch (recoveryError) { console.warn("[install] Could not change install folder:", recoveryError.message); }
       }
       throw err;
     })
@@ -12419,20 +12467,7 @@ ipcMain.handle("save-settings", (_event, patch) => {
     }
   }
   if (patch.gamesDir != null) {
-    const prev = String(settings.gamesDir || DEFAULT_GAMES_DIR || "").trim();
-    const next = String(patch.gamesDir || "").trim();
-    if (prev && next && !sameFsPath(prev, next)) {
-      rememberFormerGamesDir(prev, { force: true });
-      const list = Array.isArray(settings.formerGamesDirs)
-        ? settings.formerGamesDirs.map((r) => String(r || "").trim()).filter(Boolean)
-        : [];
-      if (!list.some((r) => sameFsPath(r, prev))) {
-        list.push(prev);
-        settings.formerGamesDirs = list.slice(-12);
-      }
-    }
-    settings.gamesDir = next;
-    healFormerGamesDirsFromInstalls();
+    updateDefaultGamesDir(settings, patch.gamesDir);
   }
   if (patch.compatibilityFilter === "compatible" || patch.compatibilityFilter === "all") {
     settings.compatibilityFilter = patch.compatibilityFilter;

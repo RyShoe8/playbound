@@ -2438,6 +2438,7 @@ async function writeJarLauncher(gameDir, jarName) {
 /* ── core actions ──────────────────────────────────────────── */
 
 function installErrorCode(err) {
+  if (require("../installDiskSpace").isDiskSpaceError(err)) return "DISK_FULL";
   const msg = String(err?.message || err || "");
   if (err?.code === "ASSET_NOT_FOUND" || /No .*asset for/i.test(msg)) return "ASSET_NOT_FOUND";
   if (/Download host not allowed/i.test(msg)) return "DOWNLOAD_HOST_BLOCKED";
