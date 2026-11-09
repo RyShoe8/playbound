@@ -4,6 +4,7 @@ const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
 const { execFile } = require("child_process");
+const FSO_ACTION_ORDER = require("./fsoActionOrder");
 
 function findFsoExecutable(installDir) {
   const binRoot = path.join(installDir, "kn_portable", "Library", "bin");
@@ -115,6 +116,38 @@ const HOTAS4_BUTTONS = [
   ["Options", 11, "TOGGLE_GLIDING", "Active pause"],
 ];
 
+/*
+ * The hat, as FSO reads it on the HOTAS 4: up 128, down 130, and left/right
+ * the other way round from FSO's defaults (131 left, 129 right), which looked
+ * left when the player pushed right. Hats live in the Secondary column.
+ */
+const HOTAS4_HATS = [
+  ["Hat up", 128, "PADLOCK_UP", "Look up"],
+  ["Hat down", 130, "PADLOCK_DOWN", "Look down"],
+  ["Hat left", 129, "PADLOCK_LEFT", "Look left"],
+  ["Hat right", 131, "PADLOCK_RIGHT", "Look right"],
+];
+
+/*
+ * Pilot-file axis slots and FSO's axis numbering. A pilot stores axes as five
+ * slots — heading, pitch, bank, absolute throttle, relative throttle — each
+ * naming an axis by number: X 0, Y 1, Z 2, RX 3, RY 4, RZ 5.
+ */
+const HOTAS4_PILOT_AXES = [0, 1, 5, 2, -1];
+
+/** SDL joystick GUIDs embed the USB vendor and product: 044f:b67c is the T.Flight HOTAS 4. */
+function guidVendorProduct(guid) {
+  // SDL GUID: bus(4) crc(4) vendor(4, little-endian) 0000 product(4, LE) 0000 …
+  const hex = String(guid || "").trim();
+  if (!/^[0-9a-f]{32}$/i.test(hex)) return null;
+  const le = (at) => (hex.slice(at + 2, at + 4) + hex.slice(at, at + 2)).toLowerCase();
+  return `${le(8)}:${le(16)}`;
+}
+
+function isHotas4Guid(guid) {
+  return guidVendorProduct(guid) === "044f:b67c";
+}
+
 function withHotas4Preset(table, slot) {
   if (!Number.isInteger(slot) || slot < 0 || slot > 3) throw new Error("Invalid joystick slot");
   const start = table.indexOf(HOTAS4_MARKER);
@@ -138,9 +171,38 @@ function withHotas4Preset(table, slot) {
   const buttons = HOTAS4_BUTTONS.map(([, button, action, , column = "Secondary"]) =>
     `$Bind: ${action}\n$${column}:\n$Controller: CID_JOY${slot}\n$Flags: NONE\n$Input: ${button}`
   ).join("\n");
+  const hats = HOTAS4_HATS.map(([, button, action]) =>
+    `$Bind: ${action}\n$Secondary:\n$Controller: CID_JOY${slot}\n$Flags: NONE\n$Input: ${button}`
+  ).join("\n");
   // The game's old button 2 assignment would otherwise fire alongside R3.
   const clearConflict = "$Bind: TARGET_CLOSEST_SHIP_ATTACKING_SELF\n$Secondary:\n$Controller: CID_NONE";
-  return table.trimEnd() + `\n\n${HOTAS4_MARKER}\n#ControlConfigOverride\n$Name: ${HOTAS4_PRESET}\n${axes}\n${buttons}\n${clearConflict}\n#End\n`;
+  return table.trimEnd() + `\n\n${HOTAS4_MARKER}\n#ControlConfigOverride\n$Name: ${HOTAS4_PRESET}\n${axes}\n${buttons}\n${hats}\n${clearConflict}\n#End\n`;
+}
+
+/**
+ * Put the HOTAS 4 bindings into a pilot's own control arrays.
+ *
+ * FSO keeps a pilot's live bindings in the pilot file — one joystick button
+ * per action, in IoActionId order, plus five axis slots. The "preset" field
+ * beside them is only a label, so renaming it (what this used to do) changed
+ * nothing in game. Keyboard keys are left exactly as they were; any other
+ * action on one of these buttons is cleared so nothing fires twice.
+ */
+function applyHotas4ToPilot(pilot) {
+  const controls = pilot?.sections?.controls;
+  if (!controls || !Array.isArray(controls.controls) || !Array.isArray(controls.axes)) return false;
+  const wanted = new Map([...HOTAS4_BUTTONS, ...HOTAS4_HATS].map(([, button, action]) => [action, button]));
+  const taken = new Set(wanted.values());
+  controls.controls.forEach((binding, index) => {
+    const button = wanted.get(FSO_ACTION_ORDER[index]);
+    if (button !== undefined) binding.joystick = button;
+    else if (taken.has(binding.joystick)) binding.joystick = -1;
+  });
+  HOTAS4_PILOT_AXES.forEach((axis, slot) => {
+    if (controls.axes[slot]) controls.axes[slot].axis_map = axis;
+  });
+  controls.preset = HOTAS4_PRESET;
+  return true;
 }
 
 async function writeBackedUp(file, original, next) {
@@ -153,7 +215,7 @@ async function writeBackedUp(file, original, next) {
   catch (error) { await fsp.rm(temp, { force: true }); throw error; }
 }
 
-async function configureFotgHotas4(installDir, settingsPath, devices) {
+async function configureFotgHotas4(installDir, settingsPath, devices, { force = true } = {}) {
   const slot = devices.findIndex((d) => /^T[.]?Flight Hotas 4$/i.test(d.name));
   if (slot < 0) return { throttleConfigured: false };
   // The inherited hat bindings address Joy0. Do not silently apply a partial
@@ -188,13 +250,31 @@ async function configureFotgHotas4(installDir, settingsPath, devices) {
     const original = await fsp.readFile(file, "utf8");
     const pilot = JSON.parse(original);
     const controls = pilot.sections?.controls;
-    // Leave user-created mappings alone. The named preset is still selectable.
-    if (!controls || !["default", HOTAS4_PRESET].includes(controls.preset)) continue;
-    controls.preset = HOTAS4_PRESET;
+    // Clicking "Configure flight devices" applies to every pilot. The automatic
+    // run at launch leaves a pilot the player has moved to their own preset alone.
+    if (!controls || (!force && !["default", HOTAS4_PRESET].includes(controls.preset))) continue;
+    if (!applyHotas4ToPilot(pilot)) continue;
     await writeBackedUp(file, original, JSON.stringify(pilot, null, 2) + "\n");
     activated++;
   }
   return { throttleConfigured: true, preset: HOTAS4_PRESET, activated };
 }
 
-module.exports = { findFsoExecutable, parseFsoJoysticks, queryFsoJoysticks, withFsoJoysticks, fsoSettingsPath, saveFsoJoysticks, withHotas4Preset, configureFotgHotas4, HOTAS4_BUTTONS };
+/**
+ * Run before Fate of the Galaxy launches. When FSO's Joy0 is a HOTAS 4, make
+ * sure the preset and pilot bindings are in place, so the player never has to
+ * open a menu. Idempotent: an already-configured install is left untouched.
+ */
+async function autoApplyFotgDevicePresets(installDir, settingsPath) {
+  const ini = await fsp.readFile(settingsPath, "utf8").catch(() => "");
+  const guid = ini.match(/^Joy0GUID\s*=\s*([0-9a-f]{32})\s*$/im)?.[1];
+  if (!guid || !isHotas4Guid(guid)) return { applied: false };
+  const result = await configureFotgHotas4(installDir, settingsPath, [{ name: "T.Flight Hotas 4", guid }], { force: false });
+  return { applied: true, ...result };
+}
+
+module.exports = {
+  findFsoExecutable, parseFsoJoysticks, queryFsoJoysticks, withFsoJoysticks, fsoSettingsPath, saveFsoJoysticks,
+  withHotas4Preset, configureFotgHotas4, applyHotas4ToPilot, autoApplyFotgDevicePresets, isHotas4Guid,
+  HOTAS4_BUTTONS, HOTAS4_HATS, HOTAS4_PRESET,
+};

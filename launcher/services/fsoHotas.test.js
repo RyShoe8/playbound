@@ -33,7 +33,27 @@ test("HOTAS 4 uses its measured Z axis without replacing game defaults", () => {
   assert.throws(() => withHotas4Preset(original, 4));
 });
 
-test("configures a default pilot, preserves custom presets and keeps the first backup", async () => {
+const ORDER = require("./fsoActionOrder");
+const pilotWith = (preset) => ({
+  version: 4,
+  sections: {
+    controls: {
+      preset,
+      // FSO's stock pad: fire on 0, the hat look on 128–131 (left/right reversed
+      // for the HOTAS 4), bank on RX (3) — the slot that rolled on its own.
+      controls: ORDER.slice(0, 124).map((bind) => ({
+        key: 20,
+        joystick: { FIRE_PRIMARY: 0, TARGET_CLOSEST_SHIP_ATTACKING_SELF: 2, PADLOCK_LEFT: 131, PADLOCK_RIGHT: 129 }[bind] ?? -1,
+        mouse: -1,
+      })),
+      axes: [0, 1, 3, -1, -1].map((axis_map) => ({ axis_map, invert_axis: 0 })),
+    },
+    scoring: { score: 42 },
+  },
+});
+const joyOf = (pilot, bind) => pilot.sections.controls.controls[ORDER.indexOf(bind)].joystick;
+
+test("writes the HOTAS 4 bindings into the pilot itself, keeping keys and the first backup", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "pb-fso-test-"));
   try {
     const table = path.join(root, "kn_portable/Library/FotG_R/v1/FG_Core/data/tables/Controlconfigdefaults.tbl");
@@ -42,19 +62,50 @@ test("configures a default pilot, preserves custom presets and keeps the first b
     await fs.mkdir(path.dirname(table), { recursive: true });
     await fs.mkdir(players, { recursive: true });
     await fs.writeFile(table, "#ControlConfigOverride\n$Name: default\n#End\n");
-    const pilot = JSON.stringify({ version: 4, sections: { controls: { preset: "default" }, scoring: { score: 42 } } });
+    const pilot = JSON.stringify(pilotWith("default"));
     await fs.writeFile(path.join(players, "Ace.json"), pilot);
-    const custom = JSON.stringify({ sections: { controls: { preset: "My custom setup" } } });
-    await fs.writeFile(path.join(players, "Custom.json"), custom);
     const devices = [{ name: "T.Flight Hotas 4" }];
     assert.equal((await configureFotgHotas4(root, settings, devices)).activated, 1);
     await configureFotgHotas4(root, settings, devices);
     const saved = JSON.parse(await fs.readFile(path.join(players, "Ace.json"), "utf8"));
-    assert.equal(saved.sections.controls.preset, "PlayBound TFlight HOTAS 4");
+    const c = saved.sections.controls;
+    assert.equal(c.preset, "PlayBound TFlight HOTAS 4");
+    // The bindings themselves, not just the label.
+    assert.deepEqual(c.axes.map((a) => a.axis_map), [0, 1, 5, 2, -1]);
+    assert.equal(joyOf(saved, "FIRE_SECONDARY"), 1);
+    assert.equal(joyOf(saved, "PADLOCK_LEFT"), 129);
+    assert.equal(joyOf(saved, "PADLOCK_RIGHT"), 131);
+    assert.equal(joyOf(saved, "TARGET_CLOSEST_SHIP_ATTACKING_SELF"), -1);
+    assert.ok(c.controls.every((b) => b.key === 20));
     assert.equal(saved.sections.scoring.score, 42);
     assert.equal(await fs.readFile(path.join(players, "Ace.json.playbound-hotas4.bak"), "utf8"), pilot);
-    assert.equal(await fs.readFile(path.join(players, "Custom.json"), "utf8"), custom);
+    assert.match(await fs.readFile(table, "utf8"), /PADLOCK_LEFT\n\$Secondary:\n\$Controller: CID_JOY0\n\$Flags: NONE\n\$Input: 129/);
     assert.equal((await configureFotgHotas4(root, settings, [{ name: "Other" }])).throttleConfigured, false);
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test("at launch, a HOTAS 4 on Joy0 is set up automatically but a player's own preset is left alone", async () => {
+  const { autoApplyFotgDevicePresets } = require("./fsoHotas");
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "pb-fso-auto-"));
+  try {
+    const table = path.join(root, "kn_portable/Library/FotG_R/FotG_R-1.1.2/data/tables/Controlconfigdefaults.tbl");
+    const settings = path.join(root, "user/fs2_open.ini");
+    const players = path.join(root, "user/data/players");
+    await fs.mkdir(path.dirname(table), { recursive: true });
+    await fs.mkdir(players, { recursive: true });
+    await fs.writeFile(table, "#ControlConfigOverride\n$Name: default\n#End\n");
+    await fs.writeFile(path.join(players, "Ace.json"), JSON.stringify(pilotWith("default")));
+    const custom = JSON.stringify(pilotWith("My custom setup"));
+    await fs.writeFile(path.join(players, "Custom.json"), custom);
+
+    await fs.writeFile(settings, "[Default]\nJoy0GUID=030000005E0400008E02000000000000\n");
+    assert.equal((await autoApplyFotgDevicePresets(root, settings)).applied, false);
+
+    await fs.writeFile(settings, "[Default]\nJoy0ID=0\nJoy0GUID=03006FCE4F0400007CB6000000000000\n");
+    const result = await autoApplyFotgDevicePresets(root, settings);
+    assert.equal(result.applied, true);
+    assert.equal(result.activated, 1);
+    assert.equal(await fs.readFile(path.join(players, "Custom.json"), "utf8"), custom);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 

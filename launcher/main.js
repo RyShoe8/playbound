@@ -8049,6 +8049,18 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
+  // Flight devices: put a known stick's bindings in place before FSO reads the
+  // pilot, so a HOTAS works on first launch without a trip to the menus.
+  if (slug === "star-wars-fate-of-the-galaxy" && info.dir) {
+    try {
+      const fso = require("./services/fsoHotas");
+      const outcome = await fso.autoApplyFotgDevicePresets(info.dir, fso.fsoSettingsPath(info.dir, app.getPath("appData")));
+      if (outcome.applied && outcome.activated) console.log(`[fso] HOTAS 4 bindings applied to ${outcome.activated} pilot(s)`);
+    } catch (err) {
+      console.warn("[fso] automatic flight-device setup skipped:", err?.message || err);
+    }
+  }
+
   if (slug === "shadow-warrior-classic-complete" && process.platform === "win32") {
     const gogLaunch = require("./services/gogShadowWarrior").resolveGogShadowWarriorLaunch(launchPath);
     if (gogLaunch?.error) throw new Error(gogLaunch.error);
