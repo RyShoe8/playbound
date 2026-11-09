@@ -1,4 +1,66 @@
 {
-  "id": null,
-  "operations": []
+  "id": "game-recipes-from-official-editions-20261108",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "everquest",
+      "expected": {
+        "launcherInstall.kind": "external",
+        "launcherInstall.url": "https://www.everquest.com",
+        "launcherInstall.fileName": null,
+        "launcherInstall.exeHint": null,
+        "launcherInstall.knownExePaths": null
+      },
+      "set": {
+        "launcherInstall.kind": "direct-installer",
+        "launcherInstall.url": "https://launch.daybreakgames.com/installer/EQ_setup.exe",
+        "launcherInstall.fileName": "EQ_setup.exe",
+        "launcherInstall.exeHint": "LaunchPad",
+        "launcherInstall.knownExePaths": [
+          "C:\\Users\\Public\\Daybreak Game Company\\Installed Games\\EverQuest\\LaunchPad.exe",
+          "C:\\Program Files (x86)\\Sony\\EverQuest\\LaunchPad.exe",
+          "C:\\Program Files\\Daybreak Game Company\\Installed Games\\EverQuest\\LaunchPad.exe"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "marathon-2",
+      "expected": {
+        "launcherInstall.kind": "external",
+        "launcherInstall.repo": null,
+        "launcherInstall.assetPattern": null,
+        "launcherInstall.assetPatternMac": null,
+        "launcherInstall.exeHint": null
+      },
+      "set": {
+        "launcherInstall.kind": "github-zip",
+        "launcherInstall.repo": "Aleph-One-Marathon/alephone",
+        "launcherInstall.assetPattern": "^Marathon2-\\d{8}-Win\\.zip$",
+        "launcherInstall.assetPatternMac": "^Marathon2-\\d{8}-Mac\\.dmg$",
+        "launcherInstall.exeHint": "Marathon2.exe"
+      }
+    },
+    {
+      "kind": "game",
+      "key": "triplea",
+      "expected": {
+        "launcherInstall.kind": "github-zip",
+        "launcherInstall.assetPattern": "triplea_.*_windows-64bit\\.exe$|\\.zip$",
+        "launcherInstall.assetPatternMac": null,
+        "launcherInstall.knownExePaths": null
+      },
+      "set": {
+        "launcherInstall.kind": "github-installer",
+        "launcherInstall.assetPattern": "_windows-64bit\\.exe$",
+        "launcherInstall.assetPatternMac": "^TripleA_.*_macos\\.dmg$",
+        "launcherInstall.knownExePaths": [
+          "%LOCALAPPDATA%\\Programs\\TripleA\\TripleA.exe",
+          "%PROGRAMFILES%\\TripleA\\TripleA.exe",
+          "%PROGRAMFILES(X86)%\\TripleA\\TripleA.exe",
+          "%USERPROFILE%\\TripleA\\TripleA.exe"
+        ]
+      }
+    }
+  ]
 }
