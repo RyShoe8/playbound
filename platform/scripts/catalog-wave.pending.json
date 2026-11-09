@@ -1,4 +1,534 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-faq-20261108-4",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "daggerfall/daggerfall-online",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Do I need Daggerfall?",
+            "a": "You need Daggerfall's game files, which Bethesda gives away free. The desktop app finds them automatically."
+          },
+          {
+            "q": "Can I play in a browser?",
+            "a": "Yes. DFO Online also runs in the browser; the desktop app is the way to play offline."
+          },
+          {
+            "q": "Why does Windows warn me?",
+            "a": "The app is not code-signed, so Windows and macOS warn on first launch. The project's page explains how to continue."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dune-legacy/playbound-edition",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Do I need the original Dune II?",
+            "a": "Dune Legacy runs on the original game's data files, so you need them from your own copy."
+          },
+          {
+            "q": "Can I switch back to pixel art?",
+            "a": "Yes. HD graphics are the default, and the original look is still available."
+          },
+          {
+            "q": "Can friends join?",
+            "a": "Yes. Everyone should use this same setup, and PlayBound Connect helps when direct hosting fails."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dune-legacy/dunecity",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it still an RTS?",
+            "a": "Yes. City building and RTS combat run side by side, and a Vanilla mode keeps classic Dune Legacy play."
+          },
+          {
+            "q": "What can I build?",
+            "a": "Residential, commercial and industrial zones, roads, wind and nuclear power, and civic services, all on a budget."
+          },
+          {
+            "q": "Is there multiplayer?",
+            "a": "Yes, alongside campaigns and custom skirmishes."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dungeon-keeper-gold/classic-dos",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Why choose this over KeeperFX?",
+            "a": "It is the original game as released, for players who want it untouched."
+          },
+          {
+            "q": "Does it support online play?",
+            "a": "Not in a modern way. For multiplayer and high resolutions, use the KeeperFX edition."
+          },
+          {
+            "q": "Do I need my own copy?",
+            "a": "Yes. It runs from your Dungeon Keeper Gold files."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/ashes-2063-standalone",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Do I need Doom?",
+            "a": "No. GZDoom and Freedoom 2 are bundled, so nothing needs buying."
+          },
+          {
+            "q": "What is included?",
+            "a": "Episode 1, Dead Man Walking, Afterglow and Hard Reset in one package."
+          },
+          {
+            "q": "How is it different from the other Ashes edition?",
+            "a": "This is Vostyok's own standalone package, installed unchanged."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "heroes-of-might-and-magic-3-complete/wog",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it compatible with Horn of the Abyss?",
+            "a": "No. WoG ERA and HotA are separate, so choose one."
+          },
+          {
+            "q": "What does it add?",
+            "a": "Commanders, creature experience, new creatures and the ERM scripting language for map makers."
+          },
+          {
+            "q": "What do I need?",
+            "a": "Your own Heroes III Complete or Shadow of Death."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "marathon-2/marathon-1",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it free?",
+            "a": "Yes. Bungie allowed the trilogy to be freely redistributed, and it runs on the open-source Aleph One engine."
+          },
+          {
+            "q": "Should I play it before Marathon 2?",
+            "a": "Yes, if you want the story in order. It is the first game of the trilogy."
+          },
+          {
+            "q": "Does it support modern controls?",
+            "a": "Yes. Aleph One adds mouselook and high resolutions."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/classic-goty",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Why play the original engine?",
+            "a": "For mods that need MWSE, MGE XE or the Code Patch, which do not work on OpenMW."
+          },
+          {
+            "q": "What is included?",
+            "a": "The Game of the Year edition: Morrowind with Tribunal and Bloodmoon."
+          },
+          {
+            "q": "Do I need my own copy?",
+            "a": "Yes, from Steam, GOG or Bethesda."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "mrboom/standalone",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "How many people can play?",
+            "a": "Up to eight on one machine."
+          },
+          {
+            "q": "Are there bots?",
+            "a": "Yes. AI bots fill empty slots."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes, under the MIT license."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "old-school-runescape/official",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it free to play?",
+            "a": "Yes. Membership is optional and unlocks more of the world."
+          },
+          {
+            "q": "How is this different from RuneLite?",
+            "a": "This is Jagex's own client. RuneLite is a third-party client with plugins."
+          },
+          {
+            "q": "Do I need a Jagex account?",
+            "a": "Yes, to log in."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "old-school-runescape/steam",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it the same game?",
+            "a": "Yes. Same servers and the same account as the official client."
+          },
+          {
+            "q": "Why use Steam?",
+            "a": "For Steam's overlay, friends and updates."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes, with optional membership."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "pokemon-blaze-online/windows-32",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Who is this for?",
+            "a": "Older 32-bit Windows machines and low-spec systems."
+          },
+          {
+            "q": "Does gameplay differ?",
+            "a": "No. It matches the main client."
+          },
+          {
+            "q": "Can I use the same account?",
+            "a": "Yes. Both clients play on the same servers."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "re-volt-rvgl/rvgl-original",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Do I need Re-Volt?",
+            "a": "RVGL uses Re-Volt's game data; this setup sticks to the original content."
+          },
+          {
+            "q": "Can I add community cars later?",
+            "a": "Yes, but the Online edition is set up for that."
+          },
+          {
+            "q": "Is there split-screen?",
+            "a": "Yes. RVGL supports local split-screen."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "re-volt-rvgl/rvgl-online",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "When are races held?",
+            "a": "Re-Volt I/O publishes regular schedules of cars, tracks and hosts."
+          },
+          {
+            "q": "Do I need extra content?",
+            "a": "Usually yes. Races use community cars and tracks, which this setup prepares."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes. RVGL is free and open source."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "space-station-14/frontier-station",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "How is it different from Space Station 14?",
+            "a": "There are no rounds. You own a ship and choose your own career in an open universe."
+          },
+          {
+            "q": "What can I do?",
+            "a": "Mine asteroids, explore derelicts and trade across stations."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes, like Space Station 14."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "star-wars-galactic-battlegrounds-saga/expanding-fronts",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Do I need the original game?",
+            "a": "Yes. You need Galactic Battlegrounds Saga."
+          },
+          {
+            "q": "What does it add?",
+            "a": "Hundreds of units and buildings, new civilizations, terrains and larger maps."
+          },
+          {
+            "q": "Can I play online?",
+            "a": "Yes, with players on the same Expanding Fronts version."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "stronghold-crusader-hd/stronghold-europe",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it a texture pack?",
+            "a": "No. It is a full conversion of landscapes, interface and music."
+          },
+          {
+            "q": "Does skirmish still work?",
+            "a": "Yes. AI lords, economy and sieges work the same."
+          },
+          {
+            "q": "What do I need?",
+            "a": "Your own Stronghold Crusader HD."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-playbound-edition",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it free?",
+            "a": "Yes. It is the open-source port of Star Control II."
+          },
+          {
+            "q": "Are the voices included?",
+            "a": "Yes. The 3DO voice acting and music are bundled."
+          },
+          {
+            "q": "Can I use a gamepad?",
+            "a": "Yes."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-hd",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is the story different?",
+            "a": "No. Same story, ships and Super Melee, with art redrawn at four times the resolution."
+          },
+          {
+            "q": "Do I need extra packs?",
+            "a": "No. Voices and music are in the installer."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "the-ur-quan-masters/uqm-classic",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Why choose classic?",
+            "a": "For the original low-resolution look without HD art."
+          },
+          {
+            "q": "Is it the same game?",
+            "a": "Yes, on the same open-source engine."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "triplea/triplea-portable",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Why portable?",
+            "a": "It runs from a folder with no installer, useful on locked-down machines."
+          },
+          {
+            "q": "Does it play with the installed version?",
+            "a": "Yes, on the same lobby when versions match."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes, open source."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "valorant/epic",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "Is it the same game?",
+            "a": "Yes. Same servers and Riot account as the Riot client."
+          },
+          {
+            "q": "Does it still need Vanguard?",
+            "a": "Yes. Riot's anti-cheat is required either way."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes, free to play."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "ysoccer/ysoccer-tournament",
+      "expected": {
+        "faq": null
+      },
+      "set": {
+        "faq": [
+          {
+            "q": "How many players?",
+            "a": "It is calibrated for four players with gamepads."
+          },
+          {
+            "q": "What is different from standard YSoccer?",
+            "a": "Preset pitches, camera speeds, gamepad mappings and formations for a cup night."
+          },
+          {
+            "q": "Is it free?",
+            "a": "Yes, open source."
+          }
+        ]
+      }
+    }
+  ]
 }
