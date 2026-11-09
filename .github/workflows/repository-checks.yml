@@ -61,9 +61,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # The Mindustry update test validates JARs with /usr/bin/java and /usr/bin/unzip,
-      # as the hosts do; the runner image no longer guarantees either.
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends default-jre-headless unzip
       - run: npm test 2>&1 | tee /tmp/game-host-tests.tap
         shell: bash -o pipefail {0}
       - if: failure()
