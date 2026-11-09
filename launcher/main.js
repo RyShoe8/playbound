@@ -12705,7 +12705,8 @@ ipcMain.handle("save-fso-hotas-devices", async (_event, requested) => {
     throw new Error("Select one to four detected flight devices");
   }
   await fso.saveFsoJoysticks(fso.fsoSettingsPath(installDir, app.getPath("appData")), selected);
-  return { devices: selected };
+  const mapping = await fso.configureFotgHotas4(installDir, fso.fsoSettingsPath(installDir, app.getPath("appData")), selected);
+  return { devices: selected, ...mapping };
 });
 
 ipcMain.handle("get-friends", async () => {

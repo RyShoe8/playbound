@@ -475,9 +475,13 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       }
       const selected = await promptFsoHotasDevices(result.devices);
       if (!selected) { setStatus("Launch cancelled"); return false; }
-      try { await pb().saveFsoHotasDevices(selected); }
+      let mapping;
+      try { mapping = await pb().saveFsoHotasDevices(selected); }
       catch (error) { setStatus(`Could not configure flight devices: ${error.message}`, true); return false; }
-      setStatus("Flight devices configured. Bind the throttle axis in FreeSpace Open's Controls menu.");
+      setStatus(mapping?.throttleConfigured
+        ? (mapping.activated ? "HOTAS 4 flight preset applied: throttle, twist, rocker, and 12 buttons. Your original settings are backed up."
+          : "HOTAS 4 preset added. Select PlayBound TFlight HOTAS 4 in Controls; your custom bindings were preserved.")
+        : "Flight devices configured. Bind the throttle axis in FreeSpace Open's Controls menu.");
     }
   } else if (choice === "phone" || choice === "mixed") {
     finalMode = "phone";
