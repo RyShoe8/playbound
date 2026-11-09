@@ -57,6 +57,8 @@ export function ReviewList({
   /** Label each review with the edition it covers — used on the game page. */
   showEditionLabels = false,
   editionNamesBySlug,
+  /** The page already shows the Community Rating above, so skip the star tile. */
+  hideSummary = false,
 }: {
   gameSlug?: string;
   modSlug?: string;
@@ -68,6 +70,7 @@ export function ReviewList({
   editionName?: string;
   showEditionLabels?: boolean;
   editionNamesBySlug?: Map<string, string>;
+  hideSummary?: boolean;
 }) {
   const avg = averageRating(items);
   const subject = editionName
@@ -80,21 +83,23 @@ export function ReviewList({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
-        <div className="flex items-center gap-4">
-          <div className="text-center">
-            <p className="text-4xl font-extrabold">{avg == null ? "—" : avg.toFixed(1)}</p>
-            <div className="mt-1 flex justify-center">
-              <RatingStars value={avg ?? 0} />
+      {!hideSummary && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <p className="text-4xl font-extrabold">{avg == null ? "—" : avg.toFixed(1)}</p>
+              <div className="mt-1 flex justify-center">
+                <RatingStars value={avg ?? 0} />
+              </div>
             </div>
+            <p className="text-sm text-muted-foreground">
+              {items.length} {gearSlug ? "review" : "player review"}
+              {items.length === 1 ? "" : "s"}
+              {editionName ? ` of ${editionName}` : ""}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {items.length} {gearSlug ? "review" : "player review"}
-            {items.length === 1 ? "" : "s"}
-            {editionName ? ` of ${editionName}` : ""}
-          </p>
         </div>
-      </div>
+      )}
 
       <div>
         <h3 className="mb-3 text-sm font-bold">

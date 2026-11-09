@@ -31,6 +31,8 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { PlayCta } from "@/components/GameCard";
 import { ReviewList, type ReviewItem } from "@/components/reviews/ReviewList";
+import { EditorialReviewList, RatingBadges, RatingsSummary } from "@/components/reviews/Ratings";
+import { getRatings } from "@/lib/ratingsData";
 import { ContentForm } from "@/components/ContentForm";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
@@ -201,6 +203,8 @@ export default async function EditionPage({
   const pageBase = `/games/${game.slug}/editions/${edition.slug}`;
 
   const ugcScope = editionScopedUgcFilter(edition.slug);
+  // Base-game edition: outlet reviews of the base game are the game's own.
+  const ratings = await getRatings(game.slug, edition.slug, { baseGame: Boolean(edition.virtual) });
 
   const [discussionCount, reviewCount, isInstalled, isSavedEdition] = await Promise.all([
     safeQuery(
@@ -360,6 +364,7 @@ export default async function EditionPage({
               />
             ) : null}
           </div>
+          <RatingBadges ratings={ratings} href={`${pageBase}?tab=reviews`} />
           <div className="flex flex-wrap items-center gap-3 pt-2">
             {isInstalled ? (
               <PlayCta game={game} installed editionSlug={edition.slug} size="lg" />
@@ -541,6 +546,11 @@ export default async function EditionPage({
               </Link>
               .
             </p>
+            <div className="space-y-8">
+              <RatingsSummary ratings={ratings} subject={`the ${edition.name} edition`} />
+              <EditorialReviewList ratings={ratings} />
+              <div>
+                <h3 className="mb-3 text-sm font-bold">Community reviews</h3>
             <ReviewList
               gameSlug={game.slug}
               isSignedIn={Boolean(session?.user)}
@@ -554,7 +564,10 @@ export default async function EditionPage({
               )}
               editionSlug={edition.slug}
               editionName={edition.name}
+              hideSummary
             />
+              </div>
+            </div>
           </section>
         )}
 

@@ -35,6 +35,8 @@ import '@/lib/models/DiscussionPost';
 import '@/lib/models/DiscussionReaction';
 import '@/lib/models/DiscussionReply';
 import '@/lib/models/DiscussionTopic';
+import '@/lib/models/EditorialReview';
+import '@/lib/models/EditorialReviewSource';
 import '@/lib/models/Edition';
 import '@/lib/models/EventRsvp';
 import '@/lib/models/FreeOffer';

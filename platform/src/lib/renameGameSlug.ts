@@ -19,6 +19,8 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import PlayInvite from "@/lib/models/PlayInvite";
 import Party from "@/lib/models/Party";
 import Review from "@/lib/models/Review";
+import EditorialReview from "@/lib/models/EditorialReview";
+import EditorialReviewSource from "@/lib/models/EditorialReviewSource";
 import StoreMatchSuggestion from "@/lib/models/StoreMatchSuggestion";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import MultiplayerSession from "@/lib/models/MultiplayerSession";
@@ -98,6 +100,8 @@ const REFERENCES: SlugReference[] = [
     field: "activeSession.gameSlug",
   },
   { label: "reviews", model: Review, field: "gameSlug" },
+  { label: "editorialReviews", model: EditorialReview, field: "gameSlug" },
+  { label: "editorialReviewSources", model: EditorialReviewSource, field: "gameSlug" },
   { label: "weeklyIssues", model: WeeklyIssue, field: "gameSlug" },
   { label: "multiplayerSessions", model: MultiplayerSession, field: "gameSlug" },
   { label: "gameLinks", model: GameLink, field: "gameSlug" },

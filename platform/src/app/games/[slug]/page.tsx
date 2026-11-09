@@ -33,6 +33,8 @@ import { CompatibleGearList } from "@/components/gear/CompatibleGearList";
 import { GameHardwareCompatibility } from "@/components/hardware/GameHardwareCompatibility";
 import { ContentForm } from "@/components/ContentForm";
 import { ReviewList } from "@/components/reviews/ReviewList";
+import { EditorialReviewList, RatingBadges, RatingsSummary } from "@/components/reviews/Ratings";
+import { getRatings } from "@/lib/ratingsData";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { GameUpcomingEvents } from "@/components/events/GameUpcomingEvents";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
@@ -335,6 +337,11 @@ export async function GamePageFrame({
               <div className="mt-3">
                 <Suspense fallback={<GameHeroPlayingNowFallback />}>
                   <GameHeroPlayingNow slug={game.slug} />
+                </Suspense>
+              </div>
+              <div className="mt-3 empty:hidden">
+                <Suspense fallback={null}>
+                  <GameHeroRatings slug={game.slug} />
                 </Suspense>
               </div>
             </div>
@@ -1072,6 +1079,12 @@ async function NewsTabAsync({ game }: { game: Game }) {
   return <NewsTab game={game} releases={releases} />;
 }
 
+/** Editorial and Community Rating chips under the hero title, linking to Reviews. */
+async function GameHeroRatings({ slug }: { slug: string }) {
+  const ratings = await getRatings(slug);
+  return <RatingBadges ratings={ratings} href={`/games/${slug}?tab=reviews`} />;
+}
+
 async function ReviewsTabAsync({
   gameSlug,
   isSignedIn,
@@ -1081,22 +1094,33 @@ async function ReviewsTabAsync({
   isSignedIn: boolean;
   editions: Edition[];
 }) {
-  const items = await safeQuery(
-    () =>
-      Review.find({ gameSlug, ...gameScopedUgcFilter() })
-        .sort({ createdAt: -1 })
-        .limit(30)
-        .lean(),
-    []
-  );
+  const [items, ratings] = await Promise.all([
+    safeQuery(
+      () =>
+        Review.find({ gameSlug, ...gameScopedUgcFilter() })
+          .sort({ createdAt: -1 })
+          .limit(30)
+          .lean(),
+      []
+    ),
+    getRatings(gameSlug),
+  ]);
   return (
-    <ReviewList
-      gameSlug={gameSlug}
-      isSignedIn={isSignedIn}
-      items={items}
-      showEditionLabels={hasChoosableEditions(editions)}
-      editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
-    />
+    <div className="space-y-8">
+      <RatingsSummary ratings={ratings} subject="this game" />
+      <EditorialReviewList ratings={ratings} />
+      <section>
+        <h3 className="mb-3 text-sm font-bold">Community reviews</h3>
+        <ReviewList
+          gameSlug={gameSlug}
+          isSignedIn={isSignedIn}
+          items={items}
+          showEditionLabels={hasChoosableEditions(editions)}
+          editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
+          hideSummary
+        />
+      </section>
+    </div>
   );
 }
 

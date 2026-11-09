@@ -1,6 +1,7 @@
 import { bindGamePartyButton } from "../gamePartyAction.js";
 import { createFreeOfferCard, createGameCard, createModCard } from "../cards.js";
 import { mountHeroMedia } from "../heroMedia.js";
+import { bindRatingsPanel, ratingChipsHtml, ratingsPanelHtml } from "../ratings.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
@@ -922,7 +923,7 @@ async function renderGameDetailView(slug, opts = {}) {
       <div class="detail-hero-scrim"></div>
       <div class="detail-hero-inner">
         <div class="detail-hero-copy">
-          <div class="chip-row">${genreChips}${(detail.isMultiplayer ?? detail.multiplayer) ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
+          <div class="chip-row">${genreChips}${(detail.isMultiplayer ?? detail.multiplayer) ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}<span id="detail-ratings-chip"></span></div>
           <h1 class="detail-hero-title">${escapeHtml(detail.title)}</h1>
           <p class="detail-hero-sub">${escapeHtml(detail.blurb || "")}${
             detail.approxSize
@@ -1384,12 +1385,21 @@ async function renderGameDetailView(slug, opts = {}) {
     const mediaSec = document.getElementById("detail-media-sec");
     const discussionSec = document.getElementById("detail-discussion-sec");
     const reviewsSec = document.getElementById("detail-reviews-sec");
-    const [guidesRes, releasesRes, discussionsRes, reviewsRes] = await Promise.all([
+    const [guidesRes, releasesRes, discussionsRes, reviewsRes, ratingsRes] = await Promise.all([
       window.playbound.getGameGuides?.(slug) || Promise.resolve({ guides: [] }),
       window.playbound.getGameReleases?.(slug) || Promise.resolve({ releases: [] }),
       window.playbound.getGameDiscussions?.(slug) || Promise.resolve({ topics: [] }),
       window.playbound.getGameReviews?.(slug) || Promise.resolve({ reviews: [] }),
+      window.playbound.getGameRatings?.(slug) || Promise.resolve(null),
     ]);
+    if (renderToken !== detailRenderToken) return;
+    const ratingsChip = document.getElementById("detail-ratings-chip");
+    if (ratingsChip) {
+      ratingsChip.innerHTML = ratingChipsHtml(ratingsRes);
+      ratingsChip.querySelector("[data-ratings-jump]")?.addEventListener("click", () => {
+        document.querySelector('[data-tab="reviews"]')?.click();
+      });
+    }
     const guides = guidesRes?.guides || [];
     if (guidesSec) {
       if (!guides.length) {
@@ -1564,6 +1574,7 @@ async function renderGameDetailView(slug, opts = {}) {
       const reviews = reviewsRes?.reviews || [];
       if (!reviews.length) {
         reviewsSec.innerHTML = `
+          ${ratingsPanelHtml(ratingsRes, { subject: detail.title || "this game" })}
           <div class="tab-panel-header"><h2>Player Reviews</h2></div>
           <div class="tab-empty">
             <div class="tab-empty-icon">⭐</div>
@@ -1575,6 +1586,7 @@ async function renderGameDetailView(slug, opts = {}) {
       } else {
         const avgScore = (reviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0) / reviews.length).toFixed(1);
         reviewsSec.innerHTML = `
+          ${ratingsPanelHtml(ratingsRes, { subject: detail.title || "this game" })}
           <div class="tab-panel-header">
             <h2>Player Reviews</h2>
             <button class="btn-secondary btn-sm" id="reviews-top-open-site">Write a Review ↗</button>
@@ -1618,6 +1630,7 @@ async function renderGameDetailView(slug, opts = {}) {
           window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}?tab=reviews`);
         });
       }
+      bindRatingsPanel(reviewsSec, window.playbound.openExternal);
       document.getElementById("reviews-open-site")?.addEventListener("click", (e) => {
         e.preventDefault();
         window.playbound.openExternal(
@@ -2759,6 +2772,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
                 ? `<span class="playing-now-chip" id="edition-playing-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
                 : `<span class="playing-now-chip" id="edition-playing-chip" hidden></span>`
             }
+            <span id="edition-ratings-chip"></span>
           </div>
           <h1 class="detail-hero-title">${escapeHtml(edition.editionName)}</h1>
           <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")}${
@@ -3227,12 +3241,20 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     const newsSec = document.getElementById("edition-news-sec");
     const discussionSec = document.getElementById("edition-discussion-sec");
     const reviewsSec = document.getElementById("edition-reviews-sec");
-    const [guidesRes, releasesRes, discussionsRes, reviewsRes] = await Promise.all([
+    const [guidesRes, releasesRes, discussionsRes, reviewsRes, ratingsRes] = await Promise.all([
       window.playbound.getGameGuides?.(gameSlug) || Promise.resolve({ guides: [] }),
       window.playbound.getGameReleases?.(gameSlug) || Promise.resolve({ releases: [] }),
       window.playbound.getGameDiscussions?.(gameSlug) || Promise.resolve({ topics: [] }),
       window.playbound.getGameReviews?.(gameSlug) || Promise.resolve({ reviews: [] }),
+      window.playbound.getGameRatings?.(gameSlug, editionSlug) || Promise.resolve(null),
     ]);
+    const editionRatingsChip = container.querySelector("#edition-ratings-chip");
+    if (editionRatingsChip) {
+      editionRatingsChip.innerHTML = ratingChipsHtml(ratingsRes);
+      editionRatingsChip.querySelector("[data-ratings-jump]")?.addEventListener("click", () => {
+        container.querySelector('[data-tab="reviews"]')?.click();
+      });
+    }
 
     if (guidesSec) {
       const guides = guidesRes?.guides || [];
@@ -3339,6 +3361,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       const reviews = reviewsRes?.reviews || [];
       if (!reviews.length) {
         reviewsSec.innerHTML = `
+          ${ratingsPanelHtml(ratingsRes, { subject: `the ${edition.editionName} edition` })}
           <div class="tab-panel-header"><h2>Reviews for ${escapeHtml(edition.editionName)}</h2></div>
           <div class="tab-empty">
             <div class="tab-empty-icon">⭐</div>
@@ -3352,6 +3375,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
         });
       } else {
         reviewsSec.innerHTML = `
+          ${ratingsPanelHtml(ratingsRes, { subject: `the ${edition.editionName} edition` })}
           <div class="tab-panel-header"><h2>Community Reviews</h2></div>
           <div class="reviews-list">${reviews
             .map(
@@ -3372,6 +3396,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
         });
       }
+      bindRatingsPanel(reviewsSec, window.playbound.openExternal);
     }
   })();
 

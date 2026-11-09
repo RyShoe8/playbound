@@ -277,6 +277,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getModGuides: (slug) => ipcRenderer.invoke("get-mod-guides", slug),
   getGameReleases: (slug) => ipcRenderer.invoke("get-game-releases", slug),
   getGameReviews: (slug) => ipcRenderer.invoke("get-game-reviews", slug),
+  getGameRatings: (slug, editionSlug) => ipcRenderer.invoke("get-game-ratings", slug, editionSlug || null),
   getGameDiscussions: (slug) => ipcRenderer.invoke("get-game-discussions", slug),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),

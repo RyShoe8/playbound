@@ -94,6 +94,7 @@ describe("admin nav structure", () => {
       children: [
         { label: "Mods" },
         { label: "Editions" },
+        { label: "Editorial Reviews" },
         { label: "Control Profiles" },
         { label: "Developers" },
         { label: "Collections" },

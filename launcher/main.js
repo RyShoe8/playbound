@@ -12634,6 +12634,21 @@ ipcMain.handle("get-game-reviews", async (_event, slug) => {
   }
 });
 
+// Editorial and Community Rating, aggregated by the site so both surfaces agree.
+ipcMain.handle("get-game-ratings", async (_event, slug, editionSlug) => {
+  try {
+    const query = editionSlug ? `?edition=${encodeURIComponent(editionSlug)}` : "";
+    const res = await apiFetch(
+      `${getApiBase()}/api/games/${encodeURIComponent(slug)}/ratings${query}`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
+
 ipcMain.handle("get-game-discussions", async (_event, slug) => {
   try {
     const res = await apiFetch(

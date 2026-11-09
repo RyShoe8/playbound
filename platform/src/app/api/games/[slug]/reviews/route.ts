@@ -6,6 +6,8 @@ import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import { getGame } from "@/lib/catalog";
 import { getEditionBySlug } from "@/lib/editions";
+import { revalidateTag } from "next/cache";
+import { ratingsTag } from "@/lib/ratingsData";
 
 const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -75,6 +77,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       ...body,
     });
 
+    // The Community Rating is cached per game; a new rating should show now.
+    revalidateTag(ratingsTag(slug), { expire: 0 });
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

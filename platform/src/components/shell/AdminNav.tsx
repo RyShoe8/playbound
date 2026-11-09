@@ -64,7 +64,7 @@ export const links: NavItem[] = [
     href: "/admin/games",
     label: "Games",
     icon: Gamepad2,
-    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers", "/admin/control-profiles"],
+    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers", "/admin/control-profiles", "/admin/editorial-reviews"],
   },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
@@ -127,6 +127,12 @@ export function gameSlugFromPath(pathname: string): string | null {
 
 /** Section-wide entries — the same wherever you are inside Games. */
 const GLOBAL_GAME_CHILDREN: NavChild[] = [
+  {
+    label: "Editorial Reviews",
+    icon: Newspaper,
+    href: "/admin/editorial-reviews",
+    match: (p) => p.startsWith("/admin/editorial-reviews"),
+  },
   {
     label: "Control Profiles",
     icon: Gamepad2,
