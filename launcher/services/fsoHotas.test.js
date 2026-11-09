@@ -80,7 +80,15 @@ test("writes the HOTAS 4 bindings into the pilot itself, keeping keys and the fi
     assert.equal(saved.sections.scoring.score, 42);
     assert.equal(await fs.readFile(path.join(players, "Ace.json.playbound-hotas4.bak"), "utf8"), pilot);
     assert.match(await fs.readFile(table, "utf8"), /PADLOCK_LEFT\n\$Secondary:\n\$Controller: CID_JOY0\n\$Flags: NONE\n\$Input: 129/);
-    assert.equal((await configureFotgHotas4(root, settings, [{ name: "Other" }])).throttleConfigured, false);
+    // An unmeasured stick still gets throttle, roll and fire from the generic layout.
+    const generic = await configureFotgHotas4(root, settings, [{ name: "Some Flight Stick" }]);
+    assert.equal(generic.throttleConfigured, true);
+    assert.equal(generic.measured, false);
+    assert.equal(generic.preset, "PlayBound Flight stick");
+    const regeneric = JSON.parse(await fs.readFile(path.join(players, "Ace.json"), "utf8"));
+    assert.deepEqual(regeneric.sections.controls.axes.map((a) => a.axis_map), [0, 1, 5, 2, -1]);
+    assert.equal(joyOf(regeneric, "PADLOCK_RIGHT"), 129);
+    assert.equal((await configureFotgHotas4(root, settings, [])).throttleConfigured, false);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 

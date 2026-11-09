@@ -14,6 +14,14 @@ import {
   disableGamepadBridge,
 } from "./gamepadBridge.js";
 import { phoneHubDecision, phoneHubPairedAt } from "./phoneHubLease.js";
+import {
+  CALIBRATION_STEPS,
+  buildCalibratedProfile,
+  hatReading,
+  movedAxis,
+  pressedButton,
+  snapshot,
+} from "./flightCalibration.js";
 
 const PHONE_HUB_LEASE_KEY = "playbound.phone-hub.lease";
 
@@ -248,6 +256,117 @@ export function promptPlayControllerChoice(opts = {}) {
   });
 }
 
+/**
+ * Calibrate an unmeasured flight device: one prompt per control, detected live
+ * from the Gamepad API. Resolves to a profile (see flightCalibration.js) or
+ * null if the player cancels. Optional steps can be skipped.
+ */
+function runFlightCalibration({ vidPid, label }) {
+  return new Promise((resolve) => {
+    const findPad = () => Array.from(navigator.getGamepads?.() || []).find((p) => p && vidPidFromPadId(p.id) === vidPid) || null;
+    const root = ensureOverlayRoot();
+    root.classList.remove("hidden");
+    const captured = {};
+    let idle = null;
+    let stepIndex = -1;
+    let samples = [];
+    let raf = 0;
+    let settleUntil = 0;
+
+    const render = (message, step) => {
+      root.innerHTML = `<div class="phone-controller-sheet">
+        <div class="phone-controller-header"><div class="phone-controller-badge">Calibrate · ${escapeHtml(label || "Flight device")}</div>
+          <h2 id="phone-controller-title">${escapeHtml(message)}</h2>
+          <p class="phone-controller-lead">${step
+            ? `Step ${stepIndex + 1} of ${CALIBRATION_STEPS.length}. ${step.optional ? "Skip it if your device has no such control." : ""}`
+            : "Leave every control centred and the throttle where it rests, then start."}</p></div>
+        <div class="phone-controller-footer"><button type="button" class="btn-ghost" data-cancel>Cancel</button>
+          ${step?.optional ? '<button type="button" class="btn-secondary" data-skip>Skip</button>' : ""}
+          ${step ? "" : '<button type="button" class="btn-primary" data-start>Start</button>'}</div></div>`;
+      root.querySelector("[data-cancel]")?.addEventListener("click", () => finish(null));
+      root.querySelector("[data-skip]")?.addEventListener("click", () => next());
+      root.querySelector("[data-start]")?.addEventListener("click", () => {
+        const pad = findPad();
+        if (!pad) { setStatus("Move the stick once so PlayBound can see it, then press Start.", true); return; }
+        idle = snapshot(pad);
+        next();
+      });
+    };
+
+    const assigned = (kind) => CALIBRATION_STEPS.filter((s) => s.kind === kind && Number.isInteger(captured[s.key])).map((s) => captured[s.key]);
+
+    const next = () => {
+      stepIndex++;
+      samples = [];
+      if (stepIndex >= CALIBRATION_STEPS.length) return finish(buildCalibratedProfile({ vidPid, label, idle, captured }));
+      settleUntil = performance.now() + 350;
+      render(CALIBRATION_STEPS[stepIndex].prompt, CALIBRATION_STEPS[stepIndex]);
+    };
+
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const step = CALIBRATION_STEPS[stepIndex];
+      const pad = findPad();
+      if (!step || !pad || !idle || performance.now() < settleUntil) return;
+      const now = snapshot(pad);
+      if (step.kind === "axis") {
+        samples.push(now);
+        const axis = movedAxis(samples, { exclude: assigned("axis") });
+        // Accept once the swing is clear and the control is back near rest.
+        if (axis !== null && Math.abs(now.axes[axis] - idle.axes[axis]) < 0.25) { captured[step.key] = axis; next(); }
+      } else if (step.kind === "button") {
+        const button = pressedButton(idle, now, { exclude: assigned("button") });
+        if (button !== null) { captured[step.key] = button; settleUntil = performance.now() + 450; next(); }
+      } else if (step.kind === "hat") {
+        const reading = hatReading(idle, now);
+        if (reading) { captured[step.key] = reading.direction; settleUntil = performance.now() + 450; next(); }
+      }
+    };
+
+    const finish = (profile) => {
+      cancelAnimationFrame(raf);
+      hideOverlay();
+      resolve(profile);
+    };
+
+    render("Calibrate your flight device");
+    raf = requestAnimationFrame(tick);
+  });
+}
+
+/** "044f:b67c" from a Gamepad id, matching services/flightDevices.js. */
+function vidPidFromPadId(id) {
+  const text = String(id || "");
+  const chrome = text.match(/vendor:\s*([0-9a-f]{4})\s*product:\s*([0-9a-f]{4})/i);
+  if (chrome) return `${chrome[1]}:${chrome[2]}`.toLowerCase();
+  const firefox = text.match(/^([0-9a-f]{4})-([0-9a-f]{4})-/i);
+  return firefox ? `${firefox[1]}:${firefox[2]}`.toLowerCase() : null;
+}
+
+/** Offer calibration when the chosen stick has no measured profile. True when one was saved. */
+async function offerFlightCalibration(device) {
+  if (!device?.vidPid || device.profileSource) return false;
+  const wants = await new Promise((resolve) => {
+    const root = ensureOverlayRoot();
+    root.classList.remove("hidden");
+    root.innerHTML = `<div class="phone-controller-sheet">
+      <div class="phone-controller-header"><div class="phone-controller-badge">Flight controls</div>
+        <h2 id="phone-controller-title">Calibrate ${escapeHtml(device.name)}?</h2>
+        <p class="phone-controller-lead">PlayBound has no measured layout for this device yet, so it will use a standard flight-stick layout. A one-minute calibration finds your throttle, twist, hat and buttons exactly, and is shared so other owners of this device skip it.</p></div>
+      <div class="phone-controller-footer"><button type="button" class="btn-ghost" data-later>Use the standard layout</button>
+        <button type="button" class="btn-primary" data-calibrate>Calibrate now</button></div></div>`;
+    root.querySelector("[data-later]").addEventListener("click", () => { hideOverlay(); resolve(false); });
+    root.querySelector("[data-calibrate]").addEventListener("click", () => { hideOverlay(); resolve(true); });
+  });
+  if (!wants) return false;
+  const profile = await runFlightCalibration({ vidPid: device.vidPid, label: device.name });
+  if (!profile) return false;
+  const saved = await pb().saveFlightCalibration?.(profile);
+  if (!saved?.ok) { setStatus(saved?.error || "Could not save the calibration.", true); return false; }
+  setStatus(saved.shared ? "Calibration saved and shared for review." : "Calibration saved on this PC.");
+  return true;
+}
+
 function promptFsoHotasDevices(devices) {
   return new Promise((resolve) => {
     const root = ensureOverlayRoot();
@@ -475,12 +594,15 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       }
       const selected = await promptFsoHotasDevices(result.devices);
       if (!selected) { setStatus("Launch cancelled"); return false; }
+      // An unmeasured Joy0 stick: offer to measure it before binding.
+      await offerFlightCalibration(result.devices.find((device) => device.id === selected[0]));
       let mapping;
       try { mapping = await pb().saveFsoHotasDevices(selected); }
       catch (error) { setStatus(`Could not configure flight devices: ${error.message}`, true); return false; }
       setStatus(mapping?.throttleConfigured
-        ? (mapping.activated ? "HOTAS 4 flight preset applied: throttle, twist, rocker, and 12 buttons. Your original settings are backed up."
-          : "HOTAS 4 preset added. Select PlayBound TFlight HOTAS 4 in Controls; your custom bindings were preserved.")
+        ? (mapping.measured
+          ? `${mapping.device} set up: throttle, roll, hat and buttons bound for you. Your original settings are backed up.`
+          : `${mapping.device} set up with the standard flight-stick layout (throttle, roll, fire). Fine-tune it in Controls if anything is off.`)
         : "Flight devices configured. Bind the throttle axis in FreeSpace Open's Controls menu.");
     }
   } else if (choice === "phone" || choice === "mixed") {

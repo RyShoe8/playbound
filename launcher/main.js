@@ -2426,7 +2426,10 @@ async function downloadTo(url, dest, attempts = 3, extraHeaders = null) {
         /* ignore */
       }
       if (attempt < attempts) {
-        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        // A gateway error is the host's CDN having a moment (GitHub's release
+        // assets return 504 in bursts); give it longer than a dropped packet.
+        const gateway = /HTTP (502|503|504)\b/.test(String(err?.message || ""));
+        await new Promise((r) => setTimeout(r, (gateway ? 4000 : 1000) * attempt));
         continue;
       }
       if (["EPERM", "EACCES", "EBUSY"].includes(err?.code)) {
@@ -2573,7 +2576,23 @@ async function offerManagedJavaInstall(opts = {}) {
   return { installed: false, error };
 }
 
-async function downloadResilientArtifact({ slug, artifactId: requestedArtifactId, version, directUrl, dest, expectedSha256 }) {
+/**
+ * A GitHub recipe that also names the publisher's own download (Airtime keeps
+ * one on ninetysix.io) can fall back to it when GitHub's asset CDN fails —
+ * otherwise a GitHub outage blocks an install that has a working source. Only
+ * a URL for this platform that is a file, not a store or project page.
+ */
+function publisherFallbackUrls(entry, dl) {
+  if (!/^github-/.test(String(entry?.kind || ""))) return [];
+  const url = process.platform === "darwin" ? entry.urlMac || null
+    : process.platform === "linux" ? entry.urlLinux || null
+      : entry.url || null;
+  if (!url || url === dl?.url || !/^https?:\/\//i.test(url)) return [];
+  if (!/\.(zip|7z|rar|tar\.gz|tgz|tar\.xz|exe|msi|jar|adf|appimage|dmg)(\?|$)/i.test(new URL(url).pathname)) return [];
+  return [url];
+}
+
+async function downloadResilientArtifact({ slug, artifactId: requestedArtifactId, version, directUrl, fallbackUrls = [], dest, expectedSha256 }) {
   const base = getApiBase();
   let resolved = null;
 
@@ -2603,6 +2622,12 @@ async function downloadResilientArtifact({ slug, artifactId: requestedArtifactId
   const sources = Array.isArray(resolved?.sources) ? [...resolved.sources] : [];
   if (directUrl && !sources.some((source) => source?.url === directUrl)) {
     sources.push({ type: "public", url: directUrl, sourceId: "direct-catalog" });
+  }
+  // The publisher's own copy, for when the resolved host (usually GitHub) is down.
+  for (const url of fallbackUrls) {
+    if (url && !sources.some((source) => source?.url === url)) {
+      sources.push({ type: "public", url, sourceId: "publisher-fallback" });
+    }
   }
   const sha256 = expectedSha256 || resolved?.artifact?.sha256 || null;
   const artifactId = resolved?.artifact?.id || requestedArtifactId || slug;
@@ -5645,6 +5670,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       artifactId,
       version: dl.version,
       directUrl: dl.url,
+      fallbackUrls: publisherFallbackUrls(entry, dl),
       dest: downloadPath,
     });
   } catch (err) {
@@ -8025,9 +8051,19 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
     const romFile = launchPath;
     launchPath = runtime.binary;
-    const skyLanceArgs = slug === "skylance"
+    const skyLanceOwn = slug === "skylance"
       ? await require("./services/sklyanceRetroArch").prepareSklyanceRetroArch(managedRetroArch.root(), path.dirname(romFile))
       : [];
+    // Every managed launch states its own folders and core options and never
+    // saves them back, so one game's settings cannot leak into the next
+    // (Skylance's folders had become 1942's, which then lost its Kickstart).
+    const appendConfig = await require("./services/retroArchLaunchConfig").prepareRetroArchLaunch({
+      root: managedRetroArch.root(),
+      binary: runtime.binary,
+      core,
+      extra: skyLanceOwn[0] === "--appendconfig" ? skyLanceOwn[1] : null,
+    });
+    const skyLanceArgs = ["--appendconfig", appendConfig];
     /*
      * RetroArch netplay flags for multiplayer.
      *
@@ -8049,17 +8085,9 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
-  // Flight devices: put a known stick's bindings in place before FSO reads the
-  // pilot, so a HOTAS works on first launch without a trip to the menus.
-  if (slug === "star-wars-fate-of-the-galaxy" && info.dir) {
-    try {
-      const fso = require("./services/fsoHotas");
-      const outcome = await fso.autoApplyFotgDevicePresets(info.dir, fso.fsoSettingsPath(info.dir, app.getPath("appData")));
-      if (outcome.applied && outcome.activated) console.log(`[fso] HOTAS 4 bindings applied to ${outcome.activated} pilot(s)`);
-    } catch (err) {
-      console.warn("[fso] automatic flight-device setup skipped:", err?.message || err);
-    }
-  }
+  // Flight devices: any game with a flight adapter gets a known stick's
+  // bindings written before it reads them, so a HOTAS works on first launch.
+  await require("./services/flightAdapters").autoApplyFlightDevices(slug, info.dir, { appData: app.getPath("appData") });
 
   if (slug === "shadow-warrior-classic-complete" && process.platform === "win32") {
     const gogLaunch = require("./services/gogShadowWarrior").resolveGogShadowWarriorLaunch(launchPath);
@@ -12703,9 +12731,30 @@ ipcMain.handle("get-fso-hotas-devices", async () => {
   const installDir = loadState()["star-wars-fate-of-the-galaxy"]?.dir;
   const binary = installDir && fso.findFsoExecutable(installDir);
   if (!binary) return { devices: [], error: "FreeSpace Open is not installed yet. Install and open the game once, then retry." };
-  try { return { devices: await fso.queryFsoJoysticks(binary) }; }
+  try {
+    const flightDevices = require("./services/flightDevices");
+    const devices = (await fso.queryFsoJoysticks(binary)).map((device) => {
+      const vidPid = flightDevices.vidPidFromSdlGuid(device.guid);
+      const profile = flightDevices.profileForVidPid(vidPid);
+      return { ...device, vidPid, profileSource: flightDevices.profileSourceFor(vidPid), profileLabel: profile?.label || null };
+    });
+    return { devices };
+  }
   catch (error) { return { devices: [], error: `Could not read flight devices from FreeSpace Open: ${error.message}` }; }
 });
+
+/*
+ * A player's calibration of a flight device: kept for this PC, offered to the
+ * site for review so the next owner of the same device skips it.
+ */
+ipcMain.handle("save-flight-calibration", async (_event, raw) =>
+  require("./services/flightProfileStore").saveCalibration({
+    userDataPath: app.getPath("userData"),
+    raw,
+    apiBase: getApiBase(),
+    headers: launcherApiHeaders(),
+  })
+);
 
 ipcMain.handle("save-fso-hotas-devices", async (_event, requested) => {
   const fso = require("./services/fsoHotas");
@@ -12719,7 +12768,9 @@ ipcMain.handle("save-fso-hotas-devices", async (_event, requested) => {
     throw new Error("Select one to four detected flight devices");
   }
   await fso.saveFsoJoysticks(fso.fsoSettingsPath(installDir, app.getPath("appData")), selected);
-  const mapping = await fso.configureFotgHotas4(installDir, fso.fsoSettingsPath(installDir, app.getPath("appData")), selected);
+  const mapping = await require("./services/flightAdapters")
+    .flightAdapterFor("star-wars-fate-of-the-galaxy")
+    .configure(installDir, { appData: app.getPath("appData") }, selected);
   return { devices: selected, ...mapping };
 });
 
@@ -15551,6 +15602,13 @@ if (gotLock) {
      */
     prefetchCatalogLiveStats();
     void scanKnownInstalls();
+    // Flight-device profiles: this PC's calibrations and the site's shared list.
+    require("./services/flightProfileStore").loadLocalProfiles(app.getPath("userData"));
+    void require("./services/flightProfileStore").refreshRemoteProfiles({
+      userDataPath: app.getPath("userData"),
+      apiBase: getApiBase(),
+      headers: launcherApiHeaders(),
+    });
     void (async () => {
       await refreshRemoteCatalog();
       await runAutoUpdates();

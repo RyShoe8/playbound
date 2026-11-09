@@ -87,7 +87,7 @@ const browserGlobals = {
 
 export default [
   {
-    ignores: ["node_modules/**", "dist/**", "dist-build-*/**", "resources/**", "tools/**"],
+    ignores: ["node_modules/**", "dist/**", "dist-build-*/**", "resources/**", "tools/**", "renderer/vendor/**"],
   },
   {
     // Main process and services: CommonJS, Node globals.

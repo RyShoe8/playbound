@@ -1,6 +1,7 @@
 import { bindGamePartyButton } from "../gamePartyAction.js";
 import { createFreeOfferCard, createGameCard, createModCard } from "../cards.js";
 import { mountHeroMedia } from "../heroMedia.js";
+import { isHlsUrl, upgradeHlsVideos } from "../hlsVideo.js";
 import { bindRatingsPanel, ratingChipsHtml, ratingsPanelHtml } from "../ratings.js";
 import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
@@ -1673,9 +1674,11 @@ async function renderGameDetailView(slug, opts = {}) {
                   }
                   return `
                     <div class="media-video-frame">
-                      <video src="${escapeHtml(v.src)}" controls preload="metadata" poster="${escapeHtml(detail.coverImage || "")}">
+                      ${isHlsUrl(v.src)
+                        ? `<video data-hls-src="${escapeHtml(v.src)}" controls preload="metadata" poster="${escapeHtml(detail.coverImage || "")}"></video>`
+                        : `<video src="${escapeHtml(v.src)}" controls preload="metadata" poster="${escapeHtml(detail.coverImage || "")}">
                         <source src="${escapeHtml(v.src)}" />
-                      </video>
+                      </video>`}
                     </div>
                   `;
                 })
@@ -1739,6 +1742,7 @@ async function renderGameDetailView(slug, opts = {}) {
         ${footerHtml}
       `;
 
+      upgradeHlsVideos(mediaSec);
       mediaSec.querySelectorAll("a.media-jump").forEach((a) => {
         a.addEventListener("click", (e) => {
           e.preventDefault();

@@ -15,6 +15,8 @@
  * Nothing here writes files or knows about any game.
  */
 
+const flightDevices = require("./flightDevices");
+
 /**
  * Actions a game might bind. Not every game uses all of them; a writer takes
  * what it needs and ignores the rest.
@@ -90,13 +92,25 @@ function familyFor(padId) {
  */
 function profileFromGamepad(pad) {
   if (!pad || typeof pad !== "object") return null;
-  const family = familyFor(pad.id);
+  /*
+   * A device with a measured layout is identified by its USB vendor:product,
+   * which is exact, before falling back to guessing from the name. The measured
+   * flight profile rides along so a game adapter can bind its throttle, twist
+   * and hat rather than treating a HOTAS like a gamepad.
+   */
+  const vidPid = flightDevices.vidPidFromGamepadId(pad.id);
+  const measured = flightDevices.profileForVidPid(vidPid);
+  const family = measured
+    ? { id: measured.id, label: measured.label, deviceType: "flightstick" }
+    : familyFor(pad.id);
   const isFlightstick = family.deviceType === "flightstick";
   return {
     family: family.id,
     label: family.label,
     deviceType: family.deviceType || "gamepad",
     isFlightstick,
+    vidPid,
+    flight: isFlightstick ? flightDevices.resolveFlightProfile(vidPid) : null,
     rawId: String(pad.id || ""),
     /*
      * Non-standard pads still get the standard layout. It is a guess, but a

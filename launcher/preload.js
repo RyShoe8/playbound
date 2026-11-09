@@ -93,6 +93,7 @@ contextBridge.exposeInMainWorld("playbound", {
   /** Report connected gamepads so games can be auto-configured at launch. */
   reportGamepads: (pads) => ipcRenderer.invoke("report-gamepads", pads),
   getFsoHotasDevices: () => ipcRenderer.invoke("get-fso-hotas-devices"),
+  saveFlightCalibration: (profile) => ipcRenderer.invoke("save-flight-calibration", profile),
   saveFsoHotasDevices: (devices) => ipcRenderer.invoke("save-fso-hotas-devices", devices),
   startGamepadBridge: (profile) => ipcRenderer.invoke("gamepad-bridge-start", profile || {}),
   stopGamepadBridge: () => ipcRenderer.invoke("gamepad-bridge-stop"),

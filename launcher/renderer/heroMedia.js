@@ -1,3 +1,4 @@
+import { attachVideoSource } from './hlsVideo.js';
 // Fixed-size stage: switching media never moves the game's native action buttons.
 export function mountHeroMedia(container, detail, classifyVideo, playableVideo) {
   const hero = container.querySelector('.detail-hero');
@@ -17,7 +18,7 @@ export function mountHeroMedia(container, detail, classifyVideo, playableVideo) 
     let element;
     if (item.type === 'image') { element = document.createElement('img'); element.src = item.src; element.alt = `${detail.title || detail.editionName || 'Game'} artwork`; }
     else if (item.embedUrl) { element = document.createElement('iframe'); element.src = item.embedUrl; element.title = `${detail.title || 'Game'} video`; element.allow = 'autoplay; encrypted-media; picture-in-picture'; element.allowFullscreen = true; }
-    else { element = document.createElement('video'); element.src = item.src; element.controls = true; element.preload = 'metadata'; }
+    else { element = document.createElement('video'); element.controls = true; element.preload = 'metadata'; void attachVideoSource(element, item.src); }
     stage.append(element);
     [...tabs.children].forEach((button, position) => button.setAttribute('aria-pressed', String(position === index)));
   };
