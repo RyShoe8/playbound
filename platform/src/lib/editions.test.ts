@@ -157,6 +157,13 @@ describe("the base game beside its editions", () => {
     expect(listed.map((e) => e.slug)).toEqual(["community"]);
   });
 
+  it("still adds the base game when the only official row is another store's release", () => {
+    const epic = { ...reactiveDrop, slug: "epic", type: "official", isDefault: false } as Edition;
+    const listed = listedEditionsFromStored(alienSwarm, [epic]);
+    expect(listed.map((e) => e.slug)).toContain("official");
+    expect(listed.find((e) => e.isDefault)?.slug).toBe("official");
+  });
+
   it("does not duplicate a base game that is already stored as an official edition", () => {
     const official = {
       ...reactiveDrop,

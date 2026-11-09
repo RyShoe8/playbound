@@ -12,6 +12,8 @@ const RETIRED_EDITION_REDIRECTS: Readonly<Record<string, string>> = {
   // Each only repeated its game, so the game's own page now stands for it.
   "quake-champions/qc-steam": "",
   "genshin-impact/genshin-pc-hoyoplay": "",
+  "dota-2/dota-2-steam": "",
+  "ysoccer/ysoccer-portable": "",
   "trigger-rally/trigger-rally-portable": "",
 };
 

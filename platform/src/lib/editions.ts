@@ -694,11 +694,13 @@ function gameInstallsOnItsOwn(game: Game): boolean {
 /**
  * Does any stored edition already stand for the base game?
  *
- * An edition named `official`, or typed `official`, is the base game's own
+ * An edition named `official`, or the default typed `official`, is the base game's own
  * row. Community editions are additions to it, never replacements.
  */
 function storedCoversBaseGame(stored: Edition[]): boolean {
-  return stored.some((e) => e.slug === "official" || e.type === "official");
+  // An official release from another store (Valorant on Epic) is an alternative,
+  // not the base game: only the slug "official" or the default stands for it.
+  return stored.some((e) => e.slug === "official" || (e.type === "official" && e.isDefault));
 }
 
 export function listedEditionsFromStored(
