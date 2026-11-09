@@ -1,4 +1,75 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-release-years-20261108-3",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "everquest/project-99",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2009
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "morrowind/tamriel-rebuilt",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2007
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "old-school-runescape/runelite",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2016
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "wolfenstein-enemy-territory/et-legacy",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2014
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "freedoom/zandronum",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2012
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "heroes-of-might-and-magic-3-complete/wog",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2001
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "thief-2-the-metal-age/t2x-shadows-of-the-metal-age",
+      "expected": {
+        "releaseYear": null
+      },
+      "set": {
+        "releaseYear": 2005
+      }
+    }
+  ]
 }
