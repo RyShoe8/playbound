@@ -1,4 +1,702 @@
 {
-  "id": null,
-  "operations": []
+  "id": "genres-two-max-20261109",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "starbound",
+      "expected": {
+        "genres": [
+          "Sandbox",
+          "Adventure",
+          "Survival"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Sandbox",
+          "Adventure"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "terraria",
+      "expected": {
+        "genres": [
+          "Sandbox",
+          "Adventure",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Sandbox",
+          "Adventure"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "vintage-story",
+      "expected": {
+        "genres": [
+          "Survival",
+          "Sandbox",
+          "Simulation"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Survival",
+          "Sandbox"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "planetside-2",
+      "expected": {
+        "genres": [
+          "Shooter",
+          "FPS",
+          "MMO",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "MMO"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "omega-strikers",
+      "expected": {
+        "genres": [
+          "Action",
+          "Strategy",
+          "Arcade"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Action",
+          "Arcade"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "stronghold-crusader-hd",
+      "expected": {
+        "genres": [
+          "Strategy",
+          "RTS",
+          "Simulation"
+        ]
+      },
+      "set": {
+        "genres": [
+          "RTS",
+          "Simulation"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "star-wars-galaxies",
+      "expected": {
+        "genres": [
+          "RPG",
+          "Sandbox",
+          "MMO"
+        ]
+      },
+      "set": {
+        "genres": [
+          "MMO",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "hawken-hawkening",
+      "expected": {
+        "genres": [
+          "Shooter",
+          "Action",
+          "FPS",
+          "MMO"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "unturned",
+      "expected": {
+        "genres": [
+          "Survival",
+          "Shooter",
+          "Sandbox"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Survival",
+          "Sandbox"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "where-winds-meet",
+      "expected": {
+        "genres": [
+          "Action",
+          "RPG",
+          "Adventure",
+          "MMO"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Action",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "rimworld",
+      "expected": {
+        "genres": [
+          "Simulation",
+          "Strategy",
+          "Sandbox"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Simulation",
+          "Strategy"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "team-fortress-2",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Action",
+          "Shooter"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "stardew-valley",
+      "expected": {
+        "genres": [
+          "Simulation",
+          "RPG",
+          "Sandbox"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Simulation",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "cataclysm-dda",
+      "expected": {
+        "genres": [
+          "Roguelike",
+          "RPG",
+          "Survival"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Roguelike",
+          "Survival"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "nam",
+      "expected": {
+        "genres": [
+          "Action",
+          "FPS",
+          "Shooter"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "monster-hunter-frontier",
+      "expected": {
+        "genres": [
+          "Action",
+          "MMO",
+          "FPS",
+          "Shooter"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Action",
+          "MMO"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "flatout-2",
+      "expected": {
+        "genres": [
+          "Racing",
+          "Arcade",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Racing",
+          "Arcade"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "pokemmo",
+      "expected": {
+        "genres": [
+          "MMO",
+          "RPG",
+          "Adventure",
+          "Strategy"
+        ]
+      },
+      "set": {
+        "genres": [
+          "MMO",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "s-t-a-l-k-e-r-call-of-pripyat",
+      "expected": {
+        "genres": [
+          "FPS",
+          "RPG",
+          "Shooter",
+          "Action",
+          "Adventure",
+          "Horror"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "s-t-a-l-k-e-r-shadow-of-chernobyl",
+      "expected": {
+        "genres": [
+          "FPS",
+          "RPG",
+          "Shooter",
+          "Action",
+          "Adventure",
+          "Horror"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "super-nova-strike",
+      "expected": {
+        "genres": [
+          "Action",
+          "Arcade",
+          "Shooter"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Shooter",
+          "Arcade"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "morrowind",
+      "expected": {
+        "genres": [
+          "RPG",
+          "Adventure",
+          "Sandbox"
+        ]
+      },
+      "set": {
+        "genres": [
+          "RPG",
+          "Adventure"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "ysoccer",
+      "expected": {
+        "genres": [
+          "Sports",
+          "Action",
+          "Simulation"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Sports",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "trigger-rally",
+      "expected": {
+        "genres": [
+          "Sports",
+          "Simulation",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Sports",
+          "Simulation"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "warframe",
+      "expected": {
+        "genres": [
+          "Shooter",
+          "Action",
+          "MMO"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Shooter",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "the-legend-of-zelda-xd2-mercuris-chess",
+      "expected": {
+        "genres": [
+          "RPG",
+          "Action",
+          "Adventure"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Action",
+          "Adventure"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "the-legend-of-zelda-book-of-mudora",
+      "expected": {
+        "genres": [
+          "RPG",
+          "Action",
+          "Adventure"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Action",
+          "Adventure"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "marathon-2",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Shooter",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "wolfenstein-enemy-territory",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Action",
+          "Strategy"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "s-t-a-l-k-e-r-clear-sky",
+      "expected": {
+        "genres": [
+          "FPS",
+          "RPG",
+          "Shooter",
+          "Action",
+          "Adventure",
+          "Horror"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "RPG"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "renegade-x",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Strategy",
+          "Shooter"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Strategy"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "openage",
+      "expected": {
+        "genres": [
+          "Strategy",
+          "RTS",
+          "Simulation"
+        ]
+      },
+      "set": {
+        "genres": [
+          "RTS",
+          "Strategy"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "sandustry",
+      "expected": {
+        "genres": [
+          "Simulation",
+          "Strategy",
+          "Survival"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Simulation",
+          "Strategy"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "medal-of-honor-allied-assault",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Action",
+          "Shooter"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "the-finals",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Shooter",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "path-of-exile",
+      "expected": {
+        "genres": [
+          "RPG",
+          "MMO",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "RPG",
+          "Action"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "mechwarrior-living-legends",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Simulation",
+          "Shooter",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Simulation"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "castlevania-simons-destiny",
+      "expected": {
+        "genres": [
+          "FPS",
+          "Action",
+          "Horror"
+        ]
+      },
+      "set": {
+        "genres": [
+          "FPS",
+          "Horror"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "wild-rift",
+      "expected": {
+        "genres": [
+          "MOBA",
+          "Strategy",
+          "Action"
+        ]
+      },
+      "set": {
+        "genres": [
+          "MOBA",
+          "Strategy"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "warframe-mobile",
+      "expected": {
+        "genres": [
+          "Action",
+          "Shooter",
+          "RPG",
+          "Space",
+          "MMO"
+        ]
+      },
+      "set": {
+        "genres": [
+          "Shooter",
+          "Action"
+        ]
+      }
+    }
+  ]
 }
