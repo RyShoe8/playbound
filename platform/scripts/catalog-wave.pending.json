@@ -1,21 +1,4 @@
 {
-  "id": "edition-art-20261108-dunecity",
-  "operations": [
-    {
-      "kind": "edition",
-      "key": "dune-legacy/dunecity",
-      "expected": {
-        "branding.heroImage": null,
-        "branding.screenshots": null
-      },
-      "set": {
-        "branding.heroImage": "https://dunelegacy.com/img/dunecity/dunecity-01.png",
-        "branding.screenshots": [
-          "https://dunelegacy.com/img/dunecity/dunecity-02.png",
-          "https://dunelegacy.com/img/dunecity/dunecity-03.png",
-          "https://dunelegacy.com/img/dunecity/dunecity-04.png"
-        ]
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
