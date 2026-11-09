@@ -47,6 +47,7 @@ function loadPicker() {
 
   const { isUninstallerExe, isInstallerExe } = require("./exeCandidates.js");
   const { isUnknownHorizonsSlug } = require("./unknownHorizonsLaunch.js");
+  const { isRetroImage } = require("./ManagedRetroArch.js");
   const factory = new Function(
     "fs",
     "path",
@@ -56,6 +57,7 @@ function loadPicker() {
     "isUninstallerExe",
     "isInstallerExe",
     "isUnknownHorizonsSlug",
+    "isRetroImage",
     `${grab("knownExecutablePathsFor")}
      ${grab("findExecutable")}
      ${grab("exeHintFor")}
@@ -73,7 +75,8 @@ function loadPicker() {
     (paths) => paths[0],
     isUninstallerExe,
     isInstallerExe,
-    isUnknownHorizonsSlug
+    isUnknownHorizonsSlug,
+    isRetroImage
   );
 }
 
@@ -126,6 +129,15 @@ test("a Neo Geo .neo cartridge is selected as the launch target", () => {
   const dir = makeInstall({ "SkyLance.neo": 17_567_744, "neogeo.zip": 21_550 });
   try {
     assert.equal(path.basename(findExecutable(dir, "SkyLance.neo")), "SkyLance.neo");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("an Amiga floppy image is selected as the launch target", () => {
+  const dir = makeInstall({ "1942_release_v1.0.2.adf": 901_120 });
+  try {
+    assert.equal(path.basename(findExecutable(dir, null)), "1942_release_v1.0.2.adf");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

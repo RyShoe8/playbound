@@ -5748,6 +5748,26 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
    */
   const downloadIsTarball = isTarball(dl.name);
 
+  /*
+   * A download that is itself the game image — an Amiga .adf from itch, a
+   * homebrew .gb — has nothing to extract. Keep it under its own name and
+   * record it as what Play launches; Play hands it to RetroArch with the core
+   * its extension (or slug) calls for.
+   */
+  if (require("./services/ManagedRetroArch").isRetroImage(dl.name)) {
+    sendProgress({ phase: "extracting" });
+    await fsp.mkdir(gameDir, { recursive: true });
+    const image = path.join(gameDir, path.basename(dl.name));
+    await fsp.copyFile(downloadPath, image);
+    await removeFileWithRetries(downloadPath);
+    await processAddons(entry, gameDir, selectedAddons);
+    markInstalled(slug, { version: dl.version, exe: image, dir: gameDir, ...editionExtra });
+    sendProgress({ phase: "done" });
+    void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
+    return { status: "installed", version: dl.version, dir: gameDir, editionSlug: editionExtra.editionSlug };
+  }
+
   if (!downloadIsTarball && (entry.kind === "github-installer" || entry.kind === "direct-installer")) {
     sendProgress({
       phase: "installer-ready",
@@ -7984,7 +8004,8 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
     }
   }
 
-  const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|neo|zip)$/i.test(launchPath);
+  const isRom =
+    require("./services/ManagedRetroArch").isRetroImage(launchPath) || /\.zip$/i.test(launchPath);
   if (isRom) {
     const ext = path.extname(launchPath);
     const { coreForExtension, coreForSlug } = require("./services/ManagedRetroArch");

@@ -6,6 +6,7 @@
  */
 
 const { shouldSyncHardwareProfile } = require("../hardwareSync");
+const { isRetroImage } = require("../ManagedRetroArch");
 const { app, shell, safeStorage, session } = require("electron");
 const { spawn, exec, execFileSync } = require("child_process");
 const crypto = require("crypto");
@@ -2077,7 +2078,7 @@ function findExecutable(dir, exeHint) {
             size: stat.size,
             rank: eacBootstrap.test(name) ? 150 : tool.test(name) ? 60 : 100,
           });
-        } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|neo)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
+        } else if (isRetroImage(lower) && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 90 });
         } else if (/\.(bat|cmd)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
           /*

@@ -50,7 +50,23 @@ function coreForExtension(ext) {
   if (clean === "md" || clean === "gen") return "genesis_plus_gx";
   if (clean === "nes") return "fceumm";
   if (clean === "neo") return "geolith";
+  // Amiga floppy images. PUAE boots them with its built-in AROS Kickstart
+  // replacement, so no Kickstart ROM has to be supplied or shipped.
+  if (clean === "adf") return "puae";
   return null;
+}
+
+/**
+ * Single-file images RetroArch plays directly: cartridge ROMs and Amiga
+ * floppies. Shared by install (a download that is one of these is kept as is,
+ * not extracted), the executable finder and Play, so the three agree.
+ * `.zip` is deliberately absent — Neo Geo sets are zips, but so is almost
+ * every game archive, so those are resolved by slug instead.
+ */
+const RETRO_IMAGE_RE = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen|neo|adf)$/i;
+
+function isRetroImage(name) {
+  return RETRO_IMAGE_RE.test(String(name || ""));
 }
 
 /**
@@ -197,6 +213,8 @@ module.exports = {
   coreForSlug,
   coreUrl,
   createManagedRetroArch,
+  isRetroImage,
+  RETRO_IMAGE_RE,
   managedRetroArchRoot,
   retroArchUrl,
   retroPlatform,
