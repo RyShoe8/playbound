@@ -44,7 +44,12 @@ export default async function LauncherAuthPage({
         >
           <LogIn className="size-4" /> Sign In
         </Link>
-        <Link href="/signup?from=party" className="text-sm font-semibold text-primary hover:underline">
+        {/* launcher=1 sends a new account back through the handoff, so the app
+            links to it; without it the account was made and the app never knew. */}
+        <Link
+          href={fromApp ? "/signup?from=party&launcher=1" : "/signup?from=party"}
+          className="text-sm font-semibold text-primary hover:underline"
+        >
           Create a free account
         </Link>
         <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">

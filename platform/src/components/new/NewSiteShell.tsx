@@ -25,17 +25,17 @@ export function NewSiteShell() {
  <p className="new-nav-label">Your workspace</p><nav aria-label="Workspace">{nav("/hosting/servers","My servers",Server)}{nav("/developer","Developer tools",Code)}{canViewAdmin(session?.user?.role)&&nav("/admin","Administration",Shield)}</nav>
  <details className="new-sidebar-preferences"><summary>Discovery & compatibility</summary><DiscoveryModeToggle variant="sidebar"/><GameCompatibilityToggle variant="sidebar"/></details>
  <button className="new-discord" onClick={()=>openDiscordInvite(SITE_DISCORD_INVITE)}>Join Discord ↗</button>
- <div className="new-account">{session?.user?<><Link href="/profile" className="new-account-profile"><span className="new-avatar">{initials}</span><span>{name}<small>Profile & PC</small></span></Link><details><summary aria-label="Account menu">•••</summary><div><Link href="/profile">Account settings</Link><SignOutButton/></div></details></>:<Link href="/login?callbackUrl=/">Sign in to PlayBound →</Link>}</div>
+ <div className="new-account">{session?.user?<><Link href="/profile" className="new-account-profile"><span className="new-avatar">{initials}</span><span>{name}<small>Profile & PC</small></span></Link><details><summary aria-label="Account menu">•••</summary><div><Link href="/profile">Account settings</Link><SignOutButton/></div></details></>:<><Link href="/signup" className="new-button primary new-signup">Create a free account</Link><Link href="/login?callbackUrl=/">Sign in to PlayBound →</Link></>}</div>
  </aside>
  <header className="new-topbar">
  <details key={pathname} className="new-mobile-menu">
  <summary aria-label="Open navigation menu"><Menu size={22}/></summary>
  <div className="new-mobile-menu-panel">
  <nav aria-label="Mobile navigation">{links.map(([href,label,Icon])=>nav(href,label,Icon))}{nav("/hosting/servers","My servers",Server)}{nav("/developer","Developer tools",Code)}{canViewAdmin(session?.user?.role)&&nav("/admin","Administration",Shield)}</nav>
- {session?.user?<><Link href="/profile">Account settings</Link><SignOutButton/></>:<Link href="/login?callbackUrl=/">Sign in</Link>}
+ {session?.user?<><Link href="/profile">Account settings</Link><SignOutButton/></>:<><Link href="/login?callbackUrl=/">Sign in</Link><Link href="/signup">Create a free account</Link></>}
  </div>
  </details>
  {/* /search has its own box that keeps the filters; two boxes, one empty, was confusing. */}
- {pathname!=="/search"&&<form action="/search" role="search"><Search size={17}/><input name="q" type="search" aria-label="Search games and developers" placeholder="Find your next game"/></form>}<div>{session?.user?<><NotificationBell/><Link href="/profile" className="new-avatar" aria-label="Your profile">{initials}</Link></>:<Link href="/login?callbackUrl=/">Sign in</Link>}</div></header>
+ {pathname!=="/search"&&<form action="/search" role="search"><Search size={17}/><input name="q" type="search" aria-label="Search games and developers" placeholder="Find your next game"/></form>}<div>{session?.user?<><NotificationBell/><Link href="/profile" className="new-avatar" aria-label="Your profile">{initials}</Link></>:<><Link href="/login?callbackUrl=/">Sign in</Link><Link href="/signup" className="new-button primary new-signup">Sign up</Link></>}</div></header>
  </div>;
 }

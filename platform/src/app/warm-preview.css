@@ -291,3 +291,10 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 /* Search results: Discover's card size, with columns that fit the cards exactly. */
 html[data-warm-preview] .search-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,287.5px),1fr));gap:16px}
 html[data-warm-preview] .search-card-grid .new-game-card{width:100%;max-width:100%;min-width:0}
+
+/* The redesign dropped the Sign up button the old top bar had (10/12), and
+   email sign-ups stopped with it. Keep it compact in the bar and the sidebar. */
+.new-topbar .new-signup{padding:7px 14px;min-height:0;white-space:nowrap}
+.new-account .new-signup{display:flex;width:100%;margin-bottom:8px}
+@media(max-width:640px){.new-topbar .new-signup{padding:6px 10px;font-size:12px}}
+.new-account:has(.new-signup){flex-direction:column;align-items:stretch}
