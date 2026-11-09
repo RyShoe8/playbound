@@ -1,11 +1,11 @@
 {
-  "id": "retire-official-rows-batch5",
+  "id": "edition-retire-official-20261108-5",
   "operations": [
     {
       "kind": "edition",
       "key": "everquest/official",
       "expected": {
-        "visibility": null
+        "visibility": "public"
       },
       "set": {
         "visibility": "hidden"
@@ -15,7 +15,7 @@
       "kind": "edition",
       "key": "marathon-2/official",
       "expected": {
-        "visibility": null
+        "visibility": "public"
       },
       "set": {
         "visibility": "hidden"
@@ -25,7 +25,7 @@
       "kind": "edition",
       "key": "triplea/triplea-official",
       "expected": {
-        "visibility": null
+        "visibility": "public"
       },
       "set": {
         "visibility": "hidden"
@@ -35,7 +35,7 @@
       "kind": "edition",
       "key": "space-station-14/official",
       "expected": {
-        "visibility": null
+        "visibility": "public"
       },
       "set": {
         "visibility": "hidden"
