@@ -1,5 +1,5 @@
 {
-  "id": "genres-two-max-20261109-c",
+  "id": "genres-two-max-20261109-d",
   "operations": [
     {
       "kind": "game",
@@ -229,11 +229,7 @@
       "kind": "game",
       "key": "cataclysm-dda",
       "expected": {
-        "genres": [
-          "Roguelike",
-          "RPG",
-          "Survival"
-        ]
+        "genres": []
       },
       "set": {
         "genres": [
