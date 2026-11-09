@@ -147,6 +147,9 @@ async function main() {
   // Check every target before the first write. A changed Admin value blocks
   // the wave instead of allowing the old patch to overwrite that person's edit.
   const pending: { op: Operation; current: Record<string, unknown> }[] = [];
+  // Every stale target is reported at once, with the stored value, so one
+  // failed run is enough to correct the wave rather than one game per run.
+  const stale: string[] = [];
   for (const op of wave.operations) {
     const current = await read(op);
     if (!current) throw new Error(`${op.kind}:${op.key} does not exist; no upsert allowed`);
@@ -157,9 +160,15 @@ async function main() {
     }
     const changed = fields.filter((field) => !same(atPath(current, field), op.expected[field]));
     if (changed.length > 0) {
-      throw new Error(`${op.kind}:${op.key} changed since review at [${changed.join(", ")}]; wave stopped without overwriting Admin data`);
+      const stored = Object.fromEntries(changed.map((field) => [field, atPath(current, field)]));
+      stale.push(`${op.kind}:${op.key} changed since review at [${changed.join(", ")}]; stored ${JSON.stringify(stored)}`);
+      continue;
     }
     pending.push({ op, current });
+  }
+  if (stale.length > 0) {
+    for (const line of stale) console.error(`Error: ${line}`);
+    throw new Error(`${stale.length} target(s) changed since review; wave stopped without overwriting Admin data`);
   }
 
   for (const { op, current } of pending) {
