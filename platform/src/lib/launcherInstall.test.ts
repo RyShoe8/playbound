@@ -241,3 +241,25 @@ describe("multiplayer testing-wave installers", () => {
   });
 });
 
+
+describe("auto-update version for GitHub recipes", () => {
+  const github = (li: Record<string, unknown>) =>
+    toLauncherCatalogEntry({ ...base, launcherInstall: { enabled: true, kind: "github-zip", repo: "OpenRA/OpenRA", ...li } });
+
+  it("publishes the probed release tag so the launcher has something to compare", () => {
+    expect(github({ detectedVersion: "release-20250330" }).versionLabel).toBe("release-20250330");
+  });
+  it("prefers the probed tag over a stale hand-set label", () => {
+    expect(github({ versionLabel: "v0.39.1", detectedVersion: "v0.40.4" }).versionLabel).toBe("v0.40.4");
+  });
+  it("ignores a branch name, which is not a version", () => {
+    expect(github({ detectedVersion: "master" }).versionLabel).toBeUndefined();
+  });
+  it("leaves direct downloads on their own label", () => {
+    const entry = toLauncherCatalogEntry({
+      ...base,
+      launcherInstall: { enabled: true, kind: "direct-zip", url: "https://example.com/a.zip", versionLabel: "1.0", detectedVersion: "2.0" },
+    });
+    expect(entry.versionLabel).toBe("1.0");
+  });
+});

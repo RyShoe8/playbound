@@ -382,6 +382,17 @@ export function toLauncherCatalogEntry(input: {
   if (li.archiveInstallerName) entry.archiveInstallerName = li.archiveInstallerName;
   if (li.uploadId) entry.uploadId = li.uploadId;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
+  if (/^github-/.test(String(li.kind || "")) && /\d/.test(String(li.detectedVersion || ""))) {
+    /*
+     * A GitHub recipe always installs the latest release, whatever its label
+     * says. The daily probe records that release tag as detectedVersion, and
+     * the launcher records the same tag when it installs, so it is the only
+     * label auto-update can compare against. Without it every GitHub game
+     * (OpenRA, SuperTuxKart, Luanti…) had no label and never updated, and a
+     * hand-set label went stale (Space Station 14 said v0.39.1 at v0.40.4).
+     */
+    entry.versionLabel = String(li.detectedVersion);
+  }
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
   if (li.launchArgs?.length) entry.launchArgs = li.launchArgs;
   if (li.steamAppId) entry.steamAppId = li.steamAppId;

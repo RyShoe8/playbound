@@ -249,6 +249,18 @@ export function toEdition(doc: LeanEdition): Edition {
       }
     }
 
+    /*
+     * GitHub recipes install the latest release whatever their label says. The
+     * daily probe stores that release tag on the edition (detectedVersion) and
+     * the launcher records the same tag when it installs, so it is the label
+     * auto-update has to compare. Same rule as toLauncherCatalogEntry for games.
+     */
+    const pbi = installConfig.playbound_installer;
+    const probedTag = typeof doc.detectedVersion === "string" ? doc.detectedVersion : "";
+    if (pbi && /^github-/.test(String(pbi.kind || "")) && /\d/.test(probedTag)) {
+      installConfig = { ...installConfig, playbound_installer: { ...pbi, versionLabel: probedTag } };
+    }
+
     return {
       id: String(doc._id),
       gameId: doc.gameId ? String(doc.gameId) : undefined,
