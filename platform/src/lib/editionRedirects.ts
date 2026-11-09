@@ -14,6 +14,8 @@ const RETIRED_EDITION_REDIRECTS: Readonly<Record<string, string>> = {
   "genshin-impact/genshin-pc-hoyoplay": "",
   "dota-2/dota-2-steam": "",
   "ysoccer/ysoccer-portable": "",
+  "dune-legacy/modern-engine": "",
+  "daggerfall/classic-dos": "",
   "trigger-rally/trigger-rally-portable": "",
 };
 
