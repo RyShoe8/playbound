@@ -64,7 +64,7 @@ export const links: NavItem[] = [
     href: "/admin/games",
     label: "Games",
     icon: Gamepad2,
-    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers", "/admin/control-profiles", "/admin/editorial-reviews"],
+    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers", "/admin/control-profiles", "/admin/editorial-reviews", "/admin/device-profiles"],
   },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
@@ -138,6 +138,12 @@ const GLOBAL_GAME_CHILDREN: NavChild[] = [
     icon: Gamepad2,
     href: "/admin/control-profiles",
     match: (p) => p.startsWith("/admin/control-profiles"),
+  },
+  {
+    label: "Flight Devices",
+    icon: Gamepad2,
+    href: "/admin/device-profiles",
+    match: (p) => p.startsWith("/admin/device-profiles"),
   },
   {
     label: "Developers",

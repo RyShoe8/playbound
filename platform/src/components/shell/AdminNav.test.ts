@@ -96,6 +96,7 @@ describe("admin nav structure", () => {
         { label: "Editions" },
         { label: "Editorial Reviews" },
         { label: "Control Profiles" },
+        { label: "Flight Devices" },
         { label: "Developers" },
         { label: "Collections" },
         { label: "Mod Classifications" },

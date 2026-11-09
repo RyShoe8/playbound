@@ -39,6 +39,7 @@ import '@/lib/models/EditorialReview';
 import '@/lib/models/EditorialReviewSource';
 import '@/lib/models/Edition';
 import '@/lib/models/EventRsvp';
+import '@/lib/models/FlightDeviceProfile';
 import '@/lib/models/FreeOffer';
 import '@/lib/models/Friend';
 import '@/lib/models/FriendInvite';
