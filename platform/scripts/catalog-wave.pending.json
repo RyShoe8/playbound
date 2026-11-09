@@ -1,4 +1,55 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-retire-official-20261108-3",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "valorant/official",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "shattered-pixel-dungeon/official",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "luanti/official",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "ysoccer/ysoccer-portable",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    },
+    {
+      "kind": "edition",
+      "key": "dota-2/dota-2-steam",
+      "expected": {
+        "visibility": "public"
+      },
+      "set": {
+        "visibility": "hidden"
+      }
+    }
+  ]
 }
