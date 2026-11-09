@@ -94,6 +94,8 @@ contextBridge.exposeInMainWorld("playbound", {
   reportGamepads: (pads) => ipcRenderer.invoke("report-gamepads", pads),
   getFsoHotasDevices: () => ipcRenderer.invoke("get-fso-hotas-devices"),
   saveFlightCalibration: (profile) => ipcRenderer.invoke("save-flight-calibration", profile),
+  amigaKickstartStatus: () => ipcRenderer.invoke("amiga-kickstart-status"),
+  importAmigaKickstart: () => ipcRenderer.invoke("import-amiga-kickstart"),
   saveFsoHotasDevices: (devices) => ipcRenderer.invoke("save-fso-hotas-devices", devices),
   startGamepadBridge: (profile) => ipcRenderer.invoke("gamepad-bridge-start", profile || {}),
   stopGamepadBridge: () => ipcRenderer.invoke("gamepad-bridge-stop"),

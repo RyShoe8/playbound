@@ -2009,6 +2009,9 @@ async function autoUpdateInstalledEditions() {
           const after = loadState();
           if (after[slug]?.editions?.[editionSlug]) {
             const updated = after[slug].editions[editionSlug];
+            // The reinstall replaced the record; keep the one-attempt-per-release
+            // marker, or a version that never matches the label loops forever.
+            updated.autoUpdateTriedTo = toVersion;
             updated.filesInstalledAt = new Date().toISOString();
             const rollbackDir = takeRollbackDir();
             if (rollbackDir) updated.rollback = { dir: rollbackDir, fromVersion, toVersion };
@@ -8061,6 +8064,7 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
       root: managedRetroArch.root(),
       binary: runtime.binary,
       core,
+      kickstartDir: path.join(app.getPath("userData"), "amiga-kickstart"),
       extra: skyLanceOwn[0] === "--appendconfig" ? skyLanceOwn[1] : null,
     });
     const skyLanceArgs = ["--appendconfig", appendConfig];
@@ -12747,6 +12751,24 @@ ipcMain.handle("get-fso-hotas-devices", async () => {
  * A player's calibration of a flight device: kept for this PC, offered to the
  * site for review so the next owner of the same device skips it.
  */
+/*
+ * Amiga Kickstart: the player's own ROM, for disks PUAE's built-in AROS
+ * cannot boot. Kept in PlayBound's data folder and copied to RetroArch's at
+ * launch. Verified by checksum so a wrong file fails here, not at boot.
+ */
+ipcMain.handle("amiga-kickstart-status", () =>
+  ({ installed: require("./services/amigaKickstart").installedKickstarts(path.join(app.getPath("userData"), "amiga-kickstart")) })
+);
+ipcMain.handle("import-amiga-kickstart", async () => {
+  const picked = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, {
+    title: "Choose your Kickstart ROM",
+    properties: ["openFile"],
+    filters: [{ name: "Amiga Kickstart ROM", extensions: ["rom", "a500", "a600", "a1200", "bin"] }, { name: "All files", extensions: ["*"] }],
+  });
+  if (picked.canceled || !picked.filePaths?.[0]) return { ok: false, canceled: true };
+  return require("./services/amigaKickstart").importKickstart(picked.filePaths[0], path.join(app.getPath("userData"), "amiga-kickstart"));
+});
+
 ipcMain.handle("save-flight-calibration", async (_event, raw) =>
   require("./services/flightProfileStore").saveCalibration({
     userDataPath: app.getPath("userData"),

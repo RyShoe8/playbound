@@ -206,9 +206,10 @@ internal static class Program
     // ── PlayBound Controls: keyboard/mouse synthesis (Win32 SendInput) ─────
     //
     // A minimal SendInput wrapper — just the three shapes the Input Engine
-    // actually emits (see launcher/services/inputEngine/index.js). No
-    // scan-code fallback, no Unicode text input: PlayBound Controls only
-    // ever synthesizes discrete key up/down and relative mouse motion.
+    // actually emits (see launcher/services/inputEngine/index.js). Keys carry
+    // both the virtual key and its scan code; no Unicode text input:
+    // PlayBound Controls only ever synthesizes discrete key up/down and
+    // relative mouse motion.
 
     private const int InputKeyboard = 1;
     private const int InputMouse = 0;
@@ -259,8 +260,31 @@ internal static class Program
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, Input[] pInputs, int cbSize);
 
+    [DllImport("user32.dll")]
+    private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+    private const uint MapvkVkToVsc = 0;
+    private const uint KeyeventfExtendedkey = 0x0001;
+
+    // Keys whose scan code carries the E0 prefix. Without the extended flag an
+    // arrow key reads as its numeric-keypad twin.
+    private static readonly HashSet<int> ExtendedKeys = new()
+    {
+        0x21, 0x22, 0x23, 0x24, // Page Up, Page Down, End, Home
+        0x25, 0x26, 0x27, 0x28, // arrows
+        0x2D, 0x2E,             // Insert, Delete
+        0x5B, 0x5C, 0x5D,       // Windows keys, Menu
+        0x6F, 0x90,             // numpad divide, Num Lock
+        0xA3, 0xA5,             // right Ctrl, right Alt
+    };
+
     private static void SendKey(int vk, string action)
     {
+        // A scan code alongside the virtual key. Games that read the keyboard
+        // by scan code (DOSBox-X, SDL, DirectInput, Raw Input) ignore a
+        // VK-only event, which is why Airtime saw some keys and not others.
+        var flags = action == "up" ? KeyeventfKeyup : 0;
+        if (ExtendedKeys.Contains(vk)) flags |= KeyeventfExtendedkey;
         var input = new Input
         {
             type = InputKeyboard,
@@ -269,8 +293,8 @@ internal static class Program
                 ki = new KeybdInputData
                 {
                     wVk = (ushort)vk,
-                    wScan = 0,
-                    dwFlags = action == "up" ? KeyeventfKeyup : 0,
+                    wScan = (ushort)MapVirtualKey((uint)vk, MapvkVkToVsc),
+                    dwFlags = flags,
                     time = 0,
                     dwExtraInfo = IntPtr.Zero,
                 },

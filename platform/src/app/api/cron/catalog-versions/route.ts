@@ -49,8 +49,11 @@ async function run(req: Request) {
     mods: { checked: 0, updated: 0, ok: 0, broken: 0, skipped: 0 },
   };
 
+  // Testing and ready games install through the launcher too; leaving them
+  // unprobed kept a hand-set label (HyperDisc Arena's 0.2.0) stale while the
+  // installed release moved on.
   const games = await CatalogGame.find({
-    published: true,
+    $or: [{ published: true }, { status: { $in: ["testing", "ready"] } }],
     "launcherInstall.enabled": true,
   })
     .select("slug website launcherInstall")

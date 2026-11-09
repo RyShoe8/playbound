@@ -22,13 +22,22 @@
 const fsp = require("fs/promises");
 const path = require("path");
 
-/** Core options per core, written to a file RetroArch reads instead of the shared one. */
+/**
+ * Core options per core, written to a file RetroArch reads instead of the
+ * shared one. A function receives RetroArch's system folder.
+ */
 const CORE_OPTIONS = {
-  puae: {
-    // Built-in AROS instead of a Kickstart ROM the player does not have.
-    puae_kickstart: "aros",
-  },
+  // A real Kickstart when the player has added one (it boots disks AROS
+  // cannot, 1942 among them); PUAE's built-in AROS replacement otherwise.
+  puae: (systemDir) => ({
+    puae_kickstart: require("./amigaKickstart").hasKickstart13(systemDir) ? "auto" : "aros",
+  }),
 };
+
+function coreOptionsFor(core, systemDir) {
+  const options = CORE_OPTIONS[core];
+  return typeof options === "function" ? options(systemDir) : options || {};
+}
 
 function cfgLine(key, value) {
   return `${key} = ${JSON.stringify(String(value).replace(/\\/g, "/"))}`;
@@ -55,26 +64,28 @@ function launchConfigText({ appDir, core, optionsPath }) {
   return `${lines.join("\n")}\n`;
 }
 
-function coreOptionsText(core) {
-  return `${Object.entries(CORE_OPTIONS[core] || {}).map(([k, v]) => cfgLine(k, v)).join("\n")}\n`;
+function coreOptionsText(core, systemDir) {
+  return `${Object.entries(coreOptionsFor(core, systemDir)).map(([k, v]) => cfgLine(k, v)).join("\n")}\n`;
 }
 
 /**
  * Write the launch files and return the --appendconfig value. `extra` is a
  * game's own appendconfig path, joined after ours so it keeps priority.
  */
-async function prepareRetroArchLaunch({ root, binary, core, extra = null }) {
+async function prepareRetroArchLaunch({ root, binary, core, extra = null, kickstartDir = null }) {
   const appDir = path.dirname(binary);
+  // The player's Kickstart lives in PlayBound's folder; PUAE reads RetroArch's.
+  if (core === "puae") await require("./amigaKickstart").syncKickstarts(kickstartDir, path.join(appDir, "system"));
   await fsp.mkdir(path.join(appDir, "system"), { recursive: true });
   await fsp.mkdir(path.join(appDir, "config"), { recursive: true });
   let optionsPath = null;
   if (CORE_OPTIONS[core]) {
     optionsPath = path.join(root, `playbound-${core}-options.cfg`);
-    await fsp.writeFile(optionsPath, coreOptionsText(core), "utf8");
+    await fsp.writeFile(optionsPath, coreOptionsText(core, path.join(appDir, "system")), "utf8");
   }
   const launchPath = path.join(root, "playbound-launch.cfg");
   await fsp.writeFile(launchPath, launchConfigText({ appDir, core, optionsPath }), "utf8");
   return extra ? `${launchPath}|${extra}` : launchPath;
 }
 
-module.exports = { CORE_OPTIONS, launchConfigText, coreOptionsText, prepareRetroArchLaunch };
+module.exports = { CORE_OPTIONS, coreOptionsFor, launchConfigText, coreOptionsText, prepareRetroArchLaunch };

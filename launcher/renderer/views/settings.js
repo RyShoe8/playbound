@@ -202,6 +202,15 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">Amiga Kickstart ROM</label>
+      <p class="settings-hint">Amiga games run with RetroArch's built-in AROS replacement, which boots many disks but not all (1942 stops at "insert bootable media"). Add your own Kickstart 1.3 ROM — from Amiga Forever, or dumped from your Amiga — and every Amiga game uses it. PlayBound can't include one: Kickstart is Cloanto's.</p>
+      <p class="settings-hint" id="set-kickstart-status">Checking…</p>
+      <div style="margin-top: 6px;">
+        <button class="btn-secondary btn-sm" id="set-btn-kickstart">Add Kickstart ROM…</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Open Source Components</label>
       <p class="settings-hint">PlayBound Setup includes the established ViGEmBus controller driver and NetBird network client for games and multiplayer. PlayBound checks them again when needed and explains any repair here. Java, .NET, DOSBox, and RetroArch are prepared on demand for games that need them; portable runtimes stay in PlayBound's data folder.</p>
       <ul style="margin: 8px 0 0 16px; padding: 0; font-size: 12px; color: var(--text-muted); line-height: 1.6;">
@@ -218,6 +227,21 @@ async function renderSettingsView() {
   `;
 
   document.getElementById("set-btn-signin").addEventListener("click", () => window.playbound.signIn());
+  const kickstartStatus = document.getElementById("set-kickstart-status");
+  const showKickstart = (installed) => {
+    if (kickstartStatus) {
+      kickstartStatus.textContent = installed?.length ? `Installed: ${installed.join(", ")}.` : "No Kickstart ROM added — Amiga games use AROS.";
+    }
+  };
+  window.playbound.amigaKickstartStatus?.().then((r) => showKickstart(r?.installed)).catch(() => showKickstart([]));
+  document.getElementById("set-btn-kickstart")?.addEventListener("click", async () => {
+    const result = await window.playbound.importAmigaKickstart?.();
+    if (!result || result.canceled) return;
+    if (!result.ok) { setStatus(result.error || "Could not add that ROM.", true); return; }
+    setStatus(`${result.label} added. Amiga games will use it from the next launch.`);
+    const r = await window.playbound.amigaKickstartStatus?.();
+    showKickstart(r?.installed);
+  });
   document.getElementById("set-btn-forgot")?.addEventListener("click", () => {
     const base = (state.accountState.apiBase || settings.apiBase || "https://playbound.club").replace(/\/$/, "");
     window.playbound.openExternal(`${base}/forgot-password`);

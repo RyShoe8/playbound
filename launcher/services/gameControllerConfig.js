@@ -1101,6 +1101,15 @@ const NO_CONFIG_NEEDED = {
       "it as Full controller support. Bindings live in Steam's config, not a file beside the " +
       "game, so there is nothing here for PlayBound to write.",
   },
+  "initial-unity": {
+    kind: "native",
+    note:
+      "Unity Input System, and its shipped action map binds pad controls only under " +
+      "<XInputControllerWindows> (Gas = rightTrigger, Clutch = dpad/down, Reset = select, " +
+      "read from level0 of build 0313). An Xbox pad works as it is; a DualSense or other " +
+      "DirectInput pad does nothing until the launch dialog's Controller choice bridges it " +
+      "to a virtual Xbox 360 pad. Players on a wheel turn on WHEEL ENABLED in its settings.",
+  },
   openclonk: {
     kind: "native",
     note:

@@ -48,6 +48,20 @@ function deadzone(val, threshold = 0.15) {
   return val;
 }
 
+/**
+ * The pad to read: the first one the browser maps to the standard gamepad
+ * layout. A flight stick, throttle or wheel is reported with mapping "" and
+ * its own button/axis order; reading one of those as a gamepad meant a player
+ * with a HOTAS plugged in got its axes as the left stick and no face buttons
+ * at all. Fall back to any connected device only when no standard pad exists.
+ */
+export function primaryGamepad() {
+  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+  return pads.find((p) => p && p.connected && p.mapping === "standard")
+    || pads.find((p) => p && p.connected)
+    || null;
+}
+
 function anyLoopActive() {
   return bridgeLoopActive || controlsLoopActive;
 }
@@ -56,8 +70,7 @@ function pollAndSendGamepadFrame() {
   if (!anyLoopActive()) return;
 
   try {
-    const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
-    const pad = pads.find((p) => p && p.connected);
+    const pad = primaryGamepad();
 
     if (pad) {
       hadPad = true;
@@ -149,8 +162,7 @@ function pollAndSendGamepadFrame() {
  * Check if the active connected controller is a DualSense or DirectInput pad that benefits from bridging.
  */
 export function isBridgeableGamepadConnected() {
-  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
-  const pad = pads.find((p) => p && p.connected);
+  const pad = primaryGamepad();
   if (!pad) return false;
 
   const id = (pad.id || "").toLowerCase();
@@ -181,8 +193,7 @@ export async function enableGamepadBridge() {
     /* continue */
   }
 
-  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
-  const pad = pads.find((p) => p && p.connected);
+  const pad = primaryGamepad();
   const profile = {
     id: pad?.id || "DirectInput Controller",
     label: pad?.id?.includes("DualSense") ? "PS5 DualSense" : "Gamepad",

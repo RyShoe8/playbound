@@ -24,10 +24,37 @@ function isComparableVersion(value) {
   return /\d/.test(normalizedVersion(value));
 }
 
+/**
+ * -1, 0 or 1 comparing two version labels by their numbers ("v0.2.12" > "0.2.0"),
+ * or null when they are not both plain dotted versions ("release-20250330"
+ * versus "1.5" cannot be ordered, and must not be guessed at).
+ */
+function compareVersions(a, b) {
+  const parse = (v) => {
+    const m = normalizedVersion(v).match(/^(\d+(?:\.\d+)*)(?:[-+].*)?$/);
+    return m ? m[1].split(".").map(Number) : null;
+  };
+  const x = parse(a);
+  const y = parse(b);
+  if (!x || !y) return null;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (x[i] || 0) - (y[i] || 0);
+    if (d) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
 function shouldUpdateEdition({ fromVersion, toVersion, triedVersion }) {
   const from = normalizedVersion(fromVersion);
   const to = normalizedVersion(toVersion);
   if (!isComparableVersion(from) || !isComparableVersion(to) || from === to) return false;
+  /*
+   * Never "update" backwards. A stale catalog label (HyperDisc Arena said 0.2.0
+   * while v0.2.12 was installed) made every launch reinstall: a GitHub recipe
+   * fetches the latest release regardless, so the install never matched the
+   * label and the loop never ended.
+   */
+  if (compareVersions(to, from) === -1) return false;
   // One attempt per release: a failing update must not re-download every launch.
   return normalizedVersion(triedVersion) !== to;
 }
@@ -162,4 +189,5 @@ function mergeModFiles(unpackedDir, targetDir, previousStamps) {
   return stamps;
 }
 
-module.exports = { hasManifest, hasRollbackRoom, carryPlayerFiles, mergeModFiles, writeManifest, isComparableVersion, modUpdateAction, normalizedVersion, shouldUpdateEdition };
+module.exports = {
+  compareVersions, hasManifest, hasRollbackRoom, carryPlayerFiles, mergeModFiles, writeManifest, isComparableVersion, modUpdateAction, normalizedVersion, shouldUpdateEdition };

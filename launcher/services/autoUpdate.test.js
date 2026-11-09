@@ -126,3 +126,15 @@ test("an install is only exact once it has a file record", () => {
   assert.equal(hasManifest(root), true);
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("auto-update never goes backwards, and orders only plain versions", () => {
+  const { compareVersions } = require("./autoUpdate");
+  // HyperDisc Arena: a stale 0.2.0 label must not reinstall over v0.2.12.
+  assert.equal(shouldUpdateEdition({ fromVersion: "v0.2.12", toVersion: "0.2.0" }), false);
+  assert.equal(shouldUpdateEdition({ fromVersion: "v0.2.0", toVersion: "0.2.12" }), true);
+  assert.equal(compareVersions("v0.2.12", "0.2.0"), 1);
+  assert.equal(compareVersions("1.5", "1.5.0"), 0);
+  // Unorderable labels still update on change, as before.
+  assert.equal(compareVersions("release-20250330", "1.5"), null);
+  assert.equal(shouldUpdateEdition({ fromVersion: "release-20240101", toVersion: "release-20250330" }), true);
+});
