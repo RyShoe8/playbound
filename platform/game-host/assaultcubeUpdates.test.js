@@ -110,7 +110,7 @@ with tarfile.open(sys.argv[1], 'w:bz2') as archive:
   if variant=='hardlink':member.type=tarfile.LNKTYPE;member.linkname='config/private.cfg';member.size=0
   if variant=='suid':member.mode=0o4755
   if variant=='oversized':member.size=17*1024**2
-  archive.addfile(member,io.BytesIO(b'data') if member.size==4 else None)
+  archive.addfile(member,io.BytesIO(b'data' if member.size==4 else bytes(member.size)) if member.size else None)
 `, archive, variant]);
     const result = spawnSync("/usr/bin/python3", [helper, archive, output]);
     assert.equal(result.status, variant === "valid" ? 0 : 1, variant);
