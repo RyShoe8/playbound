@@ -12,7 +12,7 @@ describe("retired edition redirects", () => {
   });
 
   it("leaves every other edition alone", () => {
-    expect(retiredEditionRedirect("daggerfall", "classic-dos")).toBeNull();
+    expect(retiredEditionRedirect("daggerfall", "daggerfall-unity")).toBeNull();
   });
 });
 
