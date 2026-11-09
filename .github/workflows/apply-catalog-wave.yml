@@ -36,7 +36,11 @@ jobs:
       - name: Apply only the reviewed pending operations
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
-        run: npm run insert:catalog-wave -- --apply
+        shell: bash -o pipefail {0}
+        run: npm run insert:catalog-wave -- --apply 2>&1 | tee /tmp/catalog-wave.log
+      # Logs need a GitHub sign-in; annotations do not. Surface why a wave stopped.
+      - if: failure()
+        run: grep -E "Error|error|changed|forbidden|does not exist" /tmp/catalog-wave.log | head -10 | while IFS= read -r line; do echo "::error::$line"; done
       - name: Clear the applied wave
         run: |
           printf '{\n  "id": null,\n  "operations": []\n}\n' > scripts/catalog-wave.pending.json
