@@ -16,6 +16,7 @@ const RETIRED_EDITION_REDIRECTS: Readonly<Record<string, string>> = {
   "ysoccer/ysoccer-portable": "",
   "dune-legacy/modern-engine": "",
   "daggerfall/classic-dos": "",
+  "triplea/triplea-official": "",
   "trigger-rally/trigger-rally-portable": "",
 };
 
