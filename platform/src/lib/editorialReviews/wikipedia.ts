@@ -238,7 +238,7 @@ function templateParam(template: string, name: string): string | null {
 
 /** Whether the article's infobox lists a release in this year (±1 for regional/early access). */
 export function releasedAround(article: string, year: number): boolean {
-  const start = article.search(/\{\{\s*Infobox video game/i);
+  const start = article.search(/\{\{\s*Infobox (video game|software)/i);
   if (start < 0) return false;
   const box = balancedTemplate(article, start) ?? "";
   const released = templateParam(box.slice(2, -2), "released") ?? "";
@@ -250,8 +250,13 @@ export function hasReviewsTable(article: string): boolean {
   return /\{\{\s*Video game reviews/i.test(article);
 }
 
+/**
+ * A game's article. Open-source games are usually filed under the software
+ * infobox (Wesnoth, Warzone 2100, Luanti), so both count; the title and
+ * release-year checks are what keep a non-game article out.
+ */
 export function isVideoGameArticle(article: string): boolean {
-  return /\{\{\s*Infobox video game/i.test(article);
+  return /\{\{\s*Infobox (video game|software)/i.test(article);
 }
 
 /** Every review row with a link, from the article's first reviews table. */

@@ -5,12 +5,16 @@ import { syncEditorialReviews, syncOutletFeeds, type SyncResult } from "@/lib/ed
 import { allSyncTargets, staleSyncTargets } from "@/lib/editorialReviews/targets";
 import { ratingsTag } from "@/lib/ratingsData";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
-/** Targets per run (Wikipedia plus a search of each outlet). Hourly runs cycle the catalogue in about two days. */
-const BATCH = 9;
-/** Stop starting new work once this much of the run is used. */
-const TIME_BUDGET_MS = 42_000;
+/** Targets per run (Wikipedia plus a search of each outlet). Hourly runs cycle the catalogue in under a day. */
+const BATCH = 25;
+/**
+ * Stop starting new work once this much of the run is used, leaving the feeds
+ * and a margin inside maxDuration. A run cut off by the platform cannot record
+ * anything, which is how the first version stalled on one slow target.
+ */
+const TIME_BUDGET_MS = 220_000;
 
 export async function GET(req: Request) {
   return run(req);

@@ -61,11 +61,11 @@ export interface SyncResult {
 
 async function fetchWikitext(title: string): Promise<{ title: string; text: string } | null> {
   const url = `${WIKI_API}?action=parse&page=${encodeURIComponent(title)}&prop=wikitext&redirects=1&format=json&formatversion=2`;
-  let res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(10_000) });
+  let res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(8_000) });
   // Wikimedia rate limits bursts; one polite retry, then treat it as a miss.
   if (res.status === 429) {
     await new Promise((r) => setTimeout(r, Number(res.headers.get("retry-after") ?? 2) * 1000));
-    res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(10_000) });
+    res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(8_000) });
   }
   if (res.status === 429) throw new Error("Wikipedia rate limited the sync");
   if (!res.ok) return null;
@@ -254,7 +254,7 @@ async function sameOutletExists(target: SyncTarget, outlet: string): Promise<boo
 
 async function fetchText(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, redirect: "follow", signal: AbortSignal.timeout(10_000) });
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, redirect: "follow", signal: AbortSignal.timeout(6_000) });
     if (!res.ok) return null;
     return (await res.text()).slice(0, 600_000);
   } catch {
@@ -333,7 +333,22 @@ async function addOutletReview(target: SyncTarget, outlet: Outlet, item: FeedIte
 }
 
 /** Search every searchable outlet for this target's reviews, in parallel across sites. */
+/** Outlet searches for one target give up after this long; a slow site must not stall the run. */
+const OUTLET_SEARCH_DEADLINE_MS = 25_000;
+
 export async function syncOutletSearch(target: SyncTarget): Promise<{ found: number; added: number }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<{ found: number; added: number }>((resolve) => {
+    timer = setTimeout(() => resolve({ found: 0, added: 0 }), OUTLET_SEARCH_DEADLINE_MS);
+  });
+  try {
+    return await Promise.race([searchAllOutlets(target), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function searchAllOutlets(target: SyncTarget): Promise<{ found: number; added: number }> {
   const query = titleCandidates(target.title).at(-1) ?? target.title;
   const perOutlet = await Promise.all(
     OUTLETS.filter((o) => o.search).map(async (outlet) => {
@@ -380,6 +395,17 @@ export async function syncEditorialReviews(
   const base = { gameSlug: target.gameSlug, editionSlug: target.editionSlug };
   const source = await EditorialReviewSource.findOne(base).lean<{ wikipediaTitle?: string | null; disabled?: boolean }>();
   if (source?.disabled) return { ...base, status: "disabled", article: null, found: 0, added: 0, updated: 0 };
+
+  /*
+   * Claim the target before doing any work. If the run is cut off mid-target,
+   * it is then no longer "never synced" and the next run moves on, instead of
+   * starting with the same slow target and stalling forever.
+   */
+  await EditorialReviewSource.updateOne(
+    base,
+    { $set: { lastSyncAt: new Date(), lastStatus: "running" }, $setOnInsert: base },
+    { upsert: true }
+  );
 
   let result: SyncResult;
   try {

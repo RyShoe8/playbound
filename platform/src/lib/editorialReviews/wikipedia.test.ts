@@ -102,3 +102,13 @@ describe("title normalisation", () => {
     expect(normalizeTitle("Dota 2")).not.toBe(normalizeTitle("Dota 2023"));
   });
 });
+
+describe("open-source game articles", () => {
+  it("accepts the software infobox and reads its release year", async () => {
+    const { isVideoGameArticle } = await import("./wikipedia");
+    const article = "{{Infobox software\n| name = Warzone 2100\n| released = {{Start date and age|1999|4|30}}\n}}";
+    expect(isVideoGameArticle(article)).toBe(true);
+    expect(releasedAround(article, 1999)).toBe(true);
+    expect(isVideoGameArticle("{{Infobox person\n| name = x\n}}")).toBe(false);
+  });
+});
