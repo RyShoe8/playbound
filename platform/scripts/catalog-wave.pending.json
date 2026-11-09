@@ -1,4 +1,15 @@
 {
-  "id": null,
-  "operations": []
+  "id": "edition-info-20261108-valorant-epic",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "valorant/epic",
+      "expected": {
+        "longDescription": null
+      },
+      "set": {
+        "longDescription": "This edition is Valorant as listed on the Epic Games Store. It is the same game as the Riot client version in every way that matters: the same servers, the same Riot account, the same ranked queue and the same agents and skins. What changes is where it lives on your computer. Installing through Epic puts Valorant in your Epic library alongside your other games, with Epic's friend list and notifications, while Riot's own client still runs underneath to handle sign-in and updates.\n\nThe game itself is Riot's five-versus-five tactical shooter. Each round one team plants a bomb, called the Spike, and the other defends, and precise gunplay counts for as much as the abilities of the agents you pick. One headshot from the right rifle can win a round, so aim, positioning and communication carry more weight than the abilities alone.\n\nA few things are true whichever store you use. Valorant is free to play, and cosmetic purchases do not affect play. Riot's Vanguard anti-cheat is required, runs at kernel level and starts with Windows, so read up on it before you install. PlayBound opens Valorant's Epic store page for this edition; if you do not use Epic, the main edition installs Riot's client directly."
+      }
+    }
+  ]
 }
