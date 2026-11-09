@@ -1887,7 +1887,9 @@ async function refreshRemoteCatalog(force = false) {
  * installs in PlayBound's own folder qualify: an installer or a store manages
  * its own files. services/autoUpdate.js keeps the player's files across the swap.
  */
-const AUTO_UPDATE_KINDS = ["direct-zip", "direct-7z", "github-zip"];
+// github-jar (Mindustry) keeps its saves in AppData, outside the install, and
+// records the release tag like github-zip does, so it updates the same way.
+const AUTO_UPDATE_KINDS = ["direct-zip", "direct-7z", "github-zip", "github-jar"];
 const AUTO_UPDATE_EVERY_MS = 6 * 60 * 60 * 1000;
 /** How soon a failed start counts against the update, and when the old build is let go. */
 const UPDATE_CRASH_WINDOW_MS = 15 * 1000;

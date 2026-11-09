@@ -76,3 +76,18 @@ test("sets FSO Joy0 and Joy1 while preserving unrelated settings and sections", 
   assert.doesNotMatch(output, /Joy0ID=9|Joy0GUID=OLD/);
   assert.match(output, /Width=1920/);
 });
+
+test("finds the control defaults in the 1.1 layout, without FG_Core", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fotg-11-"));
+  try {
+    const table = path.join(root, "kn_portable/Library/FotG_R/FotG_R-1.1.2/data/tables/Controlconfigdefaults.tbl");
+    await fs.mkdir(path.dirname(table), { recursive: true });
+    await fs.writeFile(table, "#ControlConfigOverride\n$Name: default\n#End\n");
+    const settings = path.join(root, "settings", "fs2_open.ini");
+    const result = await configureFotgHotas4(root, settings, [{ name: "T.Flight Hotas 4" }]);
+    assert.equal(result.throttleConfigured, true);
+    assert.match(await fs.readFile(table, "utf8"), /PlayBound TFlight HOTAS 4/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

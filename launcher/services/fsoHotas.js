@@ -164,12 +164,17 @@ async function configureFotgHotas4(installDir, settingsPath, devices) {
   let written = 0;
   for (const release of releases) {
     if (!release.isDirectory()) continue;
-    const table = path.join(library, release.name, "FG_Core", "data", "tables", "Controlconfigdefaults.tbl");
-    let original;
-    try { original = await fsp.readFile(table, "utf8"); }
-    catch (error) { if (error.code === "ENOENT") continue; throw error; }
-    await writeBackedUp(table, original, withHotas4Preset(original, slot));
-    written++;
+    // 1.0.x shipped the table inside an FG_Core folder; 1.1.x (which Knossos
+    // updates installs to on its own) keeps it at the release root. Patch
+    // whichever this release has.
+    for (const sub of [["FG_Core"], []]) {
+      const table = path.join(library, release.name, ...sub, "data", "tables", "Controlconfigdefaults.tbl");
+      let original;
+      try { original = await fsp.readFile(table, "utf8"); }
+      catch (error) { if (error.code === "ENOENT") continue; throw error; }
+      await writeBackedUp(table, original, withHotas4Preset(original, slot));
+      written++;
+    }
   }
   if (!written) throw new Error("Fate of the Galaxy control defaults were not found");
   const players = path.join(path.dirname(settingsPath), "data", "players");
