@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { controlProfileSchema } from "../src/lib/controlProfiles/schema";
 import { testingControlProfiles } from "./control-profiles/wave-1";
 import { testingControlProfilesWave2 } from "./control-profiles/wave-2";
+import { testingControlProfilesWave3 } from "./control-profiles/wave-3";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const platformDir = resolve(scriptDir, "..");
@@ -53,6 +54,7 @@ async function main() {
     }),
     ...testingControlProfiles.map((profile) => controlProfileSchema.parse(profile)),
     ...testingControlProfilesWave2.map((profile) => controlProfileSchema.parse(profile)),
+    ...testingControlProfilesWave3.map((profile) => controlProfileSchema.parse(profile)),
   ];
   const profiles = only ? allProfiles.filter((p) => p.gameSlug === only) : allProfiles;
   if (only && !profiles.length) throw new Error(`No profile for "${only}" is defined in this wave. Nothing was written.`);

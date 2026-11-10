@@ -13,6 +13,7 @@ on:
       - "platform/scripts/apply-control-profile-wave.ts"
       - "platform/scripts/control-profiles/wave-1.ts"
       - "platform/scripts/control-profiles/wave-2.ts"
+      - "platform/scripts/control-profiles/wave-3.ts"
       - "launcher/services/inputEngine/profiles/outrun.json"
 
 jobs:
