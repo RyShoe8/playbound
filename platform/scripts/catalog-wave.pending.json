@@ -1,4 +1,25 @@
 {
-  "id": null,
-  "operations": []
+  "id": "controller-support-verified-20261110",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "omega-strikers",
+      "expected": {
+        "features": ["Multiplayer", "Co-op", "Cross-play", "Team Play", "Ranked Ladder"]
+      },
+      "set": {
+        "features": ["Multiplayer", "Co-op", "Cross-play", "Team Play", "Ranked Ladder", "Controller Support"]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "star-wars-knights-of-the-old-republic-ii-the-sith-lords",
+      "expected": {
+        "features": ["Singleplayer", "Mod Support", "Community Content", "Story Campaign"]
+      },
+      "set": {
+        "features": ["Singleplayer", "Mod Support", "Community Content", "Story Campaign", "Controller Support"]
+      }
+    }
+  ]
 }
