@@ -54,9 +54,14 @@ function deadzone(val, threshold = 0.15) {
  * its own button/axis order; reading one of those as a gamepad meant a player
  * with a HOTAS plugged in got its axes as the left stick and no face buttons
  * at all. Fall back to any connected device only when no standard pad exists.
+ *
+ * While the bridge runs, its own virtual Xbox 360 pad is connected too and is
+ * also "standard". Only non-XInput pads are ever bridged, so XInput pads are
+ * skipped then: reading the virtual pad would feed its output back into it.
  */
 export function primaryGamepad() {
-  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+  const pads = (navigator.getGamepads ? Array.from(navigator.getGamepads()) : [])
+    .filter((p) => !(bridgeLoopActive && p && /xinput/i.test(p.id || "")));
   return pads.find((p) => p && p.connected && p.mapping === "standard")
     || pads.find((p) => p && p.connected)
     || null;
