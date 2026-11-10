@@ -6,7 +6,7 @@ import { type FriendActivity } from "@/lib/friends/friendActivity";
 import { acceptsGame, nextPlayTime, defaultPlayPreferences, type MatchGame, type PlayPreferences } from "@/lib/friends/playPreferences";
 
 type Friend = FriendActivity & { id: string; username: string; online: boolean; availability: Availability; preferences?: PlayPreferences; recentGames?: string[]; sharedGames: {slug: string; editionSlug?: string}[] };
-type Snapshot = { recentGames?: string[]; availability: Availability; preferences?: PlayPreferences; friends: Friend[] };
+type Snapshot = { recentGames?: string[]; availability: Availability; preferences?: PlayPreferences; friends: Friend[]; matchCandidates?: Friend[] };
 async function request(path: string, method = "GET", body?: unknown) {
   const response = await fetch(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json();
@@ -52,7 +52,7 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
         if (!initialized) {
           initialized = true;
           const reply = new URLSearchParams(location.search).get("friend");
-          if (reply && data.friends.some((f: Friend) => f.id === reply)) setSelected(reply);
+          if (reply && [...data.friends, ...(data.matchCandidates || [])].some((f: Friend) => f.id === reply)) setSelected(reply);
         }
       } catch (error) {
         if (active && !initialized) setNotice(error instanceof Error ? error.message : "Could not load friends.");
@@ -81,7 +81,7 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
   const online = snapshot?.friends.filter(f=>f.online) || [];
   const slots = now ? Array.from({length:24}, (_, i) => (Math.floor(now / step) + 1 + i) * step) : [];
   const activePrefs = snapshot?.preferences || defaultPlayPreferences;
-  const matches = (snapshot?.friends || []).flatMap(friend => {
+  const matches = (snapshot?.matchCandidates || []).flatMap(friend => {
     const p = friend.preferences || defaultPlayPreferences;
     const shared = new Set(friend.sharedGames.map(g => g.slug));
     const acceptable = games.filter(g => acceptsGame(activePrefs, g) && acceptsGame(p, g));
@@ -90,7 +90,7 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
     const at = nextPlayTime(friend.availability, when || now, now + 6 * 3600000);
     return at ? [{ friend, game, at, installed:shared.has(game.slug) }] : [];
   }).sort((a,b) => a.at-b.at || Number(b.installed)-Number(a.installed) || a.friend.username.localeCompare(b.friend.username));
-  const target = snapshot?.friends.find(f => f.id === selected);
+  const target = [...(snapshot?.friends || []), ...(snapshot?.matchCandidates || [])].find(f => f.id === selected);
   const chosen = matches.find(m => m.friend.id === selected);
   async function plan(at: number, gameSlug?: string) {
     if (plans[at]) return plans[at];
@@ -123,7 +123,7 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
     <button disabled={busy || !snapshot} className="new-button primary" onClick={()=>void run(async()=>{
       const start = when || Date.now();
       const result = await request("/api/friends/availability","PATCH",{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone, window:{startsAt:new Date(start).toISOString(),endsAt:new Date(start+7200000).toISOString()}});
-      setSnapshot(old=>old && {...old,availability:{...old.availability,window:result.window}});return "Availability shared for two hours.";
+      setSnapshot(old=>old && {...old,availability:{...old.availability,window:result.window}});return "Availability shared with PlayBound for two hours.";
     })}>{when ? `Free at ${clock(when)}` : "Free to Play Now"}</button></div>
     <dialog ref={planner} className="home-play-dialog party-plan" aria-labelledby="party-plan-title" onClose={()=>setPlanningAt(0)}>
       <h2 id="party-plan-title">{plans[planningAt] ? "Your party is planned" : "Plan a party"}</h2>
@@ -140,7 +140,7 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
     <section className="play-group">
     <h3>Next available</h3>
     {matches.slice(0,3).map(({friend,game,at:t,installed}, index)=><div className="play-match" key={friend.id}><button onClick={()=>pick(friend.id)}><strong>{friend.username}</strong> <span className="play-time">{t===now?"Free now":clock(t)}</span><small>{game.title} · {installed?"Both installed":"Free download"}</small></button>{index===0 && <button className={style} disabled={busy || sent.includes(friend.id+":"+(t>now?t:0))} onClick={()=>void run(()=>invite(friend,t,game.slug))}>{sent.includes(friend.id+":"+(t>now?t:0))?"Invited":"Invite"}</button>}</div>)}
-    {snapshot && !matches.length && <p>No matching friends in the next six hours.</p>}
+    {snapshot && !matches.length && <p>No matching players in the next six hours.</p>}
     </section>
     <section className="play-group">
     <h3>Friends online</h3>

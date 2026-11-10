@@ -63,9 +63,9 @@ export function toMatchGame(game) {
 }
 
 /** Friends who could play at or after `when`, soonest first, each with the best game for the two of you. */
-export function findMatches({ friends, preferences }, games, when, now) {
+export function findMatches({ matchCandidates, preferences }, games, when, now) {
   const mine = preferences || defaultPlayPreferences;
-  return (friends || []).flatMap((friend) => {
+  return (matchCandidates || []).flatMap((friend) => {
     const theirs = friend.preferences || defaultPlayPreferences;
     const shared = new Set((friend.sharedGames || []).map((game) => game.slug));
     const acceptable = games.filter((game) => acceptsGame(mine, game) && acceptsGame(theirs, game));

@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
     if (!result.success) return NextResponse.json({ error: result.error.issues[0].message }, { status: 400, headers });
     await dbConnect();
     await PlayAvailability.updateOne({ userId: id }, {
-      $set: { window: result.data.window }, $setOnInsert: { timezone: result.data.timezone },
+      $set: { window: result.data.window, ...(result.data.window ? { publishLooking: true } : {}) }, $setOnInsert: { timezone: result.data.timezone },
     }, { upsert: true, runValidators: true });
     revalidateMultiplayerActivity();
     return NextResponse.json({ window: result.data.window }, { headers });

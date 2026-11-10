@@ -1,3 +1,4 @@
+import { publicAvailability } from "./publicAvailability";
 import { activityGameSlugs, friendActivity } from "./friendActivity";
 import Presence from "@/lib/models/Presence";
 import { applyPresenceFreshness } from "./presenceMask";
@@ -33,6 +34,18 @@ export async function availabilityForFriends(userId: string) {
   await dbConnect();
   const relationships = await Friend.find({ status: "accepted", $or: [{ requesterId: userId }, { recipientId: userId }] }).select("requesterId recipientId").lean();
   const ids = relationships.map(row => String(row.requesterId) === userId ? String(row.recipientId) : String(row.requesterId));
+  const [published, blocked] = await Promise.all([
+    publicAvailability(),
+    Friend.find({ status: "blocked", $or: [{ requesterId: userId }, { recipientId: userId }] }).select("requesterId recipientId").lean(),
+  ]);
+  const excluded = new Set([userId, ...blocked.flatMap(row => [String(row.requesterId), String(row.recipientId)])]);
+  const candidates = await User.find({ _id: { $in: [...published.keys()].filter(id => !excluded.has(id)) },
+    disabled: { $ne: true }, "preferences.appearOffline": { $ne: true },
+    "preferences.hideActivityFromFriends": { $ne: true }, "preferences.allowPlayInvites": { $ne: false },
+  }).select("username").lean();
+  const candidateShared = await listSharedLibraryByFriend(userId, candidates.map(user => String(user._id)), true);
+  const matchCandidates = candidates.map(user => ({ id: String(user._id), username: String(user.username), online: false,
+    ...published.get(String(user._id))!, recentGames: [], sharedGames: candidateShared[String(user._id)] || [] }));
   const [users, records, shared, presence] = await Promise.all([
     User.find({ _id: { $in: ids }, disabled: { $ne: true }, "preferences.appearOffline": { $ne: true }, "preferences.hideActivityFromFriends": { $ne: true } }).select("username").lean(),
     PlayAvailability.find({ userId: { $in: [userId, ...ids] } }).lean(),
@@ -48,5 +61,5 @@ export async function availabilityForFriends(userId: string) {
     ? (await CatalogGame.find({ ...mongoVisibleFilter(), slug: { $in: activitySlugs } }).select("slug title").lean<{ slug: string; title: string }[]>()).map(game => [game.slug, game.title])
     : []);
   const recent = await recentGamesForUsers([userId, ...users.map(user => String(user._id))]);
-  return { preferences: prefs.get(userId), recentGames: recent.get(userId) ?? [], availability: byId.get(userId) || emptyAvailability(), friends: users.map(user => ({ id: String(user._id), username: String(user.username), online: online.has(String(user._id)), ...friendActivity(fresh.get(String(user._id)), prefs.get(String(user._id)), activityTitles), preferences: prefs.get(String(user._id)), recentGames: recent.get(String(user._id)) ?? [], availability: byId.get(String(user._id)) || emptyAvailability(), sharedGames: shared[String(user._id)] || [] })).sort((a, b) => a.username.localeCompare(b.username)) };
+  return { matchCandidates, preferences: prefs.get(userId), recentGames: recent.get(userId) ?? [], availability: byId.get(userId) || emptyAvailability(), friends: users.map(user => ({ id: String(user._id), username: String(user.username), online: online.has(String(user._id)), ...friendActivity(fresh.get(String(user._id)), prefs.get(String(user._id)), activityTitles), preferences: prefs.get(String(user._id)), recentGames: recent.get(String(user._id)) ?? [], availability: byId.get(String(user._id)) || emptyAvailability(), sharedGames: shared[String(user._id)] || [] })).sort((a, b) => a.username.localeCompare(b.username)) };
 }

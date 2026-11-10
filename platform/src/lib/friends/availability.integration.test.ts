@@ -1,3 +1,4 @@
+import { checkInviteRecipient } from "@/lib/playTogether/invites";
 import { PATCH as savePreferences } from "@/app/api/friends/availability/route";
 import { POST as sendFriendMessage } from "@/app/api/friends/message/route";
 import Notification from "@/lib/models/Notification";
@@ -135,4 +136,24 @@ it("delivers a friend note to the recipient and rejects unrelated accounts", asy
   expect((await send(friend!._id)).status).toBe(200);
   expect((await send(stranger!._id)).status).toBe(403);
   expect(await Notification.countDocuments({userId:friend!._id,type:"friend_message",body:"Ready for a game?"})).toBe(1);
+});
+
+it("matches public nonfriends while excluding private, hidden, self and blocked accounts", async () => {
+  const names = ["stranger", "blocked", "offline", "hidden"];
+  const people = await User.find({username: {$in:names}}).lean();
+  await PlayAvailability.updateMany({userId: {$in: people.map(p=>p._id)}}, {$set: {publishLooking:true, weekly:[], window:{startsAt:new Date(), endsAt:new Date(Date.now()+3600000)}}});
+  const result = await availabilityForFriends(owner);
+  expect(result.matchCandidates.map(p=>p.username)).toContain("stranger");
+  expect(result.matchCandidates.map(p=>p.username)).not.toEqual(expect.arrayContaining(["blocked"]));
+  expect(result.matchCandidates.some(p=>["offline","hidden","owner"].includes(p.username))).toBe(false);
+  expect(result.friends.map(p=>p.username)).not.toContain("stranger");
+});
+
+it("allows contact with opted-in nonfriends, rejects blocked and private recipients", async () => {
+  const stranger = await User.findOne({username:"stranger"}).lean();
+  const blocked = await User.findOne({username:"blocked"}).lean();
+  expect(await checkInviteRecipient(owner, String(stranger!._id))).toEqual({ok:true});
+  expect(await checkInviteRecipient(owner, String(blocked!._id))).toMatchObject({status:403});
+  await PlayAvailability.updateOne({userId:stranger!._id}, {$set:{publishLooking:false}});
+  expect(await checkInviteRecipient(owner, String(stranger!._id))).toMatchObject({status:403});
 });

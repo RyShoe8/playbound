@@ -1,3 +1,4 @@
+import { publicAvailability } from "@/lib/friends/publicAvailability";
 import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import PlayInvite from "@/lib/models/PlayInvite";
@@ -37,13 +38,21 @@ export async function checkInviteRecipient(
   if (senderId === recipientId) {
     return { error: "Cannot invite yourself", status: 400 };
   }
+  if (!Types.ObjectId.isValid(senderId) || !Types.ObjectId.isValid(recipientId)) return { error: "Invalid recipient", status: 400 };
+  const blocked = await Friend.exists({ status: "blocked", $or: [
+    { requesterId: senderId, recipientId }, { requesterId: recipientId, recipientId: senderId },
+  ] });
+  if (blocked) return { error: "Recipient unavailable", status: 403 };
   const friends = await areFriends(senderId, recipientId);
-  if (!friends) {
+  if (!friends && !(await publicAvailability(recipientId)).has(recipientId)) {
     return { error: "Can only invite friends", status: 403 };
   }
-  const recipient = await User.findById(recipientId).select("preferences").lean();
+  const recipient = await User.findById(recipientId).select("preferences disabled").lean();
   if (!recipient) {
     return { error: "Recipient not found", status: 404 };
+  }
+  if (recipient.disabled || (!friends && (recipient.preferences?.appearOffline || recipient.preferences?.hideActivityFromFriends))) {
+    return { error: "Recipient unavailable", status: 403 };
   }
   if (recipient.preferences?.allowPlayInvites === false) {
     return { error: "This friend does not accept play invites", status: 403 };

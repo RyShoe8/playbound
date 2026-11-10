@@ -33,7 +33,7 @@ test("prefers a game you both own, and puts the soonest friend first", () => {
   const games = [game("a"), game("b")];
   const later = friend("Later", free({ window: windowAt(NOW + 600000) }), { sharedGames: [{ slug: "a" }] });
   const soon = friend("Soon", free({ window: windowAt(NOW - 60000) }), { sharedGames: [{ slug: "b" }] });
-  const matches = findMatches({ friends: [later, soon] }, games, 0, NOW);
+  const matches = findMatches({ matchCandidates: [later, soon] }, games, 0, NOW);
   assert.deepEqual(matches.map((match) => [match.friend.username, match.game.slug, match.installed]), [["Soon", "b", true], ["Later", "a", true]]);
 });
 
@@ -41,13 +41,13 @@ test("suggests a free download only when both of you are open to it", () => {
   const games = [game("free", { free: true })];
   const available = free({ window: windowAt(NOW - 60000) });
   const open = { mode: "any", genres: [], games: [], downloads: true };
-  assert.equal(findMatches({ friends: [friend("A", available, { preferences: open })], preferences: open }, games, 0, NOW)[0].installed, false);
-  assert.deepEqual(findMatches({ friends: [friend("A", available)], preferences: open }, games, 0, NOW), []);
-  assert.deepEqual(findMatches({ friends: [friend("A", available, { preferences: open })] }, games, 0, NOW), []);
+  assert.equal(findMatches({ matchCandidates: [friend("A", available, { preferences: open })], preferences: open }, games, 0, NOW)[0].installed, false);
+  assert.deepEqual(findMatches({ matchCandidates: [friend("A", available)], preferences: open }, games, 0, NOW), []);
+  assert.deepEqual(findMatches({ matchCandidates: [friend("A", available, { preferences: open })] }, games, 0, NOW), []);
 });
 
 test("leaves out friends who are not free soon", () => {
-  assert.deepEqual(findMatches({ friends: [friend("A", free(), { sharedGames: [{ slug: "a" }] })] }, [game("a")], 0, NOW), []);
+  assert.deepEqual(findMatches({ matchCandidates: [friend("A", free(), { sharedGames: [{ slug: "a" }] })] }, [game("a")], 0, NOW), []);
 });
 
 test("never calls a paid game a free download", () => {
@@ -58,3 +58,8 @@ test("never calls a paid game a free download", () => {
   assert.equal(toMatchGame({ slug: "x", title: "X", launchMethods: ["install"], access: { priceType: "FREE", requiresOwnedBaseGame: true } }).free, false);
   assert.equal(toMatchGame({ slug: "x", title: "X", launchMethods: ["install"], access: { priceType: "FREE" } }).free, true);
 });
+
+ test("does not use private friends as public matches", () => {
+  const person = friend("Private", free({window: windowAt(NOW)}), { sharedGames: [{slug: "a"}] });
+  assert.deepEqual(findMatches({friends: [person], matchCandidates: []}, [game("a")], 0, NOW), []);
+ });

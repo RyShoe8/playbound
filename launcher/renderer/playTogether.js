@@ -201,7 +201,7 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
   }
 
   function selectedHtml(list) {
-    const target = s.snapshot.friends?.find((friend) => friend.id === s.selected);
+    const target = [...(s.snapshot.friends || []), ...(s.snapshot.matchCandidates || [])].find((friend) => friend.id === s.selected);
     if (!target) return "";
     const chosen = list.find((match) => match.friend.id === s.selected);
     const at = chosen?.at || s.when || s.now;
@@ -252,7 +252,7 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
           <button type="button" class="pt-match-who" data-pick="${escapeHtml(match.friend.id)}"><strong>${escapeHtml(match.friend.username)}</strong> <span class="play-time">${match.at === s.now ? "Free now" : clock(match.at)}</span><small>${escapeHtml(match.game.title)} · ${match.installed ? "Both installed" : "Free download"}</small></button>
           ${index === 0 ? `<button type="button" class="pt-button" data-invite="${escapeHtml(match.friend.id)}" ${s.busy || sent ? "disabled" : ""}>${sent ? "Invited" : "Invite"}</button>` : ""}
         </div>`;
-      }).join("") : "<p>No matching friends in the next six hours.</p>"}
+      }).join("") : "<p>No matching players in the next six hours.</p>"}
       </section>
       <section class="play-group">
       <h3>Friends online</h3>
@@ -282,7 +282,7 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
     "cancel-prefs": () => { s.editing = false; paint(); },
     "save-prefs": savePreferences,
     "invite-selected": () => {
-      const target = s.snapshot.friends.find((friend) => friend.id === s.selected);
+      const target = [...(s.snapshot.friends || []), ...(s.snapshot.matchCandidates || [])].find((friend) => friend.id === s.selected);
       const chosen = matches().find((match) => match.friend.id === s.selected);
       return run(() => invite(target, chosen?.at || s.when || s.now, chosen?.game.slug));
     },
