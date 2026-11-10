@@ -75,6 +75,8 @@ const handlers = {
     availability: { timezone: 'UTC', window: null, weekly: [] }, recentGames: [],
     friends: [{ id: 'friend-1', username: 'Smoke Friend', online: true, recentGames: [], sharedGames: [{ slug: fixture.slug }],
       availability: { timezone: 'UTC', weekly: [], window: { startsAt: new Date(Date.now() - 60000).toISOString(), endsAt: new Date(Date.now() + 3600000).toISOString() } } }],
+    matchCandidates: [{ id: 'public-1', username: 'Public Player', online: true, recentGames: [], sharedGames: [{ slug: fixture.slug }],
+      availability: { timezone: 'UTC', weekly: [], window: { startsAt: new Date(Date.now() - 60000).toISOString(), endsAt: new Date(Date.now() + 3600000).toISOString() } } }],
   }),
   'patch-play-availability': (_event, patch) => patch.window !== undefined ? { window: patch.window } : { preferences: patch },
   'send-friend-message': () => ({ ok: true }),

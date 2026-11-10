@@ -91,7 +91,7 @@ test('Friend Size switches on drag, opens friends, and restores a full launcher'
     await expect(companion.getByRole('button', { name: 'Free to Play Now' })).toBeVisible();
     await expect(companion.locator('.pt-chip', { hasText: 'Smoke Friend' })).toBeVisible();
     await companion.getByRole('button', { name: 'Invite', exact: true }).click();
-    await expect(companion.getByRole('status')).toHaveText('Invitation sent to Smoke Friend.');
+    await expect(companion.getByRole('status')).toHaveText('Invitation sent to Public Player.');
     await companion.getByRole('button', { name: 'Free to Play Now' }).click();
     await expect(companion.getByRole('status')).toHaveText('Availability shared for two hours.');
     await companion.getByRole('button', { name: 'Edit' }).click();
