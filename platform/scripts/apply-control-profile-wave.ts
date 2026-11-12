@@ -12,6 +12,7 @@ import { testingControlProfilesWave3 } from "./control-profiles/wave-3";
 import { testingControlProfilesWave4 } from "./control-profiles/wave-4";
 import { testingControlProfilesWave5 } from "./control-profiles/wave-5";
 import { testingControlProfilesWave6 } from "./control-profiles/wave-6";
+import { testingControlProfilesWave7 } from "./control-profiles/wave-7";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const platformDir = resolve(scriptDir, "..");
@@ -61,6 +62,7 @@ async function main() {
     ...testingControlProfilesWave4.map((profile) => controlProfileSchema.parse(profile)),
     ...testingControlProfilesWave5.map((profile) => controlProfileSchema.parse(profile)),
     ...testingControlProfilesWave6.map((profile) => controlProfileSchema.parse(profile)),
+    ...testingControlProfilesWave7.map((profile) => controlProfileSchema.parse(profile)),
   ];
   const profiles = only ? allProfiles.filter((p) => p.gameSlug === only) : allProfiles;
   if (only && !profiles.length) throw new Error(`No profile for "${only}" is defined in this wave. Nothing was written.`);

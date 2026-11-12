@@ -14677,7 +14677,12 @@ ipcMain.handle("update-playbound-controls-settings", (_event, partial) => {
 });
 ipcMain.handle("get-playbound-controls-availability", async (_event, slug, editionSlug) => {
   if (typeof slug !== "string" || !slug || slug.length > 120) return { available: false };
-  const { profile, reason } = await playBoundControlsResolution(slug, editionSlug || null, true);
+  // The game page asks with no edition; resolve it the way Play does, so an
+  // edition-scoped profile (Diablo's original release, not DevilutionX) is
+  // offered from the main Play button too. Lookup still falls back to the
+  // game-wide profile, so unscoped profiles are unaffected.
+  const resolvedEdition = editionSlug || ensureGameInstallRecord(loadState()[slug])?.editionSlug || DEFAULT_EDITION_SLUG;
+  const { profile, reason } = await playBoundControlsResolution(slug, resolvedEdition, true);
   // A supplement rides on native pad support (HoloCure's menu cursor): the
   // launch dialog keeps its ordinary Controller choice and this activates
   // underneath it, so it is not offered as an alternative control scheme.
