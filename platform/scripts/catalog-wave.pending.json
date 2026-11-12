@@ -1,4 +1,122 @@
 {
-  "id": null,
-  "operations": []
+  "id": "playbound-controls-wave-5-tags-20261112",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "battlefield-1942-anthology",
+      "expected": {
+        "features": [
+          "Multiplayer",
+          "Mod Support",
+          "Dedicated Servers"
+        ]
+      },
+      "set": {
+        "features": [
+          "Multiplayer",
+          "Mod Support",
+          "Dedicated Servers",
+          "PlayBound Controller Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "deus-ex-goty-edition",
+      "expected": {
+        "features": [
+          "Singleplayer",
+          "Mod Support",
+          "Multiplayer",
+          "Co-op"
+        ]
+      },
+      "set": {
+        "features": [
+          "Singleplayer",
+          "Mod Support",
+          "Multiplayer",
+          "Co-op",
+          "PlayBound Controller Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "star-wars-galactic-battlegrounds-saga",
+      "expected": {
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "LAN Support",
+          "Custom Maps",
+          "Mod Support"
+        ]
+      },
+      "set": {
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "LAN Support",
+          "Custom Maps",
+          "Mod Support",
+          "PlayBound Controller Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "sudden-strike-2-gold",
+      "expected": {
+        "features": [
+          "Multiplayer",
+          "Singleplayer",
+          "LAN Support",
+          "Map Editor",
+          "Level Editor",
+          "Custom Maps",
+          "Story Campaign"
+        ]
+      },
+      "set": {
+        "features": [
+          "Multiplayer",
+          "Singleplayer",
+          "LAN Support",
+          "Map Editor",
+          "Level Editor",
+          "Custom Maps",
+          "Story Campaign",
+          "PlayBound Controller Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "unturned",
+      "expected": {
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "Mod Support",
+          "Level Editor",
+          "LAN Support"
+        ]
+      },
+      "set": {
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "Mod Support",
+          "Level Editor",
+          "LAN Support",
+          "PlayBound Controller Support"
+        ]
+      }
+    }
+  ]
 }
