@@ -16,6 +16,7 @@ on:
       - "platform/scripts/control-profiles/wave-3.ts"
       - "platform/scripts/control-profiles/wave-4.ts"
       - "platform/scripts/control-profiles/wave-5.ts"
+      - "platform/scripts/control-profiles/wave-6.ts"
       - "launcher/services/inputEngine/profiles/outrun.json"
 
 jobs:
