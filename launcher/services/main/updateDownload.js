@@ -33,4 +33,13 @@ function safeUpdateError(error) {
     .slice(0, 1000);
 }
 
-module.exports = { checkWithHandledDownload, safeUpdateError };
+/**
+ * Whether an update error is the network refusing the connection (offline,
+ * DNS, proxy, VPN, firewall) rather than anything wrong with the feed or the
+ * launcher. Chromium names these net::ERR_*; Node uses errno codes.
+ */
+function isUpdateNetworkError(message) {
+  return /net::ERR_(?:INTERNET_DISCONNECTED|NETWORK_CHANGED|NAME_NOT_RESOLVED|NAME_RESOLUTION_FAILED|TUNNEL_CONNECTION_FAILED|PROXY_[A-Z_]+|CONNECTION_(?:REFUSED|RESET|CLOSED|TIMED_OUT|FAILED)|ADDRESS_UNREACHABLE|TIMED_OUT|NETWORK_ACCESS_DENIED)\b|\b(?:ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH)\b/.test(String(message || ""));
+}
+
+module.exports = { checkWithHandledDownload, safeUpdateError, isUpdateNetworkError };

@@ -1904,6 +1904,8 @@ function takeRollbackDir() {
   return dir;
 }
 
+const { renameWithRetry } = require("./renameWithRetry");
+
 async function promoteStagingDir(stagingDir, gameDir, siblingEditionNames) {
   const backupDir = `${gameDir}.playbound-prev`;
   await fsp.rm(backupDir, { recursive: true, force: true });
@@ -1919,18 +1921,18 @@ async function promoteStagingDir(stagingDir, gameDir, siblingEditionNames) {
       if (!item.isDirectory() || !siblingEditionNames.has(item.name.toLowerCase())) continue;
       const dest = path.join(stagingDir, item.name);
       if (!fs.existsSync(dest)) {
-        await fsp.rename(path.join(gameDir, item.name), dest);
+        await renameWithRetry(path.join(gameDir, item.name), dest);
       }
     }
   }
   if (fs.existsSync(gameDir)) {
-    await fsp.rename(gameDir, backupDir);
+    await renameWithRetry(gameDir, backupDir);
   }
   try {
-    await fsp.rename(stagingDir, gameDir);
+    await renameWithRetry(stagingDir, gameDir, { copyFallback: true });
   } catch (err) {
     if (fs.existsSync(backupDir) && !fs.existsSync(gameDir)) {
-      await fsp.rename(backupDir, gameDir);
+      await renameWithRetry(backupDir, gameDir);
     }
     throw err;
   }

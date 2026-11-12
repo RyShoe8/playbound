@@ -47,4 +47,35 @@ function steamRuntimeForLaunch(kind, launchPath, appId) {
   };
 }
 
-module.exports = { acfValue, steamAppState, steamRuntimeForLaunch };
+/**
+ * The Steam app id of the game an executable belongs to, read from Steam's own
+ * appmanifest for the folder it sits in. A catalog entry that installs a
+ * non-Steam build (HoloCure from itch.io) carries no app id, yet the player's
+ * copy may be Steam's; launched without one, a Steamworks game restarts itself
+ * through the Steam client and PlayBound reported the handoff as a failure.
+ * Null when the path is not in a Steam library or no manifest names its folder.
+ */
+function steamAppIdFromLibraryPath(launchPath, io = fs) {
+  const match = String(launchPath || "").match(/^(.*[\\/]steamapps)[\\/]common[\\/]([^\\/]+)/i);
+  if (!match) return null;
+  const [, steamappsDir, folder] = match;
+  let names;
+  try {
+    names = io.readdirSync(steamappsDir);
+  } catch {
+    return null;
+  }
+  for (const name of names) {
+    const id = /^appmanifest_(\d+)\.acf$/i.exec(name)?.[1];
+    if (!id) continue;
+    try {
+      const installDir = acfValue(io.readFileSync(path.join(steamappsDir, name), "utf8"), "installdir");
+      if (installDir && installDir.toLowerCase() === folder.toLowerCase()) return id;
+    } catch {
+      /* unreadable manifest; keep looking */
+    }
+  }
+  return null;
+}
+
+module.exports = { acfValue, steamAppState, steamRuntimeForLaunch, steamAppIdFromLibraryPath };

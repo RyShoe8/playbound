@@ -19,6 +19,13 @@ describe("client network failures are not catalog bugs", () => {
     expect(isClientNetworkFailure("Download failed (ENETDOWN)")).toBe(true);
   });
 
+  it("recognises a proxy or VPN refusing the launcher's update check", () => {
+    // Verbatim from a LAUNCHER_UPDATE_FAILED report on 0.3.230.
+    expect(isClientNetworkFailure("net::ERR_TUNNEL_CONNECTION_FAILED")).toBe(true);
+    expect(isClientNetworkFailure("net::ERR_INTERNET_DISCONNECTED")).toBe(true);
+    expect(isClientNetworkFailure("net::ERR_CERT_DATE_INVALID")).toBe(false);
+  });
+
   it("still reports failures that are ours or upstream's", () => {
     expect(isClientNetworkFailure("Download failed (HTTP 404)")).toBe(false);
     expect(isClientNetworkFailure("No matching asset for TES3MP/TES3MP tes3mp-0.8.1-vr")).toBe(

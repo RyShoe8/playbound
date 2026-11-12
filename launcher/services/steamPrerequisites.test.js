@@ -1,7 +1,8 @@
 "use strict";
 
 const assert = require("assert");
-const { steamAppState, steamRuntimeForLaunch } = require("./steamPrerequisites");
+const path = require("path");
+const { steamAppState, steamRuntimeForLaunch, steamAppIdFromLibraryPath } = require("./steamPrerequisites");
 
 function fakeIo(files, dirs = []) {
   return {
@@ -63,5 +64,25 @@ assert.deepStrictEqual(steamRuntimeForLaunch("steam", "D:\\Games\\AlienSwarm.exe
   needsSteam: true,
   appId: "630",
 });
+
+{
+  // HoloCure from Steam: the catalog row is the itch.io build with no app id.
+  const steamapps = String.raw`D:\SteamLibrary\steamapps`;
+  const io = {
+    readdirSync(dir) {
+      if (dir !== steamapps) throw new Error("ENOENT");
+      return ["appmanifest_228980.acf", "appmanifest_2420510.acf", "libraryfolders.vdf"];
+    },
+    readFileSync(file) {
+      if (file === path.join(steamapps, "appmanifest_228980.acf")) return '"AppState"\n{\n\t"appid"\t"228980"\n\t"installdir"\t"Steamworks Shared"\n}';
+      if (file === path.join(steamapps, "appmanifest_2420510.acf")) return '"AppState"\n{\n\t"appid"\t"2420510"\n\t"installdir"\t"HoloCure"\n}';
+      throw new Error("ENOENT");
+    },
+  };
+  assert.strictEqual(steamAppIdFromLibraryPath(String.raw`D:\SteamLibrary\steamapps\common\HoloCure\HoloCure.exe`, io), "2420510");
+  assert.strictEqual(steamAppIdFromLibraryPath(String.raw`D:\SteamLibrary\steamapps\common\holocure\HoloCure.exe`, io), "2420510");
+  assert.strictEqual(steamAppIdFromLibraryPath(String.raw`D:\SteamLibrary\steamapps\common\Other\x.exe`, io), null);
+  assert.strictEqual(steamAppIdFromLibraryPath(String.raw`C:\Users\p\PlayBound\Games\holocure\HoloCure.exe`, io), null);
+}
 
 console.log("steamPrerequisites tests passed");

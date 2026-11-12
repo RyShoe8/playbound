@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { checkWithHandledDownload, safeUpdateError } = require("./updateDownload");
+const { checkWithHandledDownload, safeUpdateError, isUpdateNetworkError } = require("./updateDownload");
 
 test("download rejection is handled after the update check already returned", async () => {
   let reject, observed;
@@ -31,4 +31,12 @@ test("temporary 503 downloads retry twice using fresh checks, then stop", async 
   assert.equal(timers[0].delay, 30000); timers.shift().callback();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(checks, 3); assert.equal(timers.length, 0);
+});
+
+test("a proxy, VPN or offline failure is told apart from a broken update", () => {
+  assert.equal(isUpdateNetworkError("net::ERR_TUNNEL_CONNECTION_FAILED"), true);
+  assert.equal(isUpdateNetworkError("net::ERR_INTERNET_DISCONNECTED"), true);
+  assert.equal(isUpdateNetworkError("getaddrinfo ENOTFOUND mt8u2b96lweefbpb.public.blob.vercel-storage.com"), true);
+  assert.equal(isUpdateNetworkError("sha512 checksum mismatch"), false);
+  assert.equal(isUpdateNetworkError('Cannot download "[download URL]", status 404'), false);
 });

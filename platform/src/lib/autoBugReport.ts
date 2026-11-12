@@ -214,7 +214,11 @@ async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
  * checksum mismatches) still report.
  */
 export function isClientNetworkFailure(message: string | null | undefined): boolean {
-  return /\b(EAI_AGAIN|ENETUNREACH|ENETDOWN)\b/i.test(String(message || ""));
+  const text = String(message || "");
+  // Chromium's names for a connection the player's own machine, proxy, VPN
+  // or firewall refused (the launcher's update check runs in Chromium).
+  return /\b(EAI_AGAIN|ENETUNREACH|ENETDOWN)\b/i.test(text) ||
+    /net::ERR_(INTERNET_DISCONNECTED|NETWORK_CHANGED|NETWORK_ACCESS_DENIED|ADDRESS_UNREACHABLE|TUNNEL_CONNECTION_FAILED|PROXY_CONNECTION_FAILED)\b/.test(text);
 }
 
 function propString(props: Record<string, unknown>, key: string): string | null {
@@ -267,6 +271,9 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
   const failureMessage = typeof props.message === "string" ? props.message : null;
   // A dead client network is not a broken game download, but it is exactly
   // the kind of Remote Play/Couch connection failure this Bugs feed diagnoses.
+  // The launcher (0.3.235+) has already decided its update check failed on
+  // the player's own network; that is not a bug for this feed.
+  if (props.code === "LAUNCHER_UPDATE_OFFLINE") return;
   if (isClientNetworkFailure(failureMessage) && event !== "remote_play_failed" && event !== "couch_failed" && event !== UPDATE_FAILURE_EVENT) return;
 
   // Background device heartbeats/polling timing out are routine network jitter, not actionable bugs.

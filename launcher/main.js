@@ -29,7 +29,7 @@ const bundledCatalog = require("./catalog");
 const { findInstalledExecutable, windowsDiscoveryRoots } = require("./services/postInstallerDiscovery");
 const { localCoopPlayerCapacity } = require("./services/couch/localCoop");
 const { createTelemetry } = require("./telemetry");
-const { checkWithHandledDownload, safeUpdateError } = require("./services/main/updateDownload");
+const { checkWithHandledDownload, safeUpdateError, isUpdateNetworkError } = require("./services/main/updateDownload");
 const { createRemotePlayHealth, confirmRemotePlaySession } = require("./services/main/remotePlayHealth");
 const { resolveGmdxDownload, verifyGmdxInstaller } = require("./services/gmdxInstaller");
 const Platform = require("./platform");
@@ -55,7 +55,7 @@ const { createManagedDotNet, requiredDotNetMajor } = require("./services/Managed
 const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSteamCmdInstaller } = require("./services/steamCmd");
-const { steamAppState, steamRuntimeForLaunch } = require("./services/steamPrerequisites");
+const { steamAppState, steamRuntimeForLaunch, steamAppIdFromLibraryPath } = require("./services/steamPrerequisites");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const { hasManifest, hasRollbackRoom, mergeModFiles, modUpdateAction, normalizedVersion, shouldUpdateEdition } = require("./services/autoUpdate");
@@ -8297,7 +8297,10 @@ async function playGameInner(slug, join = null, editionSlug = null, opts = null)
   const steamRuntime = steamRuntimeForLaunch(
     entry?.kind,
     launchPath,
-    steamAppIdFor(info) || steamAppIdFor(entry)
+    // A Steam copy of a game the catalog installs from elsewhere (HoloCure)
+    // has its id only in Steam's manifest; without it the game restarts
+    // itself through Steam instead of running.
+    steamAppIdFor(info) || steamAppIdFor(entry) || steamAppIdFromLibraryPath(launchPath)
   );
   const targetSteamAppId = steamRuntime.appId;
 
@@ -14178,9 +14181,17 @@ function setupAutoUpdater() {
   autoUpdater.on("error", (err) => {
     const message = safeUpdateError(err);
     const errorKey = `${pendingUpdate?.version || "check"}:${message}`;
+    // The player's network, proxy or VPN refusing the connection is not a
+    // launcher fault; report it under its own code so it stays out of the
+    // failure queue, and tell the player what actually happened.
+    const offline = isUpdateNetworkError(message);
     if (reportedUpdateError !== errorKey) {
       reportedUpdateError = errorKey;
-      void telemetry.error({ code: "LAUNCHER_UPDATE_FAILED", phase: "launcher_update", message });
+      void telemetry.error({ code: offline ? "LAUNCHER_UPDATE_OFFLINE" : "LAUNCHER_UPDATE_FAILED", phase: "launcher_update", message });
+    }
+    if (offline) {
+      emit({ phase: "error", message: "Couldn't reach the PlayBound update server. Your connection, proxy or VPN blocked it; PlayBound will try again next time it starts." });
+      return;
     }
     if (!isCacheCorruptionError(message)) {
       emit({ phase: "error", message });
