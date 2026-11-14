@@ -106,8 +106,11 @@ export async function POST(req: Request) {
     }
     throw new Error("Unknown transfer action");
   } catch (error) {
-    console.error("S3 archive transfer action failed:", error instanceof Error ? error.name : "unknown");
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Transfer action failed" }, { status: 400 });
+    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    const name = error instanceof Error ? error.name : "unknown";
+    console.error("S3 archive transfer action failed:", { action: "request", name, status });
+    const detail = status ? `S3 request failed (HTTP ${status}; ${name})` : error instanceof Error ? error.message : "Transfer action failed";
+    return NextResponse.json({ error: detail }, { status: 400 });
   } finally {
     s3?.destroy();
   }
