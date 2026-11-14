@@ -13,11 +13,14 @@ type UploadedPackage = {
   relativePath: string;
 };
 
-/** Register only bytes the host has verified; preserve cache policy and download history. */
-export async function registerVerifiedUploadedPackage(input: UploadedPackage & { sizeBytes: number }) {
+/** Register only verified bytes; preserve cache policy and download history. */
+export async function registerVerifiedUploadedPackage(input: UploadedPackage & { sizeBytes: number; storage?: "vps" | "s3"; sha256?: string }) {
   await dbConnect();
   if (!Number.isSafeInteger(input.sizeBytes) || input.sizeBytes <= 0) {
     throw new Error("Verified package size is missing or invalid");
+  }
+  if (input.storage === "s3" && !/^[a-f0-9]{64}$/i.test(input.sha256 || "")) {
+    throw new Error("Verified S3 package digest is missing or invalid");
   }
   const artifactId = `uploaded-package--${createHash("sha256").update(input.relativePath).digest("hex").slice(0, 24)}`;
   return Artifact.findOneAndUpdate(
@@ -25,7 +28,11 @@ export async function registerVerifiedUploadedPackage(input: UploadedPackage & {
     {
       $set: {
         gameSlug: input.gameSlug, version: input.version, filename: input.filename,
-        sizeBytes: input.sizeBytes, vpsStatus: "verified", vpsStatusMessage: null,
+        sizeBytes: input.sizeBytes,
+        ...(input.sha256 ? { sha256: input.sha256.toLowerCase() } : {}),
+        ...(input.storage === "s3"
+          ? { s3ArchiveStatus: "verified", s3ArchiveStatusMessage: null, vpsStatus: "missing" }
+          : { vpsStatus: "verified", vpsStatusMessage: null }),
       },
       $setOnInsert: {
         artifactId, relativePath: input.relativePath,
@@ -78,7 +85,8 @@ export async function syncUploadedPackageArtifacts() {
   }
   if (!packages.length) return;
   const existing = await Artifact.find({
-    relativePath: { $in: packages.map((item) => item.relativePath) }, vpsStatus: "verified", sizeBytes: { $gt: 0 },
+    relativePath: { $in: packages.map((item) => item.relativePath) },
+    $or: [{ vpsStatus: "verified" }, { s3ArchiveStatus: "verified" }], sizeBytes: { $gt: 0 },
   }).select("relativePath").lean();
   const registered = new Set(existing.map((item) => item.relativePath));
   const missing = packages.filter((item) => !registered.has(item.relativePath));

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { del } from "@vercel/blob";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import EditionModel from "@/lib/models/Edition";
 import { editions as seedEditions } from "@/lib/data/editions";
-import { archiveArtifactOnHost, archivedArtifactStatusOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
+import { archiveArtifactOnHost, archivedArtifactStatusOnHost, archiveArtifactToS3OnHost, s3ArchiveStatusOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { registerVerifiedUploadedPackage } from "@/lib/mirrors/uploadedPackages";
 import { launcherPackageKind } from "@/lib/mirrors/launcherPackageKind";
@@ -54,7 +55,7 @@ async function materializeExactSeed(gameSlug: string, editionSlug: string) {
   return EditionModel.findOne({ gameSlug, slug: editionSlug }).select("_id").lean();
 }
 
-/** Queue a package copy, or finalize its URL after VPS verification.
+/** Queue a package copy, or finalize its URL after archive verification.
  * Finalization uses only narrowly-scoped $set paths; it never submits an
  * editor form or replaces a game/edition document. */
 export async function POST(req: Request) {
@@ -70,30 +71,36 @@ export async function POST(req: Request) {
     }
     const kind = launcherPackageKind(input.fileName);
     if (!kind) return NextResponse.json({ error: "Unsupported installer file" }, { status: 400 });
+    // Enable only after mirror.playbound.club is routed through the tested
+    // S3 edge gateway. Existing launchers must never receive an unserved URL.
+    const s3Active = process.env.MIRROR_S3_GATEWAY_ACTIVE === "1";
 
     if (action === "queue") {
-      const queued = await archiveArtifactOnHost({
+      const queued = await (s3Active ? archiveArtifactToS3OnHost : archiveArtifactOnHost)({
         url: input.sourceUrl,
         relativePath,
         sizeBytes: input.sizeBytes,
       });
-      if (!queued.success) return NextResponse.json({ error: queued.message || "VPS archive failed" }, { status: 502 });
-      return NextResponse.json({ relativePath, status: queued.queued ? "uploading" : "verified" });
+      if (!queued.success) return NextResponse.json({ error: queued.message || "Package archive failed" }, { status: 502 });
+      return NextResponse.json({ relativePath, status: s3Active || ("queued" in queued && queued.queued) ? "uploading" : "verified" });
     }
 
-    const archive = await archivedArtifactStatusOnHost(relativePath);
+    const archive = await (s3Active ? s3ArchiveStatusOnHost : archivedArtifactStatusOnHost)(relativePath);
     if (!archive) {
       return NextResponse.json({ error: "Game host unreachable", status: "failed" }, { status: 502 });
     }
-    if (archive.message) {
+    if ("message" in archive && archive.message) {
       return NextResponse.json(
         { error: archive.message, status: "failed" },
         { status: archive.status === "missing" ? 404 : 500 }
       );
     }
+    if ("error" in archive && archive.error) {
+      return NextResponse.json({ error: archive.error, status: "failed" }, { status: 502 });
+    }
     if (archive.status === "missing") {
       return NextResponse.json(
-        { error: "Archive job not found on VPS or transfer failed", status: "missing" },
+        { error: "Package archive job not found or transfer failed", status: "missing" },
         { status: 404 }
       );
     }
@@ -171,7 +178,20 @@ export async function POST(req: Request) {
     await registerVerifiedUploadedPackage({
       gameSlug: input.gameSlug, editionSlug: input.editionSlug, version,
       filename: input.fileName, relativePath, sizeBytes: archive.sizeBytes || input.sizeBytes,
+      sha256: "sha256" in archive ? archive.sha256 : undefined,
+      storage: s3Active ? "s3" : "vps",
     });
+    if (s3Active && process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const staging = new URL(input.sourceUrl);
+        if (staging.hostname.endsWith(".public.blob.vercel-storage.com") &&
+            decodeURIComponent(staging.pathname).replace(/^\/+/, "").startsWith(packagePrefix(input))) {
+          await del(input.sourceUrl);
+        }
+      } catch (error) {
+        console.warn("Verified package staging cleanup failed:", error instanceof Error ? error.name : "unknown");
+      }
+    }
     revalidateTag("catalog", { expire: 0 });
     return NextResponse.json({ status: "verified", url, kind, fileName: input.fileName });
   } catch (err) {
@@ -185,7 +205,9 @@ export async function GET(req: Request) {
   if (error) return error;
   const relativePath = new URL(req.url).searchParams.get("relativePath") || "";
   if (!relativePath.startsWith("launcher-packages/")) return NextResponse.json({ error: "Invalid package path" }, { status: 400 });
-  const status = await archivedArtifactStatusOnHost(relativePath);
+  const status = process.env.MIRROR_S3_GATEWAY_ACTIVE === "1"
+    ? await s3ArchiveStatusOnHost(relativePath)
+    : await archivedArtifactStatusOnHost(relativePath);
   return NextResponse.json(status || { status: "missing", message: "Game host is not configured" });
 }
 

@@ -45,6 +45,12 @@ it("registers the exact archive idempotently without replacing the smaller add-o
   expect(await Artifact.findOne({ artifactId: "legacy-lar" })).toMatchObject({ filename: "LAR_v.1.0.7z", sizeBytes: 537800370 });
 });
 
+it("registers an S3 upload without falsely marking a VPS copy present", async () => {
+  const sha256 = "a".repeat(64);
+  const artifact = await registerVerifiedUploadedPackage({ ...full, storage: "s3", sha256 });
+  expect(artifact).toMatchObject({ s3ArchiveStatus: "verified", vpsStatus: "missing", sha256 });
+});
+
 it("backfills a verified current upload and skips further host probes once registered", async () => {
   await CatalogGame.collection.insertOne({ slug: full.gameSlug, launcherInstall: {
     url: "https://mirror.playbound.club/" + full.relativePath, fileName: full.filename, versionLabel: full.version,

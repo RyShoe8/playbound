@@ -18,7 +18,23 @@ export async function transferUrlToS3({ key, url, sizeBytes, sha256, secret, sit
     return value;
   };
   const existing = await control("get");
-  if (existing.exists) throw new Error("S3 object already exists; verify it before replacing");
+  if (existing.exists) {
+    if (existing.sizeBytes !== sizeBytes) throw new Error("Existing S3 object has a different size; refusing overwrite");
+    const hashUrl = async (target) => {
+      const { statusCode, stream } = await getStream(target);
+      if (statusCode !== 200) { stream.resume(); throw new Error(`Archive verification returned HTTP ${statusCode}`); }
+      const hash = createHash("sha256");
+      let count = 0;
+      for await (const chunk of stream) { hash.update(chunk); count += chunk.length; }
+      if (count !== sizeBytes) throw new Error("Archive verification size mismatch");
+      return hash.digest("hex");
+    };
+    const sourceHash = await hashUrl(url);
+    if (sha256 && sourceHash.toLowerCase() !== sha256.toLowerCase()) throw new Error("Archive source SHA-256 mismatch");
+    if (await hashUrl(existing.url) !== sourceHash) throw new Error("Existing S3 object differs from source; refusing overwrite");
+    const marked = await control("mark", { sha256: sourceHash, sizeBytes });
+    return { sizeBytes, sha256: sourceHash, artifactMarked: Boolean(marked.artifactMarked) };
+  }
   const started = await control("start");
   const uploadId = started.uploadId;
   if (!uploadId) throw new Error("Ceph did not return a multipart upload ID");

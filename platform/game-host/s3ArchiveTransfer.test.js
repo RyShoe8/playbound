@@ -51,3 +51,17 @@ test("bad source checksum aborts multipart upload before completion", async () =
   }), /SHA-256 mismatch/);
   assert.deepEqual(f.calls, ["get", "start", "abort"]);
 });
+
+test("a retry verifies matching existing bytes and never overwrites them", async () => {
+  const f = fixture();
+  const input = {
+    key: "games/example/file.zip", url: "https://mirror.playbound.club/games/example/file.zip",
+    sizeBytes: f.source.length, secret: "test", site: "https://playbound.club",
+    request: f.request, getStream: f.getStream,
+  };
+  await transferUrlToS3(input);
+  f.calls.length = 0;
+  const retried = await transferUrlToS3(input);
+  assert.equal(retried.sha256, createHash("sha256").update(f.source).digest("hex"));
+  assert.deepEqual(f.calls, ["get", "mark"]);
+});

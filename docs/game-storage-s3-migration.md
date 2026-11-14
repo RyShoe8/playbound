@@ -71,6 +71,33 @@ outside this download archive and must not be removed by this migration.
    verified and whose old mirror URL works through the new gateway. Do not
    remove game-server installations, saves, or retained rollback copies.
 
+## Current implementation and cutover
+
+`/admin/download-mirrors` now sends **Archive to S3** jobs through the game-host
+agent. The agent streams a bounded multipart upload and verifies the complete
+source and destination SHA-256; it leaves no new permanent VPS game file. The
+one-time `game-host/migrateGameArchiveS3.sh` walks only `archive/games/` and
+`archive/launcher-packages/`. It resumes by verifying matching existing objects,
+logs failures, and never deletes source files.
+
+`platform/workers/game-mirror` is the edge gateway for the existing
+`mirror.playbound.club` URLs. It streams signed private Ceph objects and Range
+responses without sending game bytes through Vercel or the game-host VPS. The
+site's `/api/internal/archive-sign` requires `MIRROR_GATEWAY_SECRET`; set that
+same secret in the Cloudflare Worker and Vercel Production, then redeploy the
+site. The Worker must be bound to `mirror.playbound.club/*` **only after** every
+currently referenced game package is verified in S3 and test downloads pass.
+Deploying the Worker without its route is safe for a preview, but the Worker
+rejects requests on non-mirror hostnames. Test with a preview route on a
+Cloudflare-owned subdomain or a staging hostname first.
+
+Once the edge route is live, set `MIRROR_S3_GATEWAY_ACTIVE=1` in Vercel
+Production and redeploy. New browser package uploads will then stream from
+temporary Vercel Blob staging into S3, mark only the exact verified artifact,
+publish the same stable mirror URL, and remove staging after verification.
+Until that flag is set, the package upload route retains its existing VPS path
+so an uploaded game is never published under a URL the mirror cannot serve.
+
 The repository's S3 read path is disabled until its environment variables are
 set and an artifact is marked `s3ArchiveStatus: verified`. The current VPS
 archive and R2 remain available during migration.

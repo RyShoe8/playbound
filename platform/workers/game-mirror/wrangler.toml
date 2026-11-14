@@ -1,0 +1,6 @@
+name = "playbound-game-mirror"
+main = "index.mjs"
+compatibility_date = "2026-11-13"
+
+# Route and MIRROR_GATEWAY_SECRET are deliberately added only after the S3
+# inventory and range-download checks pass. Do not route DNS here prematurely.

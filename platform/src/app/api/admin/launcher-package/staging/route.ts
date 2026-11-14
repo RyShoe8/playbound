@@ -6,10 +6,10 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,119}$/;
 
 /** Remove the Vercel Blob staging copies of a game's launcher packages.
  *
- * Uploads travel browser -> Blob -> VPS, and the VPS copy is the one players
- * download. Nothing deletes the Blob copy afterwards, so it sits there costing
- * storage. Call this once the packages are verified on the mirror. Scoped to
- * one game's package folder; it never touches the mirror or the catalog. */
+ * Existing uploads used browser -> Blob -> VPS. Once the S3 gateway is active,
+ * new uploads use Blob only as temporary staging and clean it up on completion.
+ * This explicit cleanup remains for older staged files. It is scoped to one
+ * game's package folder and never touches the mirror or the catalog. */
 export async function DELETE(req: Request) {
   const { error } = await requireAdminSession();
   if (error) return error;
