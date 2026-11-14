@@ -810,6 +810,35 @@ export async function archiveArtifactOnHost(input: {
   }
 }
 
+/** Queue a direct source-to-S3 stream on the VPS; no permanent VPS file is written. */
+export async function archiveArtifactToS3OnHost(input: {
+  url: string; relativePath: string; sizeBytes: number; sha256?: string | null;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await hostFetch("/mirror/s3-archive", { method: "POST", body: JSON.stringify(input) });
+    if (!res) return { success: false, message: "Game host is not configured" };
+    const data = await res.json().catch(() => ({})) as { error?: string; status?: string };
+    return res.ok ? { success: true } : { success: false, message: data.error || `Game host returned ${res.status}` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Game host unreachable" };
+  }
+}
+
+export async function s3ArchiveStatusOnHost(relativePath: string): Promise<{
+  status: "missing" | "uploading" | "verified" | "failed";
+  error?: string; bytesReceived?: number; sizeBytes?: number; sha256?: string;
+} | null> {
+  try {
+    const res = await hostFetch(`/mirror/s3-archive/${encodeURIComponent(relativePath)}`, { method: "GET" });
+    if (!res?.ok) return null;
+    const data = await res.json() as { status?: string; error?: string; bytesReceived?: number; sizeBytes?: number; sha256?: string };
+    if (!["missing", "uploading", "verified", "failed"].includes(data.status || "")) return null;
+    return data as { status: "missing" | "uploading" | "verified" | "failed"; error?: string; bytesReceived?: number; sizeBytes?: number; sha256?: string };
+  } catch {
+    return null;
+  }
+}
+
 export async function archivedArtifactStatusOnHost(
   relativePath: string
 ): Promise<{

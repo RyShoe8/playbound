@@ -16,6 +16,8 @@ import type { ArtifactType } from "@/lib/models/Artifact";
 import {
   archivedArtifactStatusOnHost,
   archiveArtifactOnHost,
+  archiveArtifactToS3OnHost,
+  s3ArchiveStatusOnHost,
   deleteArchivedArtifactOnHost,
 } from "@/lib/gameHost/client";
 import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl, uploadStreamToR2 } from "./r2Client";
@@ -637,45 +639,10 @@ export async function manualPromoteArtifact(
   await artifact.save();
 
   if (artifact.vpsStatus !== "verified" && artifact.s3ArchiveStatus !== "verified") {
-    // Check if host actually has it verified
-    const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
-    if (remote?.status === "verified") {
-      artifact.vpsStatus = "verified";
-      artifact.vpsStatusMessage = null;
-      await artifact.save();
-    } else {
-      let editionSlug: string | undefined;
-      let modSlug: string | undefined;
-      if (artifact.artifactType === "edition") {
-        const match = artifact.relativePath?.match(/\/editions\/([^/]+)\//) ||
-          artifact.artifactId?.match(/^([^-]+)-edition-([^-]+)/);
-        if (match) editionSlug = match[1] || match[2];
-      } else if (artifact.artifactType === "mod") {
-        const match = artifact.relativePath?.match(/\/mods\/([^/]+)/) ||
-          artifact.artifactId?.match(/^([^-]+)-mod-([^-]+)/);
-        if (match) modSlug = match[1] || match[2] || artifact.artifactId;
-      }
-      const catUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
-      if (catUrl && /mirror\.playbound\.club/i.test(catUrl)) {
-        // The authoritative package is already hosted on the VPS mirror!
-        // Start the VPS archive task to link/copy it into the artifact's canonical path,
-        // but since the file is already on the VPS, we can proceed to promote it to R2!
-        artifact.vpsStatus = "verified";
-        artifact.vpsStatusMessage = null;
-        await artifact.save();
-        void archiveArtifactOnHost({
-          url: catUrl,
-          relativePath: artifact.relativePath,
-          sizeBytes: artifact.sizeBytes,
-          sha256: artifact.sha256 || null,
-        }).catch(() => {});
-      } else {
-        artifact.r2Status = "not_cached";
-        artifact.r2StatusMessage = "Authoritative VPS copy must be verified before R2 promotion.";
-        await artifact.save();
-        return { success: false, message: "Authoritative VPS copy must be verified before R2 promotion. Click 'Archive to VPS' first." };
-      }
-    }
+    artifact.r2Status = "not_cached";
+    artifact.r2StatusMessage = "Archive the file to private S3 before promoting it to R2.";
+    await artifact.save();
+    return { success: false, message: artifact.r2StatusMessage };
   }
 
   // Upload bytes to Cloudflare R2 with live progress
@@ -824,7 +791,7 @@ export async function evictSupersededLauncherVersionsFromR2(
  * the old Promote → Archive path impossible because Promote in turn required
  * a VPS copy.
  */
-export async function archiveArtifactToVps(
+async function archiveArtifact(
   artifactId: string,
   actor: string,
   preferredSourceUrl?: string | null,
@@ -834,7 +801,8 @@ export async function archiveArtifactToVps(
     filename?: string | null;
     sizeBytes?: number | null;
     artifactType?: ArtifactType | null;
-  } | null
+  } | null,
+  destination: "vps" | "s3" = "vps"
 ): Promise<{ success: boolean; message: string }> {
   await dbConnect();
   let artifact = await Artifact.findOne({ artifactId });
@@ -855,6 +823,9 @@ export async function archiveArtifactToVps(
     });
   }
   if (!artifact) return { success: false, message: "Artifact not found" };
+  if (destination === "s3" && artifact.s3ArchiveStatus === "verified") {
+    return { success: true, message: `${artifact.filename} is already verified on private S3.` };
+  }
 
   let sourceUrl: string | null = null;
   let sourceLabel = "original download source";
@@ -1005,6 +976,30 @@ export async function archiveArtifactToVps(
     return { success: false, message: "Artifact size is unknown; verify it before archiving." };
   }
 
+  if (destination === "s3") {
+    if (artifact.artifactType === "launcher") {
+      return { success: false, message: "Launcher releases stay on their existing release path." };
+    }
+    artifact.s3ArchiveStatus = "uploading";
+    artifact.s3ArchiveStatusMessage = "Streaming to private S3 archive…";
+    await artifact.save();
+    const result = await archiveArtifactToS3OnHost({
+      url: sourceUrl, relativePath: artifact.relativePath,
+      sizeBytes: artifact.sizeBytes, sha256: artifact.sha256 || null,
+    });
+    if (!result.success) {
+      artifact.s3ArchiveStatus = "failed";
+      artifact.s3ArchiveStatusMessage = result.message || "Could not start S3 archive transfer";
+      await artifact.save();
+      return { success: false, message: artifact.s3ArchiveStatusMessage };
+    }
+    await MirrorEvent.create({
+      eventType: "archive_to_s3", actor, artifactId: artifact.artifactId,
+      details: `${actor} queued ${artifact.filename} for direct transfer from ${sourceLabel} to private S3`,
+    });
+    return { success: true, message: `S3 transfer started for ${artifact.filename}.` };
+  }
+
   artifact.vpsStatus = "uploading";
   artifact.vpsStatusMessage = "Transfer queued on the VPS.";
   await artifact.save();
@@ -1042,6 +1037,48 @@ export async function archiveArtifactToVps(
     details: `${actor} copied ${artifact.filename} from ${sourceLabel} to the VPS archive`,
   });
   return { success: true, message: `Archived ${artifact.filename} on the VPS.` };
+}
+
+/** Historical launcher release path; signed launchers remain on VPS/R2. */
+export function archiveArtifactToVps(
+  artifactId: string, actor: string, preferredSourceUrl?: string | null,
+  fallback?: { gameSlug?: string | null; version?: string | null; filename?: string | null;
+    sizeBytes?: number | null; artifactType?: ArtifactType | null } | null
+) {
+  return archiveArtifact(artifactId, actor, preferredSourceUrl, fallback, "vps");
+}
+
+/** Admin game archive path. No new permanent VPS game file is created. */
+export function archiveArtifactToS3(
+  artifactId: string, actor: string, preferredSourceUrl?: string | null,
+  fallback?: { gameSlug?: string | null; version?: string | null; filename?: string | null;
+    sizeBytes?: number | null; artifactType?: ArtifactType | null } | null
+) {
+  return archiveArtifact(artifactId, actor, preferredSourceUrl, fallback, "s3");
+}
+
+export async function refreshUploadingS3Artifacts(): Promise<void> {
+  await dbConnect();
+  const uploading = await Artifact.find({ s3ArchiveStatus: "uploading" });
+  for (const artifact of uploading) {
+    const remote = await s3ArchiveStatusOnHost(artifact.relativePath);
+    if (!remote) continue;
+    if (remote.status === "uploading") {
+      const bytes = remote.bytesReceived || 0;
+      const total = remote.sizeBytes || artifact.sizeBytes || 0;
+      artifact.s3ArchiveStatusMessage = `Transferring to S3: ${formatVpsTransferMessage(bytes, total)}`;
+    } else if (remote.status === "verified") {
+      artifact.s3ArchiveStatus = "verified";
+      artifact.s3ArchiveStatusMessage = null;
+    } else if (remote.status === "failed") {
+      artifact.s3ArchiveStatus = "failed";
+      artifact.s3ArchiveStatusMessage = remote.error || "S3 transfer failed";
+    } else if (remote.status === "missing") {
+      artifact.s3ArchiveStatus = "failed";
+      artifact.s3ArchiveStatusMessage = "S3 transfer state was lost; retry the archive action";
+    }
+    await artifact.save();
+  }
 }
 
 /** Refresh only in-progress archive rows from the VPS agent; no catalog data is touched. */

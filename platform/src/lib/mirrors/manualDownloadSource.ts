@@ -1,10 +1,11 @@
-export type ManualDownloadSource = "playbound_vps" | "r2" | "public";
+export type ManualDownloadSource = "playbound_vps" | "r2" | "s3_archive" | "public";
 
 /** Classify the file host, not the site the visitor came from. */
 export function manualDownloadSource(url: string, r2CustomDomain?: string | null): ManualDownloadSource {
   try {
     const host = new URL(url).hostname.toLowerCase();
     if (host === "mirror.playbound.club") return "playbound_vps";
+    if (host === "s3.rogly.net") return "s3_archive";
     if (host === "r2.playbound.club") return "r2";
     let customR2Host: string | null = null;
     if (r2CustomDomain) {

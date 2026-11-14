@@ -46,9 +46,12 @@ interface OverviewData {
   r2ObjectsCount: number;
   totalArtifactsCount: number;
   vpsUsedGB: number;
+  s3TrackedGB: number;
+  s3VerifiedCount: number;
   vpsAllocatedGB: number;
   vpsFreeGB: number;
   vpsBandwidthServedBytes: number;
+  s3BandwidthServedBytes?: number;
   vpsBandwidthServedGB: number;
   r2BandwidthServedBytes?: number;
   r2BandwidthServedGB?: number;
@@ -56,7 +59,7 @@ interface OverviewData {
   publicBandwidthServedGB?: number;
   totalBandwidthServedBytes?: number;
   totalBandwidthServedGB?: number;
-  manualDownloads?: { total: number; playboundVps: number; r2: number; public: number };
+  manualDownloads?: { total: number; playboundVps: number; s3Archive?: number; r2: number; public: number };
   vpsNetworkTxBytesSinceBoot?: number | null;
   vpsFilesystemUsedGB: number | null;
   vpsFilesystemTotalGB: number | null;
@@ -102,6 +105,8 @@ interface CacheItem {
   vpsStatus: string;
   vpsStatusMessage: string | null;
   vpsTransferPercent?: number | null;
+  s3ArchiveStatus: string;
+  s3ArchiveStatusMessage: string | null;
   lastPromoted: string | null;
   lastEvicted: string | null;
   publicHealth: string;
@@ -159,6 +164,7 @@ interface ArtifactDetail {
     sha256: string;
     licenseStatus: string;
     vpsStatus: string;
+    s3ArchiveStatus?: string;
     r2Status: string;
     r2PromotionScore: number;
     r2Protected: boolean;
@@ -293,7 +299,7 @@ export function DownloadMirrorsManager() {
   }
 
   const [activeTransfers, setActiveTransfers] = useState<Record<string, {
-    target: "vps" | "r2";
+    target: "vps" | "r2" | "s3";
     artifactId: string;
     filename: string;
     gameSlug?: string | null;
@@ -309,17 +315,17 @@ export function DownloadMirrorsManager() {
   }, []);
 
   /*
-   * While a transfer (VPS archive or R2 promotion) is in flight, poll every 1.5s
-   * so the status bars update smoothly in real time.
+   * S3 transfers can last much longer than a page visit. Keep the background
+   * status fresh without hammering all four admin endpoints every 1.5s.
    */
   useEffect(() => {
     const hasUploading =
-      cacheItems.some((item) => item.vpsStatus === "uploading" || item.r2Status === "uploading") ||
+      cacheItems.some((item) => item.vpsStatus === "uploading" || item.s3ArchiveStatus === "uploading" || item.r2Status === "uploading") ||
       Object.keys(activeTransfers).length > 0;
     if (!hasUploading) return;
     const timer = window.setInterval(() => {
       void loadData({ silent: true });
-    }, 1500);
+    }, cacheItems.some((item) => item.s3ArchiveStatus === "uploading") ? 10_000 : 1500);
     return () => window.clearInterval(timer);
   }, [cacheItems, activeTransfers]);
 
@@ -590,20 +596,20 @@ export function DownloadMirrorsManager() {
     setBusyAction(`archive-${artifactId}`);
     setActiveTransfers((prev) => ({
       ...prev,
-      [`vps-${artifactId}`]: {
-        target: "vps",
+      [`s3-${artifactId}`]: {
+        target: "s3",
         artifactId,
         filename: item.filename,
         gameSlug: item.gameSlug,
         percent: 0,
-        statusMessage: "Starting VPS transfer…",
+        statusMessage: "Starting private S3 transfer…",
         totalBytes: item.sizeBytes,
       },
     }));
     setCacheItems((items) =>
       items.map((it) =>
         it.id === artifactId
-          ? { ...it, vpsStatus: "uploading", vpsStatusMessage: "Starting VPS transfer…" }
+          ? { ...it, s3ArchiveStatus: "uploading", s3ArchiveStatusMessage: "Starting private S3 transfer…" }
           : it
       )
     );
@@ -627,13 +633,13 @@ export function DownloadMirrorsManager() {
       if (!res.ok) throw new Error(data.error || data.message || "Archive failed");
 
       // Poll artifact endpoint for live byte-level progress
-      for (let i = 0; i < 180; i += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      for (let i = 0; i < 30; i += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 5000));
         const artRes = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(artifactId)}`);
         if (!artRes.ok) continue;
         const artData = await artRes.json().catch(() => null);
-        const vpsStatus = artData?.artifact?.vpsStatus;
-        const vpsMsg = artData?.artifact?.vpsStatusMessage;
+        const s3Status = artData?.artifact?.s3ArchiveStatus;
+        const s3Msg = artData?.artifact?.s3ArchiveStatusMessage;
         const received = Number(artData?.transfer?.bytesReceived) || 0;
         const total = Number(artData?.transfer?.sizeBytes) || item.sizeBytes || 0;
         const pct =
@@ -643,16 +649,16 @@ export function DownloadMirrorsManager() {
             ? Math.min(100, Math.round((received / total) * 1000) / 10)
             : null;
 
-        if (vpsStatus === "verified") {
+        if (s3Status === "verified") {
           setActiveTransfers((prev) => ({
             ...prev,
-            [`vps-${artifactId}`]: {
-              target: "vps",
+            [`s3-${artifactId}`]: {
+              target: "s3",
               artifactId,
               filename: item.filename,
               gameSlug: item.gameSlug,
               percent: 100,
-              statusMessage: "Archived and verified on VPS!",
+              statusMessage: "Archived and verified on private S3!",
               bytesTransferred: total,
               totalBytes: total,
             },
@@ -660,45 +666,51 @@ export function DownloadMirrorsManager() {
           setTimeout(() => {
             setActiveTransfers((prev) => {
               const next = { ...prev };
-              delete next[`vps-${artifactId}`];
+              delete next[`s3-${artifactId}`];
               return next;
             });
           }, 3000);
-          setMessage({ text: `Archived ${item.filename} on VPS authoritative storage!`, type: "success" });
+          setMessage({ text: `Archived ${item.filename} on private S3 storage!`, type: "success" });
           await loadData();
           return;
         }
 
-        if (vpsStatus === "missing") {
-          throw new Error(vpsMsg || "VPS archive copy did not complete");
+        if (s3Status === "failed") {
+          throw new Error(s3Msg || "S3 archive copy did not complete");
         }
 
         setActiveTransfers((prev) => ({
           ...prev,
-          [`vps-${artifactId}`]: {
-            target: "vps",
+          [`s3-${artifactId}`]: {
+            target: "s3",
             artifactId,
             filename: item.filename,
             gameSlug: item.gameSlug,
             percent: pct,
-            statusMessage: vpsMsg || `Copying to VPS: ${formatDataVolume(received)} of ${formatDataVolume(total)}`,
+            statusMessage: s3Msg || `Copying to S3: ${formatDataVolume(received)} of ${formatDataVolume(total)}`,
             bytesTransferred: received,
             totalBytes: total,
           },
         }));
       }
 
+      setActiveTransfers((prev) => {
+        const next = { ...prev };
+        delete next[`s3-${artifactId}`];
+        return next;
+      });
+      setMessage({ text: `S3 transfer for ${item.filename} continues in the background.`, type: "success" });
       await loadData();
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Archive failed";
       setActiveTransfers((prev) => {
         const next = { ...prev };
-        delete next[`vps-${artifactId}`];
+        delete next[`s3-${artifactId}`];
         return next;
       });
       setCacheItems((items) =>
         items.map((it) =>
-          it.id === artifactId ? { ...it, vpsStatus: "missing", vpsStatusMessage: detail } : it
+          it.id === artifactId ? { ...it, s3ArchiveStatus: "failed", s3ArchiveStatusMessage: detail } : it
         )
       );
       setMessage({ text: detail, type: "error" });
@@ -854,31 +866,31 @@ export function DownloadMirrorsManager() {
             </div>
           </div>
 
-          {/* Card 2: VPS Archive */}
+          {/* Card 2: Private S3 archive */}
           <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-lg backdrop-blur">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <HardDrive className="w-4 h-4 text-blue-400" /> VPS Archive
+                <HardDrive className="w-4 h-4 text-blue-400" /> Private S3 Archive
               </span>
               <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                {overview.vpsHealthPercent}% Verified
+                {overview.s3VerifiedCount} verified
               </span>
             </div>
             <div>
               <div className="text-2xl font-black tracking-tight text-foreground">
-                {overview.vpsUsedGB}{" "}
-                <span className="text-sm font-medium text-muted-foreground">/ {overview.vpsAllocatedGB} GB</span>
+                {overview.s3TrackedGB}{" "}
+                <span className="text-sm font-medium text-muted-foreground">GB tracked</span>
               </div>
               <div className="w-full bg-secondary/60 h-2 rounded-full mt-2 overflow-hidden">
                 <div
                   className="h-full bg-blue-500 transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.round((overview.vpsUsedGB / overview.vpsAllocatedGB) * 100))}%` }}
+                  style={{ width: `${overview.totalArtifactsCount ? Math.round((overview.s3VerifiedCount / overview.totalArtifactsCount) * 100) : 0}%` }}
                 />
               </div>
             </div>
             <div className="flex justify-between text-xs text-muted-foreground pt-1">
-              <span>Authoritative Archive</span>
-              <span>{overview.vpsFreeGB} GB free</span>
+              <span>Authoritative game archive</span>
+              <span>VPS migration in progress</span>
             </div>
           </div>
 
@@ -904,7 +916,13 @@ export function DownloadMirrorsManager() {
             </div>
 
             {/* Individual Tier Breakdown */}
-            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
+              <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-2 text-center">
+                <div className="text-[11px] font-semibold text-sky-400 truncate">Private S3</div>
+                <div className="text-xs font-black text-sky-300 mt-0.5">
+                  {formatDataVolume(overview.s3BandwidthServedBytes ?? 0)}
+                </div>
+              </div>
               <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-2 text-center">
                 <div className="text-[11px] font-semibold text-blue-400 truncate">VPS Archive</div>
                 <div className="text-xs font-black text-blue-300 mt-0.5">
@@ -929,7 +947,7 @@ export function DownloadMirrorsManager() {
               <p>
                 <span className="font-semibold text-foreground">Manual game-file links:</span>{" "}
                 {overview.manualDownloads?.total ?? 0} clicks
-                {overview.manualDownloads?.total ? ` · VPS ${overview.manualDownloads.playboundVps} · R2 ${overview.manualDownloads.r2} · External ${overview.manualDownloads.public}` : ""}
+                {overview.manualDownloads?.total ? ` · S3 ${overview.manualDownloads.s3Archive ?? 0} · R2 ${overview.manualDownloads.r2} · VPS ${overview.manualDownloads.playboundVps} · External ${overview.manualDownloads.public}` : ""}
               </p>
               <p>These clicks do not claim transferred bytes; browsers cannot confirm an external file finished downloading.</p>
               {overview.vpsNetworkTxBytesSinceBoot != null && (
@@ -1119,7 +1137,7 @@ export function DownloadMirrorsManager() {
                                 : "bg-sky-500/20 text-sky-300 border border-sky-500/30"
                             }`}
                           >
-                            {isR2 ? "R2 Hot Cache" : "VPS Archive"}
+                            {isR2 ? "R2 Hot Cache" : transfer.target === "s3" ? "Private S3 Archive" : "VPS Archive"}
                           </span>
                           <span className="font-semibold">{transfer.filename}</span>
                           {transfer.gameSlug && (
@@ -1282,16 +1300,14 @@ export function DownloadMirrorsManager() {
                               <Eye className="w-3.5 h-3.5" /> Details
                             </button>
 
-                            {/* VPS Archive Action / Progress */}
-                            {item.vpsStatus === "uploading" || activeTransfers[`vps-${item.id}`] ? (
+                            {/* Private S3 archive action and progress */}
+                            {item.s3ArchiveStatus === "uploading" || activeTransfers[`s3-${item.id}`] ? (
                               <div className="w-32 text-left space-y-1 bg-sky-950/30 border border-sky-500/30 rounded p-1.5">
                                 <div className="flex justify-between items-center text-[10px] text-sky-300 font-mono">
-                                  <span>VPS</span>
+                                  <span>S3</span>
                                   <span>
-                                    {activeTransfers[`vps-${item.id}`]?.percent != null
-                                      ? `${Math.round(activeTransfers[`vps-${item.id}`].percent!)}%`
-                                      : item.vpsTransferPercent != null
-                                      ? `${Math.round(item.vpsTransferPercent)}%`
+                                    {activeTransfers[`s3-${item.id}`]?.percent != null
+                                      ? `${Math.round(activeTransfers[`s3-${item.id}`].percent!)}%`
                                       : "…"}
                                   </span>
                                 </div>
@@ -1301,7 +1317,7 @@ export function DownloadMirrorsManager() {
                                     style={{
                                       width: `${Math.max(
                                         5,
-                                        activeTransfers[`vps-${item.id}`]?.percent ?? item.vpsTransferPercent ?? 10
+                                        activeTransfers[`s3-${item.id}`]?.percent ?? 10
                                       )}%`,
                                     }}
                                   />
@@ -1312,21 +1328,25 @@ export function DownloadMirrorsManager() {
                                 onClick={() => void handleArchive(item)}
                                 disabled={
                                   busyAction === `archive-${item.id}` ||
-                                  item.vpsStatus === "verified"
+                                  item.s3ArchiveStatus === "verified" || item.artifactType === "launcher"
                                 }
                                 className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
                                 title={
-                                  item.vpsStatus === "verified"
-                                    ? "Already archived on VPS"
-                                    : "Copy to VPS archive"
+                                  item.artifactType === "launcher"
+                                    ? "Launcher releases use the existing release path"
+                                    : item.s3ArchiveStatus === "verified"
+                                    ? "Already archived on private S3"
+                                    : "Copy directly to private S3 archive"
                                 }
                               >
                                 <Archive className="w-3.5 h-3.5" />
-                                {item.vpsStatus === "verified"
-                                  ? "On VPS"
+                                {item.s3ArchiveStatus === "verified"
+                                  ? "On S3"
+                                  : item.artifactType === "launcher"
+                                  ? "Launcher"
                                   : busyAction === `archive-${item.id}`
                                   ? "Starting…"
-                                  : "Archive to VPS"}
+                                  : "Archive to S3"}
                               </button>
                             )}
 
@@ -1364,16 +1384,16 @@ export function DownloadMirrorsManager() {
                             ) : (
                               <button
                                 onClick={() => void handlePromote(item)}
-                                disabled={busyAction === `promote-${item.id}`}
+                                disabled={busyAction === `promote-${item.id}` || (item.vpsStatus !== "verified" && item.s3ArchiveStatus !== "verified")}
                                 className="px-2.5 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold transition-colors flex items-center gap-1"
                                 title={
-                                  item.vpsStatus !== "verified"
-                                    ? "Promotes to R2 and automatically links/archives to VPS"
+                                  item.vpsStatus !== "verified" && item.s3ArchiveStatus !== "verified"
+                                    ? "Archive to S3 first"
                                     : "Promote to R2 Hot Cache"
                                 }
                               >
                                 <ArrowUpRight className="w-3.5 h-3.5" />
-                                {item.vpsStatus !== "verified" ? "Archive & Promote" : "Promote"}
+                                {item.vpsStatus !== "verified" && item.s3ArchiveStatus !== "verified" ? "Archive first" : "Promote"}
                               </button>
                             )}
 
@@ -1685,8 +1705,8 @@ export function DownloadMirrorsManager() {
                     <div className="text-sm font-bold text-purple-400 mt-1 capitalize">{artifactDetail.artifact.r2Status}</div>
                   </div>
                   <div className="p-3 rounded-xl border border-border bg-secondary/30 text-center">
-                    <div className="text-xs text-muted-foreground font-semibold">VPS Archive</div>
-                    <div className="text-sm font-bold text-emerald-400 mt-1 capitalize">{artifactDetail.artifact.vpsStatus}</div>
+                    <div className="text-xs text-muted-foreground font-semibold">Private S3 Archive</div>
+                    <div className="text-sm font-bold text-emerald-400 mt-1 capitalize">{artifactDetail.artifact.s3ArchiveStatus || "missing"}</div>
                   </div>
                   <div className="p-3 rounded-xl border border-border bg-secondary/30 text-center">
                     <div className="text-xs text-muted-foreground font-semibold">Cache Score</div>

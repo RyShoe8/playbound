@@ -5,6 +5,7 @@ describe("manual download host classification", () => {
   it("counts only PlayBound's exact mirror host as VPS traffic", () => {
     expect(manualDownloadSource("https://mirror.playbound.club/games/game.zip")).toBe("playbound_vps");
     expect(manualDownloadSource("https://mirror.playbound.club.evil.example/game.zip")).toBe("public");
+    expect(manualDownloadSource("https://s3.rogly.net/playbound/games/game.zip?X-Amz-Signature=abc")).toBe("s3_archive");
   });
 
   it("separates R2 from external game hosts", () => {

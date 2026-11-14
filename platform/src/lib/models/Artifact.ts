@@ -13,7 +13,7 @@ export type ArtifactType =
   | "configuration";
 
 export type VpsStatus = "missing" | "uploading" | "verified" | "corrupted" | "offline";
-export type S3ArchiveStatus = "missing" | "verified";
+export type S3ArchiveStatus = "missing" | "uploading" | "verified" | "failed";
 
 export type R2Status =
   | "not_cached"
@@ -40,6 +40,7 @@ export interface IArtifact extends Document {
   redistributionAllowed: boolean;
   vpsStatus: VpsStatus;
   s3ArchiveStatus: S3ArchiveStatus;
+  s3ArchiveStatusMessage?: string | null;
   /** Most recent archive-transfer result from the VPS; operational metadata only. */
   vpsStatusMessage?: string | null;
   r2Status: R2Status;
@@ -105,7 +106,8 @@ const ArtifactSchema = new Schema<IArtifact>(
       default: "verified",
       index: true,
     },
-    s3ArchiveStatus: { type: String, enum: ["missing", "verified"], default: "missing", index: true },
+    s3ArchiveStatus: { type: String, enum: ["missing", "uploading", "verified", "failed"], default: "missing", index: true },
+    s3ArchiveStatusMessage: { type: String, default: null },
     vpsStatusMessage: { type: String, default: null },
     r2Status: {
       type: String,

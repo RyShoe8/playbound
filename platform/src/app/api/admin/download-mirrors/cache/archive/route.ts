@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/requireAdmin";
-import { archiveArtifactToVps } from "@/lib/mirrors/cacheManager";
+import { archiveArtifactToS3 } from "@/lib/mirrors/cacheManager";
 
 export async function POST(req: Request) {
   const { session, error } = await requireAdminSession();
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { artifactId, sourceUrl, artifact } = await req.json();
     if (!artifactId) return NextResponse.json({ error: "artifactId is required" }, { status: 400 });
     const actor = session?.user?.name || session?.user?.email || "admin";
-    const result = await archiveArtifactToVps(
+    const result = await archiveArtifactToS3(
       String(artifactId),
       actor,
       typeof sourceUrl === "string" ? sourceUrl : null,

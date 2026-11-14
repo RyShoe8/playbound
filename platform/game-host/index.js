@@ -42,6 +42,7 @@ import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 import { getCachedGameVersions } from "./gameVersions.js";
 import { createStartCoordinator } from "./startLock.js";
 import { httpsGetStream } from "./downloadStream.js";
+import { transferUrlToS3 } from "./s3ArchiveTransfer.js";
 import { createManagedRegistry, createManagedJobs, createPartyRegistry, isSameProcess, processIdentity, processGroupMembers, rehydrateManagedRoom, recoveredManagedRoomExited, missingManagedRuntimeReason } from "./managedRegistry.js";
 import { processMetrics } from "./processMetrics.js";
 import { isLinuxPortBound, startupReadyTimeout } from "./portReadiness.js";
@@ -113,6 +114,8 @@ const installationFailureReporter = createInstallationFailureReporter({
 });
 /** relative archive path → in-flight/completed transfer state for this agent lifetime. */
 const archiveJobs = new Map();
+/** Relative archive path → S3 upload progress for the admin archive action. */
+const s3ArchiveJobs = new Map();
 
 /** Update an in-flight archive job's byte progress (polled by GET /mirror/archive). */
 function setArchiveProgress(relativePath, patch) {
@@ -630,6 +633,41 @@ async function deleteArchivedFile(relativePath) {
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Could not delete archived file" };
   }
+}
+
+async function queueS3Archive(input) {
+  const relativePath = input?.relativePath;
+  if (!archivePath(relativePath) ||
+      (!["games/", "launcher-packages/", "artifacts/"].some((prefix) => relativePath.startsWith(prefix)))) {
+    return { error: "Invalid S3 archive path" };
+  }
+  const sizeBytes = Number(input?.sizeBytes);
+  if (!Number.isSafeInteger(sizeBytes) || sizeBytes <= 0 || sizeBytes > MIRROR_ARCHIVE_MAX_BYTES ||
+      typeof input?.url !== "string" || !input.url.startsWith("https://")) {
+    return { error: "Invalid S3 archive source or size" };
+  }
+  const current = s3ArchiveJobs.get(relativePath);
+  if (current?.status === "uploading" || current?.status === "verified") return current;
+  const job = { status: "uploading", bytesReceived: 0, sizeBytes };
+  s3ArchiveJobs.set(relativePath, job);
+  void transferUrlToS3({
+    key: relativePath, url: input.url, sizeBytes, sha256: input.sha256 || null,
+    secret: SECRET, site: process.env.PLAYBOUND_SITE_URL || "https://playbound.club",
+    onProgress: (uploaded) => { job.bytesReceived = uploaded; },
+  }).then((result) => {
+    s3ArchiveJobs.set(relativePath, { status: "verified", sizeBytes: result.sizeBytes, sha256: result.sha256 });
+  }).catch((error) => {
+    const message = error instanceof Error ? error.message : "S3 transfer failed";
+    console.warn(`[s3-archive] ${relativePath}: ${message}`);
+    s3ArchiveJobs.set(relativePath, { status: "failed", error: message, sizeBytes });
+  });
+  return { status: "uploading", bytesReceived: 0, sizeBytes };
+}
+
+function s3ArchiveStatus(relativePath) {
+  if (!archivePath(relativePath)) return { error: "Invalid S3 archive path" };
+  const job = s3ArchiveJobs.get(relativePath);
+  return job || { status: "missing" };
 }
 
 function probeTcpPort(port) {
@@ -1776,6 +1814,18 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/mirror/archive") {
       const result = await queueArchive(await readBody(req));
       json(res, result.error ? 400 : result.status === "uploading" ? 202 : 200, result);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/mirror/s3-archive") {
+      const result = await queueS3Archive(await readBody(req));
+      json(res, result.error ? 400 : result.status === "uploading" ? 202 : 200, result);
+      return;
+    }
+    const s3ArchiveMatch = url.pathname.match(/^\/mirror\/s3-archive\/(.+)$/);
+    if (req.method === "GET" && s3ArchiveMatch) {
+      const result = s3ArchiveStatus(decodeURIComponent(s3ArchiveMatch[1]));
+      json(res, result.error ? 400 : 200, result);
       return;
     }
 

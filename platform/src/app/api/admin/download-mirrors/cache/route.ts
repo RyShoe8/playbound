@@ -7,6 +7,7 @@ import {
   catalogArchiveSourceUrl,
   evictSupersededLauncherVersionsFromR2,
   refreshUploadingVpsArtifacts,
+  refreshUploadingS3Artifacts,
 } from "@/lib/mirrors/cacheManager";
 import { filterCurrentArtifacts } from "@/lib/mirrors/currentArtifacts";
 import { launcherPlatformFromArtifactId, pickLatestLauncherArtifact } from "@/lib/mirrors/semver";
@@ -20,6 +21,7 @@ export async function GET() {
     await dbConnect();
     await syncUploadedPackageArtifacts();
     await refreshUploadingVpsArtifacts();
+    await refreshUploadingS3Artifacts();
 
     const rawArtifacts = await Artifact.find({}).sort({ r2Status: 1, r2PromotionScore: -1 });
     /*
@@ -104,6 +106,8 @@ export async function GET() {
         r2Protected: a.r2Protected,
         r2Disabled: a.r2Disabled,
         vpsStatus: a.vpsStatus,
+        s3ArchiveStatus: a.s3ArchiveStatus,
+        s3ArchiveStatusMessage: a.s3ArchiveStatusMessage || null,
         vpsStatusMessage: a.vpsStatusMessage || null,
         vpsTransferPercent,
         lastPromoted: a.r2LastPromoted,

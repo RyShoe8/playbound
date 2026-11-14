@@ -25,7 +25,7 @@ function hostAuthorized(req: Request) {
 function archiveKey(value: unknown): string {
   if (typeof value !== "string" || value.length > 450) throw new Error("Invalid archive key");
   const key = safeS3ArchiveKey(value);
-  if (!key.startsWith("games/") && !key.startsWith("launcher-packages/")) throw new Error("Archive key outside game packages");
+  if (!["games/", "launcher-packages/", "artifacts/"].some((prefix) => key.startsWith(prefix))) throw new Error("Archive key outside game packages");
   return key;
 }
 
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
       await dbConnect();
       // Only existing operational artifact rows may be marked; game content is untouched.
       const updated = await Artifact.updateOne(
-        { relativePath: key, sizeBytes, vpsStatus: "verified", sha256: { $in: [sha256, ""] } },
+        { relativePath: key, sizeBytes, sha256: { $in: [sha256, ""] } },
         { $set: { sha256, s3ArchiveStatus: "verified" } }
       );
       return NextResponse.json({ verified: true, artifactMarked: updated.matchedCount === 1 });

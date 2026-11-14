@@ -32,6 +32,8 @@ export async function GET() {
     const vpsVerifiedArtifacts = allArtifacts.filter((a) => a.vpsStatus === "verified");
     const vpsBytesUsed = vpsVerifiedArtifacts.reduce((sum, a) => sum + (a.sizeBytes || 0), 0);
     const vpsUsedGB = Number((vpsBytesUsed / (1024 * 1024 * 1024)).toFixed(2));
+    const s3VerifiedArtifacts = allArtifacts.filter((a) => a.s3ArchiveStatus === "verified");
+    const s3TrackedGB = Number((s3VerifiedArtifacts.reduce((sum, a) => sum + (a.sizeBytes || 0), 0) / (1024 ** 3)).toFixed(2));
     const vpsAllocatedGB = settings.vpsStorageLimitGB;
     const vpsFreeGB = Number((vpsAllocatedGB - vpsUsedGB).toFixed(2));
 
@@ -106,6 +108,7 @@ export async function GET() {
       }
     }
     const vpsBandwidthServedBytes = bandwidthBySource["playbound_vps"] || 0;
+    const s3BandwidthServedBytes = bandwidthBySource["s3_archive"] || 0;
     const vpsBandwidthServedGB = Number((vpsBandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
 
     const r2BandwidthServedBytes = bandwidthBySource["r2"] || 0;
@@ -122,10 +125,11 @@ export async function GET() {
       { $match: { event: "game_download_clicked" } },
       { $group: { _id: { $ifNull: ["$properties.deliverySource", "public"] }, count: { $sum: 1 } } },
     ]);
-    const manualDownloads = { total: 0, playboundVps: 0, r2: 0, public: 0 };
+    const manualDownloads = { total: 0, playboundVps: 0, s3Archive: 0, r2: 0, public: 0 };
     for (const row of manualDownloadRows) {
       manualDownloads.total += row.count;
       if (row._id === "playbound_vps") manualDownloads.playboundVps += row.count;
+      else if (row._id === "s3_archive") manualDownloads.s3Archive += row.count;
       else if (row._id === "r2") manualDownloads.r2 += row.count;
       else manualDownloads.public += row.count;
     }
@@ -154,9 +158,12 @@ export async function GET() {
         r2ObjectsCount: cachedArtifacts.length,
         totalArtifactsCount: allArtifacts.length,
         vpsUsedGB,
+        s3TrackedGB,
+        s3VerifiedCount: s3VerifiedArtifacts.length,
         vpsAllocatedGB,
         vpsFreeGB,
         vpsBandwidthServedBytes,
+        s3BandwidthServedBytes,
         vpsBandwidthServedGB,
         r2BandwidthServedBytes,
         r2BandwidthServedGB,

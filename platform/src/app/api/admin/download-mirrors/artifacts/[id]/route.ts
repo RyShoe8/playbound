@@ -7,7 +7,7 @@ import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorEvent from "@/lib/models/MirrorEvent";
 import { calculateArtifactCacheScore } from "@/lib/mirrors/scoring";
 import { deleteArtifactCompletely } from "@/lib/mirrors/cacheManager";
-import { archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
+import { archivedArtifactStatusOnHost, s3ArchiveStatusOnHost } from "@/lib/gameHost/client";
 import { formatVpsTransferMessage, vpsTransferPercent } from "@/lib/mirrors/vpsProgress";
 
 export async function GET(
@@ -50,6 +50,22 @@ export async function GET(
           remote.status === "verified"
             ? null
             : remote.message || "The VPS did not retain the archive transfer.";
+        if (mayPersistStatus) await artifact.save();
+      }
+    }
+    if (artifact.s3ArchiveStatus === "uploading") {
+      const remote = await s3ArchiveStatusOnHost(artifact.relativePath);
+      if (remote?.status === "uploading") {
+        const expected = remote.sizeBytes || artifact.sizeBytes || 0;
+        artifact.s3ArchiveStatusMessage = formatVpsTransferMessage(remote.bytesReceived, expected);
+        if (mayPersistStatus) await artifact.save();
+        transfer = {
+          bytesReceived: remote.bytesReceived ?? 0, sizeBytes: expected || undefined,
+          percent: vpsTransferPercent(remote.bytesReceived ?? 0, expected),
+        };
+      } else if (remote) {
+        artifact.s3ArchiveStatus = remote.status === "verified" ? "verified" : "failed";
+        artifact.s3ArchiveStatusMessage = remote.status === "verified" ? null : remote.error || "S3 transfer stopped";
         if (mayPersistStatus) await artifact.save();
       }
     }
