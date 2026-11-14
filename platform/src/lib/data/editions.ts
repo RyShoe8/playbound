@@ -4080,11 +4080,11 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "direct-zip",
-        url: "https://mirror.playbound.club/launcher-packages/editions/freedoom/ashes-2063/AshesStandalone_V1_51.zip",
+        url: "https://www.moddb.com/mods/ashes-2063/downloads/ashes-stand-alone-version-101",
         fileName: "AshesStandalone_V1_51.zip",
         versionLabel: "1.51",
         exeHint: "gzdoom|Ashes|ashes",
-        note: "PlayBound mirror of the Ashes 2063 standalone 1.51 pack (GZDoom + Freedoom + Afterglow + Hard Reset). Sourced from ModDB; not scraped at install time.",
+        note: "Ashes 2063 standalone 1.51 pack (GZDoom + Freedoom + Afterglow + Hard Reset), resolved from its ModDB file page at install time and checked against ModDB's MD5. The page slug says 1.01 but carries 1.51 (AshesStandalone_V1_51.zip).",
       },
     },
     requirements: {
