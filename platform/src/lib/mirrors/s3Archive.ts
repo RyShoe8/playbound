@@ -48,11 +48,21 @@ export async function headS3ArchiveObject(key: string): Promise<{ exists: boolea
   if (!config) throw new Error("S3 archive is not configured");
   const s3 = s3ArchiveClient(config);
   try {
-    const result = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: safeS3ArchiveKey(key) }));
-    return { exists: true, sizeBytes: result.ContentLength, etag: result.ETag };
-  } catch (error) {
-    if ((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return { exists: false };
-    throw error;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: safeS3ArchiveKey(key) }));
+        return { exists: true, sizeBytes: result.ContentLength, etag: result.ETag };
+      } catch (error) {
+        const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+        if (status === 404) return { exists: false };
+        // Ceph's public gateway has occasionally answered one HEAD with 403
+        // while the next identical signed request succeeds. Never treat 403
+        // as absence: a persistent auth failure must still stop the transfer.
+        if (status !== 403 || attempt === 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+      }
+    }
+    throw new Error("S3 object check failed");
   } finally {
     s3.destroy();
   }
