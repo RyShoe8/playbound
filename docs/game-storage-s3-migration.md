@@ -44,11 +44,15 @@ outside this download archive and must not be removed by this migration.
    Keep the signed launcher on its existing delivery path.
 3. Copy each game object under the same relative key. Compare full source and
    destination SHA-256 and byte length. Record S3 verified status only for the
-   exact matching object. Resume safely by key after interruptions. For an
-   Artifact with a trusted checksum already in MongoDB, run
-   `npx tsx scripts/verify-s3-archive.ts <artifact-id>` from `platform/` first,
-   then repeat with `--apply` to mark only that object verified. The script
-   refuses missing trusted checksums and never edits catalog game data.
+   exact matching object. Resume safely by key after interruptions. The VPS
+   can run `game-host/migrateArchiveS3.mjs <relative-key>` with its existing
+   `GAME_HOST_SECRET`. The site issues short-lived multipart URLs, so the VPS
+   never stores S3 credentials. The script hashes both the VPS source and the
+   complete S3 download and refuses to overwrite a different existing object.
+   It does not delete the source. Where an Artifact row exists, it marks only
+   that exact verified row. The separate `scripts/verify-s3-archive.ts` can
+   independently recheck an Artifact with a trusted checksum; it refuses
+   missing trusted checksums and never edits catalog game data.
 4. Redirect `mirror.playbound.club` at the edge to a PlayBound-controlled
    download gateway. Existing launcher recipes and old installed launchers use
    that hostname. A simple 302 to `s3.rogly.net` is insufficient for old

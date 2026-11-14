@@ -23,7 +23,7 @@ export function s3ArchiveConfigured(): boolean {
   return Boolean(s3ArchiveConfig());
 }
 
-function safeKey(key: string): string {
+export function safeS3ArchiveKey(key: string): string {
   const parts = key.split("/");
   if (!key || key.startsWith("/") || parts.some((part) => !part || part === "." || part === "..") || /[\\\u0000-\u001f]/.test(key)) {
     throw new Error("Invalid S3 archive object key");
@@ -31,7 +31,7 @@ function safeKey(key: string): string {
   return key;
 }
 
-function client(config: NonNullable<ReturnType<typeof s3ArchiveConfig>>): S3Client {
+export function s3ArchiveClient(config: NonNullable<ReturnType<typeof s3ArchiveConfig>>): S3Client {
   // Ceph RGW uses path-style bucket URLs behind this gateway.
   return new S3Client({
     region: config.region,
@@ -46,9 +46,9 @@ function client(config: NonNullable<ReturnType<typeof s3ArchiveConfig>>): S3Clie
 export async function headS3ArchiveObject(key: string): Promise<{ exists: boolean; sizeBytes?: number; etag?: string }> {
   const config = s3ArchiveConfig();
   if (!config) throw new Error("S3 archive is not configured");
-  const s3 = client(config);
+  const s3 = s3ArchiveClient(config);
   try {
-    const result = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: safeKey(key) }));
+    const result = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: safeS3ArchiveKey(key) }));
     return { exists: true, sizeBytes: result.ContentLength, etag: result.ETag };
   } catch (error) {
     if ((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return { exists: false };
@@ -64,11 +64,11 @@ export async function signedS3ArchiveDownloadUrl(key: string, filename: string, 
   if (!Number.isInteger(expiresIn) || expiresIn < 1 || expiresIn > 3600) throw new Error("Invalid S3 archive URL lifetime");
   const safeName = filename.replace(/["\\\r\n\u0000-\u001f]/g, "").trim();
   if (!safeName) throw new Error("Missing download filename");
-  const s3 = client(config);
+  const s3 = s3ArchiveClient(config);
   try {
     return await getSignedUrl(s3, new GetObjectCommand({
       Bucket: config.bucket,
-      Key: safeKey(key),
+      Key: safeS3ArchiveKey(key),
       ResponseContentDisposition: `attachment; filename="${safeName}"`,
     }), { expiresIn });
   } finally {
@@ -80,9 +80,9 @@ export async function signedS3ArchiveDownloadUrl(key: string, filename: string, 
 export async function hashS3ArchiveObject(key: string): Promise<{ sizeBytes: number; sha256: string }> {
   const config = s3ArchiveConfig();
   if (!config) throw new Error("S3 archive is not configured");
-  const s3 = client(config);
+  const s3 = s3ArchiveClient(config);
   try {
-    const result = await s3.send(new GetObjectCommand({ Bucket: config.bucket, Key: safeKey(key) }));
+    const result = await s3.send(new GetObjectCommand({ Bucket: config.bucket, Key: safeS3ArchiveKey(key) }));
     if (!result.Body) throw new Error("S3 archive object has no body");
     const hash = createHash("sha256");
     let sizeBytes = 0;
@@ -105,7 +105,7 @@ export async function probeS3Archive(): Promise<{ write: true; head: true; signe
   if (!config) throw new Error("S3 archive is not configured");
   const key = `_playbound-probe/${randomUUID()}.txt`;
   const body = Buffer.from("PlayBound S3 archive probe\n", "utf8");
-  const s3 = client(config);
+  const s3 = s3ArchiveClient(config);
   let uploaded = false;
   try {
     await s3.send(new PutObjectCommand({ Bucket: config.bucket, Key: key, Body: body, ContentType: "text/plain" }));
