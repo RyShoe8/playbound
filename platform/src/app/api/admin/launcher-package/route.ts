@@ -6,7 +6,7 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import EditionModel from "@/lib/models/Edition";
 import { editions as seedEditions } from "@/lib/data/editions";
-import { archiveArtifactOnHost, archivedArtifactStatusOnHost, archiveArtifactToS3OnHost, s3ArchiveStatusOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
+import { archiveArtifactToS3OnHost, s3ArchiveStatusOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
 import { requireAdminSession, requireAdminViewSession } from "@/lib/requireAdmin";
 import { registerVerifiedUploadedPackage } from "@/lib/mirrors/uploadedPackages";
 import { launcherPackageKind } from "@/lib/mirrors/launcherPackageKind";
@@ -71,21 +71,20 @@ export async function POST(req: Request) {
     }
     const kind = launcherPackageKind(input.fileName);
     if (!kind) return NextResponse.json({ error: "Unsupported installer file" }, { status: 400 });
-    // Enable only after mirror.playbound.club is routed through the tested
-    // S3 edge gateway. Existing launchers must never receive an unserved URL.
-    const s3Active = process.env.MIRROR_S3_GATEWAY_ACTIVE === "1";
+    // mirror.playbound.club serves the private S3 archive (Cloudflare Worker,
+    // platform/workers/game-mirror), so packages are archived only there.
 
     if (action === "queue") {
-      const queued = await (s3Active ? archiveArtifactToS3OnHost : archiveArtifactOnHost)({
+      const queued = await archiveArtifactToS3OnHost({
         url: input.sourceUrl,
         relativePath,
         sizeBytes: input.sizeBytes,
       });
       if (!queued.success) return NextResponse.json({ error: queued.message || "Package archive failed" }, { status: 502 });
-      return NextResponse.json({ relativePath, status: s3Active || ("queued" in queued && queued.queued) ? "uploading" : "verified" });
+      return NextResponse.json({ relativePath, status: "uploading" });
     }
 
-    const archive = await (s3Active ? s3ArchiveStatusOnHost : archivedArtifactStatusOnHost)(relativePath);
+    const archive = await s3ArchiveStatusOnHost(relativePath);
     if (!archive) {
       return NextResponse.json({ error: "Game host unreachable", status: "failed" }, { status: 502 });
     }
@@ -179,9 +178,9 @@ export async function POST(req: Request) {
       gameSlug: input.gameSlug, editionSlug: input.editionSlug, version,
       filename: input.fileName, relativePath, sizeBytes: archive.sizeBytes || input.sizeBytes,
       sha256: "sha256" in archive ? archive.sha256 : undefined,
-      storage: s3Active ? "s3" : "vps",
+      storage: "s3",
     });
-    if (s3Active && process.env.BLOB_READ_WRITE_TOKEN) {
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
       try {
         const staging = new URL(input.sourceUrl);
         if (staging.hostname.endsWith(".public.blob.vercel-storage.com") &&
@@ -205,9 +204,7 @@ export async function GET(req: Request) {
   if (error) return error;
   const relativePath = new URL(req.url).searchParams.get("relativePath") || "";
   if (!relativePath.startsWith("launcher-packages/")) return NextResponse.json({ error: "Invalid package path" }, { status: 400 });
-  const status = process.env.MIRROR_S3_GATEWAY_ACTIVE === "1"
-    ? await s3ArchiveStatusOnHost(relativePath)
-    : await archivedArtifactStatusOnHost(relativePath);
+  const status = await s3ArchiveStatusOnHost(relativePath);
   return NextResponse.json(status || { status: "missing", message: "Game host is not configured" });
 }
 

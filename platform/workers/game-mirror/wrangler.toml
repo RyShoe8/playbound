@@ -2,5 +2,11 @@ name = "playbound-game-mirror"
 main = "index.mjs"
 compatibility_date = "2026-11-13"
 
-# Route and MIRROR_GATEWAY_SECRET are deliberately added only after the S3
-# inventory and range-download checks pass. Do not route DNS here prematurely.
+# mirror.playbound.club serves game packages from the private S3 archive.
+# Bound on 2026-11-14 after all 191 packages were copied and SHA-256 verified
+# and the catalog audit reported every referenced package present. To roll
+# back to the VPS origin, remove this route and redeploy.
+# MIRROR_GATEWAY_SECRET is a Worker secret (wrangler secret put), not set here.
+routes = [
+  { pattern = "mirror.playbound.club/*", zone_name = "playbound.club" },
+]

@@ -91,12 +91,14 @@ Deploying the Worker without its route is safe for a preview, but the Worker
 rejects requests on non-mirror hostnames. Test with a preview route on a
 Cloudflare-owned subdomain or a staging hostname first.
 
-Once the edge route is live, set `MIRROR_S3_GATEWAY_ACTIVE=1` in Vercel
-Production and redeploy. New browser package uploads will then stream from
-temporary Vercel Blob staging into S3, mark only the exact verified artifact,
-publish the same stable mirror URL, and remove staging after verification.
-Until that flag is set, the package upload route retains its existing VPS path
-so an uploaded game is never published under a URL the mirror cannot serve.
+The edge route went live on 2026-11-14, after all 191 packages were copied and
+SHA-256 verified and the catalog audit (`/api/internal/archive-audit`) reported
+every referenced package present. Browser package uploads now always stream
+from temporary Vercel Blob staging into S3, mark only the exact verified
+artifact, publish the same stable mirror URL, and remove staging after
+verification. There is no switch: the earlier `MIRROR_S3_GATEWAY_ACTIVE` flag
+was removed once the route was live. Mixtape uploads no longer touch the VPS
+or the mirror; they go from Blob staging straight to R2.
 
 The repository's S3 read path is disabled until its environment variables are
 set and an artifact is marked `s3ArchiveStatus: verified`. The current VPS
