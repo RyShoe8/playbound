@@ -3,10 +3,11 @@ import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
 import { getMirrorSettings } from "./cacheManager";
 import { getR2PresignedDownloadUrl } from "./r2Client";
+import { s3ArchiveConfigured, signedS3ArchiveDownloadUrl } from "./s3Archive";
 
 export interface ResolvedDownloadSource {
   sourceId: string;
-  type: "public" | "r2" | "playbound_vps";
+  type: "public" | "r2" | "s3_archive" | "playbound_vps";
   url: string;
   priority: number;
   healthStatus?: string;
@@ -31,7 +32,8 @@ export interface ResolvedDownloadResponse {
  * Ordering:
  * 1. Cloudflare R2 Hot Cache (priority 100)
  * 2. Healthy Public Mirror (priority 90)
- * 3. PlayBound VPS Authoritative Archive (priority 50)
+ * 3. S3 authoritative archive (priority 50)
+ * 4. VPS archive during migration (priority 40)
  *
  * If public mirror is degraded (priority 70), R2 stays preferred.
  * If public mirror is failing/offline (priority 10), it is demoted to last.
@@ -95,7 +97,23 @@ export async function resolveDownloadSources(
     });
   }
 
-  // 3. Process PlayBound VPS Authoritative Archive
+  // 3. Process the verified S3 origin. R2 remains the hot cache above it.
+  if (artifact.s3ArchiveStatus === "verified") {
+    try {
+      if (!s3ArchiveConfigured()) throw new Error("S3 archive is not configured");
+      resolvedSources.push({
+        sourceId: `s3-${artifact.artifactId}`,
+        type: "s3_archive",
+        url: await signedS3ArchiveDownloadUrl(artifact.relativePath, artifact.filename),
+        priority: 50,
+        healthStatus: "healthy",
+      });
+    } catch (error) {
+      console.warn(`[Resolution] Failed signing S3 archive URL for ${artifact.artifactId}:`, error);
+    }
+  }
+
+  // 4. Retain the VPS source until its byte-verified copy is safe to remove.
   if (artifact.vpsStatus === "verified") {
     const vpsBase = (settings.vpsMirrorBaseUrl || "https://mirror.playbound.club").replace(/\/+$/, "");
     const cleanRel = artifact.relativePath.replace(/^\/+/, "");
@@ -105,7 +123,7 @@ export async function resolveDownloadSources(
       sourceId: `vps-${artifact.artifactId}`,
       type: "playbound_vps",
       url: vpsUrl,
-      priority: 50,
+      priority: 40,
       healthStatus: "healthy",
     });
   }

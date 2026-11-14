@@ -146,12 +146,12 @@ for (const packaged of [true, false]) {
   const sec = createSecurity({ isPackaged: () => packaged, getApiBase: () => API_BASE });
   const mismatches = [];
   for (const host of corpus) {
-    // Intentional addition: GitHub's exact repository archive redirect host.
-    const expected = host === "codeload.github.com" || reference(host);
+    // Intentional exact-host additions for GitHub, ET: Legacy, and PlayBound S3.
+    const expected = ["codeload.github.com", "etl-uploads.fra1.digitaloceanspaces.com", "s3.rogly.net"].includes(host) || reference(host);
     if (sec.hostAllowedForDownload(host) !== expected) mismatches.push(host);
   }
   check(
-    `download allowlist matches the original plus codeload for all ${corpus.size} hosts (packaged=${packaged})`,
+    `download allowlist matches the original plus trusted download hosts for all ${corpus.size} hosts (packaged=${packaged})`,
     mismatches.length === 0,
     mismatches.slice(0, 5).join(", ")
   );
@@ -169,6 +169,10 @@ for (const packaged of [true, false]) {
   check("rejects a ModDB CDN lookalike", !sec.hostAllowedForDownload("fmt5.dl.dbolical.com.attacker.example"));
   check("still accepts itch mirrors", sec.hostAllowedForDownload("itchio-mirror-7.b-cdn.net"));
   check("accepts official GameJolt downloads", sec.hostAllowedForDownload("download.gamejolt.net"));
+  check("accepts the official ET: Legacy release bucket", sec.hostAllowedForDownload("etl-uploads.fra1.digitaloceanspaces.com"));
+  check("rejects an ET: Legacy bucket lookalike", !sec.hostAllowedForDownload("etl-uploads.fra1.digitaloceanspaces.com.attacker.example"));
+  check("accepts the configured PlayBound S3 archive", sec.hostAllowedForDownload("s3.rogly.net"));
+  check("rejects an S3 archive lookalike", !sec.hostAllowedForDownload("s3.rogly.net.attacker.example"));
 }
 
 // Previews remain usable while developing.

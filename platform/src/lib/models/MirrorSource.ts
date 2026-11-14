@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type SourceType = "public" | "r2" | "playbound_vps";
+export type SourceType = "public" | "r2" | "s3_archive" | "playbound_vps";
 export type SourceHealthStatus = "unknown" | "healthy" | "degraded" | "failing" | "offline";
 
 export interface IMirrorSource extends Document {
@@ -31,7 +31,7 @@ const MirrorSourceSchema = new Schema<IMirrorSource>(
     sourceType: {
       type: String,
       required: true,
-      enum: ["public", "r2", "playbound_vps"],
+      enum: ["public", "r2", "s3_archive", "playbound_vps"],
       default: "public",
       index: true,
     },

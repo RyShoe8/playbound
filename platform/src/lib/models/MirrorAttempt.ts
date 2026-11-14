@@ -13,7 +13,7 @@ export type MirrorAttemptResult =
 export interface IMirrorAttempt extends Document {
   artifactId: string;
   sourceId: string;
-  sourceType: "public" | "r2" | "playbound_vps";
+  sourceType: "public" | "r2" | "s3_archive" | "playbound_vps";
   attemptedAt: Date;
   completedAt?: Date | null;
   result: MirrorAttemptResult;
@@ -33,7 +33,7 @@ const MirrorAttemptSchema = new Schema<IMirrorAttempt>(
     sourceType: {
       type: String,
       required: true,
-      enum: ["public", "r2", "playbound_vps"],
+      enum: ["public", "r2", "s3_archive", "playbound_vps"],
       index: true,
     },
     attemptedAt: { type: Date, required: true, default: Date.now, index: true },

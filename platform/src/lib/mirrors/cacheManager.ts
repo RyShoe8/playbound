@@ -19,6 +19,7 @@ import {
   deleteArchivedArtifactOnHost,
 } from "@/lib/gameHost/client";
 import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl, uploadStreamToR2 } from "./r2Client";
+import { s3ArchiveConfigured, signedS3ArchiveDownloadUrl } from "./s3Archive";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
 import { formatR2TransferMessage, formatVpsTransferMessage } from "./vpsProgress";
 
@@ -451,9 +452,21 @@ async function syncArtifactToR2(
 
   try {
     let res: Response | null = null;
+    if (artifact.s3ArchiveStatus === "verified") {
+      try {
+        if (!s3ArchiveConfigured()) throw new Error("S3 archive is not configured");
+        const s3Url = await signedS3ArchiveDownloadUrl(cleanRel, artifact.filename);
+        const s3Res = await fetch(s3Url, { signal: AbortSignal.timeout(60000) });
+        if (s3Res.ok) res = s3Res;
+      } catch {
+        // Keep the existing VPS/public fallbacks available during migration.
+      }
+    }
     try {
-      const vpsRes = await fetch(vpsUrl, { signal: AbortSignal.timeout(60000) });
-      if (vpsRes.ok) res = vpsRes;
+      if (!res) {
+        const vpsRes = await fetch(vpsUrl, { signal: AbortSignal.timeout(60000) });
+        if (vpsRes.ok) res = vpsRes;
+      }
     } catch {
       // Direct VPS path not accessible
     }
@@ -623,7 +636,7 @@ export async function manualPromoteArtifact(
   artifact.r2StatusMessage = "Starting R2 upload…";
   await artifact.save();
 
-  if (artifact.vpsStatus !== "verified") {
+  if (artifact.vpsStatus !== "verified" && artifact.s3ArchiveStatus !== "verified") {
     // Check if host actually has it verified
     const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
     if (remote?.status === "verified") {

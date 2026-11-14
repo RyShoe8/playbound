@@ -55,6 +55,10 @@ const DOWNLOAD_DOMAINS = [
   // Official GameJolt build resolver and download CDN.
   "gamejolt.com",
   "gamejolt.net",
+  // ET: Legacy's official download endpoint redirects to its release bucket.
+  "etl-uploads.fra1.digitaloceanspaces.com",
+  // PlayBound's Ceph S3 archive; signed URLs are issued by the site.
+  "s3.rogly.net",
   /*
    * RetroArch and every libretro core the launcher manages — see
    * services/ManagedRetroArch.js. Both the emulator itself and the seven cores

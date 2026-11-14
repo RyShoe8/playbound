@@ -8,7 +8,7 @@ import { ensureArtifact, ensurePublicSource } from "./ensureArtifact";
 export interface DownloadTelemetryPayload {
   artifactId: string;
   sourceId: string;
-  sourceType: "public" | "r2" | "playbound_vps";
+  sourceType: "public" | "r2" | "s3_archive" | "playbound_vps";
   /**
    * Enough to register the artifact the first time it is seen. Optional
    * because older launchers do not send them — those still record an attempt,

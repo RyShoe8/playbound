@@ -223,6 +223,21 @@ export function DownloadMirrorsManager() {
   /** How many demo rows from the old seeder are still present; 0 hides the button. */
   const [seededCount, setSeededCount] = useState(0);
 
+  async function handleProbeS3() {
+    setBusyAction("s3-probe");
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/download-mirrors/s3-probe", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "S3 archive test failed");
+      setMessage({ text: "Private S3 archive passed upload, HEAD, signed range download, and cleanup.", type: "success" });
+    } catch (error) {
+      setMessage({ text: error instanceof Error ? error.message : "S3 archive test failed", type: "error" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   async function loadData(opts?: { silent?: boolean }) {
     try {
       if (!opts?.silent) setLoading(true);
@@ -1056,6 +1071,13 @@ export function DownloadMirrorsManager() {
             className="h-9 px-3 rounded-lg border border-border bg-secondary/40 hover:bg-secondary/80 text-muted-foreground hover:text-foreground text-sm flex items-center gap-1.5 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </button>
+          <button
+            onClick={() => void handleProbeS3()}
+            disabled={busyAction === "s3-probe"}
+            className="h-9 px-3 rounded-lg border border-border bg-secondary/40 hover:bg-secondary/80 text-muted-foreground hover:text-foreground text-sm flex items-center gap-1.5 transition-colors"
+          >
+            <Cloud className={`w-3.5 h-3.5 ${busyAction === "s3-probe" ? "animate-pulse" : ""}`} /> Test S3
           </button>
           <button
             onClick={() => void handlePruneOld()}
