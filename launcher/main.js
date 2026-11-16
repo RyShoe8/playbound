@@ -56,6 +56,7 @@ const { createDirectDrawWrapper } = require("./services/directDrawWrapper");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSteamCmdInstaller } = require("./services/steamCmd");
 const { steamAppState, steamRuntimeForLaunch, steamAppIdFromLibraryPath } = require("./services/steamPrerequisites");
+const steamEditions = require("./services/steamEditions");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const { hasManifest, hasRollbackRoom, mergeModFiles, modUpdateAction, normalizedVersion, shouldUpdateEdition } = require("./services/autoUpdate");
@@ -3577,6 +3578,81 @@ function notifyInstallDetected(slug) {
   void maybeResumePendingMod(slug);
 }
 
+/**
+ * Record a game's Steam-installed editions from Steam's own manifests.
+ *
+ * Steam installs on its schedule, not ours: a 2 GB download outlives the
+ * ten-minute installer poll, and a `steam`-method edition (Lambda Wars) never
+ * had one. The base game was then found by the drive scan, so the player saw
+ * "Install detected" while the edition they installed stayed on Install.
+ *
+ * Only editions Steam actually installs are considered (see
+ * services/steamEditions.js), and only when Steam reports the app fully
+ * installed. An edition with a working record is left alone, unless that
+ * record points at a dedicated-server binary.
+ */
+function recordSteamEditionInstalls(slug, editions) {
+  if (process.platform !== "win32" || !slug || !Array.isArray(editions)) return 0;
+  let recorded = 0;
+  let roots = null;
+  for (const edition of editions) {
+    const appId = steamEditions.editionSteamAppId(edition);
+    const editionSlug = edition?.editionSlug || edition?.slug;
+    if (!appId || !editionSlug) continue;
+    const game = ensureGameInstallRecord(loadState()[slug]);
+    if (!steamEditions.needsSteamDetection(game.editions?.[editionSlug], (p) => fs.existsSync(p))) continue;
+    try {
+      roots = roots || steamLibraryRoots();
+      const steam = steamAppState(appId, roots);
+      if (!steam.installed || !steam.contentDir) continue;
+      const exe = findExecutable(steam.contentDir, steamEditions.editionExeHint(edition));
+      if (!exe || steamEditions.isDedicatedServerExe(exe) || !isAllowedExecutablePath(exe)) continue;
+      const recipe = edition.installConfig?.playbound_installer || {};
+      markInstalledFromExe(slug, {
+        slug,
+        kind: "external",
+        steamAppId: appId,
+        editionSlug,
+        editionName: edition.editionName || edition.name,
+        editionType: edition.editionType || edition.type,
+        connectArgs: Array.isArray(recipe.connectArgs) ? recipe.connectArgs : undefined,
+      }, exe, "steam");
+      recorded++;
+    } catch (err) {
+      console.warn(`[steam-editions] ${slug}/${editionSlug}:`, err?.message || err);
+    }
+  }
+  return recorded;
+}
+
+/** Watch Steam finish installing one edition after the hand-off (up to an hour). */
+const steamEditionWatches = new Map();
+function watchSteamEditionInstall(slug, edition) {
+  const appId = steamEditions.editionSteamAppId(edition);
+  const editionSlug = edition?.editionSlug || edition?.slug;
+  if (!appId || !editionSlug) return;
+  const key = `${slug}::${editionSlug}`;
+  if (steamEditionWatches.has(key)) return;
+  const started = Date.now();
+  const timer = setInterval(() => {
+    let done = Date.now() - started > 60 * 60 * 1000;
+    try {
+      if (!done && steamAppState(appId, steamLibraryRoots()).installed) {
+        recordSteamEditionInstalls(slug, [edition]);
+        done = true;
+      }
+    } catch {
+      /* keep watching */
+    }
+    if (done) {
+      clearInterval(timer);
+      steamEditionWatches.delete(key);
+    }
+  }, 5000);
+  timer.unref?.();
+  steamEditionWatches.set(key, timer);
+}
+
 function markInstalledFromExe(slug, entry, exe, version) {
   rememberLocatedRoot(exe);
   const dir = resolveInstallDir(entry, exe);
@@ -5372,6 +5448,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   } catch (err) {
     console.warn("resolveEditionForInstall failed:", err?.message || err);
   }
+
+  // Steam installs on its own schedule; record the edition whenever it lands.
+  if (editionSlug && editionMeta) watchSteamEditionInstall(slug, editionMeta);
 
   // A store or fan-server edition is its own destination, even when the parent
   // game has an installer: choosing it must never install the parent instead.
@@ -12646,6 +12725,8 @@ ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
 ipcMain.handle("get-editions", async (_event, gameSlug) => {
   try {
     const editions = await fetchLauncherEditions(gameSlug || null);
+    // A game page lists its editions: pick up any Steam already finished.
+    if (gameSlug) setImmediate(() => recordSteamEditionInstalls(gameSlug, editions));
     return { editions };
   } catch {
     return { editions: [] };

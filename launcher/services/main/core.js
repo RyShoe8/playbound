@@ -2016,7 +2016,11 @@ function findExecutable(dir, exeHint) {
    * only executable is one of these still launches — the rank only decides
    * which wins when there is something else to prefer.
    */
-  const tool = /editor|maker|config|settings|benchmark|dedicated|tweaker|configurator|savandt|sound attribute|sound commit/i;
+  // Source/GoldSrc dedicated servers (srcds, hlds) ship beside the game binary;
+  // Alien Swarm was recorded as srcds.exe because it outranked swarm.exe.
+  // Embedded-browser helpers (Chromium/CEF subprocesses) are the same story:
+  // Lambda Wars' lambdawars_browser.exe is bigger than lambdawars.exe.
+  const tool = /editor|maker|config|settings|benchmark|dedicated|tweaker|configurator|savandt|sound attribute|sound commit|^srcds|^hlds|_browser\.exe$|webhelper|cefsub/i;
   /*
    * EasyAntiCheat's bootstrap. A protected game ships this beside its real
    * binary and Steam is configured to run it: it brings up the EAC service and
