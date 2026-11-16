@@ -796,6 +796,16 @@ const GAMES = {
    * so this enables it and leaves the mapping alone.
    */
   daggerfall: {
+    /*
+     * Unity's legacy input reads every joystick, a DualSense included, through
+     * DirectInput. Bridging a DualSense to a virtual Xbox pad therefore gave
+     * DFU two pads, and its DualSense layout binds CameraHorizontal to joystick
+     * axis 3: the right stick on the DualSense, but both triggers on the
+     * virtual Xbox pad, so the triggers turned the view. No bridge for DFU.
+     * Scoped to that edition: the official release runs in DOSBox, and DFO
+     * Online has not been checked.
+     */
+    readsDirectInputEditions: ["daggerfall-unity"],
     verified:
       "UNVERIFIED against a real install — [Controls] and the Joystick* keys " +
       "are Daggerfall Unity's documented settings.ini options. The guard " +
@@ -805,6 +815,8 @@ const GAMES = {
         c.installDir && path.join(c.installDir, "settings.ini"),
         path.join(c.documents, "My Games", "Daggerfall Unity", "settings.ini"),
         path.join(c.appData, "Daggerfall Unity", "settings.ini"),
+        // Where DFU actually keeps it: Unity's persistentDataPath.
+        path.join(c.home, "AppData", "LocalLow", "Daggerfall Workshop", "Daggerfall Unity", "settings.ini"),
       ]),
     needsConfig(text) {
       return !/^\s*JoystickCursorSensitivity\s*=/im.test(String(text || ""));
@@ -1428,7 +1440,11 @@ function supportsControllerConfig(gameSlug) {
  */
 function controllerSupportFor(gameSlug) {
   if (GAMES[gameSlug]) {
-    return { kind: "config", verified: GAMES[gameSlug].verified };
+    return {
+      kind: "config",
+      verified: GAMES[gameSlug].verified,
+      ...(GAMES[gameSlug].readsDirectInputEditions ? { readsDirectInputEditions: GAMES[gameSlug].readsDirectInputEditions } : {}),
+    };
   }
   const known = NO_CONFIG_NEEDED[gameSlug];
   if (known) return { ...known };

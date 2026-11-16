@@ -127,6 +127,30 @@ export async function gameSupportsController(detail, slug) {
   return false;
 }
 
+/**
+ * Whether the edition being launched reads DirectInput pads (a DualSense) on
+ * its own, so a virtual Xbox pad would only be a second controller. The game
+ * page launches the installed edition, so resolve it the way Play does.
+ */
+async function gameReadsDirectInput(detail, slug) {
+  const gameSlug = String(detail?.gameSlug || slug || detail?.slug || "").toLowerCase();
+  if (!gameSlug) return false;
+  try {
+    const support = await window.playbound.getControllerSupport?.(gameSlug);
+    const editions = support?.readsDirectInputEditions;
+    if (!Array.isArray(editions) || !editions.length) return false;
+    let edition = detail?.editionSlug || null;
+    if (!edition) {
+      const installed = await window.playbound.getInstalled?.();
+      const list = Array.isArray(installed) ? installed : installed?.games || [];
+      edition = list.find((game) => game?.slug === gameSlug)?.editionSlug || null;
+    }
+    return Boolean(edition && editions.includes(edition));
+  } catch {
+    return false;
+  }
+}
+
 function gameSupportsFlightstick(detail, slug) {
   if (slug === "star-wars-fate-of-the-galaxy" || detail?.gameSlug === "star-wars-fate-of-the-galaxy") return true;
   return [...firstNonEmptyList(detail?.features), ...firstNonEmptyList(detail?.gameFeatures),
@@ -687,6 +711,10 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
     } else {
       // Hard rule: never bridge while a couch session is running.
       if (couchAlreadyActive) {
+        await disableGamepadBridge();
+      } else if (await gameReadsDirectInput(detail, gameSlug)) {
+        // The game reads this pad itself; a virtual Xbox pad would be a second
+        // controller (Daggerfall Unity: triggers turned the camera).
         await disableGamepadBridge();
       } else if (isBridgeableGamepadConnected()) {
         setStatus("Enabling Universal Gamepad Bridge for controller…");
