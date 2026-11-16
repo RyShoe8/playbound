@@ -1,5 +1,5 @@
 {
-  "id": "starcraft-mods-external-sources-20261115",
+  "id": "starcraft-mods-external-sources-20261115-b",
   "operations": [
     {
       "kind": "mod",
@@ -89,13 +89,11 @@
             "text": "Start StarCraft and enable Cosmonarchy BW from the in-game mods or add-ons menu. The download is roughly 350 MB.",
             "command": null
           }
-        ],
-        "approxSize": "~350 MB"
+        ]
       },
       "set": {
         "downloadKind": "external",
         "website": "https://www.fraudsclub.com/cosmonarchy-bw/sites/game-setup/",
-        "approxSize": "3–5 GB",
         "installSteps": [
           {
             "platform": "all",
