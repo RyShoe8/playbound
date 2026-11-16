@@ -1,4 +1,32 @@
 {
-  "id": null,
-  "operations": []
+  "id": "holocure-multiplayer-official-art-20261115",
+  "operations": [
+    {
+      "kind": "edition",
+      "key": "holocure/playbound",
+      "expected": {
+        "branding.heroImage": "/games/holocure/editions/playbound.jpg",
+        "branding.screenshots": [
+          "/games/holocure/editions/playbound.jpg"
+        ]
+      },
+      "set": {
+        "branding.heroImage": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/capsule_616x353.jpg",
+        "branding.screenshots": [
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-cec368b8afa116b6.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-4cdcc3a1e39425bc.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-79b2b090c895557e.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-a178950da857a637.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-6c7eae61b0a75e85.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-9c858e45937dd966.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-0cd1eb74c3b109b5.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-fa272c833dc887aa.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-3d546ab2d30cd058.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-dbc38ed22ccab45a.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-ecf51d824eb44e54.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/holocure/shot-ed9e1ee13610aaaf.webp"
+        ]
+      }
+    }
+  ]
 }
