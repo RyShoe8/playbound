@@ -1,4 +1,119 @@
 {
-  "id": null,
-  "operations": []
+  "id": "starcraft-mods-external-sources-20261115",
+  "operations": [
+    {
+      "kind": "mod",
+      "key": "starcraft-shieldbattery",
+      "expected": {
+        "downloadKind": "github-zip",
+        "website": "https://github.com/ShieldBattery/ShieldBattery",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Install StarCraft first if you have not already — ShieldBattery Client is an add-on and needs the base game.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "The quickest route is the PlayBound Launcher: open StarCraft, find ShieldBattery Client in its mods list and press Install. The launcher downloads the official release and places it in the right folder for you.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "To install it by hand, download the latest release archive from github.com/ShieldBattery/ShieldBattery/releases.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Extract the archive into the \"ShieldBattery\" folder inside your StarCraft installation directory.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Start StarCraft and enable ShieldBattery Client from the in-game mods or add-ons menu. The download is roughly 110 MB.",
+            "command": null
+          }
+        ]
+      },
+      "set": {
+        "downloadKind": "external",
+        "website": "https://shieldbattery.net/download",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Install StarCraft: Remastered from Battle.net first. ShieldBattery runs the real StarCraft client; it does not replace it.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Download the ShieldBattery installer from shieldbattery.net/download and run it. PlayBound opens that page for you when you press Install.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Sign in to ShieldBattery and point it at your StarCraft folder if it does not find it on its own. Matchmaking, lobbies and replays all run through its client.",
+            "command": null
+          }
+        ]
+      }
+    },
+    {
+      "kind": "mod",
+      "key": "starcraft-cosmonarchy",
+      "expected": {
+        "downloadKind": "github-zip",
+        "website": "https://github.com/MicroGamer/CosmonarchyBW",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Install StarCraft first if you have not already — Cosmonarchy BW is an add-on and needs the base game.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "The quickest route is the PlayBound Launcher: open StarCraft, find Cosmonarchy BW in its mods list and press Install. The launcher downloads the official release and places it in the right folder for you.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "To install it by hand, download the latest release archive from github.com/MicroGamer/CosmonarchyBW/releases.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Extract the archive into the \"Cosmonarchy\" folder inside your StarCraft installation directory.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Start StarCraft and enable Cosmonarchy BW from the in-game mods or add-ons menu. The download is roughly 350 MB.",
+            "command": null
+          }
+        ],
+        "approxSize": "~350 MB"
+      },
+      "set": {
+        "downloadKind": "external",
+        "website": "https://www.fraudsclub.com/cosmonarchy-bw/sites/game-setup/",
+        "approxSize": "3–5 GB",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Download Fraud Launcher 2 from the Cosmonarchy setup page and extract it. PlayBound opens that page for you when you press Install.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Choose where to install and which Cosmonarchy game build to play. The launcher installs StarCraft 1.16 and Cosmonarchy together, so it does not use your Battle.net copy of StarCraft.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Press Play. The first run downloads 3–5 GB, depending on whether you install one game build or both.",
+            "command": null
+          }
+        ]
+      }
+    }
+  ]
 }

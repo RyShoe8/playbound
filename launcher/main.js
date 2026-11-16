@@ -7466,6 +7466,17 @@ async function installModInner(slug, baseDirOverride) {
     if (baseResult.status === "installer-opened") {
       return { status: "waiting-base", baseGameSlug: install.baseGameSlug };
     }
+    /*
+     * A base game PlayBound cannot install itself (StarCraft from Battle.net,
+     * a Steam or GOG title) comes back "external": its store or installer page
+     * is open. That is the base install under way, not a failure. The mod is
+     * left pending and maybeResumePendingMod places it once the base game is
+     * detected. This used to throw, reporting BASE_GAME_INSTALL_FAILED for a
+     * hand-off that had worked.
+     */
+    if (baseResult.status === "external") {
+      return { status: "waiting-base", baseGameSlug: install.baseGameSlug, external: true };
+    }
     throw new Error("Couldn't install the base game first.");
   }
 

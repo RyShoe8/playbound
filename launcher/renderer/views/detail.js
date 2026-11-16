@@ -2153,7 +2153,9 @@ async function renderGameDetailView(slug, opts = {}) {
             setStatus("Opened download page in browser.");
             setProgress(null);
           } else if (res?.status === "waiting-base") {
-            setStatus("Installing base game first — finish the setup wizard…");
+            setStatus(res.external
+              ? "Install the base game from the page that just opened. This mod installs automatically once it's detected."
+              : "Installing base game first — finish the setup wizard…");
             setProgress(null);
           } else {
             setStatus("Mod install complete");
@@ -2587,7 +2589,9 @@ async function renderModDetailView(slug) {
           setStatus("Opened download page in browser.");
           setProgress(null);
         } else if (result?.status === "waiting-base") {
-          setStatus("Installing base game first — finish the setup wizard…");
+          setStatus(result.external
+            ? "Install the base game from the page that just opened. This mod installs automatically once it's detected."
+            : "Installing base game first — finish the setup wizard…");
           setProgress(null);
         } else {
           setStatus(`Installed ${detail.title}`);
