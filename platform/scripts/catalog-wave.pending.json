@@ -1,4 +1,216 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-richard-burns-rally-rally-sim-fans-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "richard-burns-rally-rally-sim-fans",
+      "requireStatus": "draft",
+      "expected": {
+        "tagline": "Richard Burns Rally Rallysimfans plugin (RSF)",
+        "description": "Richard Burns Rally Rallysimfans plugin (RSF)",
+        "developerName": "Indie Web",
+        "genres": [
+          "Racing",
+          "Strategy"
+        ],
+        "features": [],
+        "hasControllerSupport": null,
+        "platforms": [
+          "Windows",
+          "macOS",
+          "Linux"
+        ],
+        "screenshots": [
+          "https://www.rallysimfans.hu/rbr/images/fejlec4.jpg",
+          "https://www.rallysimfans.hu/rbr/images/zaszlo_magyar.jpg",
+          "https://www.rallysimfans.hu/rbr/images/zaszlo_angol.jpg",
+          "https://www.rallysimfans.hu/rbr/images/hirdetes/SH_logo2.png"
+        ],
+        "systemRequirements": {
+          "min": "Not yet verified",
+          "recommended": "Not yet verified"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.url": "https://www.rallysimfans.hu/rbr/index.php",
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-21"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download Rallysimfans.hu - Richard Burns Rally RSF plugin directly from the official site at https://www.rallysimfans.hu/rbr/index.php. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Rallysimfans.hu - Richard Burns Rally RSF plugin needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is Rallysimfans.hu - Richard Burns Rally RSF plugin free?",
+            "a": "No. Rallysimfans.hu - Richard Burns Rally RSF plugin is a paid release (Free to play)."
+          },
+          {
+            "q": "How big is the Rallysimfans.hu - Richard Burns Rally RSF plugin download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does Rallysimfans.hu - Richard Burns Rally RSF plugin run on?",
+            "a": "Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play Rallysimfans.hu - Richard Burns Rally RSF plugin?",
+            "a": "No account is required to download or play."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "A rally stage does not care how good the last corner felt.",
+        "description": "The RallySimFans community installation keeps Richard Burns Rally alive with modern cars, stages, physics and online rally competition. Its official Windows setup uses a torrent for the data and a separate installer, then launches through RSF Launcher. Online events compare stage times; they are not simultaneous races or PlayBound dedicated servers.",
+        "developerName": "RallySimFans community and original Richard Burns Rally creators",
+        "genres": [
+          "Racing",
+          "Simulation"
+        ],
+        "features": [
+          "Controller Support",
+          "Mods"
+        ],
+        "hasControllerSupport": true,
+        "platforms": [
+          "Windows"
+        ],
+        "screenshots": [],
+        "systemRequirements": {
+          "min": "Windows; the RSF team does not publish a current CPU, GPU or RAM minimum for this community build. A reduced install can use far less space than the full collection. See the official installation guide and choose the content that fits your drive.",
+          "recommended": "Windows with a wheel and pedals or configured gamepad; reserve roughly 60–90 GB free for a full installation with the community stage library. The RSF team does not publish a verified CPU/GPU/RAM recommended tier."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "arch": [
+              "x64"
+            ],
+            "notes": "The community guide does not publish a verified CPU, GPU or RAM minimum. A reduced content selection uses less disk than the full stage library; check the installer before downloading."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "arch": [
+              "x64"
+            ],
+            "storageMB": 92160,
+            "notes": "The official 2024 guide says the full installation occupies roughly 60–90 GB. CPU, GPU and RAM figures are not published for the current community build. Wheel/pedal setup is documented; an Xbox gamepad trigger option exists."
+          },
+          "provenance": {
+            "source": "community",
+            "sourceUrl": "https://www.rallysimfans.hu/rbr/downloads/dokumentum/RBR_instructions_2024.pdf",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.url": "https://www.rallysimfans.hu/rbr/download.php?download=rsfrbr",
+        "launcherInstall.note": "Official RSF installation is a two-part Windows process: download its torrent data, then run the current RSF installer against those files and use RSF Launcher. There is no verified single direct archive for PlayBound to extract. Do not claim a one-click install or Mac/Linux builds. The 2024 guide gives 60–90 GB for a full installation; content selection changes that number.",
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "It makes a single clean corner feel earned and a single careless one feel expensive, even when nobody else is on the stage.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Richard Burns Rally has outlived plenty of racing games that arrived with larger budgets and brighter menus. The RallySimFans installation is one reason. Its community has assembled a way to drive the old rally simulation with modern physics, a large stage library, more cars, live online events and the tools needed to keep the whole thing running. What you do behind the wheel remains wonderfully severe: listen to the pacenotes, commit to an entry speed, and discover how much road is left when your plan was wrong. A good sector feels precise; a bad one usually has a tree attached to it.\n\nThe RSF package brings together NGP physics, its own rally plugin and launcher, pacenotes, car and stage management and other community work. The official installation guide names contributors to each part rather than presenting it as a single studio's new game. That matters because this is a long-lived ecosystem around the original Richard Burns Rally, not a fresh sequel. Cars and stages can be fetched as needed, but a full installation with the extensive map collection takes substantial space. The 2024 guide estimates roughly 60–90 GB installed. Drivers can choose a smaller set of content first; the guide says the original tracks remain available without every custom stage.\n\nOnline Rally and Hotlap rank give players other times to chase, while Practice is there for learning a road without an audience. This is online competition in a rally sense: people run stages and compare results, rather than sharing a race grid in real time. PlayBound should not advertise it as a virtual LAN party or a dedicated multiplayer server. Friends can still pick the same event and compare runs, but no automatic party join or hosted server is involved. The official guide says a RallySimFans driver account is part of the online setup.\n\nGetting started is more involved than pressing Install. The project distributes its data through an official torrent and provides a separate RSF installer. You download the data, point the installer at it, choose content, then launch through RSF Launcher. PlayBound links to that official process; it has not built a safe one-click recipe for the torrent and installer combination. The supported platform is Windows. The prior Draft suggested macOS and Linux downloads, but the official guide does not describe those builds. Wheel and pedals are documented in detail, and the RSF Controls page includes an option to split Xbox gamepad triggers. Those are native input paths, though players should expect to tune steering, pedals and force feedback themselves.\n\nThe guide does not publish a reliable modern CPU, GPU or RAM tier for the full community build, so we do not substitute the original game's old box specifications. Disk space is the concrete requirement: plan for up to about 90 GB if you want the whole stage collection. This record stays Draft until we test the current Windows install and controls. Its attraction is already clear. It turns the quiet seconds before a bend into a negotiation between your co-driver, the tires and your optimism, and the road gets the final vote.",
+        "whyWePickedIt": "Few communities have kept a driving game this demanding and this alive. RallySimFans offers an official, documented Windows setup and a deep library of stages; PlayBound still needs to test that multi-step install before calling it automated.",
+        "thatOneThing": "You can drive a perfect minute, hear one pacenote a little late, and spend the next ten seconds negotiating with a tree.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Open the official RallySimFans download page. Download its current RSF torrent data and installer; version numbers and sizes can change. The official guide uses a torrent for the game data rather than one direct ZIP."
+          },
+          {
+            "platform": "windows",
+            "text": "Let the torrent finish, then run the current RSF installer, point it at the downloaded packages and choose a separate game folder. Select a reduced content set if you do not want the full 60–90 GB stage library."
+          },
+          {
+            "platform": "windows",
+            "text": "Start with RallySimFans Launcher and complete its first-run configuration. PlayBound has not verified automatic executable detection for this installation."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "windows",
+            "text": "Configure steering, throttle and brake in the game's controls. For a wheel, follow the official guide's wheel/pedal instructions; for an Xbox gamepad, check the RSF Controls option that splits the triggers. Try Practice before an online event."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "windows",
+            "text": "Create an RSF driver account for Online Rally and Hotlap rankings, then enter an event from the RallySimFans plugin. These compare stage times asynchronously; there is no shared PlayBound LAN lobby or dedicated server."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is this a one-click PlayBound install?",
+            "a": "No. The official Windows setup requires both torrent data and an RSF installer. PlayBound currently links to the publisher's instructions."
+          },
+          {
+            "q": "How much disk space should I reserve?",
+            "a": "The official 2024 guide estimates 60–90 GB for a full stage collection. A smaller content selection uses less space; verify the installer total before starting."
+          },
+          {
+            "q": "Can I use a controller?",
+            "a": "Yes. The official guide documents wheels and pedals and shows an Xbox gamepad trigger option. Input bindings still need setup for your device."
+          },
+          {
+            "q": "Can I race friends live on a PlayBound server?",
+            "a": "RSF's Online Rally and Hotlap modes compare stage times. They are not simultaneous multiplayer races and do not use PlayBound dedicated hosting."
+          }
+        ],
+        "bestFor": [
+          "Drivers who enjoy learning a stage one corner at a time",
+          "Wheel users who want an active community rally scene"
+        ],
+        "notFor": [
+          "Players wanting a quick one-file install",
+          "Groups seeking a real-time shared race lobby"
+        ]
+      }
+    }
+  ]
 }
