@@ -1,5 +1,5 @@
 {
-  "id": "draft-hand-to-hand-wizardry-2026-11-20",
+  "id": "draft-hand-to-hand-wizardry-2026-11-20-retry-1",
   "operations": [
     {
       "kind": "game",
@@ -7,7 +7,7 @@
       "requireStatus": "draft",
       "expected": {
         "tagline": "Hand-to-Hand Wizardry is a first-person dark fantasy boomer shooter. You play as Zoltan, an egotistical wizard who willingly sacrifices his hands to desce",
-        "description": "Hand-to-Hand Wizardry is a first-person dark fantasy boomer shooter. You play as Zoltan, an egotistical wizard who willingly sacrifices his hands to descend into a dungeon where hands are religious symbols. Zoltan must graft dead wizards’ hands onto his severed wrists to gain powerful spells and eviscerate hordes of dungeon creatures to discover the disturbing secret that lies beneath the surface.\n\n#### Team members:\n\n* [**Gabriel Kwidzinski**](https://www.linkedin.com/in/gabriel-kwidzinski-131197183/) | Project Manager, Lighting Artist, Level Designer\n* [**Quinn Rogers Van De Keere**](https://www.linkedin.com/in/quinn-van-de-keere/) | AI Programmer, Shaders\n* [**Vi Tran**](https://www.linkedin.com/in/vi-tran01) | Programmer, VFX\n* [**Zander Aguirre**](https://www.linkedin.com/in/zander-aguirre-b90a24388) | 3D Environment Artist, 3D Character Artist, Animator\n* [**Emma Jones**](https://www.linkedin.com/in/emma-jones-9657b0356) | 2D Artist, Environmental Artist, UI/UX Artist\n* [**Evan McCaig**](https://www.linkedin.com/in/evancmccaig) | Level Designer, Programmer\n\n#### External collaborators:\n\n* Juan | Sound\n* Diego | Sound\n* Emir | Sound\n* Andy | Sound\n* Aiden | Sound\n* Ethan Holmes | Sound\n* Kai | Art\n* Vivian | Art",
+        "description": "Hand-to-Hand Wizardry is a first-person dark fantasy boomer shooter. You play as Zoltan, an egotistical wizard who willingly sacrifices his hands to descend into a dungeon where hands are religious symbols. Zoltan must graft dead wizards’ hands onto his severed wrists to gain powerful spells and eviscerate hordes of dungeon creatures to discover the disturbing secret that lies beneath the surface.\n\n#### Team members:\n\n*   [**Gabriel Kwidzinski**](https://www.linkedin.com/in/gabriel-kwidzinski-131197183/) | Project Manager, Lighting Artist, Level Designer\n*   [**Quinn Rogers Van De Keere**](https://www.linkedin.com/in/quinn-van-de-keere/) | AI Programmer, Shaders\n*   [**Vi Tran**](https://www.linkedin.com/in/vi-tran01) | Programmer, VFX\n*   [**Zander Aguirre**](https://www.linkedin.com/in/zander-aguirre-b90a24388) | 3D Environment Artist, 3D Character Artist, Animator\n*   [**Emma Jones**](https://www.linkedin.com/in/emma-jones-9657b0356) | 2D Artist, Environmental Artist, UI/UX Artist\n*   [**Evan McCaig**](https://www.linkedin.com/in/evancmccaig) | Level Designer, Programmer\n\n#### External collaborators:\n\n*   Juan | Sound\n*   Diego | Sound\n*   Emir | Sound\n*   Andy | Sound\n*   Aiden | Sound\n*   Ethan Holmes | Sound\n*   Kai | Art\n*   Vivian | Art",
         "developerName": "VFS Game Design",
         "genres": [],
         "features": [],
