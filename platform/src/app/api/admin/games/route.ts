@@ -26,12 +26,14 @@ export const maxDuration = 180;
 // catalog wave can compare every proposed field with the database value.
 const DRAFT_AUDIT_FIELDS = [
   "slug", "title", "status", "published", "tagline", "description", "developerSlug", "developerName",
-  "genres", "tags", "license", "releaseYear", "sizeMB", "platforms", "features",
-  "maxPlayers", "launchMethods", "browserPlayable", "website", "steamAppId",
-  "githubRepo", "coverImage", "screenshots", "videos", "systemRequirements",
+  "genres", "tags", "aliases", "license", "releaseYear", "sizeMB", "platforms", "features",
+  "hasControllerSupport", "hasFlightstickSupport", "maxPlayers", "launchMethods",
+  "browserPlayable", "steamDeck", "website", "steamAppId", "androidStoreUrl", "iosStoreUrl",
+  "githubRepo", "access", "art", "coverImage", "screenshots", "videos", "systemRequirements",
   "hardwareRequirements", "qualityBar", "longDescription", "whyWePickedIt",
   "thatOneThing", "installSteps", "firstPlaySteps", "multiplayerGamingSteps",
-  "faq", "bestFor", "notFor", "comparableTo", "launcherInstall",
+  "faq", "bestFor", "notFor", "comparableTo", "controls", "launcherInstall",
+  "communityLinks",
 ].join(" ");
 
 export async function GET(req: Request) {
