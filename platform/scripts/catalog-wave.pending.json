@@ -1,4 +1,194 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-tung-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "tung",
+      "requireStatus": "draft",
+      "expected": {
+        "tagline": "Fan-Made • Free-to-Play • Authorized by Mementum Lab TUNG is a NICHE and TUFF first person horror game where you explore a hedge maze and become friends with TRIPLE T",
+        "description": "After school, your friends dare you to explore an abandoned Triple T factory that's been surrounded by rumors for years. Laughing, they wait outside while you head in with nothing but a flashlight.\n\nAt first, it feels like an ordinary maze. Then you begin finding strange notes and signs that other people came here... but never made it back.\n\nUntil you take one wrong step.\n\nNow you're trapped somewhere far worse.\n\nFind a way to escape before TUNG finds you.\n\nCREDITS / LEGAL\n\nThis is an independent fan project and not an official Mementum Lab production.\n\nTung Tung Sahur used under licence from Mementum Lab / Noxa.\n\nFan-Made • Free-to-Play • Authorized by Mementum Lab",
+        "genres": [
+          "Action"
+        ],
+        "maxPlayers": null,
+        "systemRequirements": {
+          "min": "Minimum:\nOS: Windows 10/11\nProcessor: Intel Core i3\nMemory: 8 GB RAM\nGraphics: GTX 1050\nDirectX: Version 11\nStorage: 2 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs",
+          "recommended": "Recommended:\nOS: Windows 10/11\nProcessor: Intel Core i5\nMemory: 16 GB RAM\nGraphics: GTX 1080\nDirectX: Version 11\nStorage: 3 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-20"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download TUNG directly from the official site at https://store.steampowered.com/app/4341400. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "TUNG is also on Steam and is free there. Open the store page and press Play Game to add it to your library.",
+            "command": "steam://install/4341400"
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. TUNG needs roughly 2.0 GB of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "faq": [
+          {
+            "q": "Is TUNG free?",
+            "a": "No. TUNG is a paid release (See Steam store page)."
+          },
+          {
+            "q": "How big is the TUNG download?",
+            "a": "About 2.0 GB. The minimum system requirements are Minimum:\nOS: Windows 10/11\nProcessor: Intel Core i3\nMemory: 8 GB RAM\nGraphics: GTX 1050\nDirectX: Version 11\nStorage: 2 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs."
+          },
+          {
+            "q": "What platforms does TUNG run on?",
+            "a": "Windows."
+          },
+          {
+            "q": "Do I need an account to play TUNG?",
+            "a": "No account is required to download or play."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "Your friends dare you into an abandoned factory. The flashlight is not much of a plan.",
+        "description": "TUNG is a free, fan-made first-person horror game from Niche Games. Explore a hedge maze and an abandoned factory, follow the notes left by earlier visitors, and find a way out before the creature that lives there catches you.",
+        "genres": [
+          "Horror",
+          "Adventure"
+        ],
+        "maxPlayers": 1,
+        "systemRequirements": {
+          "min": "Windows 10/11 · Intel Core i3 · 8 GB RAM · GeForce GTX 1050 · DirectX 11 · 2 GB storage. The developer says these estimates have not been rigorously tested.",
+          "recommended": "Windows 10/11 · Intel Core i5 · 16 GB RAM · GeForce GTX 1080 · DirectX 11 · 3 GB storage. The developer calls the requirements estimates, not measured performance targets."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "cpuTier": "low",
+            "cpuText": "Intel Core i3 (generation unspecified)",
+            "gpuTier": "low",
+            "gpuText": "GeForce GTX 1050",
+            "ramMB": 8192,
+            "storageMB": 2048,
+            "apis": [
+              "dx11"
+            ],
+            "notes": "Developer-provided estimate; the Steam listing explicitly says the hardware values are uncertain."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "cpuTier": "mid",
+            "cpuText": "Intel Core i5 (generation unspecified)",
+            "gpuTier": "mid",
+            "gpuText": "GeForce GTX 1080",
+            "ramMB": 16384,
+            "storageMB": 3072,
+            "apis": [
+              "dx11"
+            ],
+            "notes": "Developer-provided estimate, not a verified performance tier."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://store.steampowered.com/app/4341400/TUNG/",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.note": "Free Windows game on Steam. Add it to your Steam library and install there, then use PlayBound Locate. No tested standalone archive or PlayBound one-click package has been verified.",
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": false,
+          "standsAlone": true,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "A compact maze scare with a simple question: how long can a flashlight make you feel safe?",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "TUNG begins with a dare. Your friends stay outside an abandoned factory while you walk in carrying a flashlight. The place is surrounded by rumors, but the first stretch is quiet enough to make the dare seem ordinary. Then the notes start appearing. Other people went through this maze, and the suggestion that they never came back changes how you read every turn. The objective is direct: find an escape before TUNG finds you.\n\nNiche Games presents the game as a fan-made horror project built around the Tung Tung Sahur character, used under license from Mementum Lab and Noxa. That attribution matters. This is an independent production, not a game from the character's original studio. The Steam page also makes clear that the free game is single-player. User-generated tags may say other things, but store tags are not evidence of an actual multiplayer mode. A PlayBound party, virtual LAN or dedicated server has no documented game mode to connect here.\n\nThe first-person maze format is simple on purpose. You explore, follow clues and try to keep your bearings with limited light. The original Draft copied Steam's full description and left Action as its only genre. Horror and Adventure describe the experience more accurately than a combat label. The developer does not advertise native gamepad support on the product page, and we have not tested a PlayBound Controls profile, so there is no controller badge. A first-person camera should not be mistaken for a verified gamepad layout.\n\nTUNG is free to add to a Steam library and runs on Windows. The current page lists Windows 10 or 11, a Core i3, 8 GB RAM, GTX 1050, DirectX 11 and 2 GB of storage as the minimum; it lists a Core i5, 16 GB RAM, GTX 1080 and 3 GB as recommended. The developer also says those specifications are uncertain rather than carefully measured. We preserve that warning next to the structured figures. PlayBound cannot promise an unattended install from a standalone package that we have not verified: use Steam to install the free game, then Locate the existing copy.\n\nThere is an appealing little horror premise here. Your friends are outside, your flashlight is inside, and the evidence from previous visitors tells you that the way back may be harder than the way in. Whether it clears PlayBound's game bar still needs a play test; being free and popular on a store is only a reason to look closer.",
+        "whyWePickedIt": "TUNG is a free, short-form horror candidate with a clear setting and a properly credited fan-game license. We are keeping it in Draft until a play test checks the maze, scares and controls; the store listing alone is not a quality verdict.",
+        "thatOneThing": "The friends who dared you into the factory remain safely outside, making them the smartest characters in the game.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Open the official TUNG page on Steam, choose Play Game, and add the free title to your library."
+          },
+          {
+            "platform": "windows",
+            "text": "Install through the Steam client. Once the files are present, use PlayBound Locate to select the existing installation."
+          },
+          {
+            "platform": "windows",
+            "text": "Start the game with keyboard and mouse. No native controller layout or tested PlayBound Controls profile is verified for this build."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "windows",
+            "text": "Use the flashlight to explore the maze, read the notes left behind and watch for routes back to familiar landmarks."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is TUNG free?",
+            "a": "Yes. Steam lists it as free to play for Windows."
+          },
+          {
+            "q": "Is it an official Mementum Lab game?",
+            "a": "No. Niche Games describes it as an independent fan project using Tung Tung Sahur under license from Mementum Lab and Noxa."
+          },
+          {
+            "q": "Can I play with friends?",
+            "a": "Steam's feature list says single-player. No actual multiplayer or dedicated-server mode is verified."
+          },
+          {
+            "q": "Does it support controllers?",
+            "a": "No native controller support or tested PlayBound Controls profile is documented yet."
+          },
+          {
+            "q": "How reliable are the system requirements?",
+            "a": "The developer provides minimum and recommended figures but explicitly says they are uncertain estimates."
+          }
+        ],
+        "bestFor": [
+          "Players who want a free first-person maze scare",
+          "Fans curious about a properly credited Tung Tung Sahur fan game"
+        ],
+        "notFor": [
+          "Groups looking for co-op horror",
+          "Players who require verified controller support"
+        ]
+      }
+    }
+  ]
 }
