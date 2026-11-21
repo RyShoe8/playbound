@@ -21,9 +21,35 @@ import { firstZodErrorMessage } from "@/lib/zodError";
 
 export const maxDuration = 180;
 
-export async function GET() {
+// The admin editor loads the full stored record while the list API returns a
+// compact projection. Keep this explicit draft-audit view read-only so a
+// catalog wave can compare every proposed field with the database value.
+const DRAFT_AUDIT_FIELDS = [
+  "slug", "title", "status", "published", "tagline", "description", "developerSlug", "developerName",
+  "genres", "tags", "license", "releaseYear", "sizeMB", "platforms", "features",
+  "maxPlayers", "launchMethods", "browserPlayable", "website", "steamAppId",
+  "githubRepo", "coverImage", "screenshots", "videos", "systemRequirements",
+  "hardwareRequirements", "qualityBar", "longDescription", "whyWePickedIt",
+  "thatOneThing", "installSteps", "firstPlaySteps", "multiplayerGamingSteps",
+  "faq", "bestFor", "notFor", "comparableTo", "launcherInstall",
+].join(" ");
+
+export async function GET(req: Request) {
   const { error } = await requireAdminViewSession();
   if (error) return error;
+  if (new URL(req.url).searchParams.get("audit") === "drafts") {
+    await dbConnect();
+    const games = await CatalogGame.find({
+      $or: [
+        { status: "draft" },
+        { status: { $exists: false }, published: { $ne: true } },
+      ],
+    })
+      .select(DRAFT_AUDIT_FIELDS)
+      .sort({ title: 1 })
+      .lean();
+    return NextResponse.json({ games }, { headers: { "Cache-Control": "private, no-store" } });
+  }
   const games = await listAllGames();
   return NextResponse.json({ games });
 }
