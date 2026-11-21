@@ -1,4 +1,26 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-developer-links-2026-11-21",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "pokemon-redstone",
+      "requireStatus": "draft",
+      "expected": { "developerSlug": "indie-web" },
+      "set": { "developerSlug": "mozetech" }
+    },
+    {
+      "kind": "game",
+      "key": "richard-burns-rally-rally-sim-fans",
+      "requireStatus": "draft",
+      "expected": { "developerSlug": "indie-web" },
+      "set": { "developerSlug": "rallysimfans" }
+    },
+    {
+      "kind": "game",
+      "key": "unmech3",
+      "requireStatus": "draft",
+      "expected": { "developerSlug": "indie-web" },
+      "set": { "developerSlug": "sake906" }
+    }
+  ]
 }

@@ -1,6 +1,36 @@
 import type { Developer } from "./types";
 
 export const developers: Developer[] = [
+  {
+    slug: "mozetech",
+    name: "MozeTech",
+    tagline: "Creator of the Pokémon Redstone browser fan game.",
+    about: "MozeTech created Pokémon Redstone, an unofficial browser game that brings Minecraft-inspired building and mining into a Pokémon adventure.",
+    founded: 0,
+    location: "",
+    website: "https://pokemon-redstone.pages.dev/",
+    artHue: 345,
+  },
+  {
+    slug: "rallysimfans",
+    name: "RallySimFans community",
+    tagline: "Community team maintaining the RallySimFans edition of Richard Burns Rally.",
+    about: "The RallySimFans community maintains its Richard Burns Rally installation, plugin, online rally infrastructure and extensive stage library. The original Richard Burns Rally was developed by Warthog Games.",
+    founded: 0,
+    location: "",
+    website: "https://rallysimfans.hu/rbr/",
+    artHue: 205,
+  },
+  {
+    slug: "sake906",
+    name: "Sake906",
+    tagline: "Creator of UnMech3 for MechWarrior 3.",
+    about: "Sake906 develops UnMech3, a community project that updates MechWarrior 3 for modern systems while requiring players to supply the original game's assets.",
+    founded: 0,
+    location: "",
+    website: "https://unmech3.org/Portal/Development.html",
+    artHue: 35,
+  },
   // Studios behind the Dedicated Basic draft catalog. The developer seeder is
   // insert-only per slug; an existing CMS profile is never overwritten.
   { slug: "dice", name: "DICE", tagline: "The studio behind Battlefield 1942.", about: "Swedish game studio that developed Battlefield 1942 and its combined-arms multiplayer foundation.", founded: 0, location: "Sweden", website: "https://www.ea.com/ea-studios/dice", artHue: 210 },
