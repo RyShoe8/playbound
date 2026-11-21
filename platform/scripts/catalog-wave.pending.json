@@ -22,7 +22,8 @@
           "provenance": {
             "source": "developer",
             "sourceUrl": "https://github.com/simonw/battledrones",
-            "verifiedAt": "2026-11-20"
+            "verifiedAt": "2026-11-20",
+            "enteredBy": null
           }
         }
       },
@@ -71,7 +72,8 @@
           "provenance": {
             "source": "developer",
             "sourceUrl": "https://www.frontlinezero.com/about.html",
-            "verifiedAt": "2026-11-20"
+            "verifiedAt": "2026-11-20",
+            "enteredBy": null
           }
         }
       },
@@ -130,7 +132,8 @@
           "provenance": {
             "source": "developer",
             "sourceUrl": "https://playboardit.com/play/highroad",
-            "verifiedAt": "2026-11-20"
+            "verifiedAt": "2026-11-20",
+            "enteredBy": null
           }
         }
       },
@@ -181,7 +184,8 @@
           "provenance": {
             "source": "developer",
             "sourceUrl": "https://zeldamon.pages.dev/",
-            "verifiedAt": "2026-11-20"
+            "verifiedAt": "2026-11-20",
+            "enteredBy": null
           }
         }
       },
