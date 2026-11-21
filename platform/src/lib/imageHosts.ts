@@ -34,6 +34,8 @@ export const OPTIMIZED_IMAGE_HOSTS: readonly string[] = [
   "**.cheapshark.com",
   "images.2game.com",
   "**.gog-statics.com",
+  "www.rallysimfans.hu",
+  "mechlivinglegends.net",
 ];
 
 function hostMatches(pattern: string, host: string): boolean {
