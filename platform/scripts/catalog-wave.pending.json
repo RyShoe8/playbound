@@ -1,4 +1,204 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-s-t-a-l-k-e-r-clear-sky-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "s-t-a-l-k-e-r-clear-sky",
+      "expected": {
+        "developerName": null,
+        "genres": [
+          "FPS",
+          "RPG"
+        ],
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "LAN Support",
+          "Dedicated Servers",
+          "Mod Support",
+          "Community Content",
+          "Story Campaign"
+        ],
+        "access.purchaseRequired": false,
+        "coverImage": null,
+        "screenshots": [],
+        "systemRequirements": {
+          "min": "Windows XP / 7 · 2 GHz CPU · 512 MB–2 GB RAM · DirectX 9 GPU · ~8 GB storage",
+          "recommended": "Windows 10 · Dual-core · 4 GB RAM · Dedicated DX9+ GPU"
+        },
+        "hardwareRequirements": {
+          "min": {
+            "cpuTier": "entry",
+            "cpuText": "2 GHz CPU",
+            "gpuTier": "entry",
+            "gpuText": "DirectX 9 capable",
+            "ramMB": 2048,
+            "storageMB": 8192,
+            "apis": [
+              "dx9"
+            ],
+            "notes": "GOG master of Clear Sky"
+          },
+          "recommended": {
+            "cpuTier": "mid",
+            "cpuText": "Dual-core 2.5 GHz+",
+            "gpuTier": "low",
+            "gpuText": "Dedicated DirectX 9 GPU",
+            "ramMB": 4096,
+            "storageMB": 10240,
+            "apis": [
+              "dx9"
+            ]
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.gog.com/en/game/stalker_clear_sky",
+            "verifiedAt": "2026-09-13",
+            "enteredBy": null
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "Clear Sky clears the PlayBound Bar as the faction-war prequel that makes the Zone feel contested rather than empty, with a DRM-free GOG master easy to own without a mandatory launcher.",
+          "lastVerified": "2026-09-13"
+        },
+        "longDescription": "Clear Sky is the middle chapter of the original S.T.A.L.K.E.R. trilogy in story order and the prequel in chronology. You play Scar, a mercenary hired by the Clear Sky faction after a Great Emission reshapes the Zone. Where Shadow of Chornobyl is a loner's path and Call of Pripyat is an officer's investigation, Clear Sky is about choosing sides while Duty, Freedom, bandits, and Clear Sky itself fight over the same roads, outposts, and artifact fields.\n\nThe shooting and anomaly systems sit between the first game and the finale: familiar detectors, radiation, bleeding, and inventory weight, with emissions that force everyone toward shelter and faction conflict that can close routes you thought you owned. Capture points and war progress make maps feel contested rather than empty between scripted missions.\n\nGOG's DRM-free offline installer is the PlayBound master. Galaxy is optional. Clear Sky does not require owning Shadow of Chornobyl or Call of Pripyat — each trilogy game is its own purchase and folder. Community overhauls belong elsewhere; free-roam Anomaly and GAMMA live under the Anomaly catalog page, not as Clear Sky editions.\n\nExpect classic Zone friction: old menus, stiff faces, and a learning curve that rewards listening before sprinting. It remains the best way to feel the Zone as a battlefield of ideologies instead of a scavenger's private sandbox.",
+        "thatOneThing": "Faction wars turn every map into contested ground instead of a scavenger's private sandbox.",
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is Clear Sky free?",
+            "a": "No. It is a paid commercial master copy; the GOG release is DRM-free."
+          },
+          {
+            "q": "Where do I install from?",
+            "a": "GOG — use the DRM-free offline installer from your library. PlayBound opens the store page."
+          },
+          {
+            "q": "Does it need Shadow of Chornobyl?",
+            "a": "No. Clear Sky is a separate purchase and install."
+          },
+          {
+            "q": "Does it have multiplayer?",
+            "a": "The original includes multiplayer, but present activity is community-dependent."
+          }
+        ]
+      },
+      "set": {
+        "developerName": "GSC Game World",
+        "genres": [
+          "FPS",
+          "Survival"
+        ],
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "LAN Support",
+          "Mod Support",
+          "Community Content",
+          "Story Campaign"
+        ],
+        "access.purchaseRequired": true,
+        "coverImage": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/20510/header.jpg?t=1747756044",
+        "screenshots": [
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/20510/0000002636.1920x1080.jpg?t=1747756044",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/20510/0000002637.1920x1080.jpg?t=1747756044",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/20510/0000002638.1920x1080.jpg?t=1747756044",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/20510/0000002639.1920x1080.jpg?t=1747756044"
+        ],
+        "systemRequirements": {
+          "min": "GOG Windows version: Windows 10, Intel Pentium IV 2.0 GHz or AMD Athlon XP 2200+, 2 GB RAM, GeForce 5700 or Radeon 9600 with 256 MB video memory and DirectX 9.0c support, 10 GB free disk space. LAN or internet connection is needed for multiplayer.",
+          "recommended": "GOG does not publish a separate detailed recommendation on the current product page. The original Steam listing recommends a Core 2 Duo E6400 or Athlon 64 X2 4200+, 2 GB RAM, GeForce 8800 GT or Radeon HD 2900 XT with 256 MB, and 10 GB free."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "cpuText": "Intel Pentium IV 2.0 GHz or AMD Athlon XP 2200+",
+            "gpuText": "GeForce 5700 or Radeon 9600, DirectX 9.0c compatible",
+            "ramMB": 2048,
+            "vramMB": 256,
+            "storageMB": 10240,
+            "apis": [
+              "dx9"
+            ],
+            "notes": "Current GOG listing specifies Windows 10. Network is only required for multiplayer."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "cpuText": "Core 2 Duo E6400 or Athlon 64 X2 4200+",
+            "gpuText": "GeForce 8800 GT or Radeon HD 2900 XT",
+            "ramMB": 2048,
+            "vramMB": 256,
+            "storageMB": 10240,
+            "apis": [
+              "dx9"
+            ],
+            "notes": "Original Steam recommendation; the current GOG page does not give a separate full recommended tier."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.gog.com/en/game/stalker_clear_sky",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "The Zone becomes a tug-of-war: taking an outpost can make the road home more dangerous than the road in.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Clear Sky begins before Shadow of Chornobyl, when a massive Emission shakes the Zone and a mercenary named Scar survives something he should not. The Clear Sky faction wants to understand what happened; everyone else still wants the same roads, artifacts and ground. That gives the middle release of the original S.T.A.L.K.E.R. trilogy a different rhythm. Rather than moving through a landscape that seems to wait for you, you enter a territory where rival groups keep trying to change who owns it.\n\nFaction War is the clearest expression of that idea. You can help one group take an outpost, then find that the front has shifted again by the time you return. A place that looked safe on the way out may be contested on the way back. It makes the Zone feel less like your private scavenging route and more like a bad argument conducted with rifles. The system can also be rough: an ally may not move when you want them to, and a campaign objective can feel less legible than the game expects. Clear Sky's ambition is easier to admire when you know it sometimes has sharp edges.\n\nThe shooting remains grounded in preparation. Radiation, bleeding, ammunition and inventory weight all matter. Anomalies punish the player who runs toward a promising artifact without checking the path first. Scar can improve weapons and armor through technicians, so the gear you keep becomes more personal than a disposable loot roll. Emissions give even a familiar route a reason to change pace: find shelter when the Zone tells you to, or stop worrying about the next faction fight.\n\nGOG offers the commercial Windows game as a DRM-free purchase with an offline installer; Galaxy is optional. Clear Sky is standalone, so buying Shadow of Chornobyl is not a prerequisite. The store confirms single-player and multiplayer, and notes that a separate serial key may be needed for multiplayer. Steam also lists online and LAN PvP. Those are properties of the original game, while a PlayBound hosted dedicated server for this Draft entry has not been verified. We should not promise one until its server files and join path work end to end.\n\nThe current GOG requirements specify Windows 10, 2 GB RAM and 10 GB free disk space, with DirectX 9.0c-capable graphics. Those are install-space and compatibility figures, not a measured download size. Native controller support is not documented on the store pages, so keyboard and mouse are the reliable route until a PlayBound Controls profile has been tested.\n\nWe are reviewing Clear Sky because it makes the Zone a contested place. It keeps the trilogy's scavenging and unease, then asks what happens when every faction wants the same piece of land. The answer is often a firefight you did not plan for, and sometimes a road you thought you had already cleared.",
+        "thatOneThing": "You help a faction seize the checkpoint, go artifact hunting, and return to find the road belongs to someone else.",
+        "multiplayerGamingSteps": [
+          {
+            "platform": "windows",
+            "text": "For the original multiplayer, check your GOG library's Serial Keys section. GOG notes that a separate key may be required and directs buyers to Support if one is missing."
+          },
+          {
+            "platform": "windows",
+            "text": "Use the game's own multiplayer menu for supported online or LAN PvP. PlayBound has not verified a dedicated host or automated party join recipe for this Draft entry."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Clear Sky free?",
+            "a": "No. It is a paid standalone game on GOG; the GOG version is DRM-free. No existing trilogy purchase is required."
+          },
+          {
+            "q": "Where do I install it from?",
+            "a": "Buy it through GOG and use its offline Windows installer or optional Galaxy client. Keep this game's files separate from other S.T.A.L.K.E.R. titles and mods."
+          },
+          {
+            "q": "Does it need Shadow of Chornobyl?",
+            "a": "No. Clear Sky is a separate purchase and installation, although its story is a prequel to that game."
+          },
+          {
+            "q": "Does it have multiplayer?",
+            "a": "Yes. GOG lists multiplayer, and Steam lists online and LAN PvP. GOG notes that a separate multiplayer serial key may be needed. PlayBound dedicated hosting is not verified for this Draft entry."
+          },
+          {
+            "q": "Does it support controllers?",
+            "a": "No native gamepad claim is documented on the current store pages, and PlayBound has not verified a Controls profile. Use keyboard and mouse for now."
+          },
+          {
+            "q": "What are the hardware requirements?",
+            "a": "The current GOG minimum is Windows 10, 2 GB RAM, a DirectX 9.0c-capable 256 MB GPU and 10 GB free storage. See the full breakdown above for the processor and legacy recommendation."
+          }
+        ]
+      }
+    }
+  ]
 }
