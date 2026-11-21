@@ -1,5 +1,5 @@
 {
-  "id": "draft-rallysimfans-gameplay-media-2026-11-21",
+  "id": "draft-rallysimfans-live-media-2026-11-21",
   "operations": [
     {
       "kind": "game",
@@ -7,12 +7,7 @@
       "requireStatus": "draft",
       "expected": {
         "coverImage": "https://www.rallysimfans.hu/rbr/images/fejlec4.jpg",
-        "screenshots": [
-          "https://www.rallysimfans.hu/rbr/images/fejlec4.jpg",
-          "https://www.rallysimfans.hu/rbr/images/zaszlo_magyar.jpg",
-          "https://www.rallysimfans.hu/rbr/images/zaszlo_angol.jpg",
-          "https://www.rallysimfans.hu/rbr/images/hirdetes/SH_logo2.png"
-        ]
+        "screenshots": []
       },
       "set": {
         "coverImage": "/games/richard-burns-rally-rally-sim-fans/cover.webp",
