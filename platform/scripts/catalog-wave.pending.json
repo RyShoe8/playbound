@@ -5,8 +5,8 @@
       "kind": "game",
       "key": "caesar-3",
       "expected": {
-        "tagline": "Hail Governor, your city awaits. As a provincial governor charged with spreading the glo",
-        "description": "Hail Governor, your city awaits. As a provincial governor charged with spreading the glo",
+        "tagline": "Hail Governor, your city awaits.  As a provincial governor charged with spreading the glo",
+        "description": "Hail Governor, your city awaits.  As a provincial governor charged with spreading the glo",
         "developerSlug": "gog-com",
         "developerName": "GOG.com",
         "releaseYear": 2026,
