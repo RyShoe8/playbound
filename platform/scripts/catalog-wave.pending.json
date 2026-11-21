@@ -1,4 +1,84 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-feature-vocabulary-2026-11-21",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "arma-cold-war-assault-remastered",
+      "requireStatus": "draft",
+      "expected": {
+        "features": [
+          "Multiplayer",
+          "Co-op",
+          "Controller Support",
+          "Mods"
+        ]
+      },
+      "set": {
+        "features": [
+          "Multiplayer",
+          "Co-op",
+          "Controller Support",
+          "Mod Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "asherons-call",
+      "requireStatus": "draft",
+      "expected": {
+        "features": [
+          "Multiplayer",
+          "Open World",
+          "Mod Support"
+        ]
+      },
+      "set": {
+        "features": [
+          "Multiplayer",
+          "Mod Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "resident-evil-shattered",
+      "requireStatus": "draft",
+      "expected": {
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "Couch Co-op",
+          "Controller Support"
+        ]
+      },
+      "set": {
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "Couch Co-Op",
+          "Controller Support"
+        ]
+      }
+    },
+    {
+      "kind": "game",
+      "key": "richard-burns-rally-rally-sim-fans",
+      "requireStatus": "draft",
+      "expected": {
+        "features": [
+          "Controller Support",
+          "Mods"
+        ]
+      },
+      "set": {
+        "features": [
+          "Controller Support",
+          "Mod Support"
+        ]
+      }
+    }
+  ]
 }
