@@ -1,4 +1,242 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-baseball-9-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "baseball-9",
+      "expected": {
+        "tagline": "Build and play your own team! Baseball at your fingertips! BASEBALL NINE!",
+        "description": "Build and play your own team! Baseball at your fingertips! BASEBALL NINE!",
+        "developerName": "Indie Web",
+        "developerSlug": "indie-web",
+        "genres": [],
+        "features": [],
+        "releaseYear": 2026,
+        "sizeMB": 250,
+        "platforms": [
+          "Windows",
+          "macOS",
+          "Linux"
+        ],
+        "hasControllerSupport": null,
+        "maxPlayers": null,
+        "androidStoreUrl": null,
+        "iosStoreUrl": null,
+        "website": "https://play.google.com/store/apps/details?id=us.kr.baseballnine&hl=en_US",
+        "launcherInstall.url": "https://play.google.com/store/apps/details?id=us.kr.baseballnine&hl=en_US",
+        "launcherInstall.note": null,
+        "systemRequirements": {
+          "min": "Not yet verified",
+          "recommended": "Not yet verified"
+        },
+        "hardwareRequirements": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-21"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download BASEBALL 9 - Apps on Google Play directly from the official site at https://play.google.com/store/apps/details?id=us.kr.baseballnine&hl=en_US. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. BASEBALL 9 - Apps on Google Play needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "bestFor": [],
+        "notFor": [],
+        "faq": [
+          {
+            "q": "Is BASEBALL 9 - Apps on Google Play free?",
+            "a": "No — BASEBALL 9 - Apps on Google Play must be purchased. It's distributed as Free to play."
+          },
+          {
+            "q": "How big is the BASEBALL 9 - Apps on Google Play download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does BASEBALL 9 - Apps on Google Play run on?",
+            "a": "Runs on Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play BASEBALL 9 - Apps on Google Play?",
+            "a": "You can download and play without creating an account."
+          }
+        ],
+        "coverImage": "https://play-lh.googleusercontent.com/VhCPWX6My-lQlAGTcN95-zgBrqYU6A41LnDgv7aLjSOSeymwnNbOhhvUWS5MLh_niGrxiOKIcmuCp-tb7SdbIps=s0-br30",
+        "screenshots": [
+          "https://play-lh.googleusercontent.com/VhCPWX6My-lQlAGTcN95-zgBrqYU6A41LnDgv7aLjSOSeymwnNbOhhvUWS5MLh_niGrxiOKIcmuCp-tb7SdbIps=s0-br30",
+          "https://play-lh.googleusercontent.com/VhCPWX6My-lQlAGTcN95-zgBrqYU6A41LnDgv7aLjSOSeymwnNbOhhvUWS5MLh_niGrxiOKIcmuCp-tb7SdbIps=s0-br30=w600-h300-pc0xffffff-pd",
+          "https://ssl.gstatic.com/store/images/regionflags/us.png",
+          "https://i.ytimg.com/vi/f8d8LpagbVg/hqdefault.jpg"
+        ]
+      },
+      "set": {
+        "tagline": "Build a nine-player roster, call the pitch, and take the at-bat yourself.",
+        "description": "BASEBALL 9 is a free mobile baseball game from playus soft with optional in-app purchases. Bat, pitch, field, and manage a customizable roster through league play. It runs on Android and iOS, and Google officially offers a Windows version through Google Play Games on PC. There is no verified Mac or Linux build.",
+        "developerName": "playus soft",
+        "developerSlug": "playus-soft",
+        "genres": [
+          "Sports",
+          "Simulation"
+        ],
+        "features": [
+          "Singleplayer"
+        ],
+        "releaseYear": 2018,
+        "sizeMB": 411,
+        "platforms": [
+          "Android",
+          "iOS",
+          "Windows"
+        ],
+        "hasControllerSupport": false,
+        "maxPlayers": 1,
+        "androidStoreUrl": "https://play.google.com/store/apps/details?id=us.kr.baseballnine",
+        "iosStoreUrl": "https://apps.apple.com/us/app/baseball-9/id1340866223",
+        "website": "https://play.google.com/pc-store/games/details?id=us.kr.baseballnine",
+        "launcherInstall.url": "https://play.google.com/pc-store/games/details?id=us.kr.baseballnine",
+        "launcherInstall.note": "Windows uses Google's Play Games on PC runtime. Android and iOS use their official mobile stores; no native PC binary or verified controller profile is provided.",
+        "systemRequirements": {
+          "min": "Windows through Google Play Games on PC: Windows 10 version 2004, SSD with 10 GB free, 8 GB RAM, Intel UHD 630-class GPU, four physical CPU cores, a Windows admin account, and hardware virtualization. iOS: version 15 or later. Android: check Google Play device compatibility; the developer does not publish a fixed device minimum in the listing.",
+          "recommended": "Google recommends a gaming-class GPU such as GeForce MX450 and eight logical CPU cores for Google Play Games on PC. Mobile performance depends on the device and current store version. The Windows requirements are for the Google Play Games runtime, not a native BASEBALL 9 executable."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "ramMB": 8192,
+            "storageMB": 10000,
+            "cpuText": "Four physical CPU cores",
+            "gpuText": "Intel UHD Graphics 630 or comparable",
+            "notes": "Requirements are for Google Play Games on PC. Windows 10 v2004, SSD, admin account and hardware virtualization are required. iOS 15+; Android compatibility varies by device."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "ramMB": 8192,
+            "storageMB": 10000,
+            "cpuText": "Eight logical CPU cores",
+            "gpuText": "Gaming-class GPU such as GeForce MX450",
+            "notes": "Google Play Games on PC recommendation, not a native game build."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://support.google.com/googleplay/answer/11358071",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "A quick at-bat can turn into a full afternoon of tinkering with the roster behind it.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "BASEBALL 9 understands the appeal of a game that fits in your pocket without asking you to stop caring about baseball. You can step into the batter's box, decide where to pitch, handle the field, and run the bases yourself. When you would rather move the season along, selective autoplay and quick results let you skip a player, an inning, or a whole game. It makes room for both the person who wants every pitch and the person who wants to see whether this roster can finally reach the postseason.\n\nThe team belongs to you. Rename players, set handedness, change looks and motions, and develop attributes as the league grows tougher. Skills and equipment give you more ways to shape a specialist. A big hit is satisfying, but part of the long-term hook is seeing the player you kept improving become the one you trust with a close game. The stat tracking supports that little story. A season becomes more than a series of disconnected taps when you know who has been carrying the lineup and who is due a better day.\n\nThe presentation aims for quick, readable games rather than a broadcast simulation. That is a sensible choice for a phone. Batting, pitching, and fielding all stay in your hands without requiring an evening for every matchup. The developer also lists offline play, which makes the game easier to pick up on a commute or between other things. This is single-player league play. There is no verified head-to-head online mode, dedicated server, or PlayBound virtual LAN route, so we will not dress it up as a party game.\n\nThe base app is free on Android and iOS, with optional in-app purchases. Google also lists BASEBALL 9 for Windows through Google Play Games on PC. That is a mobile game running in Google's PC environment, not a native Windows installer. It has no verified macOS or Linux edition. The App Store currently lists an iOS 15 minimum and a roughly 411 MB app size; those numbers do not promise the same download on Android or PC. For Windows, Google's runtime requires more hardware and free storage than the mobile game itself. PlayBound has not verified a controller profile, and the official PC route describes keyboard and mouse input.\n\nWe are reviewing BASEBALL 9 for its useful split between playing and managing. It lets you stay on the field for the moments that matter and fast-forward the routine ones. Before it leaves Draft, we still need to judge how its optional purchases affect a full season and whether that experience meets PlayBound's value standard. Its current page should at least make the platforms, store routes, and single-player scope clear.",
+        "whyWePickedIt": "We are reviewing BASEBALL 9 because it lets players choose between controlling the game and managing the team. The selective autoplay keeps a season moving without taking every big at-bat away. We still need to assess the optional-purchase balance before recommending it as a PlayBound pick.",
+        "thatOneThing": "You can sim eight innings, then take the ninth-inning at-bat yourself with the season on the line.",
+        "installSteps": [
+          {
+            "platform": "android",
+            "text": "Open the official BASEBALL 9 Google Play listing, check device compatibility, and install the free app. Optional in-app purchases are separate."
+          },
+          {
+            "platform": "ios",
+            "text": "Open the official BASEBALL 9 App Store listing and install the free app. Apple lists iOS 15 or later; optional in-app purchases are separate."
+          },
+          {
+            "platform": "windows",
+            "text": "Install Google Play Games on PC from Google, meet its Windows and virtualization requirements, then find BASEBALL 9 in the PC store and install it there. There is no standalone Windows installer from the developer."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Play the opening innings manually to learn batting, pitching, fielding, and baserunning before using selective autoplay."
+          },
+          {
+            "platform": "all",
+            "text": "Name the team and review player stats before spending any optional in-app currency."
+          }
+        ],
+        "bestFor": [
+          "Players who want quick baseball games with an ongoing roster",
+          "Anyone who likes choosing which innings to play",
+          "Mobile sports fans who want offline play"
+        ],
+        "notFor": [
+          "Players seeking online head-to-head multiplayer",
+          "Anyone wanting a native Windows, macOS, or Linux build",
+          "Players who avoid games with optional in-app purchases"
+        ],
+        "faq": [
+          {
+            "q": "Is BASEBALL 9 free?",
+            "a": "The base app is free on Google Play and the App Store. It offers optional in-app purchases."
+          },
+          {
+            "q": "Can I play it on a PC?",
+            "a": "Yes, on Windows through Google's Play Games on PC. It is the mobile game in Google's runtime, not a native Windows installer."
+          },
+          {
+            "q": "Is it available for macOS or Linux?",
+            "a": "PlayBound found no verified native Mac or Linux release. The confirmed platforms are Android, iOS, and Windows through Google Play Games on PC."
+          },
+          {
+            "q": "Can I play with friends?",
+            "a": "The official listings describe single-player league play and offline mode. PlayBound has not verified online multiplayer, dedicated hosting, or virtual LAN support."
+          },
+          {
+            "q": "Does it support a controller?",
+            "a": "PlayBound has not verified a controller profile. Use the game's touch controls on mobile or Google's keyboard-and-mouse route on PC."
+          },
+          {
+            "q": "How large is the download?",
+            "a": "Apple currently lists the iOS app at about 411 MB. Android and Windows download sizes can differ; Google's PC runtime also requires 10 GB of free SSD space."
+          }
+        ],
+        "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-9/cover-3dEBUdQsPSsebZTDUDlKlo7Mfv6qK8.jpg",
+        "screenshots": [
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-9/screenshot-1-gXxqP3l8Sql3jjHGKb84JQGFWIqT1r.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-9/screenshot-2-fA7Qysy6QOcqpDEB9yjSknKnBF0egq.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-9/screenshot-3-Lb6IJq0PiD8rQ1bFiFL0y5SuuELGRx.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/baseball-9/screenshot-4-BwQppvo9myA0HD1auIKzeft2sSNQf7.jpg"
+        ]
+      }
+    }
+  ]
 }
