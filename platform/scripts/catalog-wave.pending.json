@@ -1,4 +1,237 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-the-sims-4-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "the-sims-4",
+      "expected": {
+        "tagline": "Unleash your imagination and create a world of Sims that’s wholly unique. Explore and customize every detail from Sims to homes — and much more. Choose how Sims look, act and dress. Determine how they",
+        "description": "Unleash your imagination and create a world of Sims that’s wholly unique. Explore and customize every detail from Sims to homes — and much more. Choose how Sims look, act and dress. Determine how they’ll live out each day. Design and build incredible",
+        "developerName": "Indie Web",
+        "developerSlug": "indie-web",
+        "genres": [
+          "Arcade"
+        ],
+        "tags": [
+          "Browser",
+          "Indie"
+        ],
+        "features": [],
+        "releaseYear": 2026,
+        "platforms": [
+          "Web"
+        ],
+        "hasControllerSupport": null,
+        "maxPlayers": null,
+        "launchMethods": [
+          "browser"
+        ],
+        "browserPlayable": true,
+        "steamAppId": null,
+        "systemRequirements": {
+          "min": "Modern web browser",
+          "recommended": "Modern web browser"
+        },
+        "hardwareRequirements": null,
+        "qualityBar": null,
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Download The Sims™ 4 - Electronic Arts runs directly in your web browser — there is nothing to download or install. Open the official site at https://www.ea.com/games/the-sims/the-sims-4/buy and it starts immediately.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "bestFor": [],
+        "notFor": [],
+        "faq": [
+          {
+            "q": "Is Download The Sims™ 4 - Electronic Arts free?",
+            "a": "Yes. Download The Sims™ 4 - Electronic Arts is released under Free to play and costs nothing to download or play."
+          },
+          {
+            "q": "How big is the Download The Sims™ 4 - Electronic Arts download?",
+            "a": "About small. The minimum system requirements are Modern web browser."
+          },
+          {
+            "q": "What platforms does Download The Sims™ 4 - Electronic Arts run on?",
+            "a": "Web."
+          },
+          {
+            "q": "Do I need an account to play Download The Sims™ 4 - Electronic Arts?",
+            "a": "No account is required to download or play."
+          }
+        ],
+        "coverImage": "https://drop-assets.ea.com/images/3TVfXhrTgzhtM51RMVsywI/bd83de7daaccdd70c31d981ba52818ae/ts4-basegame-packart-16x9-en.png?im=AspectCrop=(16,9),xPosition=0.5,yPosition=0.5",
+        "screenshots": [
+          "https://drop-assets.ea.com/images/3TVfXhrTgzhtM51RMVsywI/bd83de7daaccdd70c31d981ba52818ae/ts4-basegame-packart-16x9-en.png?im=AspectCrop=(16,9),xPosition=0.5,yPosition=0.5",
+          "https://drop-assets.ea.com/images/73KmlYN4LpDsvGfAz1h1G7/a9af741f1b0f8ba26ba2e14a58c3bffe/TS4-basegame-yt-trailer-cover.jpg?im=AspectCrop=(16,9),xPosition=0.5,yPosition=0.5",
+          "https://drop-assets.ea.com/images/7qKmthowSf5OsPMlVsreSh/7fd8d5a3ca5cdcc712a230fb9847f687/ts4-base-screenshot1.jpg",
+          "https://drop-assets.ea.com/images/5WRXoFt6tqG6SnjvxCnEZP/505f2ace8910bf50d16412d2f4c98d16/ts4-base-screenshot2.jpg",
+          "https://drop-assets.ea.com/images/25noloc0IycxbUvcM1VOuG/d1975d413bf056099d0196fbdfe253da/ts4-base-screenshot3.jpg",
+          "https://drop-assets.ea.com/images/3WaBrjH3YCjUMt5ATNn9Y1/434473902003f532cacd08b43a045daf/ts4-base-screenshot4.jpg",
+          "https://drop-assets.ea.com/images/5v7syy3WRFj1uK4nR3wd4u/a5eb0e9aa008a3c2ef971d225115340f/ts4-base-screenshot5.jpg",
+          "https://drop-assets.ea.com/images/1cnEJfxdmPfEtBkcPA8is2/ff52e8683c4e4b364e42cfaae067a94e/ts4-base-screenshot6.jpg",
+          "https://drop-assets.ea.com/images/38pb8UGThglRGj4bXEeZwL/d6e9e0e6d38339a10c18e6d030132484/ts4-base-screenshot7.jpg",
+          "https://www.ea.com/_next/static/media/Nested_Theme_BG.0be4e232.jpg",
+          "https://drop-assets.ea.com/images/1FwqVmkaQaa4PShLdPOl9W/34a3489fc0818954df6353342da0d53a/SIMS_Website_Update_Homepage_Imaginative__1_.png?im=AspectCrop=(16,9),xPosition=0.4713541666666667,yPosition=0.4648148148148148",
+          "https://drop-assets.ea.com/images/1EUtzExmYFb9v6ULWelQz7/276355ce2e983dc40cc72d9bdeaef3e7/TS4_About-The-Sims_Media-Hero-Tile_16x9_01.jpg?im=AspectCrop=(16,9),xPosition=0.5,yPosition=0.5",
+          "https://drop-assets.ea.com/images/3tKKZrEOutLjcBnmBTUbLd/fd886cccc82e66195e6463a09c39e0fa/TS4_About-The-Sims_Media-Hero-Tile_16x9_02.jpg?im=AspectCrop=(16,9),xPosition=0.5,yPosition=0.5",
+          "https://drop-assets.ea.com/images/1c5g8OZMWss9LCWLfAaJoc/1dbd25c751ac2b025ecd17796eaf10fc/TS4_About-The-Sims_Media-Hero-Tile_16x9_03.jpg?im=AspectCrop=(16,9),xPosition=0.5,yPosition=0.5",
+          "https://drop-assets.ea.com/images/7dPae9krj7SDaCAj4JfiI3/e3b36d0620ccb7416fb81ae52aed1735/TS4_Kit50-SP80_MoolaBundle_MC_RGB_2160x2160-Full.jpg",
+          "https://drop-assets.ea.com/images/3Vt50cRa2gMMCmEvEu5kqz/c3579d6a65344ead2db64ba32fbd924c/TS4_Pack-Art_LadyBridgertonsMasqueradeBallBundle_EN.jpg",
+          "https://drop-assets.ea.com/images/6doGyqRyYGvo7cA9Ykl6iO/5ed798f78c60e74da3998bb871c16339/TS4_Pack-Art_LadyBridgertonMasqueradeBallFashion_EN.jpg",
+          "https://drop-assets.ea.com/images/1Gg2E5m5S3bNl5wPCbpk3X/a01f874963865bd59252f623a82b5c75/TS4_Pack-Art_LadyBridgertonsMasqueradeBallroom_EN.jpg",
+          "https://drop-assets.ea.com/images/2W3bkfgH1Q9CldQEqeq8t0/fef390f597ca383aba5ff0a68d1c4e24/TS4_Pack-Art_Royalty-and-Legacy_EN.jpg",
+          "https://drop-assets.ea.com/images/6pF6zUwfPcPVDhKSG6ux6W/f69f0a84c8620cf6148929ae1539ca29/TS4_KIT45_SP75_MC_RGB_2160x2160_FULL__1_.jpg"
+        ]
+      },
+      "set": {
+        "tagline": "Build the house, give its residents a plan, then watch ordinary life ignore both.",
+        "description": "The Sims 4 is a free base-game life simulator by Maxis. Create Sims, build homes, and direct their everyday lives on Windows or macOS through the EA app or a supported PC store. It is a downloaded single-player game; optional expansion packs cost extra.",
+        "developerName": "Maxis",
+        "developerSlug": "maxis",
+        "genres": [
+          "Simulation",
+          "Sandbox"
+        ],
+        "tags": [],
+        "features": [
+          "Singleplayer"
+        ],
+        "releaseYear": 2014,
+        "platforms": [
+          "Windows",
+          "macOS"
+        ],
+        "hasControllerSupport": false,
+        "maxPlayers": 1,
+        "launchMethods": [
+          "install"
+        ],
+        "browserPlayable": false,
+        "steamAppId": "1222670",
+        "systemRequirements": {
+          "min": "Windows: 64-bit Windows 10, Intel Core i3-3220 or AMD Ryzen 3 1200, 4 GB RAM, DirectX 11 graphics with 128 MB VRAM, 25 GB free plus 1 GB for saves and custom content. macOS: Catalina 10.15 with Metal, Intel Core i3-3225, 4 GB RAM, Intel HD 4000 or better, 256 MB VRAM, 25 GB free plus 1 GB for saves and custom content. Internet and an EA account are required for activation.",
+          "recommended": "Windows: Intel Core i5 or AMD Ryzen 5, 8 GB RAM, DirectX 11 GPU such as GTX 650 or Radeon HD 7750 with 1 GB VRAM, 50 GB free plus 1 GB for saves and custom content. macOS: Intel Core i5, 8 GB RAM, Metal graphics, 50 GB free plus 1 GB for saves and custom content."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos"
+            ],
+            "ramMB": 4096,
+            "storageMB": 25600,
+            "cpuText": "Windows: Intel Core i3-3220 or AMD Ryzen 3 1200; macOS: Intel Core i3-3225",
+            "gpuText": "Windows: DirectX 11 graphics, GeForce 6600 / Radeon X1300 / Intel GMA X4500 class; macOS: Metal graphics, Intel HD 4000 class",
+            "notes": "Windows 10 64-bit or macOS 10.15 minimum. Reserve another 1 GB for saves and custom content. EA account and internet required for activation."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos"
+            ],
+            "ramMB": 8192,
+            "vramMB": 1024,
+            "storageMB": 51200,
+            "cpuText": "Intel Core i5 or AMD Ryzen 5 (Windows); Intel Core i5 (macOS)",
+            "gpuText": "Windows: GeForce GTX 650 or Radeon HD 7750; macOS: Intel HD/Iris 4000 series or newer",
+            "notes": "Reserve another 1 GB for saves and custom content. Mac GPU recommendations are from EA's separate Mac specifications."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://help.ea.com/en/articles/the-sims/the-sims-4/system-requirements/",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "A good plan for a Sim is usually the beginning of a better story when they ignore it.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "The Sims 4 gives you a neighborhood and asks what kind of life you want to make in it. You can spend an evening designing a home down to the last lamp, or hand a Sim a job, a handful of relationships, and a terrible sense of timing. The game is at its best when those intentions collide. A careful routine can be derailed by a visitor, a missed meal, or your own insistence that this tiny bathroom really can fit a second sink.\n\nCreate-a-Sim lets you shape appearance, personality, and aspirations. Build Mode turns that character work outward: rooms, furniture, and landscaping become a stage for the household you have in mind. Once play begins, needs, careers, friendships, and social disasters make the stage feel less controlled than it looked in the editor. You can guide the day closely or let it run and see which problem demands attention first. There is no campaign finish line telling you that a household is complete. You decide what counts as success, and the game supplies interruptions.\n\nThe free base game is a real game, not a web demo. It includes the core tools for creating Sims and homes and playing out their daily routines. It is also attached to a large store of optional paid expansions, kits, and other additions. That distinction matters. You do not need a paid pack to try the basic life-simulation loop, but many of the themed worlds and systems promoted around the game are sold separately. PlayBound should show that honestly instead of treating the entire Sims 4 ecosystem as free.\n\nOn PC, the game is a download for Windows or macOS. EA offers it through the EA app and links to Steam and Epic Games; an EA account and online activation are part of the setup. It is not playable in a browser. EA's PC requirements specify keyboard and mouse or touchpad input, and PlayBound has not verified a controller profile for this version. The base game has no native online multiplayer or dedicated server, so a PlayBound party or virtual LAN would misrepresent how it works. Share screenshots and stories with friends if you like, but the household itself is yours.\n\nWe are interested in The Sims 4 for the unusually durable pleasure of making a place and watching people live in it. The building tools can absorb an afternoon; the simulation can turn a minor inconvenience into a story worth retelling. Whether it belongs in PlayBound's published catalog is still a separate editorial decision, especially given the amount of paid content surrounding the free base. This draft presents the game and its limits accurately while that decision remains open.",
+        "whyWePickedIt": "We are reviewing The Sims 4 because its free base game offers substantial building and life-simulation tools. The tension between a household you plan and one that actually behaves can still produce memorable stories. Its optional paid-content ecosystem needs a clear explanation before we publish a recommendation.",
+        "thatOneThing": "Spend an hour perfecting the kitchen; your Sim will still choose the bathroom sink for breakfast dishes.",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Create or sign in to an EA account. The free base game requires EA's account and online activation; optional packs are sold separately."
+          },
+          {
+            "platform": "windows",
+            "text": "Open the official EA download page and choose the EA app for Windows, or choose its linked Steam or Epic Games listing. Add the free base game, install it through that store, and sign in to EA when prompted."
+          },
+          {
+            "platform": "macos",
+            "text": "Open the official EA download page and choose the EA app for Mac. Add and install the free base game, then sign in to EA when prompted. EA lists macOS Catalina 10.15 and Metal support as the minimum."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Create a Sim and a simple household first. Play a day with the base game before deciding whether any paid expansion is useful to you."
+          },
+          {
+            "platform": "all",
+            "text": "On a lower-power laptop, try Laptop Mode in Game Options if the simulation feels slow."
+          }
+        ],
+        "bestFor": [
+          "Players who enjoy making characters and homes",
+          "Open-ended stories without a fixed finish line",
+          "Experimenting with the free base before buying any packs"
+        ],
+        "notFor": [
+          "Players looking for native online co-op",
+          "Anyone who wants a PC gamepad experience without a verified mapper",
+          "Players who dislike large paid expansion catalogs"
+        ],
+        "faq": [
+          {
+            "q": "Is The Sims 4 free?",
+            "a": "The base game is free. Optional expansions, kits, and other add-ons are sold separately."
+          },
+          {
+            "q": "Can I play it in my browser?",
+            "a": "No. The PC version must be installed on Windows or macOS through the EA app or another supported store."
+          },
+          {
+            "q": "Do I need an EA account?",
+            "a": "Yes. EA requires an account and an internet connection for activation."
+          },
+          {
+            "q": "Does it support multiplayer or dedicated servers?",
+            "a": "The base PC game is single-player. PlayBound does not offer native online parties, virtual LAN, or dedicated hosting for it."
+          },
+          {
+            "q": "Does the PC version support a controller?",
+            "a": "EA lists keyboard and mouse or touchpad as PC input. PlayBound has not verified a controller profile for this version."
+          },
+          {
+            "q": "How much space should I reserve?",
+            "a": "EA lists at least 25 GB free plus 1 GB for saves and custom content; 50 GB plus that extra 1 GB is recommended."
+          }
+        ],
+        "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/cover-Xr56C3swrVyjfAFEVq1LyqLyoxmSnf.png",
+        "screenshots": [
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-1-OqydkSCXPy70ISa3y9DqTHGPMytGcv.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-2-mG7ypzkqT3OR7e4hPT6mq5U6d1PDhS.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-3-Qsbd7klwSf6Lkkb7M46YpJPwul8x0w.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-4-VHNmbZBnNukkFuswe6VrRiMZbiaK5m.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-5-s0DLhoQkaAq0f3kVSCPSgW92A0OWt3.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-6-zyza0ZBrHfMLACqqeNEKRbzEyeEILP.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-sims-4/base-game-7-RgwBYMQ91W3vrdMyPrZYpT3HwrwL7E.jpg"
+        ]
+      }
+    }
+  ]
 }
