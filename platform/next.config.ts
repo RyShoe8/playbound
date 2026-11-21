@@ -194,6 +194,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.cheapshark.com" },
       { protocol: "https", hostname: "images.2game.com" },
       { protocol: "https", hostname: "**.gog-statics.com" },
+      { protocol: "https", hostname: "www.rallysimfans.hu" },
+      { protocol: "https", hostname: "mechlivinglegends.net" },
     ],
   },
   async rewrites() {
