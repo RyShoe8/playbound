@@ -13,8 +13,8 @@
         ],
         "maxPlayers": null,
         "systemRequirements": {
-          "min": "Minimum:\nOS: Windows 10/11\nProcessor: Intel Core i3\nMemory: 8 GB RAM\nGraphics: GTX 1050\nDirectX: Version 11\nStorage: 2 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs",
-          "recommended": "Recommended:\nOS: Windows 10/11\nProcessor: Intel Core i5\nMemory: 16 GB RAM\nGraphics: GTX 1080\nDirectX: Version 11\nStorage: 3 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs"
+          "min": "Minimum:\nOS:  Windows 10/11\nProcessor: Intel Core i3\nMemory: 8 GB RAM\nGraphics: GTX 1050\nDirectX: Version 11\nStorage: 2 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs",
+          "recommended": "Recommended:\nOS:  Windows 10/11\nProcessor: Intel Core i5\nMemory: 16 GB RAM\nGraphics: GTX 1080\nDirectX: Version 11\nStorage: 3 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs"
         },
         "hardwareRequirements": null,
         "launcherInstall.note": null,
@@ -61,7 +61,7 @@
           },
           {
             "q": "How big is the TUNG download?",
-            "a": "About 2.0 GB. The minimum system requirements are Minimum:\nOS: Windows 10/11\nProcessor: Intel Core i3\nMemory: 8 GB RAM\nGraphics: GTX 1050\nDirectX: Version 11\nStorage: 2 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs."
+            "a": "About 2.0 GB. The minimum system requirements are Minimum:\nOS:  Windows 10/11\nProcessor: Intel Core i3\nMemory: 8 GB RAM\nGraphics: GTX 1050\nDirectX: Version 11\nStorage: 2 GB available space\nVR Support: no\nAdditional Notes: i have no flippin idea join the dis and tell me the specs."
           },
           {
             "q": "What platforms does TUNG run on?",
