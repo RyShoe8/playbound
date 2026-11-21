@@ -1,4 +1,222 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-microsoft-allegiance-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "microsoft-allegiance",
+      "expected": {
+        "tagline": "A forgotten multiplayer space game that still feels like a glimpse into the future.",
+        "description": "Microsoft Allegiance is a free multiplayer space-combat strategy game where teams pilot customizable ships, manage a shared economy, capture territory, and coordinate large-scale battles across the galaxy.",
+        "developerName": "ZapHop Games",
+        "developerSlug": "zaphop-games",
+        "genres": [
+          "Strategy",
+          "Space"
+        ],
+        "features": [
+          "Multiplayer",
+          "Controller Support"
+        ],
+        "license": "See Steam store page",
+        "releaseYear": 2017,
+        "website": "http://www.freeallegiance.org",
+        "hardwareRequirements": {
+          "min": {
+            "cpuText": "Dual-Core 2.0 GHz",
+            "gpuText": "DirectX 9.0c GPU with 256MB VRAM",
+            "ramMB": 2048,
+            "storageMB": 2048,
+            "apis": [
+              "dx9"
+            ]
+          },
+          "recommended": {
+            "cpuText": "Quad-Core CPU",
+            "gpuText": "Dedicated GPU (NVIDIA / AMD)",
+            "ramMB": 4096,
+            "storageMB": 4096,
+            "apis": [
+              "dx9"
+            ],
+            "notes": "Full flight joystick, throttle, and mouse flight support."
+          },
+          "provenance": {
+            "source": "playbound_verified",
+            "sourceUrl": null,
+            "verifiedAt": null,
+            "enteredBy": "admin"
+          }
+        },
+        "launcherInstall.url": "http://www.freeallegiance.org",
+        "launcherInstall.steamAppId": null,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "A legendary space combat simulation and real-time strategy hybrid, uniting first-person starfighter dogfights with top-down fleet command in massive online team warfare.",
+          "lastVerified": "2026-08-15"
+        },
+        "longDescription": "Microsoft Allegiance (FreeAllegiance) is a groundbreaking multiplayer space combat simulation and team real-time strategy hybrid originally created by Microsoft Research and released as open source in 2004. Set in the 22nd century amidst the turbulent colonization of the solar system, multiple factions clash for dominance over asteroid-rich sectors connected by interstellar aleph warp gates.\n\nIn every battle, two or more teams compete in real-time coordination. One player on each team ascends to the Commander seat in a top-down RTS command view: managing team resources, constructing orbital space stations (Garrisons, Refineries, Tech Bases), deploying automated Helium-3 harvesting miners, conducting strategic research tech upgrades, and issuing tactical waypoint beacons to the fleet.\n\nSimultaneously, all other teammates fly in full first-person 3D space as active combat pilots. Choose from specialized starfighter classes—stealth scouts for probing enemy systems, agile interceptors for space dogfights, heavy tactical bombers with torpedo payloads, gunships for area denial, and multi-crew capital dreadnoughts.\n\nTeamwork and specialization dictate victory. Stealth scouts slip through enemy warp gates to plant target beacons on enemy refineries, heavy bomber wings coordinate timed torpedo runs while interceptors suppress defense turrets, and capital cruisers lead sector sieges with live gunner seats manned by fellow teammates.\n\nPreserved and actively played on Steam and standalone dedicated servers by the FreeAllegiance community, the game features full flight joystick/HOTAS support, active community squad leagues, rookie training academies, and zero microtransactions.",
+        "whyWePickedIt": "Microsoft Allegiance is one of the most innovative and forward-thinking multiplayer games ever created. Built by Microsoft Research in 2000 and open-sourced to the community in 2004, it seamlessly bridges the gap between first-person space flight simulators and real-time strategy commander mechanics.",
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download Microsoft Allegiance directly from the official site at http://www.freeallegiance.org. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Microsoft Allegiance is also on Steam and is free there. Open the store page and press Play Game to add it to your library.",
+            "command": "steam://install/700480"
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Microsoft Allegiance needs roughly 2.0 GB of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is Microsoft Allegiance free?",
+            "a": "Yes. Microsoft Allegiance is released under See Steam store page and costs nothing to download or play."
+          },
+          {
+            "q": "How big is the Microsoft Allegiance download?",
+            "a": "About 2.0 GB. The minimum system requirements are Minimum:\nOS *: Windows 7\nProcessor: Any i386 (Windows Compatible) processor\nMemory: 2 GB RAM\nGraphics: Onboard (DirectX 7-9 Compatible)\nDirectX: Version 7.0\nStorage: 2 GB available space\nSound Card: Any\nAdditional Notes: A DirectX 7 version is available for legacy / compatibility issues.."
+          },
+          {
+            "q": "What platforms does Microsoft Allegiance run on?",
+            "a": "Windows."
+          },
+          {
+            "q": "Do I need an account to play Microsoft Allegiance?",
+            "a": "No account is required to download or play."
+          }
+        ]
+      },
+      "set": {
+        "tagline": "A space battle where your commander can give orders, but a real player has to fly the bomber.",
+        "description": "Microsoft Allegiance is a free team-based space combat game that puts human pilots inside an RTS commander's plan. Scouts find routes through the sectors, miners fund new stations, and fighters escort bombers against another team. Originally released in 2000 and revived by its community, it is available for Windows through Steam.",
+        "developerName": "Microsoft Game Studios",
+        "developerSlug": "microsoft-game-studios",
+        "genres": [
+          "Space",
+          "RTS"
+        ],
+        "features": [
+          "Multiplayer",
+          "Team Play"
+        ],
+        "license": "Free to play; see the game's EULA and community source terms",
+        "releaseYear": 2000,
+        "website": "https://www.freeallegiance.org/",
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "cpuText": "Any i386 Windows-compatible processor",
+            "gpuText": "Onboard graphics compatible with DirectX 7 to 9",
+            "ramMB": 2048,
+            "storageMB": 2048,
+            "notes": "The game's listed minimum is Windows 7, but the current Steam client requires Windows 10 or later. The game offers a DirectX 7 compatibility path."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "cpuText": "Intel Core i3 or newer, or AMD K10",
+            "gpuText": "3D graphics card compatible with DirectX 9",
+            "ramMB": 4096,
+            "storageMB": 2048,
+            "apis": [
+              "dx9"
+            ],
+            "notes": "Broadband connection is listed for online play."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://store.steampowered.com/app/700480/Microsoft_Allegiance/",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.url": "https://store.steampowered.com/app/700480/Microsoft_Allegiance/",
+        "launcherInstall.steamAppId": "700480",
+        "launcherInstall.note": "Free official Windows release on Steam. Add it to your Steam library and let Steam install it; PlayBound can then detect the installed client. No PlayBound-hosted server package or verified controller profile is included.",
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "The best plan in the sector still needs a pilot willing to fly straight at the enemy's refinery.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Microsoft Allegiance gives a space battle two different sets of hands. The commander sees an RTS map, chooses where the team expands, and decides which technologies are worth the shared budget. The pilots have to make those plans real in first person. They scout unfamiliar sectors, escort the miners that pay for upgrades, and fly bombers toward stations that will not go down just because somebody placed a waypoint on them. That gap between a good order and a completed mission is the game.\n\nThe original arrived in 2000 from Microsoft Research and Microsoft Game Studios. The free Steam release came much later, in 2017, through the community that kept Allegiance alive. Its age shows in the menus and the amount of terminology thrown at a newcomer, but its team structure still feels unusual. An RTS commander can see the shape of a threat while an individual pilot sees only the ship in front of them. A squad that shares information and follows through on a call can turn a scattered set of dogfights into a campaign across the map.\n\nSectors connect through warp points. Scouts chart routes and watch for enemy movement; bases and probes contribute to the team's shared view. When an opponent slips past that network, the commander may see the danger too late. The economy also gives ordinary pilots work that matters. A miner lost on the way to helium means fewer upgrades later, so an escort can be as valuable as a flashy kill. Bombers can bring other players along to man turrets, making a successful strike a group job rather than a solo highlight.\n\nA match can stretch well beyond a quick round. The Steam description puts a typical game around forty minutes, with longer contests reaching two hours. That makes coordination both its strength and its biggest demand. Players who want to improvise alone may find the learning curve steep; players willing to listen, scout and return for another sortie will find reasons to stay. This is an online team game, not an offline story campaign.\n\nSteam supplies the official free Windows client. The listed game minimum goes back to Windows 7, while Steam itself now requires Windows 10 or newer; its listed 2 GB of storage is available install space, not a measured download. The current store page does not identify native gamepad support, and PlayBound has not verified a Controls profile. We also have no validated PlayBound dedicated-server recipe for this entry, so the honest multiplayer route is the game's existing community service.\n\nAllegiance belongs in the catalog because it treats every pilot as part of a strategy instead of placing the entire battle in one person's cockpit. We will keep it in Draft until the install and party handoff are tested. The promise is already clear: a commander can ask for a miracle, but the people in the ships still have to deliver it.",
+        "whyWePickedIt": "We are reviewing Allegiance because it makes a team of real pilots carry out an RTS commander's decisions. Scouting, mining and escorting matter as much as individual dogfights. We still need to verify the PlayBound install and party handoff before release.",
+        "thatOneThing": "Your commander can order a refinery strike; your bomber crew still has to survive the trip.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Open the official free Microsoft Allegiance Steam page, select Play Game, and let Steam install the Windows client. Steam currently requires Windows 10 or later even though the game's own listed minimum is older."
+          },
+          {
+            "platform": "windows",
+            "text": "Launch through Steam, complete the game's account or lobby setup, and check its controls before entering a team match. PlayBound has not verified native gamepad operation for this client."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "windows",
+            "text": "Start with a training session or a welcoming community lobby. Learn scouting, sector navigation and miner defense before volunteering to command."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "windows",
+            "text": "Join an existing Allegiance community match through the game's own multiplayer service. PlayBound has not verified a direct-connect or dedicated-host adapter for this Draft entry."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Microsoft Allegiance free?",
+            "a": "Yes. The official Steam client is free to add and play. Its current EULA and community source terms are separate from the store price."
+          },
+          {
+            "q": "What hardware does it need?",
+            "a": "Steam lists 2 GB RAM, DirectX 7-compatible graphics and 2 GB of free storage as the game minimum. The current Steam client requires Windows 10 or later; the game listing itself still mentions Windows 7."
+          },
+          {
+            "q": "When was it released?",
+            "a": "The original Allegiance arrived in 2000. The community's free Steam release is dated 2017."
+          },
+          {
+            "q": "Can I play alone?",
+            "a": "This is designed around online teams and community matches, not a standalone single-player campaign."
+          },
+          {
+            "q": "Can I use a controller or HOTAS?",
+            "a": "PlayBound has not verified a current native gamepad or HOTAS setup for this Steam client. Use keyboard and mouse until a tested control profile is available."
+          },
+          {
+            "q": "Does PlayBound host its dedicated servers?",
+            "a": "Not for this Draft entry. The existing multiplayer service is the documented route while a PlayBound server recipe remains unverified."
+          }
+        ]
+      }
+    }
+  ]
 }
