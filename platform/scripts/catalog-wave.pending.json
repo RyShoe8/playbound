@@ -1,21 +1,4 @@
 {
-  "id": "draft-rallysimfans-live-media-2026-11-21",
-  "operations": [
-    {
-      "kind": "game",
-      "key": "richard-burns-rally-rally-sim-fans",
-      "requireStatus": "draft",
-      "expected": {
-        "coverImage": "https://www.rallysimfans.hu/rbr/images/fejlec4.jpg",
-        "screenshots": []
-      },
-      "set": {
-        "coverImage": "/games/richard-burns-rally-rally-sim-fans/cover.webp",
-        "screenshots": [
-          "/games/richard-burns-rally-rally-sim-fans/cockpit.webp",
-          "/games/richard-burns-rally-rally-sim-fans/menu.webp"
-        ]
-      }
-    }
-  ]
+  "id": null,
+  "operations": []
 }
