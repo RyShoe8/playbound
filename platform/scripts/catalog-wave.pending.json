@@ -1,4 +1,213 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-hand-to-hand-wizardry-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "hand-to-hand-wizardry",
+      "requireStatus": "draft",
+      "expected": {
+        "tagline": "Hand-to-Hand Wizardry is a first-person dark fantasy boomer shooter. You play as Zoltan, an egotistical wizard who willingly sacrifices his hands to desce",
+        "description": "Hand-to-Hand Wizardry is a first-person dark fantasy boomer shooter. You play as Zoltan, an egotistical wizard who willingly sacrifices his hands to descend into a dungeon where hands are religious symbols. Zoltan must graft dead wizards’ hands onto his severed wrists to gain powerful spells and eviscerate hordes of dungeon creatures to discover the disturbing secret that lies beneath the surface.\n\n#### Team members:\n\n* [**Gabriel Kwidzinski**](https://www.linkedin.com/in/gabriel-kwidzinski-131197183/) | Project Manager, Lighting Artist, Level Designer\n* [**Quinn Rogers Van De Keere**](https://www.linkedin.com/in/quinn-van-de-keere/) | AI Programmer, Shaders\n* [**Vi Tran**](https://www.linkedin.com/in/vi-tran01) | Programmer, VFX\n* [**Zander Aguirre**](https://www.linkedin.com/in/zander-aguirre-b90a24388) | 3D Environment Artist, 3D Character Artist, Animator\n* [**Emma Jones**](https://www.linkedin.com/in/emma-jones-9657b0356) | 2D Artist, Environmental Artist, UI/UX Artist\n* [**Evan McCaig**](https://www.linkedin.com/in/evancmccaig) | Level Designer, Programmer\n\n#### External collaborators:\n\n* Juan | Sound\n* Diego | Sound\n* Emir | Sound\n* Andy | Sound\n* Aiden | Sound\n* Ethan Holmes | Sound\n* Kai | Art\n* Vivian | Art",
+        "developerName": "VFS Game Design",
+        "genres": [],
+        "features": [],
+        "platforms": [
+          "Windows",
+          "macOS",
+          "Linux"
+        ],
+        "coverImage": null,
+        "screenshots": [],
+        "systemRequirements": {
+          "min": "Not yet verified",
+          "recommended": "Not yet verified"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.url": "https://vfs-gdpg.itch.io/hand-to-hand-wizardry",
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-07"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download Hand-to-Hand Wizardry by VFS Game Design - Programming directly from the official site at https://vfs-gdpg.itch.io/hand-to-hand-wizardry. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Hand-to-Hand Wizardry by VFS Game Design - Programming needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "faq": [
+          {
+            "q": "Is Hand-to-Hand Wizardry by VFS Game Design - Programming free?",
+            "a": "No — Hand-to-Hand Wizardry by VFS Game Design - Programming must be purchased. It's distributed as Free to play."
+          },
+          {
+            "q": "How big is the Hand-to-Hand Wizardry by VFS Game Design - Programming download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does Hand-to-Hand Wizardry by VFS Game Design - Programming run on?",
+            "a": "Runs on Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play Hand-to-Hand Wizardry by VFS Game Design - Programming?",
+            "a": "You can download and play without creating an account."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "The dungeon asks for a hand. Zoltan takes that far too literally.",
+        "description": "A short, free first-person fantasy shooter built by Vancouver Film School students. Play Zoltan, a wizard who sacrifices his own hands, then grafts those of fallen spellcasters to change his attacks. The Windows release is available through the official itch page and Epic Games Store.",
+        "developerName": "Vancouver Film School student team",
+        "genres": [
+          "Shooter",
+          "Action"
+        ],
+        "features": [
+          "Singleplayer"
+        ],
+        "platforms": [
+          "Windows"
+        ],
+        "coverImage": "https://cdn1.epicgames.com/spt-assets/57528e55b1e94cab9710ae47a919344c/hand-to-hand-wizardry-1eb2e.png",
+        "screenshots": [
+          "https://cdn1.epicgames.com/spt-assets/57528e55b1e94cab9710ae47a919344c/hand-to-hand-wizardry-13wpv.png",
+          "https://cdn1.epicgames.com/spt-assets/57528e55b1e94cab9710ae47a919344c/hand-to-hand-wizardry-lc44o.png",
+          "https://cdn1.epicgames.com/spt-assets/57528e55b1e94cab9710ae47a919344c/hand-to-hand-wizardry-isx7q.png"
+        ],
+        "systemRequirements": {
+          "min": "Windows 10 64-bit; Intel Core i5 3.0 GHz or equivalent; 16 GB RAM; GeForce GTX 1660 Ti or equivalent; DirectX 11; 5 GB free (Epic Games Store).",
+          "recommended": "Windows 11 64-bit; Intel Core i7 3.4 GHz or equivalent; 32 GB RAM; NVIDIA Quadro RTX 5000 or equivalent; DirectX 12; 5 GB free (Epic Games Store)."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "arch": [
+              "x64"
+            ],
+            "cpuText": "Intel Core i5 3.0 GHz or equivalent",
+            "ramMB": 16384,
+            "gpuText": "NVIDIA GeForce GTX 1660 Ti or equivalent",
+            "storageMB": 5120,
+            "apis": [
+              "dx11"
+            ],
+            "notes": "Windows 10 64-bit. These are the publisher's Epic Games Store specifications, not a PlayBound benchmark."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "arch": [
+              "x64"
+            ],
+            "cpuText": "Intel Core i7 3.4 GHz or equivalent",
+            "ramMB": 32768,
+            "gpuText": "NVIDIA Quadro RTX 5000 or equivalent",
+            "storageMB": 5120,
+            "apis": [
+              "dx12"
+            ],
+            "notes": "Windows 11 64-bit. Official Epic Games Store specification."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://store.epicgames.com/p/hand-to-hand-wizardry-33dd53",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.url": "https://store.epicgames.com/p/hand-to-hand-wizardry-33dd53",
+        "launcherInstall.note": "The publisher offers a free Windows build through the Epic Games Store; Epic handles installation and updates. The official itch page also lists HandToHandWizardry.zip (946 MB), but its downloads are rate-limited and no stable direct archive URL is verified. PlayBound executable auto-detection and controller mapping are not verified. Do not claim one-click direct extraction or macOS/Linux support.",
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": false,
+          "standsAlone": true,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "A sharp ten-minute dare that turns a wizard's spellbook into a gruesome set of interchangeable hands.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Zoltan is the kind of wizard who hears that nobody returns from a dungeon and takes it as a challenge to his reputation. He makes the trip stranger by giving up his own hands before going in. Hand-to-Hand Wizardry builds its whole short shooter around what follows: the hands of dead spellcasters become the weapons on his wrists. Every new pair is both a prize and a reminder that the previous owner did not make it out. That is a memorable premise for a student project, and the game actually uses it as a combat system instead of leaving it in a loading-screen paragraph.\n\nThe official Epic listing describes three pairs of hands with different abilities, four acts and four kinds of enemy. This is a compact experience, designed to take about ten minutes, so the pleasure is in learning what the hands do and finding ways to use them before the dungeon is over. It is a first-person shooter with dark fantasy scenery and a deliberately rough, older-game look. The pace is direct: meet a room of creatures, understand the space, choose a spell, and make another bad decision with confidence. Some secrets and artifacts give you reasons to look past the most obvious path. There is an omniscient presence to talk to, though Zoltan's ego suggests he may be the least reliable person in that conversation.\n\nThe six-person student team is named on the official itch page: Gabriel Kwidzinski, Quinn Rogers Van De Keere, Vi Tran, Zander Aguirre, Emma Jones and Evan McCaig, with additional sound and art collaborators credited there. Epic lists Vancouver Film School as developer and publisher and says the work belongs to the students. PlayBound should keep both credits visible rather than presenting the school's publishing label as a lone creator. The project is free on itch and the Epic Games Store. The itch listing has a 946 MB ZIP; Epic provides a managed Windows install. We have not verified a stable direct ZIP URL or PlayBound executable pickup, so the current launcher path opens the official Epic page.\n\nThe publisher lists Windows only. Earlier Draft text implied macOS and Linux downloads, but neither official listing establishes those builds. Epic also lists single-player as its only game mode. No native controller support or PlayBound Controls profile has been verified, so keyboard and mouse are the reliable option. There is no basis to promise a party, virtual LAN mode or dedicated server for this one. The official PC requirements are unusually high for a short game: Windows 10 x64, 16 GB RAM, GTX 1660 Ti class graphics and 5 GB free at minimum; recommended memory rises to 32 GB. Those numbers come from the publisher, not our own benchmark.\n\nHand-to-Hand Wizardry stays Draft while the Windows install, input behavior and supplied media are checked in the launcher. Even if the entire outing lasts only a few minutes, the idea has enough personality to make those minutes count. Zoltan treats dead wizards as an equipment menu, which is a dreadful thing to say about anyone and an excellent way to make a shooter feel distinct.",
+        "whyWePickedIt": "A free, self-contained student shooter with a mechanic you can explain in one sentence and remember afterward: new spells arrive attached to other wizards' hands. Its short runtime is honest, and the current PlayBound install/input path still needs testing.",
+        "thatOneThing": "Zoltan gives up both hands, then upgrades his spell loadout by wearing the hands of wizards who died before him.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Get the free Windows game from the official Epic Games Store listing and install it with the Epic launcher. The VFS itch page also offers HandToHandWizardry.zip (946 MB), but PlayBound has not verified a stable direct archive link."
+          },
+          {
+            "platform": "windows",
+            "text": "Launch the game through Epic. Automatic PlayBound executable detection has not been confirmed; use Locate if you want the launcher to track an existing install."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "windows",
+            "text": "Use keyboard and mouse for the first run. Try each recovered pair of hands to learn how its spells change a fight; controller support has not been verified."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Hand-to-Hand Wizardry free?",
+            "a": "Yes. The official itch page and Epic Games Store both offer the Windows game free of charge."
+          },
+          {
+            "q": "How long is it?",
+            "a": "The publisher describes it as a roughly ten-minute student project with four acts. Secret hunting may take longer."
+          },
+          {
+            "q": "Does it support macOS, Linux or multiplayer?",
+            "a": "The official Epic listing establishes a Windows single-player release only. No macOS/Linux build or multiplayer mode has been verified."
+          },
+          {
+            "q": "Does it work with a controller?",
+            "a": "Neither official listing documents native controller support, and PlayBound has not tested a Controls profile. Use keyboard and mouse for now."
+          }
+        ],
+        "bestFor": [
+          "Players looking for a vivid, short free shooter",
+          "People who appreciate a mechanic carried through an entire small game"
+        ],
+        "notFor": [
+          "Players seeking a long campaign or multiplayer",
+          "Players who require verified controller support"
+        ]
+      }
+    }
+  ]
 }
