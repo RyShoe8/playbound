@@ -1,4 +1,215 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-asherons-call-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "asherons-call",
+      "requireStatus": "draft",
+      "expected": {
+        "tagline": "The legendary 1999 seamless open-world MMORPG, preserved by ACEmulator.",
+        "description": "Asheron's Call is the groundbreaking 1999 3D fantasy MMORPG set on the seamless continent of Dereth. Renowned for its classless skill progression, unique allegiance vassal system, fast-paced spellcasting, and monthly world-changing narrative events.",
+        "license": "Freeware / Community Emulator (ACEmulator GPL-3.0)",
+        "features": [
+          "Multiplayer",
+          "Dedicated Servers",
+          "Mod Support",
+          "Open World",
+          "Roleplay"
+        ],
+        "launcherInstall.kind": "github-zip",
+        "launcherInstall.repo": "ACEmulator/ACE",
+        "launcherInstall.assetPattern": ".*\\.zip$",
+        "launcherInstall.url": null,
+        "launcherInstall.exeHint": "acclient.exe",
+        "launcherInstall.note": "Installs the full Asheron's Call client and ThwargLauncher for connecting to public ACE community servers.",
+        "systemRequirements": {
+          "min": "Windows 7/10/11 · 1 GHz CPU · 512 MB RAM · DirectX 9.0c · 2 GB storage",
+          "recommended": "Modern PC · 2 GB RAM · DirectX 9.0c GPU"
+        },
+        "hardwareRequirements": {
+          "min": {
+            "cpuText": "1 GHz CPU",
+            "gpuText": "DirectX 9.0c compatible",
+            "ramMB": 512,
+            "storageMB": 2048
+          },
+          "recommended": {
+            "cpuText": "Dual-core CPU",
+            "gpuTier": "entry",
+            "gpuText": "DirectX 9.0c compatible",
+            "ramMB": 2048,
+            "storageMB": 4096
+          },
+          "provenance": {
+            "source": "playbound_verified",
+            "sourceUrl": null,
+            "verifiedAt": null,
+            "enteredBy": null
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "Asheron's Call ACE is a labor of love. It doesn't just keep an old MMO playable—it gives a dedicated community the tools to keep rebuilding, maintaining, and expanding a world that officially disappeared years ago. Dereth still feels like a place worth getting lost in.",
+          "lastVerified": "2026-08-15"
+        },
+        "longDescription": "Asheron's Call ACE is an open-source server emulator for Asheron's Call, the influential MMORPG originally released by Turbine and Microsoft in 1999. After the official Asheron's Call servers shut down in 2017, the community refused to let the game disappear. ACE became one of the most important projects keeping the game alive, recreating the server-side technology necessary to run Asheron's Call and allowing independent community servers to host the original experience.\n\nThat distinction is important: ACE isn't simply a remake of Asheron's Call. It is the foundation that allows the community to operate its own versions of the game. Players can connect to independently operated servers, each potentially offering its own rules, population, progression, and community while building upon the same underlying emulator.\n\nAnd there's a lot worth preserving.\n\nAsheron's Call was an unusually ambitious MMORPG for its era. Its world of Dereth is enormous and intentionally designed around exploration. Instead of constantly directing players toward the next quest objective, the game often expects you to investigate, experiment, and find your own way. Ancient ruins, dangerous dungeons, hidden locations, wandering monsters, and obscure pieces of lore give the world a sense of discovery that feels increasingly rare in modern MMOs.\n\nCharacter development is similarly flexible. Rather than locking everyone into rigid traditional classes, Asheron's Call allows players to construct characters around individual skills and specializations. That freedom can produce unconventional builds and encourages experimentation rather than simply following a predetermined progression path.\n\nThe game's original development philosophy also makes it particularly interesting to preserve. Asheron's Call was famous for regularly evolving its world through substantial content updates and narrative events. Its history isn't just contained in a static campaign—it was shaped by years of changes, discoveries, conflicts, and community experiences.\n\nACE effectively gives that history somewhere to live.\n\nToday, community-run ACE servers provide different ways to experience Asheron's Call, from servers focused on recreating the original game to communities that modify or expand its mechanics. The result is something more interesting than a museum piece: a classic MMO that remains playable because its players took responsibility for preserving it.",
+        "whyWePickedIt": "We picked Asheron's Call ACE because it's a perfect example of why PC gaming preservation matters. The original servers are gone, the publisher moved on, and yet players kept the world alive themselves. We love that ACE isn't trying to turn Asheron's Call into something modern—it gives the community the technology to keep this weird, massive, wonderfully old-school MMO alive on its own terms.",
+        "thatOneThing": "Kiting an Olthoi Queen across miles of rolling hills while frantically re-buffing your spell duration timers before your mana runs dry.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Download and install the Asheron's Call community client and ThwargLauncher via PlayBound.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Launch ThwargLauncher, pick your preferred community world (such as Coldeve for retail PvE or Levistras for manual no-bot play), and enter your character credentials.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Optionally install Decal and Virindi Tank from PlayBound's 1-click mod installer for enhanced HUD overlays and navigation waypoints.",
+            "command": null
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Asheron's Call completely free to play?",
+            "a": "Yes! While official retail servers closed in 2017, the game is now 100% free and open-source through community-maintained ACEmulator servers. There are no fees, subscriptions, or cash shops."
+          },
+          {
+            "q": "What is ACEmulator (ACE)?",
+            "a": "ACEmulator is an open-source C# server emulator built from scratch by the community. It accurately reproduces retail movement physics, spell formulas, dungeon encounters, and quest mechanics."
+          },
+          {
+            "q": "What is the difference between Coldeve, Levistras, and Seedsow?",
+            "a": "Coldeve is an End-of-Retail PvE server allowing multi-boxing. Levistras is a strictly manual-play PvE server with a zero-tolerance policy on automated macroing. Seedsow is a classic server recreating the 1999–2005 pre-Throne of Destiny era."
+          },
+          {
+            "q": "What is the Allegiance system in Asheron's Call?",
+            "a": "The Allegiance system is a player-run feudal hierarchy. A vassal swears allegiance to a patron; when the vassal earns experience, a bonus percentage is automatically generated and passed up to the patron, encouraging mentorship and guild loyalty."
+          },
+          {
+            "q": "How does magic work in Asheron's Call?",
+            "a": "Magic is divided into War, Life, Creature, and Item Magic. Spells require specific herb and mineral reagents (like Brimstone and Mandrake) and scarabs. Spells can be cast as projectiles, self-buffs, or fellowship enchantments."
+          },
+          {
+            "q": "Can I play Asheron's Call on modern Windows and widescreen monitors?",
+            "a": "Yes! Using ThwargLauncher and modern D3D wrappers, the game runs smoothly in 1080p, 1440p, and 4K resolutions on Windows 10/11."
+          }
+        ],
+        "bestFor": [
+          "Fans of classic golden-age MMORPGs like EverQuest, Ultima Online, and Dark Age of Camelot",
+          "Players who value classless, sandbox character building with deep spellcrafting",
+          "Gamers who appreciate immense seamless open-world exploration with zero invisible walls",
+          "Those who love player-driven politics, vassal hierarchies, and fellowship hunting"
+        ],
+        "notFor": [
+          "Players seeking modern theme-park MMORPGs with quest markers and automated dungeon finders",
+          "Gamers who dislike complex spell component reagent management"
+        ]
+      },
+      "set": {
+        "tagline": "Dereth is still open; its citizens now keep the lights on themselves.",
+        "description": "Turbine's 1999 classless MMORPG survives on independent community worlds powered by the ACEmulator server. The original Windows client, end-of-retail files and a server launcher are separate downloads; ACE's GitHub ZIP is not the game client.",
+        "license": "Proprietary original game client; ACEmulator server is AGPL-3.0",
+        "features": [
+          "Multiplayer",
+          "Open World",
+          "Mod Support"
+        ],
+        "launcherInstall.kind": "external",
+        "launcherInstall.repo": "",
+        "launcherInstall.assetPattern": "",
+        "launcherInstall.url": "https://emulator.ac/how-to-play/",
+        "launcherInstall.exeHint": "",
+        "launcherInstall.note": "The ACE GitHub release is server software, not the Asheron's Call client. Follow ACEmulator's client guide: install the original Windows client from a source linked there, add end-of-retail client files, then optionally use ThwargLauncher to choose a community world. PlayBound has not verified a legal or technical one-click bundle and must not download ACE.Server as the game.",
+        "systemRequirements": {
+          "min": "Windows original client. The official community installation guide does not publish a current verified numerical CPU, RAM, GPU or disk minimum for the complete client plus end-of-retail update.",
+          "recommended": "No verified recommended hardware tier is published by ACEmulator. A stable connection to your chosen community world is required."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "notes": "The community guide uses the original Windows client and an end-of-retail file update. Numerical hardware requirements for this exact setup are not verified."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "notes": "No verified recommended tier is published for the combined client and community-world setup."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://emulator.ac/how-to-play/",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": false,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "An enormous old MMO with almost no handrails, where a community server can feel more like a hometown than a lobby.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Asheron's Call does not ease you in with a glowing trail to the next objective. It leaves you on Dereth, a broad fantasy continent full of places that ask you to remember directions, compare notes and occasionally admit that the dungeon you found was a terrible idea. Its classless skills let characters grow into unusual combinations. Its allegiance system gives veterans a reason to guide new players. The result feels less like finishing a checklist than becoming known to people who live in the same world.\n\nTurbine launched the original game in 1999 and shut down its official servers in 2017. The client remains proprietary; the game did not become open source when the service ended. ACEmulator, usually called ACE, is a separate, community-built server implementation in C#. It lets independent operators run worlds that the original client can reach. Some pursue an end-of-retail experience, while others choose different rules or eras. Your character and possessions live on the world you choose, so choosing a server is a more consequential decision than picking a matchmaking region.\n\nGetting in takes several distinct pieces. ACEmulator's own guide tells players to install the original Windows client, add its end-of-retail client files, and optionally use ThwargLauncher to browse servers and log in. The ZIP files published in the ACE GitHub releases are for the server, not a playable client. PlayBound previously pointed its install recipe at one of those server ZIPs and said it installed the full game; that was wrong. This Draft listing now opens the community's setup guide until an authorized, tested client workflow exists. PlayBound does not bundle the original game files or promise one-click installation here.\n\nThe payoff is a world where exploration and social memory matter. A quest rumor can send you across a landscape with few modern conveniences. A patron may teach you how to survive a dungeon, then become part of your ongoing story. The combat, menus and graphics show their age, but the space between instructions is part of the appeal. Few current MMOs trust players this much to make their own plans.\n\nACE is real server technology, but it does not mean PlayBound has a ready VPS recipe for an Asheron's Call world. Hosting requires the emulator, data, a database and operations that have not been verified in PlayBound's game-host agent. Players can join established community worlds through their own server browser; an automatic PlayBound party connection is also untested. Physical controller support has no verified PlayBound profile. We keep this in Draft because preserving a classic accurately includes being honest about the work needed to get into it.",
+        "whyWePickedIt": "Dereth's skill freedom, player allegiances and community-run worlds preserve a kind of MMO that modern quest rails rarely reproduce. The client setup is multi-step, so this entry stays in Draft until PlayBound can verify a clean installation and joining path.",
+        "thatOneThing": "Swear allegiance to someone who knows the way through a dungeon; years later, you might be the one giving directions.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Open ACEmulator's How to Play guide. Download and install the original Asheron's Call client from a source linked by that guide. PlayBound does not supply the client files."
+          },
+          {
+            "platform": "windows",
+            "text": "Apply the end-of-retail client files described in the same guide. They replace four files in the game's installation folder."
+          },
+          {
+            "platform": "windows",
+            "text": "Install ThwargLauncher if you want its public server browser. Select a community world, enter that world's account credentials and launch. Optional Decal plugins are separate steps."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Does PlayBound install Asheron's Call in one click?",
+            "a": "No. ACEmulator's GitHub release is a server, not the client. Follow its client installation guide for the original client, end-of-retail files and optional ThwargLauncher."
+          },
+          {
+            "q": "Did the original game become open source?",
+            "a": "No. The original client remains proprietary. ACEmulator is an independent open-source server implementation licensed AGPL-3.0."
+          },
+          {
+            "q": "Can PlayBound host an ACE server?",
+            "a": "ACE can host community worlds, but PlayBound has not verified a game-host recipe, database provisioning or operations for it. Existing community worlds are the supported route for now."
+          },
+          {
+            "q": "Can I play with friends?",
+            "a": "Yes, by joining the same community world under its rules. Automatic PlayBound party joining is not yet verified."
+          },
+          {
+            "q": "Does a controller work?",
+            "a": "No native controller layout or tested PlayBound Controls profile is documented for this listing."
+          }
+        ],
+        "bestFor": [
+          "Friends who enjoy exploring a persistent world together",
+          "MMO players who want flexible skills and community-run worlds"
+        ],
+        "notFor": [
+          "Players who require one-click installation",
+          "Players seeking a verified PlayBound-hosted private world or gamepad profile"
+        ]
+      }
+    }
+  ]
 }
