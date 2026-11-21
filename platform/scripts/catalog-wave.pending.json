@@ -106,7 +106,7 @@
             "notes": "GOG publishes no separate recommended hardware requirements for this release."
           },
           "provenance": {
-            "source": "publisher",
+            "source": "developer",
             "sourceUrl": "https://www.gog.com/en/game/caesar_3",
             "verifiedAt": "2026-11-20"
           }
