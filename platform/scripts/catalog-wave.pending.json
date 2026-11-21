@@ -1,4 +1,222 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-theotown-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "theotown",
+      "expected": {
+        "tagline": "TheoTown is a city building game for multiple platforms.",
+        "description": "TheoTown is a city building game for multiple platforms.",
+        "developerSlug": "indie-web",
+        "developerName": "Indie Web",
+        "releaseYear": 2026,
+        "genres": [
+          "Arcade"
+        ],
+        "license": "Free to play",
+        "steamAppId": null,
+        "access.purchaseRequired": false,
+        "features": [],
+        "hasControllerSupport": null,
+        "coverImage": "https://hi.theotown.com/pluginstore.png",
+        "screenshots": [
+          "https://hi.theotown.com/pluginstore.png",
+          "https://hi.theotown.com/images/playstore.png",
+          "https://hi.theotown.com/images/appstore.png"
+        ],
+        "systemRequirements": {
+          "min": "Modern web browser",
+          "recommended": "Modern web browser"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.url": "https://hi.theotown.com/",
+        "launcherInstall.steamAppId": null,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-09-21"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "TheoTown runs directly in your web browser — there is nothing to download or install. Open the official site at https://hi.theotown.com/ and it starts immediately.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is TheoTown free?",
+            "a": "Yes. TheoTown is released under Free to play and costs nothing to download or play."
+          },
+          {
+            "q": "How big is the TheoTown download?",
+            "a": "About small. The minimum system requirements are Modern web browser."
+          },
+          {
+            "q": "What platforms does TheoTown run on?",
+            "a": "Web."
+          },
+          {
+            "q": "Do I need an account to play TheoTown?",
+            "a": "No account is required to download or play."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "A tiny town can become a sprawling region, one road and railway at a time.",
+        "description": "TheoTown is Lobby's detailed pixel-art city builder. Zone neighborhoods, manage services and transport, share online regions, and expand the desktop game with community plugins. Its Windows, Mac and Linux Steam edition is a paid premium release.",
+        "developerSlug": "lobby",
+        "developerName": "Lobby",
+        "releaseYear": 2019,
+        "genres": [
+          "Simulation",
+          "Strategy"
+        ],
+        "license": "Commercial Steam desktop edition; separate mobile editions have different terms",
+        "steamAppId": "1084020",
+        "access.purchaseRequired": true,
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Mod Support"
+        ],
+        "hasControllerSupport": false,
+        "coverImage": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1084020/498b6c8a80fc83db395b2cdfdff22f946680c726/header.jpg?t=1790151438",
+        "screenshots": [
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1084020/ss_dcd088e25a0339ebcf2f1e2d6c403a1cc1fc396b.1920x1080.jpg?t=1790151438",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1084020/b8a94e3ea6eed268de5955ccc4c2f7f937d23c2c/ss_b8a94e3ea6eed268de5955ccc4c2f7f937d23c2c.1920x1080.jpg?t=1790151438",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1084020/ss_7be2b3d32051897a09a86dfdcae4acafb5eb060d.1920x1080.jpg?t=1790151438",
+          "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1084020/ss_7e241db83e4b91e1088ae075c937b862f8c24103.1920x1080.jpg?t=1790151438"
+        ],
+        "systemRequirements": {
+          "min": "Windows 10 with Steam · Intel Pentium · 1 GB RAM · Intel integrated graphics · 200 MB storage; Mac 10.10+ or Linux desktop also supported",
+          "recommended": "Windows 10 · Core i5 · 2 GB RAM · dedicated graphics · 500 MB storage; Mac 10.14+ and Linux recommendations vary by platform"
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "cpuTier": "entry",
+            "cpuText": "Intel Pentium on Windows/Linux; Apple M1 or Intel Core M on Mac",
+            "gpuTier": "entry",
+            "gpuText": "Intel integrated graphics on Windows",
+            "ramMB": 1024,
+            "storageMB": 200,
+            "notes": "The Steam client requires Windows 10 or newer even though the game's own minimum names Windows 7. Mac minimum is 10.10 Yosemite."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "cpuTier": "mid",
+            "cpuText": "Intel Core i5 on Windows/Linux",
+            "gpuTier": "mid",
+            "gpuText": "Dedicated graphics on Windows",
+            "ramMB": 2048,
+            "storageMB": 500,
+            "notes": "Mac recommended OS is 10.14 Mojave; Apple Silicon is supported."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://store.steampowered.com/app/1084020/TheoTown/",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.url": "https://store.steampowered.com/app/1084020/TheoTown/",
+        "launcherInstall.steamAppId": "1084020",
+        "launcherInstall.note": "The Windows, macOS and Linux desktop edition is purchased on Steam, then installed through Steam. PlayBound does not distribute it or provide a direct one-click archive; locate the Steam installation after purchase.",
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": false,
+          "verdict": "The little pixel roads carry surprisingly big planning mistakes, and fixing them is half the fun.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "TheoTown starts with a patch of land and a handful of familiar city-builder tools: zone homes and businesses, connect roads, bring in power and water, then watch the first buildings appear. The small pixels make the opening look gentle. The simulation under them has other ideas. Traffic, pollution, disasters and public services all have room to make a promising district miserable if you expand before understanding what it needs.\n\nTransport is where the map starts to feel like a place. Roads get crowded, so you introduce buses, rail, airports and highways, then discover that a new connection changes the surrounding neighborhoods. The pleasure is in seeing your infrastructure answer a visible problem. A working rail corridor can make a city feel newly possible; an airport can be an expensive monument to poor planning. The game gives you room to arrange the pieces at your own pace, and its region tools let a city grow beyond one neat rectangle.\n\nLobby also made TheoTown unusually open to additions. Community plugins add buildings, decorations and mechanics, so a city does not have to end at the stock catalog. The official Steam release supports online regions and cross-platform multiplayer, which is closer to sharing a developing region than to controlling the same mouse cursor in real time. That distinction matters. You can play alone for long stretches, then visit or work within an online region. The developer's service runs that mode; there is no verified PlayBound-hosted dedicated-server package or automatic party connection for this Draft entry.\n\nThe desktop edition needs another clear distinction. On Windows, macOS and Linux, the Steam version is a paid premium game with no ads or in-app purchases. Mobile editions have different terms. The old PlayBound page called the PC version free, gave it web-browser install steps and showed app-store buttons as screenshots. Those details belonged to a different distribution story. Here the install route is to buy or open TheoTown in Steam and install the desktop game there. Steam's hardware page lists a modest 1 GB RAM and 200 MB minimum, but the Steam client itself now requires Windows 10 or later.\n\nWe like TheoTown because it lets a small settlement become a complicated place without losing sight of the roads between its buildings. Its clean pixel view makes a clogged junction obvious. The plugins and online regions give committed builders ways to keep playing after the first good skyline, while the solo city remains a complete game on its own. Controller support is not advertised for the desktop release, and PlayBound has not tested a Controls profile, so this listing stays with mouse and keyboard.",
+        "whyWePickedIt": "TheoTown's tiny buildings hide a capable transport and service simulation. The region tools and community plugins give players more reasons to return to a city after it looks finished. We want the desktop edition represented accurately as a paid, cross-platform Steam game with its own online regions.",
+        "thatOneThing": "You can spend an evening untangling one railway junction and call it a successful night of urban planning.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Purchase or open the TheoTown desktop edition in Steam, install it through Steam, and launch it once. Steam currently requires Windows 10 or newer."
+          },
+          {
+            "platform": "macos",
+            "text": "Purchase or open TheoTown in Steam for Mac and install it through Steam. The store lists macOS 10.10 as its game minimum and Apple Silicon support."
+          },
+          {
+            "platform": "linux",
+            "text": "Purchase or open TheoTown in Steam for Linux and install it through Steam. The store lists a 1 GB RAM and 200 MB game minimum."
+          },
+          {
+            "platform": "all",
+            "text": "This desktop release is not a browser game or a free direct download. PlayBound can locate an installed copy; the game's online regions use TheoTown's own service."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Begin with a small district and connect housing, work, roads, power and water before expanding transport. Try a local city before joining an online region."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "Open Online Mode in TheoTown and use the game's own region browser to enter a shared region. The developer runs this service; PlayBound has not verified an automated party handoff or self-hosted server recipe."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is the PC version free?",
+            "a": "No. The Windows, Mac and Linux Steam edition is a paid premium purchase. Mobile versions have different terms; no PC price is set by this audit."
+          },
+          {
+            "q": "Can I play with friends?",
+            "a": "Steam lists multiplayer and cross-platform multiplayer. TheoTown's Online Mode shares regions through the developer's service; no PlayBound-hosted dedicated server or automatic party handoff is verified."
+          },
+          {
+            "q": "Can I install it through a browser?",
+            "a": "No. The desktop version is installed through Steam on Windows, macOS or Linux."
+          },
+          {
+            "q": "Is a controller supported?",
+            "a": "The Steam listing does not advertise controller support and PlayBound has not tested a Controls profile. Use mouse and keyboard for the desktop edition."
+          },
+          {
+            "q": "Can I add buildings?",
+            "a": "Yes. TheoTown has an official plugin ecosystem for buildings, decorations and other additions."
+          }
+        ],
+        "bestFor": [
+          "City-builder players who enjoy tracing transport problems through a growing region",
+          "Builders who like extending a game with community-made content"
+        ],
+        "notFor": [
+          "Players expecting a free PC download or an in-browser game",
+          "Players who need a verified controller layout or a PlayBound-hosted dedicated server"
+        ]
+      }
+    }
+  ]
 }
