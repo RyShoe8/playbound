@@ -1,4 +1,205 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-hardware-schema-correction-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "battle-drones",
+      "requireStatus": "draft",
+      "expected": {
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "web"
+            ],
+            "notes": "Runs in a modern browser with working graphics and network access. The developer publishes no numeric CPU, GPU or RAM minimum. Online matches require connectivity; the host browser must remain active."
+          },
+          "recommended": {
+            "os": [
+              "web"
+            ],
+            "notes": "No separate recommended hardware tier has been published."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/simonw/battledrones",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      },
+      "set": {
+        "hardwareRequirements": {
+          "min": {
+            "notes": "Runs in a modern browser with working graphics and network access. The developer publishes no numeric CPU, GPU or RAM minimum. Online matches require connectivity; the host browser must remain active."
+          },
+          "recommended": {
+            "notes": "No separate recommended hardware tier has been published."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/simonw/battledrones",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      }
+    },
+    {
+      "kind": "game",
+      "key": "frontline-zero",
+      "requireStatus": "draft",
+      "expected": {
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux",
+              "android",
+              "ios"
+            ],
+            "notes": "Free browser game requiring JavaScript. Numerical CPU, RAM, GPU and storage minimums are not published by 556 Games."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux",
+              "android",
+              "ios"
+            ],
+            "notes": "No recommended numerical tier is published. Use a current browser and a stable connection for online matches."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.frontlinezero.com/about.html",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      },
+      "set": {
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "Free browser game requiring JavaScript. Numerical CPU, RAM, GPU and storage minimums are not published by 556 Games."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "No recommended numerical tier is published. Use a current browser and a stable connection for online matches."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.frontlinezero.com/about.html",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      }
+    },
+    {
+      "kind": "game",
+      "key": "property-rush",
+      "requireStatus": "draft",
+      "expected": {
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux",
+              "android",
+              "ios"
+            ],
+            "notes": "Browser-based board game with no local installer. The developer provides no numerical CPU, RAM, GPU or storage requirement."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux",
+              "android",
+              "ios"
+            ],
+            "notes": "No recommended hardware tier is published; a stable internet connection matters for online tables."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://playboardit.com/play/highroad",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      },
+      "set": {
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "Browser-based board game with no local installer. The developer provides no numerical CPU, RAM, GPU or storage requirement."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "No recommended hardware tier is published; a stable internet connection matters for online tables."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://playboardit.com/play/highroad",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      }
+    },
+    {
+      "kind": "game",
+      "key": "zeldamon",
+      "requireStatus": "draft",
+      "expected": {
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "web"
+            ],
+            "notes": "Modern JavaScript-enabled browser with keyboard or touch input. The project publishes no numerical CPU, GPU, RAM or storage minimum. Co-op needs a network connection; the save is local to the browser."
+          },
+          "recommended": {
+            "os": [
+              "web"
+            ],
+            "notes": "No developer-published recommended hardware tier. A physical gamepad mode has not been verified."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://zeldamon.pages.dev/",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      },
+      "set": {
+        "hardwareRequirements": {
+          "min": {
+            "notes": "Modern JavaScript-enabled browser with keyboard or touch input. The project publishes no numerical CPU, GPU, RAM or storage minimum. Co-op needs a network connection; the save is local to the browser."
+          },
+          "recommended": {
+            "notes": "No developer-published recommended hardware tier. A physical gamepad mode has not been verified."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://zeldamon.pages.dev/",
+            "verifiedAt": "2026-11-20"
+          }
+        }
+      }
+    }
+  ]
 }
