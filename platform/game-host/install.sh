@@ -225,7 +225,7 @@ cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/agentRoutes.js" "$AGENT_SRC/masterHedgew
   "$AGENT_SRC/hxArchive.py" \
   "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" "$AGENT_SRC/spawnTests.js" \
   "$AGENT_SRC/gameVersions.js" "$AGENT_SRC/rcon.js" "$AGENT_SRC/roomRestart.js" \
-  "$AGENT_SRC/startLock.js" "$AGENT_SRC/downloadStream.js" \
+  "$AGENT_SRC/startLock.js" "$AGENT_SRC/downloadStream.js" "$AGENT_SRC/s3ArchiveTransfer.js" \
   "$AGENT_SRC/managedRegistry.js" "$AGENT_SRC/managedLogs.js" "$AGENT_SRC/customerIsolation.js" "$AGENT_SRC/customerIdentityProfiles.js" "$AGENT_SRC/runtimeLaunchMode.js" "$AGENT_SRC/customerMigration.js" "$AGENT_SRC/customerRuntime.js" "$AGENT_SRC/customerResourceLimits.js" "$AGENT_SRC/portReadiness.js" "$AGENT_SRC/processMetrics.js" "$AGENT_SRC/a2sQuery.js" "$AGENT_SRC/playerQueries.js" \
   "$AGENT_SRC/communityHostingTick.js" "$AGENT_SRC/rvglDisplay.js" \
   "$AGENT_SRC/dedicatedDataBackups.js" "$AGENT_SRC/worldBackupRunner.js" "$AGENT_SRC/dedicatedDataBackupsWorker.js" "$AGENT_SRC/dedicatedFiles.js" \
