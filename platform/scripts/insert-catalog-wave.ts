@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 type Kind = "game" | "edition" | "mod";
 type Fields = Record<string, unknown>;
-type Operation = { kind: Kind; key: string; expected: Fields; set: Fields };
+type Operation = { kind: Kind; key: string; expected: Fields; set: Fields; requireStatus?: "draft" };
 type Wave = { id: string | null; operations: Operation[] };
 
 const PENDING_PATH = resolve(process.cwd(), "scripts/catalog-wave.pending.json");
@@ -75,11 +75,12 @@ export function parseWave(raw: unknown): Wave {
   if (raw.operations.length > 50) throw new Error("Catalog wave is limited to 50 named records");
   const seen = new Set<string>();
   for (const op of raw.operations) {
-    if (!isRecord(op) || Object.keys(op).sort().join(",") !== "expected,key,kind,set" ||
+    if (!isRecord(op) || !["expected,key,kind,set", "expected,key,kind,requireStatus,set"].includes(Object.keys(op).sort().join(",")) ||
       !["game", "edition", "mod"].includes(String(op.kind)) ||
       typeof op.key !== "string" ||
       !(op.kind === "edition" ? /^[a-z0-9-]+\/[a-z0-9-]+$/.test(op.key) : /^[a-z0-9-]+$/.test(op.key)) ||
-      !isRecord(op.expected) || !isRecord(op.set)) {
+      !isRecord(op.expected) || !isRecord(op.set) ||
+      ("requireStatus" in op && (op.kind !== "game" || op.requireStatus !== "draft"))) {
       throw new Error("Each operation must name one game, edition, or mod with expected and set objects");
     }
     const identity = `${op.kind}:${op.key}`;
@@ -110,6 +111,12 @@ export function parseWave(raw: unknown): Wave {
   return raw as Wave;
 }
 
+export function filterFor(op: Operation) {
+  return op.kind === "edition"
+    ? { gameSlug: op.key.split("/")[0], slug: op.key.split("/")[1] }
+    : { slug: op.key, ...(op.requireStatus ? { status: op.requireStatus } : {}) };
+}
+
 async function main() {
   const command = process.argv[2];
   if ((command !== "--check" && command !== "--apply") || process.argv.length !== 3) {
@@ -134,9 +141,6 @@ async function main() {
   try {
   await dbConnect();
 
-  const filterFor = (op: Operation) => op.kind === "edition"
-    ? { gameSlug: op.key.split("/")[0], slug: op.key.split("/")[1] }
-    : { slug: op.key };
   const read = async (op: Operation): Promise<Record<string, unknown> | null> => {
     const filter = filterFor(op);
     if (op.kind === "game") return await CatalogGame.findOne(filter).lean() as Record<string, unknown> | null;
