@@ -1,4 +1,195 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-the-legend-of-zelda-mystery-of-solarus-dx-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "the-legend-of-zelda-mystery-of-solarus-dx",
+      "expected": {
+        "tagline": "The sequel to A Link to the Past, and the first game made with Solarus.",
+        "description": "The sequel to A Link to the Past, and the first game made with Solarus.",
+        "releaseYear": 2026,
+        "sizeMB": 25,
+        "hasControllerSupport": null,
+        "maxPlayers": null,
+        "features": [],
+        "systemRequirements": {
+          "min": "Not yet verified",
+          "recommended": "Not yet verified"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.enabled": true,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-20"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus directly from the official site at https://www.solarus-games.org/games/the-legend-of-zelda-mystery-of-solarus-dx/. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "faq": [
+          {
+            "q": "Is The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus free?",
+            "a": "No. The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus is a paid release (Free to play)."
+          },
+          {
+            "q": "How big is the The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus run on?",
+            "a": "Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play The Legend of Zelda: Mystery of Solarus DX&nbsp;—&nbsp;Solarus?",
+            "a": "No account is required to download or play."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "The fan-made Zelda sequel that eventually grew an entire game engine around it.",
+        "description": "Mystery of Solarus DX is a complete single-player Zelda fan quest set after A Link to the Past. Explore new dungeons, fight bosses and solve item-driven puzzles in the adventure that helped create the Solarus engine.",
+        "releaseYear": 2011,
+        "sizeMB": 20,
+        "hasControllerSupport": true,
+        "maxPlayers": 1,
+        "features": [
+          "Controller Support",
+          "Singleplayer"
+        ],
+        "systemRequirements": {
+          "min": "A Windows, macOS or Linux Solarus player compatible with 1.6.x quests, plus room for the 20 MB quest download. Solarus does not publish per-OS CPU, RAM or GPU minimums on this game's page.",
+          "recommended": "No separate recommended CPU, RAM, graphics or storage tier is published. Confirm 1.6.x quest compatibility in the chosen Solarus player."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "storageMB": 20,
+            "notes": "20 MB covers the quest file only; a compatible Solarus player needs additional disk space. The developer gives no numerical CPU, RAM or graphics minimum for this game."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "No separate recommended hardware tier is published for this quest."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.solarus-games.org/games/the-legend-of-zelda-mystery-of-solarus-dx/",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.enabled": false,
+        "launcherInstall.note": "The official download is a 20 MB .solarus quest, not a standalone game executable. A compatible Solarus player is required. PlayBound has not yet verified a bundled one-click package for all three desktop platforms.",
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "An earnest, dungeon-rich Zelda fan sequel whose best trick was becoming the reason Solarus exists.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Mystery of Solarus DX has a peculiar place in fan-game history: Solarus was originally built to make this game. The project began as a remake of a French RPG Maker 2000 adventure from 2002, then grew into a fuller Zelda-style quest with its own battle systems, items, bosses, art and music. The DX version reached players in 2011. Calling it a 2026 release, as the old Draft did, erases the long path that made it interesting.\n\nThe story picks up after A Link to the Past. Ganon's imprisonment was meant to hold, but the death of Hyrule's king weakens the seal. Zelda hides the Triforce in eight fragments, and Link is left to work through the danger that follows. The setup is comfortably familiar; the appeal is what the team built around it. Dungeons contain the kind of item-led puzzles that ask you to remember a room, revisit a blocked path and recognize when a new tool changes the answer. Bosses and combat were specifically reworked from the earlier version, so this is more than a translation of an old RPG Maker map.\n\nThe game is a single-player quest. Solarus's own release notes document joypad controls and later fixes for joypad movement and menu input, so controller support has a source behind it. There is no evidence for a native online mode, local co-op, virtual-LAN party mode or dedicated server. A PlayBound party button would not create one. If you prefer keyboard control, Solarus supports that as well.\n\nThe current official download is v1.12.3, a 20 MB .solarus file targeting Solarus 1.6.x. That file is the quest, not a complete executable. Solarus provides Windows, macOS and Linux player packages, but PlayBound still needs to package and test a compatible player together with this older quest before promising one-click installs. The developer's game page gives no detailed CPU, memory or graphics requirements, so the hardware section reports what is known: the quest download size and the need for a compatible player. It does not fabricate a modern PC specification from the art style.\n\nThis is the longer, more involved Solarus Zelda option for someone who likes a fan quest to send them back into its dungeons. It is free to download, though Solarus's license description correctly distinguishes the open-source code and art licenses from proprietary Zelda material used under fair use. Our reason to keep it in the Draft catalog is the adventure and the project history; our remaining work is the install package and a real play test on the supported desktops.",
+        "whyWePickedIt": "Mystery of Solarus DX is a complete fan adventure with a real place in the history of its engine. The revised bosses, items and dungeons give it more to offer than nostalgia alone. Its official quest file is free, and verified joypad support makes it accessible once the compatible player is in place.",
+        "thatOneThing": "This Zelda fan game needed an engine so badly that its creators built Solarus around it.",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Download Mystery of Solarus DX v1.12.3 from its official Solarus page. The 20 MB .solarus download is a quest file and must be opened with a Solarus player that supports the game's 1.6.x format."
+          },
+          {
+            "platform": "windows",
+            "text": "Download the official Windows Solarus player ZIP, extract the portable app, and load the quest. Check compatibility with 1.6.x quests before using a newer 2.x player."
+          },
+          {
+            "platform": "macos",
+            "text": "Install the official macOS Solarus player from its DMG and open the quest in a compatible player. The quest file itself is not an app."
+          },
+          {
+            "platform": "linux",
+            "text": "Download the official Linux Solarus player AppImage, make it executable, and open the quest in a compatible player. The quest file itself is not an AppImage."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Set keyboard or joypad bindings in the player, choose a save slot, and pay attention to item clues in the first dungeon."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Mystery of Solarus DX free?",
+            "a": "Yes. Solarus offers the quest download free and describes its code and resource licenses alongside proprietary fan-game material used under fair use."
+          },
+          {
+            "q": "Does it run without Solarus?",
+            "a": "No. The official v1.12.3 download is a .solarus quest requiring a player compatible with 1.6.x quests."
+          },
+          {
+            "q": "Does it support a gamepad?",
+            "a": "Yes. Solarus's own release notes document joypad controls and fixes for joypad input in this game."
+          },
+          {
+            "q": "Can I play with friends?",
+            "a": "This is a single-player adventure; there is no verified multiplayer or dedicated-server mode."
+          },
+          {
+            "q": "When was it released?",
+            "a": "Solarus lists December 16, 2011 for the DX release. Its earlier RPG Maker predecessor was released in 2002."
+          }
+        ],
+        "bestFor": [
+          "Players who want a substantial classic Zelda-style fan quest",
+          "People curious about the game that led to the Solarus engine"
+        ],
+        "notFor": [
+          "Players seeking multiplayer Zelda",
+          "Players who need a verified one-click PlayBound package today"
+        ]
+      }
+    }
+  ]
 }
