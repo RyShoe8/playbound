@@ -1,4 +1,198 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-disciples-2-gold-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "disciples-2-gold",
+      "expected": {
+        "tagline": "A decade after the First Great War, the final prophecy continues to unfold. Deep within t",
+        "description": "A decade after the First Great War, the final prophecy continues to unfold. Deep within t",
+        "developerName": "GOG.com",
+        "developerSlug": "gog-com",
+        "releaseYear": 2026,
+        "genres": [],
+        "features": [],
+        "hasControllerSupport": null,
+        "maxPlayers": null,
+        "systemRequirements": {
+          "min": "See the GOG store page",
+          "recommended": "See the GOG store page"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.note": null,
+        "qualityBar": null,
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download Disciples 2 Gold 80% off | GOG.COM directly from the official site at https://www.gog.com/en/game/disciples_2_gold. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Disciples 2 Gold 80% off | GOG.COM needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is Disciples 2 Gold 80% off | GOG.COM free?",
+            "a": "Disciples 2 Gold 80% off | GOG.COM is a commercial title (Commercial · DRM-free purchase), not a free one."
+          },
+          {
+            "q": "How big is the Disciples 2 Gold 80% off | GOG.COM download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does Disciples 2 Gold 80% off | GOG.COM run on?",
+            "a": "Available for Windows."
+          },
+          {
+            "q": "Do I need an account to play Disciples 2 Gold 80% off | GOG.COM?",
+            "a": "There's no account requirement to play — download and go."
+          },
+          {
+            "q": "Does Disciples 2 Gold 80% off | GOG.COM have multiplayer?",
+            "a": "No. Disciples 2 Gold 80% off | GOG.COM is a single-player game, so there is no multiplayer mode to join or host."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "Four dark fantasy factions, heroes who level up, and armies built one unit at a time.",
+        "description": "Disciples II Gold gathers the base game and its expansions into a Windows turn-based strategy package. Lead a hero across the Sacred Lands, upgrade individual units and play the campaigns or classic multiplayer modes.",
+        "developerName": "Strategy First",
+        "developerSlug": "strategy-first",
+        "releaseYear": 2005,
+        "genres": [
+          "Strategy",
+          "RPG"
+        ],
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Hotseat",
+          "LAN Support",
+          "Story Campaign"
+        ],
+        "hasControllerSupport": false,
+        "maxPlayers": 4,
+        "systemRequirements": {
+          "min": "Windows 10 · 1.8 GHz CPU · 2 GB RAM · DirectX 9.0c-compatible 3D graphics. GOG does not list a numerical storage minimum on this page.",
+          "recommended": "GOG does not publish a separate recommended hardware tier for its current Windows build."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "cpuTier": "entry",
+            "cpuText": "1.8 GHz processor",
+            "gpuTier": "entry",
+            "gpuText": "DirectX 9.0c-compatible 3D graphics",
+            "ramMB": 2048,
+            "apis": [
+              "dx9"
+            ],
+            "notes": "GOG's current minimum does not specify a storage figure or VRAM."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "notes": "No separate recommended hardware figures are published by GOG."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.gog.com/en/game/disciples_2_gold",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.note": "Paid DRM-free GOG copy. Buy it, download the Windows offline installer and use PlayBound Locate after installation. Galaxy is optional. Native hotseat and TCP/IP/LAN multiplayer are documented, but PlayBound automatic party joining has not been verified.",
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": true,
+          "activelyMaintained": false,
+          "standsAlone": true,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "A grim strategy game where keeping one battered unit alive can matter more than recruiting a whole new army.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Disciples II Gold puts you in charge of a small army in a world that looks as if every kingdom has been cursed separately. The Empire, Mountain Clans, Legions of the Damned and Undead Hordes each have campaigns and distinct rosters. A hero leads the group across a map, claims territory, gathers treasure and chooses battles that will shape what the surviving units become. The atmosphere is rich in dark fantasy detail, but the important decisions are wonderfully practical: which fight is worth the injuries, and which upgrade path will leave a squad ready for the next one?\n\nUnlike a strategy game where soldiers are disposable numbers, individual Disciples units gain experience and change into stronger forms. The buildings in your capital determine possible upgrades, so a choice made away from the battlefield can decide whether a wounded survivor becomes the specialist you need. That gives even a modest encounter a little tension. A hero can be carried between scenarios, making campaigns feel like a long trip rather than unrelated maps. Gold bundles the base game and expansion material, including Rise of the Elves, into one purchase.\n\nThe official GOG page lists the Gold edition as a 2005 Windows release and marks both single-player and multiplayer. The original Disciples II manual documents hotseat for two to four players and TCP/IP play over LAN or the internet. Those modes matter, but they do not automatically establish a working PlayBound virtual-LAN route. We have not verified this particular GOG build end to end with the PlayBound party network, so its page explains the native modes without promising one-click joining or a dedicated server. The old Draft FAQ called it single-player only; that was wrong. A mouse and keyboard remain the documented control route, with no verified native controller mode or PlayBound Controls profile.\n\nGOG provides a DRM-free offline installer, so Galaxy is optional. Its current stated minimum is Windows 10, a 1.8 GHz CPU, 2 GB of RAM and a DirectX 9.0c-compatible 3D card. GOG does not provide a recommended tier or a precise disk figure in the same listing, so the hardware section leaves those fields unfilled. We also avoid treating a temporary store discount as part of the game's name, as the old auto-generated FAQ did.\n\nThe appeal is the way its battles remember your choices. You may win a fight, then spend the next turn mourning the unit that was one experience point from its next form. Disciples II Gold has plenty of old PC strategy roughness, but its faction art, linked campaigns and unit progression give patient players a reason to see one more scenario through.",
+        "whyWePickedIt": "Few fantasy strategy games make a single unit upgrade feel so consequential. Gold brings the campaigns and expansions together in a DRM-free package, and the native hotseat and network modes give friends several ways to compete once we verify a PlayBound party path.",
+        "thatOneThing": "A soldier survives a battle with one hit point, earns a promotion, and suddenly the entire war plan depends on keeping him alive.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Buy Disciples II Gold on GOG and download the Windows offline installer from your library. GOG Galaxy is optional."
+          },
+          {
+            "platform": "windows",
+            "text": "Run the GOG installer, then use PlayBound Locate to select the installed game folder. PlayBound does not redistribute the commercial files."
+          },
+          {
+            "platform": "windows",
+            "text": "Launch the game and choose a campaign, skirmish or multiplayer option. Check display and input settings on your PC before a long session."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "windows",
+            "text": "Start a faction campaign, inspect the unit upgrade tree at your capital, and keep experienced survivors with the hero who trained them."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "windows",
+            "text": "For same-PC multiplayer, choose Hotseat from the game's Multiplayer menu and take turns. The original manual documents two to four players."
+          },
+          {
+            "platform": "windows",
+            "text": "For separate PCs, use the game's TCP/IP connection option. This GOG build has not yet been verified with PlayBound's virtual-LAN party handoff; coordinate the address and connection in the game itself."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Disciples II Gold free?",
+            "a": "No. It is a commercial game sold on GOG; the current store price may change. GOG supplies DRM-free offline files to owners."
+          },
+          {
+            "q": "Does it support multiplayer?",
+            "a": "Yes. GOG marks it multiplayer, and the original manual documents two-to-four-player hotseat plus TCP/IP play. PlayBound automatic party joining remains unverified."
+          },
+          {
+            "q": "Does it support controllers?",
+            "a": "No verified native controller mode or tested PlayBound Controls profile is available. Use mouse and keyboard."
+          },
+          {
+            "q": "Do I need GOG Galaxy?",
+            "a": "No. The Windows offline installer works without Galaxy."
+          },
+          {
+            "q": "What is included in Gold?",
+            "a": "The original Disciples II campaigns and expansion content, including Rise of the Elves, are bundled in the Gold release."
+          }
+        ],
+        "bestFor": [
+          "Players who value persistent heroes and individual unit upgrades",
+          "Friends willing to set up classic hotseat or TCP/IP strategy matches"
+        ],
+        "notFor": [
+          "Players seeking effortless modern matchmaking",
+          "Players who need a verified one-click PlayBound controller or party configuration today"
+        ]
+      }
+    }
+  ]
 }
