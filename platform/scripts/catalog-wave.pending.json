@@ -1,4 +1,177 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-battle-drones-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "battle-drones",
+      "expected": {
+        "developerName": "Indie Web",
+        "developerSlug": "indie-web",
+        "hasControllerSupport": null,
+        "hardwareRequirements": {
+          "provenance": {
+            "source": "unverified",
+            "sourceUrl": "https://github.com/simonw/battledrones",
+            "verifiedAt": null,
+            "enteredBy": null
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "Battle Drones gives friends a browser RTS they can join by link, complete with scouting, harvesting and a base to defend.",
+          "lastVerified": "2026-11-05"
+        },
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Open the official Battle Drones game page in a modern browser.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Start a solo match to learn movement, selection and construction.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "For two players, start an online duel and send the guest its invite link.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "For a four-player battle, share a different seat link with each guest.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Leave the host tab open while everyone plays.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Do I need to install anything?",
+            "a": "Open the free browser game directly."
+          },
+          {
+            "q": "Can I play solo?",
+            "a": "Yes. The AI commander plays under fog of war and manages its own army."
+          },
+          {
+            "q": "How do I invite a friend?",
+            "a": "Use the online duel invite link or QR code from the game."
+          },
+          {
+            "q": "Can four players join?",
+            "a": "Yes. Give each player the link for their own seat in the free-for-all lobby."
+          },
+          {
+            "q": "Does everyone need a microphone?",
+            "a": "Online play uses the relay. The separate sound duel mode uses audio between nearby devices."
+          },
+          {
+            "q": "Does Battle Drones have multiplayer?",
+            "a": "Yes. Battle Drones supports up to 4 players. Its multiplayer runs through the game's own online service or menus, so PlayBound Connect parties and PlayBound dedicated servers are not available for it."
+          }
+        ]
+      },
+      "set": {
+        "developerName": "Simon Willison",
+        "developerSlug": "simon-willison",
+        "hasControllerSupport": false,
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "web"
+            ],
+            "notes": "Runs in a modern browser with working graphics and network access. The developer publishes no numeric CPU, GPU or RAM minimum. Online matches require connectivity; the host browser must remain active."
+          },
+          "recommended": {
+            "os": [
+              "web"
+            ],
+            "notes": "No separate recommended hardware tier has been published."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/simonw/battledrones",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "Battle Drones gives friends a browser RTS they can join by link, complete with scouting, harvesting and a base to defend.",
+          "lastVerified": "2026-11-20"
+        },
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Open Simon Willison's official Battle Drones page in a modern browser. There is no desktop installer or game file to download."
+          },
+          {
+            "platform": "all",
+            "text": "Keep the host's browser tab active during an online match. Every other player opens their own invite link in a separate browser."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Start a solo skirmish to learn unit selection, harvesting and base construction before inviting a rival."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "For a duel, choose Duel a friend online on the Skirmish tab and send its invite URL or QR code to the second player."
+          },
+          {
+            "platform": "all",
+            "text": "For up to four players, choose the Compass Rose map and Battle friends online. Give each guest a different seat link; the host starts the match and keeps the browser open."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Do I need to install anything?",
+            "a": "No. Open Simon Willison's free browser game directly on a compatible device."
+          },
+          {
+            "q": "Can I play solo?",
+            "a": "Yes. You can play against an AI commander under fog of war."
+          },
+          {
+            "q": "How do I invite a friend?",
+            "a": "Start an online duel from the Skirmish tab and send its invite link or QR code."
+          },
+          {
+            "q": "Can four players join?",
+            "a": "Yes. On Compass Rose, give each guest a different seat link in the free-for-all lobby."
+          },
+          {
+            "q": "Does everyone need a microphone?",
+            "a": "No. Ordinary online matches use the game's relay. Its separate nearby sound-duel mode uses audio between devices."
+          },
+          {
+            "q": "Does Battle Drones support controllers?",
+            "a": "The developer documents touch and browser input, but PlayBound has not verified a physical-controller mode or Controls profile."
+          },
+          {
+            "q": "Can PlayBound host a dedicated server for it?",
+            "a": "No. The host's own browser runs the match and the game's relay carries orders. There is no dedicated server package for PlayBound Hosting."
+          }
+        ]
+      }
+    }
+  ]
 }
