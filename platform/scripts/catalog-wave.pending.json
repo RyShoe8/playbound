@@ -1,5 +1,5 @@
 {
-  "id": "draft-richard-burns-rally-rally-sim-fans-2026-11-20",
+  "id": "draft-richard-burns-rally-rally-sim-fans-2026-11-20-retry-1",
   "operations": [
     {
       "kind": "game",
@@ -49,7 +49,7 @@
         "installSteps": [
           {
             "platform": "all",
-            "text": "Alternatively, download Rallysimfans.hu - Richard Burns Rally RSF plugin directly from the official site at https://www.rallysimfans.hu/rbr/index.php. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "text": "Alternatively, download Rallysimfans.hu - Richard Burns Rally  RSF plugin directly from the official site at https://www.rallysimfans.hu/rbr/index.php. Always download from the official source — third-party mirrors of free games are a common malware vector.",
             "command": null
           },
           {
@@ -69,7 +69,7 @@
           },
           {
             "platform": "all",
-            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Rallysimfans.hu - Richard Burns Rally RSF plugin needs roughly small of free disk space.",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. Rallysimfans.hu - Richard Burns Rally  RSF plugin needs roughly small of free disk space.",
             "command": null
           }
         ],
@@ -77,19 +77,19 @@
         "multiplayerGamingSteps": [],
         "faq": [
           {
-            "q": "Is Rallysimfans.hu - Richard Burns Rally RSF plugin free?",
-            "a": "No. Rallysimfans.hu - Richard Burns Rally RSF plugin is a paid release (Free to play)."
+            "q": "Is Rallysimfans.hu - Richard Burns Rally  RSF plugin free?",
+            "a": "No. Rallysimfans.hu - Richard Burns Rally  RSF plugin is a paid release (Free to play)."
           },
           {
-            "q": "How big is the Rallysimfans.hu - Richard Burns Rally RSF plugin download?",
+            "q": "How big is the Rallysimfans.hu - Richard Burns Rally  RSF plugin download?",
             "a": "Check the official site for current download size and system requirements."
           },
           {
-            "q": "What platforms does Rallysimfans.hu - Richard Burns Rally RSF plugin run on?",
+            "q": "What platforms does Rallysimfans.hu - Richard Burns Rally  RSF plugin run on?",
             "a": "Windows, macOS, Linux."
           },
           {
-            "q": "Do I need an account to play Rallysimfans.hu - Richard Burns Rally RSF plugin?",
+            "q": "Do I need an account to play Rallysimfans.hu - Richard Burns Rally  RSF plugin?",
             "a": "No account is required to download or play."
           }
         ],
