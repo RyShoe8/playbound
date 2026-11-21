@@ -1,4 +1,225 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-resident-evil-shattered-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "resident-evil-shattered",
+      "requireStatus": "draft",
+      "expected": {
+        "tagline": "RESIDENT EVIL: SHATTERED v0.1.7 supports any PC version of Resident Evil 1, online sessions of up to four players, and improved mod features.",
+        "description": "RESIDENT EVIL: SHATTERED v0.1.7 supports any PC version of Resident Evil 1, online sessions of up to four players, and improved mod features.",
+        "developerSlug": "indie-web",
+        "developerName": "Indie Web",
+        "features": [],
+        "platforms": [
+          "Windows",
+          "macOS",
+          "Linux"
+        ],
+        "maxPlayers": null,
+        "hasControllerSupport": null,
+        "sizeMB": 500,
+        "githubRepo": null,
+        "access.requiresBaseGameAssets": false,
+        "access.requiresOwnedBaseGame": false,
+        "access.requiredExternalGameName": null,
+        "systemRequirements": {
+          "min": "Not yet verified",
+          "recommended": "Not yet verified"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.kind": "external",
+        "launcherInstall.repo": null,
+        "launcherInstall.assetPattern": null,
+        "launcherInstall.url": "https://depmify.github.io/Resident-Evil-SHATTERED/",
+        "launcherInstall.exeHint": null,
+        "launcherInstall.needsDotNetMajor": null,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-23"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download RESIDENT EVIL: SHATTERED directly from the official site at https://depmify.github.io/Resident-Evil-SHATTERED/. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. RESIDENT EVIL: SHATTERED needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is RESIDENT EVIL: SHATTERED free?",
+            "a": "No — RESIDENT EVIL: SHATTERED must be purchased. It's distributed as Free to play."
+          },
+          {
+            "q": "How big is the RESIDENT EVIL: SHATTERED download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does RESIDENT EVIL: SHATTERED run on?",
+            "a": "Runs on Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play RESIDENT EVIL: SHATTERED?",
+            "a": "You can download and play without creating an account."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "The mansion is less lonely with a second flashlight. It is not much safer.",
+        "description": "Depmify's free Resident Evil 1 fan project adds a complete two-player online campaign and local split-screen. Its Windows release needs a legally owned PC copy of the original game and the .NET 10 Desktop Runtime; three- and four-player online runs cannot reach the ending yet.",
+        "developerSlug": "depmify",
+        "developerName": "Depmify",
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Co-op",
+          "Couch Co-op",
+          "Controller Support"
+        ],
+        "platforms": [
+          "Windows"
+        ],
+        "maxPlayers": 4,
+        "hasControllerSupport": true,
+        "sizeMB": 60,
+        "githubRepo": "Depmify/Resident-Evil-SHATTERED",
+        "access.requiresBaseGameAssets": true,
+        "access.requiresOwnedBaseGame": true,
+        "access.requiredExternalGameName": "Resident Evil 1 PC (GOG, Steam, Sourcenext or another supported PC release)",
+        "systemRequirements": {
+          "min": "64-bit Windows, .NET 10 Desktop Runtime (x64), and a legally obtained Resident Evil 1 PC installation. The developer does not publish numerical CPU, RAM or GPU minimums for SHATTERED.",
+          "recommended": "No numerical recommended hardware tier is published. Both players in an online session need their own supported PC game data and matching SHATTERED builds."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows"
+            ],
+            "notes": "64-bit Windows and .NET 10 Desktop Runtime x64 are explicitly required, along with a supported owned Resident Evil 1 PC installation. Numerical CPU, RAM and GPU minimums are not published."
+          },
+          "recommended": {
+            "os": [
+              "windows"
+            ],
+            "notes": "The developer publishes no numerical recommended hardware tier."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/Depmify/Resident-Evil-SHATTERED/blob/main/INSTALL.md",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.kind": "github-zip",
+        "launcherInstall.repo": "Depmify/Resident-Evil-SHATTERED",
+        "launcherInstall.assetPattern": "^Resident\\.Evil\\.Shattered\\.v[0-9.]+\\.zip$",
+        "launcherInstall.url": "",
+        "launcherInstall.exeHint": "Launcher.exe",
+        "launcherInstall.needsDotNetMajor": 10,
+        "launcherInstall.note": "PlayBound downloads the fan project's release only, not original Resident Evil files. Install a legally owned PC copy separately. On first launch, use SHATTERED's LAUNCH tab to point at that PC game's root directory. The game requires .NET 10 Desktop Runtime x64, and the release folder must keep Launcher.exe beside SHATTERED.exe. Verify this full dependency flow before release.",
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": false,
+          "activelyMaintained": true,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "A clever way to make fixed-camera dread social: you can split the work, but you also split the ammunition.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "Resident Evil: SHATTERED takes the first game's mansion and gives it an uncomfortable new question: what if someone else were trapped in there with you? Depmify's unofficial fan project uses the PC version's data to build a separate Windows game with solo, local split-screen and online modes. It does not ship Capcom's rooms, movies or other original assets. Every PC running it needs a legally obtained Resident Evil 1 installation, such as the GOG, Steam or Sourcenext version. A console disc is not a substitute.\n\nThe strongest version of the idea is a two-player online campaign that the creator says can be played from opening to ending. The two of you can divide attention across the mansion, call out threats and make decisions together, but the quiet rooms still ask both players to listen carefully. Local split-screen gives two people on one PC a shared view of the same story. Three- and four-player online sessions exist, but the developer labels them experimental: they currently reach only the laboratories, not the ending. That limit belongs beside the player count, not hidden after someone organizes a four-person night.\n\nInstallation has a few deliberate boundaries. The public v0.1.10 ZIP contains Launcher.exe and SHATTERED.exe. Its launcher asks you to point it at the root of your owned PC installation, then offers display, inventory and control settings before START GAME. The .NET 10 Desktop Runtime x64 is a separate prerequisite. The game can use keyboard, mouse and gamepad bindings, editable per player in the launcher's CONTROLS tab. That is native gamepad support; PlayBound does not need to pretend a controller profile has been tested to acknowledge the game's own input options.\n\nFor friends, the in-game MULTIPLAYER menu can create or join online and LAN rooms. The release guide also describes radio voice chat. This is a player-hosted mode, not a separately documented dedicated-server package. PlayBound's automatic party handoff and virtual-LAN recipe have not been tested with SHATTERED, so friends should use the game's own room flow for now. If rooms fail to load, the first thing to check is whether the selected Resident Evil folder contains the original Data, Movie, Sound, Voice and stage directories.\n\nThis is an early public release, and its recent fixes address a specific online room crash and a lobby that could stall when a player had not chosen a character. It remains a Draft candidate while we test the full owned-game discovery, launcher prerequisite and multiplayer path. The appeal is immediate, though: a familiar survival-horror route becomes a conversation without losing the pressure of what might be just beyond the next camera angle.",
+        "whyWePickedIt": "A full two-player online route through the original mansion and local split-screen give a familiar horror game a new social rhythm. Its dependency on an owned PC copy, separate .NET runtime and experimental larger lobbies need clear testing before publication.",
+        "thatOneThing": "The room is still dark. Now two people can argue about who should open the door.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Install a legally obtained Resident Evil 1 PC copy (GOG, Steam, Sourcenext or another supported PC release). Console versions are not supported."
+          },
+          {
+            "platform": "windows",
+            "text": "Download the official SHATTERED release ZIP, extract it to its own folder, and ensure .NET 10 Desktop Runtime x64 is installed."
+          },
+          {
+            "platform": "windows",
+            "text": "Start Launcher.exe, select the root of your owned Resident Evil 1 PC installation in LAUNCH, and choose START GAME. Keep Launcher.exe next to SHATTERED.exe."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "windows",
+            "text": "In the game's menu choose NEW GAME for solo or COOPERATIVE for two-player split-screen. Set each player's keyboard, mouse or gamepad bindings in CONTROLS."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "windows",
+            "text": "Each online player needs their own supported Resident Evil 1 PC data and matching SHATTERED release. Choose MULTIPLAYER to host or join an online or LAN room. Two players can finish the campaign; three or four are experimental and cannot reach the ending. Automatic PlayBound party handoff is unverified."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is the original Resident Evil included?",
+            "a": "No. SHATTERED includes no Capcom game data. Each PC needs a legally obtained, supported Resident Evil 1 PC installation."
+          },
+          {
+            "q": "Can four players complete the story?",
+            "a": "Not yet. The creator says two-player online can finish the campaign; three- or four-player online can currently reach only the laboratories."
+          },
+          {
+            "q": "Does it support controllers?",
+            "a": "Yes. SHATTERED's launcher offers editable gamepad bindings for each player. PlayBound has not yet completed a hands-on controller compatibility test."
+          },
+          {
+            "q": "Does it run on macOS or Linux?",
+            "a": "The current public release guide requires 64-bit Windows. The existing macOS and Linux labels were incorrect."
+          },
+          {
+            "q": "Can PlayBound host a dedicated server?",
+            "a": "The developer documents online and LAN rooms hosted from the game, not a separate dedicated-server binary. A PlayBound-hosted recipe is not verified."
+          }
+        ],
+        "bestFor": [
+          "Two friends who want to share a complete survival-horror campaign",
+          "Local pairs who want split-screen on one PC"
+        ],
+        "notFor": [
+          "Players without a supported Resident Evil 1 PC copy",
+          "Four-player groups expecting to finish the campaign together"
+        ]
+      }
+    }
+  ]
 }
