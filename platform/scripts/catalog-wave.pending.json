@@ -1,4 +1,250 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-opensc2k-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "opensc2k",
+      "requireStatus": "draft",
+      "expected": {
+        "tagline": "OpenSC2K - Open Source remake of Sim City 2000 using godot. Available for macOS, Windows and Linux",
+        "description": "OpenSC2K - Open Source remake of Sim City 2000 using godot. Available for macOS, Windows and Linux",
+        "developerSlug": "nicholas-ochoa",
+        "developerName": "nicholas-ochoa",
+        "releaseYear": 2018,
+        "sizeMB": 250,
+        "license": "Open Source (MIT)",
+        "genres": [
+          "Simulation"
+        ],
+        "features": [],
+        "maxPlayers": null,
+        "website": "https://github.com/nicholas-ochoa/OpenSC2K",
+        "githubRepo": "nicholas-ochoa/OpenSC2K",
+        "coverImage": "https://opengraph.githubassets.com/1/nicholas-ochoa/OpenSC2K",
+        "screenshots": [],
+        "access": null,
+        "systemRequirements": {
+          "min": "See official site",
+          "recommended": "See official site"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.kind": "external",
+        "launcherInstall.repo": null,
+        "launcherInstall.assetPattern": null,
+        "launcherInstall.assetPatternMac": null,
+        "launcherInstall.assetPatternLinux": null,
+        "launcherInstall.note": null,
+        "qualityBar": null,
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download OpenSC2K directly from the official site at https://github.com/nicholas-ochoa/OpenSC2K. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Official releases are published on GitHub at github.com/nicholas-ochoa/OpenSC2K/releases. Pick the newest stable release matching your operating system.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. OpenSC2K needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "faq": [
+          {
+            "q": "Is OpenSC2K free?",
+            "a": "Yes. OpenSC2K is released under Open Source (MIT) and costs nothing to download or play. It meets PlayBound's value criterion: no trial masquerading as a full game, no paywalled core content, and no paid competitive advantage. Optional cosmetics and premium extras are allowed."
+          },
+          {
+            "q": "How big is the OpenSC2K download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does OpenSC2K run on?",
+            "a": "Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play OpenSC2K?",
+            "a": "No account is required to download or play."
+          },
+          {
+            "q": "Is OpenSC2K still active in 2026?",
+            "a": "Yes. OpenSC2K met PlayBound's \"actively maintained\" criterion when last checked on 2026-09-28 — it had a release or meaningful commit within the preceding twelve months."
+          },
+          {
+            "q": "Is OpenSC2K open source?",
+            "a": "Yes. The source code is published at github.com/nicholas-ochoa/OpenSC2K under Open Source (MIT). Open source is a nice property when it is present — it is not required to clear the PlayBound Bar."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "Bring your own SimCity 2000 files; build a city bigger than the old map could hold.",
+        "description": "OpenSC2K is an open-source SimCity 2000 remake built with Rust and Godot. Import assets from a copy you own, then build, save and expand cities with larger maps, more views, configurable controls and mod support.",
+        "developerSlug": "opensc2k",
+        "developerName": "OpenSC2K contributors",
+        "releaseYear": 2026,
+        "sizeMB": 100,
+        "license": "MIT-licensed engine; separately owned SimCity 2000 game files required",
+        "genres": [
+          "Simulation",
+          "Strategy"
+        ],
+        "features": [
+          "Singleplayer",
+          "Mod Support"
+        ],
+        "maxPlayers": 1,
+        "website": "https://opensc2k.net/",
+        "githubRepo": "OpenSC2K/OpenSC2K",
+        "coverImage": "https://opensc2k.net/images/hero.webp",
+        "screenshots": [
+          "https://opensc2k.net/images/screenshot-1.webp",
+          "https://opensc2k.net/images/screenshot-2.webp",
+          "https://opensc2k.net/images/screenshot-3.webp",
+          "https://opensc2k.net/images/screenshot-4.webp"
+        ],
+        "access": {
+          "priceType": "PAID_BASE_GAME_REQUIRED",
+          "purchaseRequired": false,
+          "requiresBaseGameAssets": true,
+          "requiresOwnedBaseGame": true,
+          "requiresGameSlugs": [],
+          "requiredExternalGameName": "SimCity 2000",
+          "offers": []
+        },
+        "systemRequirements": {
+          "min": "Windows 64-bit, macOS Intel/Apple Silicon or Linux 64-bit. Windows/Linux x64 builds require SSE4.2. Bring your own SimCity 2000 Special Edition files. The project does not publish a numerical RAM/GPU minimum.",
+          "recommended": "No recommended CPU, RAM or GPU tier is published. Keep a writable folder for imported assets and city saves; Linux x64 also needs GTK 3 and WebKitGTK 4.1 for the newspaper."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "cpuText": "64-bit CPU; SSE4.2 required on Windows/Linux x64 packages",
+            "notes": "Requires separately owned SimCity 2000 files. No numerical RAM or GPU minimum is published by OpenSC2K."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "No recommended hardware tier is published. The Linux x64 package requires GTK 3 and WebKitGTK 4.1 for its newspaper view."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/OpenSC2K/OpenSC2K/blob/main/README.md",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.kind": "github-zip",
+        "launcherInstall.repo": "OpenSC2K/OpenSC2K",
+        "launcherInstall.assetPattern": "^OpenSC2K-.*-windows-(?:x64|arm64)\\.zip$",
+        "launcherInstall.assetPatternMac": "^OpenSC2K-.*-macos-universal\\.dmg$",
+        "launcherInstall.assetPatternLinux": "^OpenSC2K-.*-linux-(?:x64|arm64)\\.tar\\.gz$",
+        "launcherInstall.note": "PlayBound downloads the free engine from the project's release. On first run you must import SimCity 2000 files from a copy you own; those copyrighted files are not included. Linux and macOS package launch behavior still needs platform testing.",
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": true,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "The city can grow far beyond its old borders, provided you bring the original pieces it needs.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "OpenSC2K asks a very specific question: what if the familiar SimCity 2000 city could keep growing after the old map reached its edge? This open-source remake imports the original game's graphics, sound, music and text from a copy you own, then gives those pieces a new simulation and a much larger canvas. Roads, zones, infrastructure and the annual argument with the budget still make a city work. More land simply gives every decision more room to matter.\n\nThe current project uses Rust and Godot and publishes packages for Windows, macOS and Linux. Its additions go beyond resolution and window size. Maps can range from a tiny 16-tile square to a huge 4096-tile square, while data maps use the full map resolution. More zoom levels and layer views help make sense of the sprawl. A terrain generator, graphics and sound packs, automatic saves and a built-in JavaScript mod system give city makers more ways to experiment. OpenSC2K can read and write the original .sc2 city format, although its larger .sc2x cities cannot open in the original game. Keep a backup before moving a favorite city between versions.\n\nThe first step is ownership, not download. OpenSC2K's engine is under the MIT license, but its release does not contain Maxis's game assets. The project asks you to provide your own SimCity 2000 Special Edition files and select SIMCITY.EXE on first launch. A free engine download is therefore not a free copy of SimCity 2000. PlayBound can fetch the engine package; it cannot supply the original data or skip the import step.\n\nThere is no documented multiplayer mode or dedicated server. The project describes configurable keyboard and mouse controls, but no native physical-controller layout. We leave the controller badge off until a tested PlayBound Controls profile exists. Its hardware documentation is similarly precise about package architecture and quiet about numerical RAM or GPU requirements. Windows and Linux x64 releases require SSE4.2; the macOS package is universal. Those are more useful facts than an invented performance tier.\n\nWhat makes this worth watching is the pleasure of familiar constraints inside unfamiliar space. A bigger map does not make a city's water, power, transport and finances run themselves. It gives your bad planning room to become a regional problem. OpenSC2K is still a young release and deserves a full play test before a final quality verdict, but its owned-assets rule and its expanded city tools are clear enough to explain honestly now.",
+        "whyWePickedIt": "OpenSC2K extends a classic city-building toolset with larger maps, sharper data views and an open mod system. We want to test how those additions feel over a complete city, while clearly requiring players to bring their own SimCity 2000 files.",
+        "thatOneThing": "Your city's next traffic jam can be 4096 tiles away from the mistake that caused it.",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Have your own SimCity 2000 Special Edition files ready. OpenSC2K does not include the original graphics, sound or game data."
+          },
+          {
+            "platform": "windows",
+            "text": "Install the OpenSC2K engine through PlayBound or download the matching Windows ZIP from the project's GitHub releases. Keep the extracted PCK and DLL files beside OpenSC2K.exe."
+          },
+          {
+            "platform": "macos",
+            "text": "Use the project's universal macOS DMG and follow its installation instructions. On first launch, approve the unnotarized app in macOS settings if prompted."
+          },
+          {
+            "platform": "linux",
+            "text": "Use the matching Linux tar.gz release. The x64 build requires SSE4.2; GTK 3 and WebKitGTK 4.1 are needed for the newspaper view."
+          },
+          {
+            "platform": "all",
+            "text": "At the first-run import prompt, select SIMCITY.EXE from your owned game files, with its companion files beside it. You can also mount your own game disc image and select the mounted disc."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "After importing your game files, start a small city, check power and water coverage, then inspect the budget before growing the map."
+          },
+          {
+            "platform": "all",
+            "text": "Back up cities before opening them in another version: expanded .sc2x cities cannot be loaded by the original SimCity 2000."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is OpenSC2K a free copy of SimCity 2000?",
+            "a": "No. The MIT-licensed engine is free, but its packages contain no original game assets. You must provide your own SimCity 2000 files."
+          },
+          {
+            "q": "What systems have packages?",
+            "a": "The project publishes Windows x64/arm64, Linux x64/arm64 and a universal macOS build."
+          },
+          {
+            "q": "Can PlayBound install it automatically?",
+            "a": "PlayBound can download the engine release. You still need to select the SimCity 2000 files you own at the first-run import prompt. Mac and Linux launcher package behavior still needs testing."
+          },
+          {
+            "q": "Does it have online or controller play?",
+            "a": "No multiplayer mode or native physical-controller layout is documented by the project. PlayBound has not verified an input profile."
+          },
+          {
+            "q": "Can my old cities move across?",
+            "a": "The project can read and write .sc2 cities. Its larger .sc2x cities are not compatible with the original game."
+          }
+        ],
+        "bestFor": [
+          "Owners of SimCity 2000 who want larger maps and clearer city data",
+          "City builders interested in open modding and terrain tools"
+        ],
+        "notFor": [
+          "Players without their own SimCity 2000 files",
+          "Friends looking for online co-op city building"
+        ]
+      }
+    }
+  ]
 }
