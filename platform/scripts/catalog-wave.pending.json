@@ -1,5 +1,5 @@
 {
-  "id": "draft-completeness-2026-11-21",
+  "id": "draft-completeness-with-live-media-2026-11-21",
   "operations": [
     {
       "kind": "game",
@@ -17,22 +17,6 @@
         "notFor": [
           "Players after licensed clubs or a precise football simulation",
           "Anyone who wants a serious solo career without slapstick matches"
-        ]
-      }
-    },
-    {
-      "kind": "game",
-      "key": "battle-drones",
-      "requireStatus": "draft",
-      "expected": {
-        "coverImage": null,
-        "screenshots": []
-      },
-      "set": {
-        "coverImage": "/games/battle-drones/cover.webp",
-        "screenshots": [
-          "/games/battle-drones/screenshot-1.webp",
-          "/games/battle-drones/screenshot-2.webp"
         ]
       }
     },
