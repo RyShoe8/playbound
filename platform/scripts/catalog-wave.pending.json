@@ -1,4 +1,20 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-battle-drones-media-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "battle-drones",
+      "expected": {
+        "coverImage": null,
+        "screenshots": []
+      },
+      "set": {
+        "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/battle-drones/keyart-landscape-WTJ5JdjNs3mLGETheCUEbMCOzLukLx.webp",
+        "screenshots": [
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/battle-drones/battle-temperate-x9k1lBq9YNUd3uzK1cf1Lk7w4PNqWD.jpg",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/battle-drones/battle-arctic-w2R4qZwTXZKH5yC4NR0hdZVPFqf6D8.jpg"
+        ]
+      }
+    }
+  ]
 }
