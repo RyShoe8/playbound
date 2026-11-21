@@ -1,4 +1,246 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-the-simpsons-arcade-game-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "the-simpsons-arcade-game",
+      "expected": {
+        "tagline": "The port: both games from the player's ROM set on Windows, Linux, macOS, the Switch, Android, iOS and the Anbernic, and The Simpsons' console: the Konami presentation, the menu on the TV, the characte",
+        "description": "The port: both games from the player's ROM set on Windows, Linux, macOS, the Switch, Android, iOS and the Anbernic, and The Simpsons' console: the Konami presentation, the menu on the TV, the character choice, WIDE, the Konami code, STEREO and Bart's orange shirt",
+        "developerName": "cheviman",
+        "genres": [],
+        "tags": [
+          "C"
+        ],
+        "license": "Open Source (BSD-3-Clause)",
+        "releaseYear": 2026,
+        "features": [],
+        "hasControllerSupport": null,
+        "maxPlayers": null,
+        "access.requiresBaseGameAssets": false,
+        "access.requiredExternalGameName": null,
+        "coverImage": "https://opengraph.githubassets.com/1/cheviman/simpsons-port",
+        "screenshots": [],
+        "systemRequirements": {
+          "min": "See official site",
+          "recommended": "See official site"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": true,
+          "finished": false,
+          "activelyMaintained": true,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-11-14"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download simpsons-port directly from the official site at https://github.com/cheviman/simpsons-port. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Official releases are published on GitHub at github.com/cheviman/simpsons-port/releases. Pick the newest stable release matching your operating system.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "macos",
+            "text": "Open the downloaded .dmg and drag the app into Applications. On first launch macOS may refuse to open it as unidentified — right-click the app and choose Open to approve it once.",
+            "command": null
+          },
+          {
+            "platform": "linux",
+            "text": "Check your distribution's package manager first, which is usually the easiest route. Otherwise download the AppImage from the official site, mark it executable and run it.",
+            "command": "chmod +x *.AppImage && ./*.AppImage"
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. simpsons-port needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "bestFor": [],
+        "notFor": [],
+        "faq": [
+          {
+            "q": "Is simpsons-port free?",
+            "a": "Free, in full. simpsons-port is licensed as Open Source (BSD-3-Clause): nothing is locked behind a purchase, there's no trial-disguised-as-the-full-game, and any cosmetics on offer never affect the actual game."
+          },
+          {
+            "q": "How big is the simpsons-port download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does simpsons-port run on?",
+            "a": "Available for Windows, macOS, Linux."
+          },
+          {
+            "q": "Do I need an account to play simpsons-port?",
+            "a": "There's no account requirement to play — download and go."
+          },
+          {
+            "q": "Is simpsons-port still active in 2026?",
+            "a": "Yes. simpsons-port met PlayBound's \"actively maintained\" criterion when last checked on 2026-11-14 — it had a release or meaningful commit within the preceding twelve months."
+          },
+          {
+            "q": "Is simpsons-port open source?",
+            "a": "Yes. The source code is published at github.com/cheviman/simpsons-port under Open Source (BSD-3-Clause). Open source is a nice property when it is present — it is not required to clear the PlayBound Bar."
+          }
+        ]
+      },
+      "set": {
+        "tagline": "Four Simpsons, one arcade cabinet, and the family rescue mission that makes every spare life count.",
+        "description": "A native port of Konami's 1991 four-player Simpsons arcade brawler, built by cheviman from a decompilation. The port runs on Windows, macOS and Linux, supports controllers and local co-op, and requires the player's own compatible Simpsons arcade ROM set for its art and sound. The free engine package contains no game data.",
+        "developerName": "Konami (original game); cheviman (native port)",
+        "genres": [
+          "Fighting",
+          "Arcade"
+        ],
+        "tags": [],
+        "license": "Port code: BSD-3-Clause; original game data not included",
+        "releaseYear": 1991,
+        "features": [
+          "Multiplayer",
+          "Co-op",
+          "Couch Co-Op",
+          "Controller Support"
+        ],
+        "hasControllerSupport": true,
+        "maxPlayers": 4,
+        "access.requiresBaseGameAssets": true,
+        "access.requiredExternalGameName": "The Simpsons arcade ROM set (MAME simpsons, 4 Players World, set 1)",
+        "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-simpsons-arcade-game/audit-four_players_wide.webp",
+        "screenshots": [
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-simpsons-arcade-game/audit-character_choice.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-simpsons-arcade-game/audit-menu.webp",
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/the-simpsons-arcade-game/audit-boss_rush_krusty.webp"
+        ],
+        "systemRequirements": {
+          "min": "The developer provides native Windows, macOS and Linux packages but does not publish a numeric CPU, GPU, RAM or storage minimum. The matching MAME simpsons 4 Players World set 1 ROM is required and is not included.",
+          "recommended": "Use a current desktop OS and one controller per local player. The developer does not publish a separate recommended hardware tier."
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "Native desktop packages are published; no numeric hardware minimum is published. The player must supply the matching Simpsons arcade ROM set."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "notes": "No developer-published recommended CPU, GPU, RAM or disk target."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://github.com/cheviman/simpsons-port",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.note": "The free release contains only the native engine. It cannot play without the player's own compatible Simpsons arcade ROM set, which PlayBound does not provide. Select the desktop package on the developer's GitHub releases page and place simpsons.zip or simpsons.7z beside the game.",
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "The family can still clear a room together; the catch is bringing the right arcade data to the cabinet.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "The Simpsons Arcade Game sends Homer, Marge, Bart and Lisa through Konami's 1991 rescue mission with the kind of immediate logic that made an arcade cabinet inviting: walk, jump, hit the goons, and try not to spend every life before the next scene. Four people can join at once, and the crowded screen is part of the charm. Someone gets pinned in a corner, someone else reaches for the next enemy, and the family starts to look less like a plan than a noisy emergency response team.\n\nThis native port by cheviman is built from a decompilation of the original arcade programs. It is not simply an emulator window around a game image. The developer checks the port against MAME frame by frame and offers desktop packages for Windows, macOS and Linux. There is also a separate Mr. Plow Edition in the same project with a home-style menu, settings and additional modes. This catalog entry is for the arcade game, with its coin and start flow.\n\nThe distinction matters at installation. The GitHub release contains no Simpsons graphics, audio or other game data. You must supply your own MAME `simpsons` ROM set, specifically the four-player World set 1. Put `simpsons.zip` or `simpsons.7z` beside the game, or drop it on the window when prompted. The port rejects other regional and two-player sets. PlayBound does not distribute the ROM or treat a free engine download as a complete free copy of Konami's game. If you do not already have compatible data, the engine alone will not start a playable game.\n\nLocal co-op remains straightforward once the data is in place. The developer documents keyboard layouts for four players and native controller input, assigning a connected pad to each player. The D-pad or left stick moves; the face buttons attack and jump. The arcade build still uses its coin and start sequence, so a connected pad alone may not put a character into play until you insert a coin and press attack. That detail is easy to miss if you expect a modern main menu.\n\nThe project's separate Mr. Plow Edition offers host-and-join play for up to four devices on a local network. The developer lists that mode under the console edition, not under this arcade executable, so this entry claims only local co-op. It does not ship a dedicated server package and should not be listed as a hosted server game. The developer has not published numerical PC hardware requirements, so a precise RAM or GPU promise would be invented.\n\nWe are keeping the game in Draft while we test the full data handoff and local multiplayer path. What is here already has a clear reason to exist: an arcade favorite that lets the four family members crowd the same fight again, with a native build and controls suited to today's PCs. Its best moments still happen when somebody spends the last continue to rescue everyone else's bad decisions.",
+        "whyWePickedIt": "The four-player cabinet rhythm is the attraction: a family rescue mission that turns a crowded screen into a shared problem. The native port and LAN mode are promising, but we need to verify the ROM handoff and party experience before recommending it for release.",
+        "thatOneThing": "Bart can spend his last coin saving Homer from a fight Homer started.",
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Have your own compatible MAME simpsons ROM set (4 Players World, set 1). The developer's free packages contain no game data; PlayBound does not supply the ROM."
+          },
+          {
+            "platform": "windows",
+            "text": "Download the Windows package from the official simpsons-port GitHub releases page and extract it to a folder. Keep your simpsons.zip or simpsons.7z beside The Simpsons Arcade Game executable, or drop the ROM onto the game's window when prompted."
+          },
+          {
+            "platform": "macos",
+            "text": "Download the macOS package from the official releases page. Follow its included README, then place your compatible simpsons.zip or simpsons.7z beside the game or select it when prompted."
+          },
+          {
+            "platform": "linux",
+            "text": "Download the Linux package from the official releases page and follow its included README. Place your compatible simpsons.zip or simpsons.7z beside the game or select it when prompted."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "The arcade version uses coins: insert a coin with the assigned player control, then press attack to join. Start and Back have different jobs in the Arcade Game and the separate Mr. Plow Edition."
+          },
+          {
+            "platform": "all",
+            "text": "For local co-op, connect up to four controllers before starting. Each pad becomes a different player in connection order; keyboard bindings are listed in the developer's README."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "Connect up to four controllers to one PC for the arcade game's local co-op. The separate Mr. Plow Edition has the project's LAN host-and-join mode; it is not documented for this arcade executable."
+          }
+        ],
+        "bestFor": [
+          "Four-player arcade brawling on one PC",
+          "Players who already own the compatible arcade data",
+          "A couch session with simple jump and attack controls"
+        ],
+        "notFor": [
+          "Anyone expecting the free download to include Konami's game data",
+          "Players seeking a dedicated server or verified online multiplayer for this arcade build"
+        ],
+        "faq": [
+          {
+            "q": "Is the complete arcade game included in the free download?",
+            "a": "No. The BSD-licensed port is free, but its releases contain no game assets. You need your own MAME simpsons ROM set, specifically 4 Players World set 1."
+          },
+          {
+            "q": "Which platforms are supported?",
+            "a": "The developer publishes native Windows, macOS and Linux packages. It also documents separate mobile and handheld builds, but this desktop entry does not claim PlayBound installation support for those."
+          },
+          {
+            "q": "Can four people play together?",
+            "a": "Yes, on one PC with four local players. The project's LAN host-and-join mode belongs to the separate Mr. Plow Edition; it is not documented for this arcade executable."
+          },
+          {
+            "q": "Does it support controllers?",
+            "a": "Yes. The developer documents native controller support and assigns each connected controller to a separate player. In the arcade version you must still insert a coin and join."
+          },
+          {
+            "q": "Does it have a dedicated server?",
+            "a": "No dedicated server package is documented. LAN matches are hosted by a player inside the game."
+          },
+          {
+            "q": "What hardware does it need?",
+            "a": "The developer publishes desktop packages but no numerical minimum or recommended PC hardware specifications. Check the package README for current platform compatibility."
+          }
+        ]
+      }
+    }
+  ]
 }
