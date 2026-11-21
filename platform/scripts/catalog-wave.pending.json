@@ -1,4 +1,24 @@
 {
-  "id": null,
-  "operations": []
+  "operations": [
+    {
+      "requireStatus": "draft",
+      "set": {
+        "coverImage": "/games/pokemon-redstone/cover.webp",
+        "screenshots": [
+          "/games/pokemon-redstone/screenshot-1.webp",
+          "/games/pokemon-redstone/screenshot-2.webp"
+        ]
+      },
+      "key": "pokemon-redstone",
+      "expected": {
+        "coverImage": "/games/pokemon-redstone/cover.png",
+        "screenshots": [
+          "/games/pokemon-redstone/screenshot-1.png",
+          "/games/pokemon-redstone/screenshot-2.png"
+        ]
+      },
+      "kind": "game"
+    }
+  ],
+  "id": "pokemon-redstone-webp-2026-11-21"
 }
