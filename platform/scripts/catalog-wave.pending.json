@@ -1,4 +1,224 @@
 {
-  "id": null,
-  "operations": []
+  "id": "draft-ballisticng-2026-11-20",
+  "operations": [
+    {
+      "kind": "game",
+      "key": "ballisticng",
+      "expected": {
+        "tagline": "BallisticNG is a high speed, all thrills anti-gravity combat racer and open modding envir",
+        "description": "BallisticNG is a high speed, all thrills anti-gravity combat racer and open modding envir",
+        "developerSlug": "gog-com",
+        "developerName": "GOG.com",
+        "releaseYear": 2026,
+        "genres": [
+          "Racing"
+        ],
+        "features": [],
+        "hasControllerSupport": null,
+        "platforms": [
+          "Windows"
+        ],
+        "systemRequirements": {
+          "min": "See the GOG store page",
+          "recommended": "See the GOG store page"
+        },
+        "hardwareRequirements": null,
+        "launcherInstall.note": null,
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": false,
+          "activelyMaintained": false,
+          "standsAlone": false,
+          "highQuality": false,
+          "wontDisappear": false,
+          "verdict": "",
+          "lastVerified": "2026-10-20"
+        },
+        "longDescription": null,
+        "whyWePickedIt": null,
+        "thatOneThing": null,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Alternatively, download BallisticNG 35% off | GOG.COM directly from the official site at https://www.gog.com/en/game/ballisticng. Always download from the official source — third-party mirrors of free games are a common malware vector.",
+            "command": null
+          },
+          {
+            "platform": "windows",
+            "text": "Run the downloaded installer and follow the prompts. If Windows SmartScreen warns about an unrecognised publisher, that is normal for open-source projects without a paid code-signing certificate — choose More info, then Run anyway.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game and look at the settings menu before your first session — resolution and control defaults are worth checking. BallisticNG 35% off | GOG.COM needs roughly small of free disk space.",
+            "command": null
+          }
+        ],
+        "firstPlaySteps": [],
+        "multiplayerGamingSteps": [],
+        "faq": [
+          {
+            "q": "Is BallisticNG 35% off | GOG.COM free?",
+            "a": "No. BallisticNG 35% off | GOG.COM is a paid release (Commercial · DRM-free purchase)."
+          },
+          {
+            "q": "How big is the BallisticNG 35% off | GOG.COM download?",
+            "a": "Check the official site for current download size and system requirements."
+          },
+          {
+            "q": "What platforms does BallisticNG 35% off | GOG.COM run on?",
+            "a": "Windows."
+          },
+          {
+            "q": "Do I need an account to play BallisticNG 35% off | GOG.COM?",
+            "a": "No account is required to download or play."
+          }
+        ],
+        "bestFor": [],
+        "notFor": []
+      },
+      "set": {
+        "tagline": "Win the corner, survive the weapon pickup, and ask your ship to keep up.",
+        "description": "BallisticNG is Neognosis' anti-gravity combat racer, built for high-speed lines, split-screen races, direct-IP online play and player-made ships and tracks. The DRM-free GOG release runs on Windows, Mac and Linux.",
+        "developerSlug": "neognosis",
+        "developerName": "Neognosis",
+        "releaseYear": 2018,
+        "genres": [
+          "Racing",
+          "Action"
+        ],
+        "features": [
+          "Singleplayer",
+          "Multiplayer",
+          "Couch Co-Op",
+          "Controller Support",
+          "Mod Support"
+        ],
+        "hasControllerSupport": true,
+        "platforms": [
+          "Windows",
+          "macOS",
+          "Linux"
+        ],
+        "systemRequirements": {
+          "min": "Windows 7+ 64-bit · 2 GB RAM · DirectX 11 or OpenGL 3.2+ graphics · 3 GB storage (GOG Windows minimum); Mac and Linux builds also available",
+          "recommended": "Windows 7+ 64-bit · 4 GB RAM · DirectX 11 or OpenGL 3.2+ graphics · 3 GB storage; mods require more memory and disk space"
+        },
+        "hardwareRequirements": {
+          "min": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "ramMB": 2048,
+            "storageMB": 3072,
+            "apis": [
+              "dx11",
+              "opengl"
+            ],
+            "notes": "GOG's numerical minimum is for 64-bit Windows 7 or later, with DirectX 11 or OpenGL 3.2+ graphics. Mac and Linux are supported, but this source does not publish equivalent numerical requirements for them."
+          },
+          "recommended": {
+            "os": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "ramMB": 4096,
+            "storageMB": 3072,
+            "apis": [
+              "dx11",
+              "opengl"
+            ],
+            "notes": "GOG's numerical recommendation is for Windows. Additional ships and tracks increase storage and memory needs."
+          },
+          "provenance": {
+            "source": "developer",
+            "sourceUrl": "https://www.gog.com/en/game/ballisticng",
+            "verifiedAt": "2026-11-20"
+          }
+        },
+        "launcherInstall.note": "Paid GOG release with Windows, macOS and Linux downloads. Install the purchased DRM-free game using GOG's offline files or optional Galaxy client; PlayBound does not distribute the proprietary game files.",
+        "qualityBar": {
+          "genuinelyFree": false,
+          "finished": true,
+          "activelyMaintained": true,
+          "standsAlone": true,
+          "highQuality": true,
+          "wontDisappear": true,
+          "verdict": "The speed is glorious right until a rival's missile makes your perfect racing line somebody else's.",
+          "lastVerified": "2026-11-20"
+        },
+        "longDescription": "BallisticNG puts a hovering craft on a track that seems much too narrow for the speed it asks you to carry. A clean lap is partly about learning the course and partly about persuading the ship through one more turn without donating your place to a wall. Neognosis built it as a tribute to older anti-gravity racers, then gave it enough systems of its own to keep that homage from feeling like an exercise in memory. Weapons on the course make every lead temporary.\n\nThe handling rewards practice. At first, the corners seem to arrive before you can read them. Then the shape of a lap begins to stick: where to commit, when to correct, and where the next pickup might change the race. An AI field can make a custom event busy even when you are playing alone. The game offers multiple race types, from straightforward races and time trials to elimination and survival, so speed is not always the only problem to solve.\n\nThe ways to play with others are more concrete than a generic multiplayer badge. GOG describes two-player split-screen on one PC and online races over direct IP, with cross-platform online play between Windows and macOS. That makes the local option suitable for friends at one machine and the online option a host-and-join flow inside BallisticNG. We have not verified automatic PlayBound party joining, a hosted dedicated server or a fixed human player cap, so those are not promised here. Native controller support is listed by GOG; this does not require PlayBound to emulate a keyboard.\n\nModding is a substantial part of the package. Neognosis supplies tools for custom tracks and ships, while code mods can change rules, weapons, displays and more. Players can make custom campaigns and liveries too. That means the racing space is larger than the included league. More content is useful only if the driving feels worth returning to; here it does, because learning one corner and discovering a better line changes the next race.\n\nThe GOG build is a paid, DRM-free release for Windows, macOS and Linux, and its offline installer avoids a mandatory client. The old Draft listing called GOG the developer, gave the game a 2026 release year and pasted generic warnings about unsigned open-source installers. Those are corrected. If you are buying it for multiplayer, get the game installed on every participating PC first, then decide whether you want the split-screen seat beside you or a direct-IP race with friends elsewhere. The launcher will need a separately verified automatic join path before we advertise one.",
+        "whyWePickedIt": "BallisticNG treats old-school anti-gravity racing as a living design rather than a museum piece. The controls have a real learning curve, the races support both a nearby friend and a direct-IP opponent, and the track and ship tools give the community room to keep building.",
+        "thatOneThing": "You finally learn the perfect line through a corner, then a missile uses exactly that line to find you.",
+        "installSteps": [
+          {
+            "platform": "windows",
+            "text": "Purchase or open BallisticNG in your GOG library. Download and run the Windows offline installer, or use the optional GOG Galaxy client. Reserve about 3 GB before adding mods."
+          },
+          {
+            "platform": "macos",
+            "text": "Purchase or open BallisticNG in GOG and download the Mac build from your library. Follow GOG's included installation instructions for that package."
+          },
+          {
+            "platform": "linux",
+            "text": "Purchase or open BallisticNG in GOG and download the Linux build from your library. Follow GOG's included installation instructions for that package."
+          },
+          {
+            "platform": "all",
+            "text": "Launch the game once and set your preferred controller and display options. PlayBound does not distribute the commercial game files."
+          }
+        ],
+        "firstPlaySteps": [
+          {
+            "platform": "all",
+            "text": "Run a time trial to learn the ship's handling and track corners before entering a weapon-heavy race. A native gamepad is supported."
+          }
+        ],
+        "multiplayerGamingSteps": [
+          {
+            "platform": "all",
+            "text": "For two people at one PC, choose the game's split-screen mode and connect a second controller. For online play, one player hosts a race and shares the direct-IP connection details with friends using BallisticNG's own menus."
+          },
+          {
+            "platform": "all",
+            "text": "The direct-IP mode is peer-hosted. PlayBound has not verified automatic party joining or a dedicated-server recipe for this Draft listing; use the game's own host/join flow."
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is BallisticNG free?",
+            "a": "No. The GOG release is a paid, DRM-free game. This audit does not change its price."
+          },
+          {
+            "q": "Which computers can run it?",
+            "a": "GOG offers Windows, macOS and Linux versions. Its published Windows minimum is 2 GB RAM, DirectX 11 or OpenGL 3.2+ graphics and 3 GB of space."
+          },
+          {
+            "q": "Can we race together?",
+            "a": "Yes. GOG documents two-player split-screen and online direct-IP racing. The online mode is handled in-game; PlayBound has not verified automatic party join."
+          },
+          {
+            "q": "Does it support controllers?",
+            "a": "Yes. GOG lists native controller support. PlayBound has not verified every device or a custom Controls profile."
+          },
+          {
+            "q": "Can we use community tracks?",
+            "a": "Yes. The game includes modding tools and supports custom tracks, ships, campaigns and code mods."
+          }
+        ],
+        "bestFor": [
+          "Racing players who like mastering difficult corners at very high speed",
+          "Friends who want two-player split-screen or in-game direct-IP races",
+          "Creators who want to build tracks and ships"
+        ],
+        "notFor": [
+          "Players who need a verified PlayBound-hosted dedicated server",
+          "Anyone who prefers slow, forgiving racing over repeated practice"
+        ]
+      }
+    }
+  ]
 }
