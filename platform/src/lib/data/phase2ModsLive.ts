@@ -164,24 +164,6 @@ const holocureMods: ModSeed[] = [
     summary: "Unlocks additional community-created idol characters with custom movesets.",
     hint: "Access the character selection screen to pick from the expanded community idol roster.",
   }),
-  m({
-    slug: "holocure-qol-toolkit",
-    title: "HoloCure QoL Toolkit",
-    tagline: "Random character picker, quick restart, and UI tweaks.",
-    desc: "Quality-of-life additions including a Random Character button on the select screen, instant stage restart keybinds, and streamlined shop navigation.",
-    base: "holocure",
-    baseTitle: "HoloCure - Save the Fans!",
-    path: "mods",
-    website: "https://github.com/Kay-Yu-Mods/HoloCure-QoL",
-    repo: "Kay-Yu-Mods/HoloCure-QoL",
-    kind: "github-zip",
-    pattern: ".*\\.zip$",
-    size: 8,
-    year: 2024,
-    changes: "Adds random character button, quick restart hotkeys, and performance optimizations.",
-    summary: "Helpful quality-of-life enhancements for character selection and run management.",
-    hint: "Press 'R' on keyboard or Select on controller on the pause screen to quickly restart.",
-  }),
 ];
 
 export const phase2ModsLive: ModSeed[] = [

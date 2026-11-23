@@ -1,4 +1,123 @@
 {
-  "id": null,
-  "operations": []
+  "id": "flightgear-777-source-20261123",
+  "operations": [
+    {
+      "kind": "mod",
+      "key": "flightgear-boeing-777",
+      "expected": {
+        "website": "https://github.com/FlightGear-Community/777",
+        "githubRepo": "FlightGear-Community/777",
+        "downloadKind": "github-zip",
+        "directUrl": null,
+        "installRelativePath": "Aircraft/777",
+        "sizeMB": 180,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Install FlightGear first if you have not already — Boeing 777 Series (777-200ER / 777-300ER) is an add-on and needs the base game.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "The quickest route is the PlayBound Launcher: open FlightGear, find Boeing 777 Series (777-200ER / 777-300ER) in its mods list and press Install. The launcher downloads the official release and places it in the right folder for you.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "To install it by hand, download the latest release archive from github.com/FlightGear-Community/777/releases.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Extract the archive into the \"Aircraft/777\" folder inside your FlightGear installation directory.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Start FlightGear and enable Boeing 777 Series (777-200ER / 777-300ER) from the in-game mods or add-ons menu. The download is roughly 180 MB.",
+            "command": null
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Boeing 777 Series (777-200ER / 777-300ER) free?",
+            "a": "Yes. Boeing 777 Series (777-200ER / 777-300ER) is released under GPL-2.0-or-later and costs nothing. Neither it nor FlightGear has any paid content."
+          },
+          {
+            "q": "What do I need to run Boeing 777 Series (777-200ER / 777-300ER)?",
+            "a": "FlightGear, which is itself free. Boeing 777 Series (777-200ER / 777-300ER) is an add-on and will not run standalone."
+          },
+          {
+            "q": "How do I install Boeing 777 Series (777-200ER / 777-300ER)?",
+            "a": "The PlayBound Launcher installs it in one click from FlightGear's mods list. You can also install it by hand — full steps are on this page."
+          },
+          {
+            "q": "How big is Boeing 777 Series (777-200ER / 777-300ER)?",
+            "a": "Roughly 180 MB, on top of the base FlightGear installation."
+          },
+          {
+            "q": "Is Boeing 777 Series (777-200ER / 777-300ER) open source?",
+            "a": "Yes. The source is published at github.com/FlightGear-Community/777 under GPL-2.0-or-later."
+          }
+        ]
+      },
+      "set": {
+        "website": "https://sourceforge.net/p/flightgear/fgaddon/HEAD/tree/trunk/Aircraft/777/",
+        "githubRepo": null,
+        "downloadKind": "direct-zip",
+        "directUrl": "https://mirrors.ibiblio.org/flightgear/ftp/Aircraft-trunk/777.zip",
+        "installRelativePath": "Aircraft",
+        "sizeMB": 218,
+        "installSteps": [
+          {
+            "platform": "all",
+            "text": "Install FlightGear first if you have not already — Boeing 777 Series (777-200ER / 777-300ER) is an add-on and needs the base game.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "The quickest route is the PlayBound Launcher: open FlightGear, find Boeing 777 Series (777-200ER / 777-300ER) in its mods list and press Install. The launcher downloads the official release and places it in the right folder for you.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "To install it by hand, download the official 777.zip aircraft archive from FlightGear's FGAddon mirror.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Extract the ZIP into the Aircraft folder of your FlightGear installation. The archive already contains a 777 folder, so the result should be Aircraft/777, not Aircraft/777/777.",
+            "command": null
+          },
+          {
+            "platform": "all",
+            "text": "Start FlightGear and choose a Boeing 777 variant in the aircraft selector. The archive is roughly 218 MB.",
+            "command": null
+          }
+        ],
+        "faq": [
+          {
+            "q": "Is Boeing 777 Series (777-200ER / 777-300ER) free?",
+            "a": "Yes. Boeing 777 Series (777-200ER / 777-300ER) is released under GPL-2.0-or-later and costs nothing. Neither it nor FlightGear has any paid content."
+          },
+          {
+            "q": "What do I need to run Boeing 777 Series (777-200ER / 777-300ER)?",
+            "a": "FlightGear, which is itself free. Boeing 777 Series (777-200ER / 777-300ER) is an add-on and will not run standalone."
+          },
+          {
+            "q": "How do I install Boeing 777 Series (777-200ER / 777-300ER)?",
+            "a": "The PlayBound Launcher installs it in one click from FlightGear's mods list. You can also install it by hand — full steps are on this page."
+          },
+          {
+            "q": "How big is Boeing 777 Series (777-200ER / 777-300ER)?",
+            "a": "Roughly 218 MB for the current aircraft ZIP, on top of FlightGear."
+          },
+          {
+            "q": "Is Boeing 777 Series (777-200ER / 777-300ER) open source?",
+            "a": "Yes. The aircraft is maintained in the FlightGear FGAddon repository under GPL-2.0-or-later."
+          }
+        ]
+      }
+    }
+  ]
 }

@@ -17,6 +17,7 @@ import { managedQueryKind, QUERY_BY_GAME, queryManagedOccupancy, expectedRegistr
 import { recordResourceSample } from "./samples";
 import { recordPopulationReading } from "./population";
 import { rotationPriority } from "./rotation";
+import { reservationUpsertUpdate } from "./reservationUpdate";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 import { paidReservedEnvelope } from "@/lib/dedicatedHosting/reconcile";
 
@@ -240,16 +241,18 @@ async function syncReservations(now: Date, regionKey: string, profiles: Array<{ 
     }
     const startsAt = new Date(event.startsAt);
     const endsAt = event.endsAt ? new Date(event.endsAt) : new Date(startsAt.getTime() + 2 * 3_600_000);
-    await CapacityReservation.updateOne({ sourceKey }, {
-      $set: {
+    await CapacityReservation.updateOne({ sourceKey }, reservationUpsertUpdate(
+      existingReservation,
+      profile.key,
+      event._id,
+      sourceKey,
+      {
         profileKey: profile.key, regionKey, cpuCores: envelope.cpuCores,
         ramBytes: envelope.ramBytes,
         warmupAt: new Date(startsAt.getTime() - warmupHours * 3_600_000),
         protectedUntil: new Date(endsAt.getTime() + graceHours * 3_600_000),
-        ...(profileChanged || existingReservation?.state === "released" ? { communityServerId: null, state: "planned", decisionReason: null } : {}),
       },
-      $setOnInsert: { eventId: event._id, sourceKey, state: "planned" },
-    }, { upsert: true });
+    ), { upsert: true });
   }
   const pending = await CapacityReservation.find({ state: { $in: ["planned", "active"] }, protectedUntil: { $gte: now } })
     .select({ sourceKey: 1, eventId: 1, communityServerId: 1, profileKey: 1 }).lean();
