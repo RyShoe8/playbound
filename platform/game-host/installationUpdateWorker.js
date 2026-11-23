@@ -147,13 +147,32 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
       const reusable = job.key === "open-fortress" ? retainedOpenFortressPackage(store, gamesRoot) : null;
       phase("staging", target.strategy === "coordinated-open-fortress" ? "Preparing isolated SDK/mod staging; current files remain untouched" : "Copying installation; current files remain untouched");
       const size = Number((await run("/usr/bin/du", ["-sb", "--", activePath], { root: gamesRoot, timeout: 60_000 })).split(/\s/)[0]);
-      const available = disk(gamesRoot);
+      let available = disk(gamesRoot);
       const required = reusable ? 512 * 1024 ** 2 : target.strategy === "coordinated-open-fortress"
         ? size + (fs.existsSync(openFortressArchivePath(gamesRoot)) ? GIB : 4 * GIB) : size * 1.25;
+      if (fs.existsSync(stage) || fs.existsSync(backup)) throw new Error("Update directory already exists; operator inspection required");
+      // The verified active install remains intact until promotion. If space is
+      // tight, an older rollback of this same game can be retired before staging;
+      // promotion will create a fresh rollback of the currently active build.
+      if (Number.isFinite(size) && size > 0 && available.free < required + available.reserve && !reusable) {
+        const oldBackups = store.all().filter((old) => old.key === job.key && old.action === "update" && old.status === "completed" && !old.rollbackConsumed && /^[a-f0-9-]{36}$/.test(old.id))
+          .map((old) => path.join(gamesRoot, `.pb-rollback-${job.key}-${old.id}`))
+          .filter((candidate) => {
+            try { const st = fs.lstatSync(candidate); return st.isDirectory() && !st.isSymbolicLink(); }
+            catch { return false; }
+          });
+        let reclaimable = 0;
+        for (const candidate of oldBackups) {
+          reclaimable += Number((await run("/usr/bin/du", ["-sB1", "--", candidate], { root: gamesRoot, timeout: 60_000 })).split(/\s/)[0]);
+        }
+        if (Number.isFinite(reclaimable) && available.free + reclaimable >= required + available.reserve) {
+          pruneOlderRollbacks(store, gamesRoot, job.key, null);
+          available = disk(gamesRoot);
+        }
+      }
       if (!Number.isFinite(size) || size <= 0 || available.free < required + available.reserve) {
         throw new Error("Not enough free disk for a staged update and rollback copy");
       }
-      if (fs.existsSync(stage) || fs.existsSync(backup)) throw new Error("Update directory already exists; operator inspection required");
       if (target.component) fs.mkdirSync(stage, { mode: 0o700 });
       // Reviewed native files are root-owned. The unprivileged worker copies
       // their bytes, then the fixed promotion helper restores trusted ownership.

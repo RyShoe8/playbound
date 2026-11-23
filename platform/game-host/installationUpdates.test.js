@@ -219,6 +219,37 @@ test("staged update and rollback preserve old files and customer save links", as
   assert.equal(f.store.read(job.id).rollbackConsumed, true);
 });
 
+test("a previous rollback is retired only when its space is needed for staging", async (t) => {
+  const f = fixture(t);
+  const first = f.coordinator.queue(key, "update", "admin");
+  f.store.write({ ...first, status: "launching" });
+  await runInstallationUpdate({ ...f, id: first.id }, { run: fakeCommands(), disk, scan: async () => 0 });
+  assert.equal(f.store.read(first.id).status, "completed");
+  const oldBackup = path.join(f.gamesRoot, `.pb-rollback-${key}-${first.id}`);
+  assert.equal(fs.existsSync(oldBackup), true);
+
+  const second = f.coordinator.queue(key, "update", "admin");
+  f.store.write({ ...second, status: "launching" });
+  await runInstallationUpdate({ ...f, id: second.id }, {
+    run: fakeCommands(), scan: async () => 0,
+    disk: () => ({ free: fs.existsSync(oldBackup) ? 400 : 100 * 1024 ** 3, reserve: 1 }),
+  });
+  assert.equal(f.store.read(second.id).status, "completed");
+  assert.equal(fs.existsSync(oldBackup), false);
+  assert.equal(f.store.read(first.id).rollbackConsumed, true);
+  const newBackup = path.join(f.gamesRoot, `.pb-rollback-${key}-${second.id}`);
+  assert.equal(fs.existsSync(newBackup), true);
+
+  const third = f.coordinator.queue(key, "update", "admin");
+  f.store.write({ ...third, status: "launching" });
+  await runInstallationUpdate({ ...f, id: third.id }, {
+    run: fakeCommands(), scan: async () => 0,
+    disk: () => ({ free: 0, reserve: 1 }),
+  });
+  assert.match(f.store.read(third.id).message, /Not enough free disk/);
+  assert.equal(fs.existsSync(newBackup), true);
+});
+
 test("failed download leaves running installation untouched", async (t) => {
   const f = fixture(t);
   const job = f.coordinator.queue(key, "update", "admin");
