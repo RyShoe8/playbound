@@ -212,10 +212,20 @@ without following customer-save symlinks. SteamCMD updates that copy with
 fixed anonymous app IDs; no customer URL, command, token, or path is accepted.
 Copy and download commands run at low CPU/I/O priority with a 90-minute bound.
 Before copying, free disk must cover 125% of the current installation's size
-plus the larger of 8 GB or 10% of the disk. During commands, reaching that disk
+plus a reserve of 10% of the disk, bounded to 8–16 GiB. During commands, reaching that disk
 reserve stops the operation. SteamCMD success, a complete matching manifest,
 and required executable files are checked before activation; processes are
 checked again immediately before swapping directories.
+
+If Steam denies a manifest referenced by the old installed depot metadata,
+the worker can rebuild that metadata **once in staging** and run SteamCMD
+`validate`. It only does this when newly appended, app-specific Steam log
+entries identify denied manifest IDs present in the original staged manifest.
+Denials for new manifests, other apps, historical errors, unavailable logs,
+and disk/timeout safety stops do not trigger this recovery. The installed
+branch is retained; normal manifest/executable verification and process checks
+still precede activation. Telemetry receives a categorized message, never raw
+Steam logs or signed download URLs. Failed recovery retains staging for review.
 
 Activation renames the old installation into a retained rollback directory,
 then renames the verified staging directory into place. Rollback is queued
@@ -233,10 +243,13 @@ the manifest, affected processes, and generated `.pb-update-*`/`.pb-rollback-*`
 directories before repairing the installation and resolving that job. Do not
 blindly retry or clear an interrupted job. A waiting job can be cancelled.
 
-Retained rollback and partial staging copies are intentionally not pruned
-automatically. An operator must archive/remove unneeded generated copies after
-inspection; only paths directly under the configured games root may be removed,
-and customer save symlinks must never be followed. New jobs fail on insufficient
+After a verified update, older completed rollback copies of that game are
+pruned while the latest recovery point is retained. Before staging, an older
+completed rollback of the same game may also be retired if its space makes
+the update fit; the verified active installation remains intact, and activation
+creates a fresh rollback. Partial staging copies require operator inspection
+before removal. Only generated paths directly under the configured games root
+may be removed, and customer save symlinks must never be followed. New jobs fail on insufficient
 space; at 500 history rows further jobs require operator archival. The scanner
 currently supports `/opt/playbound-host/games` only; other roots fail closed
 until a root-owned scanner is explicitly configured for them.

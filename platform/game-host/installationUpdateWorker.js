@@ -31,6 +31,7 @@ import { stageGoldenEye } from "./goldenEyeUpdates.js";
 import { stageRomanovsVengeanceRelease } from "./romanovsVengeanceUpdates.js";
 import { stageTiberianDawnHdRelease } from "./tiberianDawnHdUpdates.js";
 import { stageCrystallizedNexusRelease } from "./crystallizedNexusUpdates.js";
+import { updateSteamInstallation } from "./steamInstallationUpdate.js";
 
 const GIB = 1024 ** 3;
 
@@ -307,8 +308,10 @@ export async function runInstallationUpdate({ id, stateDir, gamesRoot }, { run =
         } });
       } else {
         phase("downloading", "SteamCMD is updating the staged installation");
-        const output = await run("/usr/games/steamcmd", ["+force_install_dir", stage, "+login", "anonymous", "+app_update", String(target.appId), ...(original.branch && original.branch !== "public" ? ["-beta", original.branch] : []), "+quit"], { root: gamesRoot });
-        if (!output.includes(`Success! App '${target.appId}' fully installed.`) && !output.includes(`Success! App '${target.appId}' already up to date.`)) throw new Error("SteamCMD did not confirm a complete installation");
+        await updateSteamInstallation({ stage, appId: target.appId, branch: original.branch, gamesRoot, hostHome }, {
+          run,
+          onRecovery: () => phase("downloading", "Steam denied an old installed manifest. Rebuilding staged metadata and validating current files; the active installation is untouched."),
+        });
       }
       restoreInstallationLinks(detachedLinks);
     } else {

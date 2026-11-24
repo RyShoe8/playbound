@@ -19,6 +19,7 @@ it("every admin update target is wired to the agent, root scanner, and exact sud
   const archiveTargets = [...targets.matchAll(/strategy: "(?:github-(?:jar|appimage|native-binaries)|signed-appimage|official-headless-archive|official-linux-zip|reviewed-distro-native|reviewed-dotnet-source|reviewed-cmake-source|reviewed-native-zip|reviewed-etlegacy-package|reviewed-openmohaa-package|reviewed-unvanquished-package|reviewed-component|paired-runtime|coordinated-open-fortress|reviewed-hx-package|reviewed-java|reviewed-rust-source)"/g)];
   expect(appIds.length + archiveTargets.length).toBe(INSTALLATION_UPDATE_KEYS.length);
   expect(new Set(appIds).size).toBe(appIds.length);
+  expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/steamInstallationUpdate.js"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/nativeArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/factorioArchive.py"');
   expect(source("../../../game-host/install.sh")).toContain('"$AGENT_SRC/terrariaArchive.py"');
