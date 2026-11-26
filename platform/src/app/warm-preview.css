@@ -235,6 +235,8 @@ html[data-warm-preview] .new-friends-promo > ul > li { padding:20px; }
 html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:14px; line-height:1.5; }
 
 .home-play-panel { display:grid; gap:12px; min-width:0; overflow-wrap:anywhere; }
+.home-play-content { display:grid; gap:12px; min-width:0; }
+.home-play-toggle { display:none; }
 .home-play-panel label { display:grid; gap:4px; }
 .home-play-panel :is(input:not([type=checkbox]),select) { width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; padding:8px; background:var(--background); color:inherit; }
 .home-play-actions { display:flex; flex-wrap:wrap; gap:6px; }
@@ -245,9 +247,20 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 .home-play-panel small { display:block; }
 .home-play-options { max-height:12rem; overflow:auto; }
 .home-play-panel label:has([type=checkbox]) { display:flex; gap:8px; align-items:center; }
-.home-play-panel > div:has(> h3), .home-play-panel > div:has(> a) { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.home-play-content > div:has(> h3), .home-play-content > div:has(> a) { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .home-play-panel fieldset { display:grid; gap:10px; min-width:0; }
 @media (max-width:800px) {
+  .home-play-desktop-title { display:none; }
+  .home-play-toggle { display:flex; align-items:center; gap:12px; width:100%; padding:2px; color:var(--foreground); }
+  .home-play-toggle > span { flex:1; min-width:0; }
+  .home-play-toggle strong { font-size:1.05rem; }
+  .home-play-toggle small { color:var(--muted-foreground); font-weight:400; line-height:1.5; }
+  .home-play-toggle > svg { flex:none; color:var(--primary); }
+  .home-play-toggle[aria-expanded=true] > svg:last-child { transform:rotate(180deg); }
+  .home-play-toggle:focus-visible { outline:2px solid var(--ring); outline-offset:4px; border-radius:6px; }
+  .home-play-panel[data-expanded=false] .home-play-content { display:none; }
+  .home-play-actions { display:grid; grid-template-columns:1fr 1fr; }
+  .home-play-actions > * { min-width:0; white-space:normal; text-align:center; justify-content:center; }
   .new-home-rail:has(.home-play-panel) { display:contents!important; }
   .new-home-layout:has(.home-play-panel) > .new-main-stack { grid-row:2; }
   .home-play-panel { grid-row:1; }
@@ -287,6 +300,34 @@ html[data-warm-preview] .new-friends-promo > ul > li > p:last-child { font-size:
 .home-play-panel .play-recent li { border:1px solid var(--border); border-radius:.4rem; padding:.15rem .45rem; font-size:.8rem; overflow-wrap:anywhere; }
 
 .play-friend-list { display:grid; gap:.4rem; }
+
+.party-settings-toggle, .party-mobile-shortcuts, .party-mobile-game-summary { display:none; }
+.new-friends-active-party, .party-action-bar, .party-chat { scroll-margin-top:90px; }
+.party-lobby-header > div:empty { display:none; }
+@media (max-width:767px) {
+  .party-mobile-shortcuts { display:flex; flex-wrap:wrap; gap:8px; }
+  .party-mobile-shortcuts a { display:inline-flex; align-items:center; min-height:44px; padding:8px 12px; border-radius:8px; background:var(--secondary); font-size:14px; font-weight:600; }
+  .party-lobby { min-width:0; overflow-wrap:anywhere; }
+  .party-lobby :is(button,select,input:not([type=checkbox])) { min-height:44px; }
+  .party-lobby :is(input,select) { font-size:16px; }
+  .party-lobby button { white-space:normal; }
+  .party-settings-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-weight:600; }
+  .party-settings[data-expanded=false], .party-game-choice[data-expanded=false] { display:none; }
+  .party-mobile-game-summary { display:grid; gap:4px; }
+  .party-mobile-game-summary :is(small,span) { color:var(--muted-foreground); font-size:12px; }
+  .party-settings { display:grid; grid-template-columns:minmax(0,1fr); width:100%; }
+  .party-settings > div { width:100%; min-width:0; }
+  .party-primary-actions { width:100%; gap:8px; align-items:flex-start; }
+  .party-primary-actions > :is(button,div) { flex:1 1 140px; min-width:0; }
+  .party-primary-actions button { width:100%; justify-content:center; }
+  .party-secondary-actions { width:100%; justify-content:flex-end; border-top:1px solid var(--border); padding-top:8px; }
+  .party-members li { gap:8px; }
+  .party-members li > div:first-child { min-width:0; }
+  .party-members li > div:nth-child(2) { flex-shrink:0; }
+  .party-members button { min-width:44px; }
+  .party-members li > div:first-child > div:first-child { flex-shrink:0; }
+  .party-chat { padding-bottom:env(safe-area-inset-bottom); }
+}
 
 /* Search results: Discover's card size, with columns that fit the cards exactly. */
 html[data-warm-preview] .search-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,287.5px),1fr));gap:16px}

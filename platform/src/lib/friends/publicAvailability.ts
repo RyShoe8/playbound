@@ -1,14 +1,14 @@
 import Presence from "@/lib/models/Presence";
 import PlayAvailability from "@/lib/models/PlayAvailability";
-import { emptyAvailability, type Availability } from "./availability";
+import { availableAt, emptyAvailability, type Availability } from "./availability";
 import { defaultPlayPreferences, nextPlayTime } from "./playPreferences";
 
 /** Public schedules and explicit Looking to Party signals, never private windows. */
-export async function publicAvailability(recipientId?: string, now = Date.now()) {
+export async function publicAvailability(recipientId?: string, now = Date.now(), activeOnly = false) {
   const scope = recipientId ? { userId: recipientId } : {};
   const [schedules, manual] = await Promise.all([
     PlayAvailability.find({ ...scope, publishLooking: true, $or: [
-      { "window.endsAt": { $gt: new Date(now) }, "window.startsAt": { $lte: new Date(now + 6 * 3600000) } },
+      { "window.endsAt": { $gt: new Date(now) }, "window.startsAt": { $lte: new Date(now + (activeOnly ? 0 : 6 * 3600000)) } },
       { "weekly.0": { $exists: true } },
     ] }).lean(),
     Presence.find({ ...scope, lookingForPlayersUntil: { $gt: new Date(now) } })
@@ -21,7 +21,7 @@ export async function publicAvailability(recipientId?: string, now = Date.now())
     const availability: Availability = { timezone: row.timezone || "UTC", publishLooking: true,
       weekly: row.weekly || [], window: row.window && new Date(row.window.endsAt).getTime() > now
         ? { startsAt: new Date(row.window.startsAt).toISOString(), endsAt: new Date(row.window.endsAt).toISOString() } : null };
-    if (nextPlayTime(availability, now, now + 6 * 3600000)) {
+    if (activeOnly ? availableAt(availability, now) : nextPlayTime(availability, now, now + 6 * 3600000)) {
       result.set(String(row.userId), { availability, preferences: row.preferences || defaultPlayPreferences });
     }
   }

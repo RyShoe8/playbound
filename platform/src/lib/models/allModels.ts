@@ -3,6 +3,7 @@
  * allModels.test.ts: add a new model file here too.
  */
 import '@/lib/models/ActivePartyMembership';
+import '@/lib/models/PlayTogetherLease';
 import '@/lib/models/Artifact';
 import '@/lib/models/AutomatedEventConfig';
 import '@/lib/models/AutomatedEventLog';
@@ -66,6 +67,8 @@ import '@/lib/models/HyperdiscRanked';
 import '@/lib/models/MixtapeUpload';
 import '@/lib/models/ModClassification';
 import '@/lib/models/ModeratorAuditLog';
+import '@/lib/models/AffiliateTransaction';
+import '@/lib/models/AffiliateSyncState';
 import '@/lib/models/MultiplayerSession';
 import '@/lib/models/MultiplayerSignal';
 import '@/lib/models/NewsletterEmailTemplate';

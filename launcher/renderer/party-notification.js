@@ -44,7 +44,7 @@ function renderInvite(data) {
 
   // Badge text
   if (badgeEl) {
-    badgeEl.textContent = isPlayInvite ? "Game Invite" : "Party Invite";
+    badgeEl.textContent = data.type === "ltp_match_found" ? "Play Together" : isPlayInvite ? "Game Invite" : "Party Invite";
   }
 
   // Icon

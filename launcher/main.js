@@ -13064,6 +13064,9 @@ ipcMain.handle("show-desktop-notification", async (_event, opts) => {
           if (win.isMinimized()) win.restore();
           win.show();
           win.focus();
+          win.webContents.send("open-notification", {
+            id: opts?.id, type: opts?.type, href: opts?.href, meta: opts?.meta || {},
+          });
         }
       });
       notif.show();

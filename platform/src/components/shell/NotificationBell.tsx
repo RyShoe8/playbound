@@ -314,7 +314,7 @@ export function NotificationBell() {
                       <div className="mt-2">
                         <button
                           type="button"
-                          className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
+                          className="min-h-11 rounded-md bg-play px-3 py-2 text-sm font-bold text-play-foreground hover:brightness-110"
                           onClick={async () => {
                             setJoinError(null);
                             try {
@@ -336,7 +336,7 @@ export function NotificationBell() {
                             }
                           }}
                         >
-                          Join
+                          {n.meta?.partyId ? "Join party" : "Join"}
                         </button>
                       </div>
                     ) : null}

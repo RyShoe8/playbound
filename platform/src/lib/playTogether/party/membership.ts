@@ -28,6 +28,8 @@ import { hashPartyPassword, partyPayloadForDoc } from "./serialize";
 
 export async function createParty(opts: {
   userId: string;
+  /** Internal matchmaking journal; never accepted from the public create endpoint. */
+  availabilityMatch?: { key: string; userIds: string[]; expiresAt: Date };
   name?: string | null;
   gameSlug?: string | null;
   editionSlug?: string | null;
@@ -58,9 +60,14 @@ export async function createParty(opts: {
   if (gameSlug && !game) return { error: "Game not found", status: 404 };
   const partyEditionSlug = opts.editionSlug || requiredPartyEditionSlug(gameSlug);
 
+  if (opts.availabilityMatch && await Party.exists({ status: { $ne: "ended" }, "members.userId": opts.userId })) {
+    return { error: "You already have a party", status: 400 };
+  }
+
   // One active party per leader — return it idempotently instead of 409/500 races.
   const existing = await findActiveLeaderParty(opts.userId);
   if (existing) {
+    if (opts.availabilityMatch) return { error: "You already have a party", status: 400 };
     const existingId = String(existing._id);
     await leaveOtherActiveParties(opts.userId, existingId);
     await reserveActiveMembership(opts.userId, existingId);
@@ -82,7 +89,8 @@ export async function createParty(opts: {
     return { party, status: 200, existing: true, ...SKIP_VOICE };
   }
 
-  await leaveOtherActiveParties(opts.userId);
+  // An automatic availability match must never evict a membership claimed concurrently.
+  if (!opts.availabilityMatch) await leaveOtherActiveParties(opts.userId);
 
   const visibility = opts.visibility || "friends";
   if (visibility === "event") {
@@ -158,6 +166,7 @@ export async function createParty(opts: {
       gamesPlayed: gameSlug ? [gameSlug] : [],
       savedWorldId,
       name: normalizePartyName(opts.name),
+      availabilityMatch: opts.availabilityMatch || null,
       leaderOs: opts.leaderOs || null,
       gameSlug,
       editionSlug: partyEditionSlug,

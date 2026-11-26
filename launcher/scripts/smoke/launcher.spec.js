@@ -74,7 +74,7 @@ test('real launcher boots, navigates, and installs/removes a mock game', async (
       expect(await page.locator('#sidebar').evaluate(element => Math.round(element.getBoundingClientRect().width))).toBe(206);
       await page.screenshot({ path: testInfo.outputPath('home-layout.png') });
       await expect(page.locator('.card-title-text').filter({ hasText: 'Smoke Fixture Game' }).first()).toBeVisible();
-      await expect(page.getByRole('heading',{name:'Most Popular this week',exact:true})).toBeVisible();
+      await expect(page.getByRole('heading',{name:'Most Popular · Last 14 Days',exact:true})).toBeVisible();
       await page.locator('[data-view="friends"]').click();
       await expect(page.locator('#friends-content-area')).toBeVisible();
       await expect(page.getByText('Add Friend', { exact: true }).first()).toBeVisible();

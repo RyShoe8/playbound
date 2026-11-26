@@ -427,6 +427,7 @@ export function FriendsView({
   const partyParam = searchParams.get("party");
   const gameParam = searchParams.get("game");
   const joiningPartyRef = useRef<string | null>(null);
+  const focusedPartyRef = useRef<string | null>(null);
   
   const { 
     activeParty, 
@@ -437,6 +438,14 @@ export function FriendsView({
     joinParty,
     fetchParties
   } = usePartyStore();
+
+  useEffect(() => {
+    if (!activeParty || joiningPartyRef.current !== activeParty.id || focusedPartyRef.current === activeParty.id) return;
+    focusedPartyRef.current = activeParty.id;
+    const panel = document.getElementById("active-party");
+    panel?.focus({ preventScroll: true });
+    panel?.scrollIntoView({ block: "start" });
+  }, [activeParty]);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -762,8 +771,8 @@ export function FriendsView({
               onChange={() => void patchVisibility({ allowPlayInvites: !allowPlayInvites })}
             />
             <PrivacyToggle
-              label="Friend activity notifications"
-              description="Get notified when friends start playing or LFG"
+              label="Play activity notifications"
+              description="Friends’ activity and Play Together matches"
               checked={notifyFriendActivity}
               disabled={appearBusy}
               onChange={() =>
@@ -791,7 +800,7 @@ export function FriendsView({
       ) : null}
 
       {activeParty && (
-        <div className="new-friends-active-party space-y-3">
+        <div id="active-party" tabIndex={-1} aria-label="Your party" className="new-friends-active-party space-y-3">
           <PartyView party={activeParty} games={games} />
         </div>
       )}

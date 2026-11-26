@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), update: vi.fn(), friends: vi.fn(), db: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), update: vi.fn(), friends: vi.fn(), db: vi.fn(), after: vi.fn() }));
+vi.mock("next/server", async (original) => ({ ...await original<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("@/lib/friendsAuth", () => ({ getFriendsUserId: mocks.auth }));
 vi.mock("@/lib/db", () => ({ default: mocks.db }));
 vi.mock("@/lib/multiplayer/activity", () => ({ revalidateMultiplayerActivity: vi.fn() }));
@@ -19,12 +20,14 @@ it("scopes writes to the authenticated user, ignoring a supplied user ID", async
   mocks.auth.mockResolvedValue("owner");
   const response = await PUT(new Request("https://test/api/friends/availability", { method: "PUT", body: JSON.stringify({ ...emptyAvailability(), userId: "someone-else" }) }));
   expect(response.status).toBe(200);
+  expect(mocks.after).toHaveBeenCalledOnce();
   expect(mocks.update).toHaveBeenCalledWith({ userId: "owner" }, { $set: { ...emptyAvailability(), publishLooking: false } }, { upsert: true, runValidators: true });
 });
 it("rejects invalid data without a write", async () => {
   mocks.auth.mockResolvedValue("owner");
   expect((await PUT(new Request("https://test/api/friends/availability", { method: "PUT", body: "{}" }))).status).toBe(400);
   expect(mocks.update).not.toHaveBeenCalled();
+  expect(mocks.after).not.toHaveBeenCalled();
 });
 it("returns friends-only data with no shared cache", async () => {
   mocks.auth.mockResolvedValue("owner"); mocks.friends.mockResolvedValue({ availability: emptyAvailability(), friends: [] });

@@ -46,7 +46,8 @@ export function buildStoreUrl(
   rawUrl: string,
   store: DiscountStoreSlug,
   directUrlAvailable: boolean,
-  affiliates: Awaited<ReturnType<typeof getStoreAffiliateMap>>
+  affiliates: Awaited<ReturnType<typeof getStoreAffiliateMap>>,
+  gameSlug?: string | null,
 ): string {
   const withUtm = withOutboundUtm(rawUrl, { campaign: "deals_discount" });
   if (!directUrlAvailable) return withUtm;
@@ -58,6 +59,7 @@ export function buildStoreUrl(
     id: stamp?.id,
     param: stamp?.param,
     template: stamp?.template,
+    gameSlug,
   });
 }
 
@@ -85,7 +87,7 @@ async function toRecord(
     currency: (doc.currency as string) || "USD",
     percentOff: Number(doc.percentOff),
     storeName: storeSlugToRetailer(store),
-    storeUrl: buildStoreUrl(String(doc.storeUrl), store, directUrlAvailable, affiliates),
+    storeUrl: buildStoreUrl(String(doc.storeUrl), store, directUrlAvailable, affiliates, (doc.matchedGameSlug as string) || null),
     storeKey: store,
     endDate: rawEndDate ? new Date(rawEndDate as string).toISOString() : null,
   };

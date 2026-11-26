@@ -99,6 +99,10 @@ function partyJoinFailed(result) {
   return true;
 }
 
+function hasPartyJoin(n) {
+  return Boolean(n.meta?.partyId && (n.type === "party_invite" || n.meta?.actions?.includes("join")));
+}
+
 /**
  * Show a floating in-app toast notification card when a new notification arrives.
  */
@@ -118,7 +122,7 @@ function showNotificationToast(n) {
       : "🔔";
 
   let actionsHtml = "";
-  if (n.type === "party_invite" && partyId) {
+  if (hasPartyJoin(n)) {
     actionsHtml = `
       <button type="button" class="pb-toast-btn primary" data-action="toast-join-party" data-party="${escapeHtml(
         partyId
@@ -357,7 +361,7 @@ function paintList() {
             inviteId
           )}" data-id="${escapeHtml(n.id)}">Decline</button>
         </div>`;
-      } else if (n.type === "party_invite" && partyId) {
+      } else if (hasPartyJoin(n)) {
         actionHtml = `<div class="notif-actions">
           <button type="button" class="notif-action primary" data-action="join-party" data-party="${escapeHtml(
             partyId
@@ -376,7 +380,7 @@ function paintList() {
         </div>`;
       }
       return `<li class="notif-item${unread ? " unread" : ""}" data-id="${escapeHtml(n.id)}">
-        <button type="button" class="notif-item-main" data-action="${n.type === "party_invite" && partyId ? "join-party" : "open"}" data-id="${escapeHtml(
+        <button type="button" class="notif-item-main" data-action="${hasPartyJoin(n) ? "join-party" : "open"}" data-id="${escapeHtml(
           n.id
         )}" data-href="${escapeHtml(n.href || "/friends")}" data-slug="${escapeHtml(n.meta?.gameSlug || "")}" data-party="${escapeHtml(partyId)}">
           <span class="notif-title">${escapeHtml(n.title)}</span>
@@ -441,7 +445,7 @@ async function onListClick(e) {
   }
   if (action === "open") {
     const partyId = btn.dataset.party || item?.meta?.partyId;
-    if (item?.type === "party_invite" && partyId && window.playbound?.joinParty) {
+    if (item && hasPartyJoin(item) && partyId && window.playbound?.joinParty) {
       const res = await window.playbound.joinParty(partyId);
       if (partyJoinFailed(res)) return;
       setStatus("Joined party!");
@@ -470,6 +474,19 @@ function syncPoll() {
 export function wireNotifications() {
   if (wired) return;
   wired = true;
+  window.playbound.onOpenNotification?.(async (notification) => {
+    try {
+      if (hasPartyJoin(notification) && window.playbound.joinParty) {
+        const result = await window.playbound.joinParty(notification.meta.partyId);
+        if (partyJoinFailed(result)) return;
+      }
+      if (notification.id) await markRead(notification.id);
+      setPanelOpen(false);
+      await openHref(notification.href || "/friends", notification.meta);
+    } catch (error) {
+      setStatus(error?.message || "Could not open the notification. Please try again.", true);
+    }
+  });
   const { btn, markAll, wrap, list } = els();
   if (!btn || !wrap) return;
 

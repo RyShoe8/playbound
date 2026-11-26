@@ -96,7 +96,7 @@ export function PartyChat({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div id={`party-chat-${partyId}`} className="party-chat overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <h4 className="flex items-center gap-2 text-sm font-bold">
           <MessageCircle className="size-4" /> Party chat
@@ -108,7 +108,7 @@ export function PartyChat({
           <p className="text-sm text-muted-foreground">No messages yet. Say something to the party.</p>
         ) : (
           messages.map((m) => (
-            <div key={m.id} className="text-sm">
+            <div key={m.id} className="text-sm break-words [overflow-wrap:anywhere]">
               <span className="font-semibold text-primary">{m.username}:</span>
               <span className="ml-2 text-foreground">{m.content}</span>
             </div>
@@ -128,13 +128,14 @@ export function PartyChat({
           onChange={(e) => setDraft(e.target.value)}
           maxLength={500}
           placeholder="Message the party…"
+          aria-label="Message the party"
           disabled={sending}
-          className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring"
+          className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-secondary/50 px-3 text-base sm:text-sm outline-none focus:border-ring"
         />
         <button
           type="submit"
           disabled={sending || !draft.trim()}
-          className="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
           aria-label="Send"
         >
           <Send className="size-4" />

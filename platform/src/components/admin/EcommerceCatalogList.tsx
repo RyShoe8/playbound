@@ -5,6 +5,7 @@ import Link from "next/link";
 import { EcommerceMatchButton } from "@/components/admin/EcommerceMatchButton";
 import { EcommerceSuggestionActions } from "@/components/admin/EcommerceSuggestionActions";
 import { formatCents } from "@/lib/access/resolver";
+import type { AffiliateSales } from "@/lib/commerce/adtraction/reportTypes";
 
 export type EcommerceOfferRow = {
   retailer: string;
@@ -24,6 +25,8 @@ export type EcommerceGameRow = {
   slug: string;
   title: string;
   priceType: string | null;
+  purchaseClicks: number | null;
+  affiliateSales: AffiliateSales | null;
   offers: EcommerceOfferRow[];
   suggestions: EcommerceSuggestionRow[];
 };
@@ -123,13 +126,17 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
   }
 
   return (
-    <section className="space-y-3">
+    <section className="min-w-0 space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Master Copies ({filtered.length})</h2>
           <p className="text-sm text-muted-foreground">
             Master copies and store purchase listings. Display controls which stores appear on the game
             page; Match fills Steam, GOG, Epic, and feed-backed stores.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Purchase-link clicks count recorded store visits across all time, excluding detected bots.
+            Adtraction sales are shown separately and only cover the reporting period above.
           </p>
         </div>
         <input
@@ -148,7 +155,7 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
           {filtered.map((game) => {
             const paidEmpty = game.priceType === "PAID" && game.offers.length === 0;
             return (
-              <li key={game.slug} className="rounded-xl border border-border bg-card p-4">
+              <li key={game.slug} className="min-w-0 rounded-xl border border-border bg-card p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <Link
@@ -163,7 +170,27 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
                       {paidEmpty ? " · no purchase sources" : ""}
                     </p>
                   </div>
-                  <EcommerceMatchButton slug={game.slug} label="Match" />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <dl className="flex gap-4 rounded-lg border border-border bg-secondary/50 px-3 py-2">
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Approved sales</dt>
+                        <dd className="mt-0.5 text-lg font-bold tabular-nums">{game.affiliateSales?.approved.toLocaleString("en-US") ?? "—"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Pending sales</dt>
+                        <dd className="mt-0.5 text-lg font-bold tabular-nums">{game.affiliateSales?.pending.toLocaleString("en-US") ?? "—"}</dd>
+                      </div>
+                    </dl>
+                    <dl className="rounded-lg border border-border bg-secondary/50 px-3 py-2">
+                      <dt className="text-xs text-muted-foreground">Purchase-link clicks · All time</dt>
+                      <dd className="mt-0.5 text-lg font-bold tabular-nums">
+                        {game.purchaseClicks === null ? (
+                          <span className="text-sm font-medium text-muted-foreground">Unavailable</span>
+                        ) : game.purchaseClicks.toLocaleString("en-US")}
+                      </dd>
+                    </dl>
+                    <EcommerceMatchButton slug={game.slug} label="Match" />
+                  </div>
                 </div>
 
                 {game.offers.length === 0 ? (
@@ -186,7 +213,7 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
                             href={offer.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="truncate text-xs text-primary hover:underline sm:max-w-xs"
+                            className="min-w-0 max-w-full truncate text-xs text-primary hover:underline sm:max-w-xs"
                           >
                             {offer.url.replace(/^https?:\/\//, "")}
                           </a>

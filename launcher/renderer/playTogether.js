@@ -134,7 +134,7 @@ export function mountPlayTogether(host, { isShowing = () => !document.hidden } =
     const window_ = { startsAt: new Date(start).toISOString(), endsAt: new Date(start + PLAN_LENGTH).toISOString() };
     const result = await call(() => window.playbound.patchPlayAvailability({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, window: window_ }));
     s.snapshot.availability = { ...s.snapshot.availability, window: result.window };
-    return "Availability shared for two hours.";
+    return "You're available for two hours. We'll notify you when a player matches your preferences.";
   });
 
   const clearWindow = () => run(async () => {

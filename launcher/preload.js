@@ -358,6 +358,11 @@ contextBridge.exposeInMainWorld("playbound", {
    */
   onSystemIdle: (cb) => ipcRenderer.on("system-idle", (_event, data) => cb(Boolean(data?.idle))),
   onNavigate: (cb) => ipcRenderer.on("navigate", (_event, data) => cb(data || {})),
+  onOpenNotification: (cb) => {
+    const listener = (_event, data) => cb(data || {});
+    ipcRenderer.on("open-notification", listener);
+    return () => ipcRenderer.removeListener("open-notification", listener);
+  },
   onPartyInvite: (cb) => {
     const listener = (_event, data) => cb(data || {});
     ipcRenderer.on("party-invite", listener);

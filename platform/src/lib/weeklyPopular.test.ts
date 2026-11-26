@@ -24,5 +24,5 @@ it("keeps two editions of one game independently ranked and retains unattributed
   expect(pipeline[1].$group._id).toEqual(GAMEPLAY_ID);
   expect(pipeline[0].$match.$or).toEqual(PLAY_END_MATCH.$or);
   expect(pipeline[0].$match.isBot).toEqual({$ne:true});
-  expect(pipeline[0].$match.createdAt.$gte).toBeInstanceOf(Date);
+  expect(Math.abs(Date.now() - pipeline[0].$match.createdAt.$gte.getTime() - 14 * 86400000)).toBeLessThan(1000);
 });

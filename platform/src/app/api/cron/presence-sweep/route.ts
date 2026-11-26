@@ -3,6 +3,7 @@ import { sweepStalePresence } from "@/lib/presence/server";
 import { expireStalePlayInvites } from "@/lib/playTogether/invites";
 import { dropOfflinePartyMembers, sweepStaleParties } from "@/lib/playTogether/party";
 import { cronAuthorized } from "@/lib/cronAuth";
+import { sweepAndMatchLookingUsers } from "@/lib/playTogether/ltpMatch";
 
 export const maxDuration = 60;
 
@@ -25,6 +26,8 @@ async function run(req: Request) {
       sweepStaleParties(),
       dropOfflinePartyMembers(),
     ]);
+    // Run after stale memberships are released; includes saved public play windows.
+    const matches = await sweepAndMatchLookingUsers();
     if (
       result.presenceMarkedOffline > 0 ||
       result.sessionsEnded > 0 ||
@@ -45,6 +48,7 @@ async function run(req: Request) {
       partiesEnded: parties.ended,
       messagesDeleted: parties.messagesDeleted || 0,
       partyMembersDropped: dropped.dropped,
+      matches,
     });
   } catch (err) {
     console.error("[presence-sweep] failed:", err);

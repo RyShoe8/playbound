@@ -10,7 +10,7 @@ function ensureHomeShell() {
   views.home.innerHTML = `<div class="site-page-heading"><p class="site-eyebrow">Your Clubhouse</p><h1 class="view-title">Find your next game night.</h1><p class="view-sub">Great games, Good Company. One place to play.</p></div>
     <div class="site-home-layout"><div class="site-main-stack">
     <section id="home-feature" class="site-home-feature" aria-label="Latest released game">Loading your next game…</section>
-    ${section('home-popular', 'Most Popular this week', 'games')}
+    ${section('home-popular', 'Most Popular · Last 14 Days', 'games')}
     <section><div class="section-header"><h2>Next game night</h2><button class="site-text-link" data-home-view="events">Full schedule →</button></div><div id="home-next-night" class="site-panel site-pad"></div></section>
     ${section('home-free', 'Free games this week', 'deals')}
     ${section('home-newest', 'Newest Games', 'games')}
@@ -145,7 +145,7 @@ async function loadHome() {
       } else feedRetried = false;
       const selected = homepageSelections(catalog, feed);
       paintFeature(selected.released[0]);
-      document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular this week';
+      document.querySelector('#home-popular-grid').previousElementSibling.querySelector('h2').textContent = 'Most Popular · Last 14 Days';
       const failed = !feed;
       paint('home-popular', feed ? (Array.isArray(feed.popularEditions) ? selected.popularEditions.map(({game,edition}) => {
         if (!edition) return createGameCard(game);

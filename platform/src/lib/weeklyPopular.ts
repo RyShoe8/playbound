@@ -16,7 +16,7 @@ export const weeklyPopular = unstable_cache(async () => {
       _id: { gameSlug: string; editionSlug: string | null }; totalMs: number;
     }>([
       { $match: { ...PLAY_END_MATCH, isBot: { $ne: true },
-        createdAt: { $gte: new Date(Date.now() - 7 * 86400000) },
+        createdAt: { $gte: new Date(Date.now() - 14 * 86400000) },
         "properties.durationMs": { $type: "number", $gt: 0 },
         "properties.gameSlug": { $type: "string", $ne: "" } } },
       { $group: { _id: GAMEPLAY_ID, totalMs: { $sum: "$properties.durationMs" } } },
@@ -35,4 +35,4 @@ export const weeklyPopular = unstable_cache(async () => {
     console.error("[weekly-popular] telemetry unavailable", error);
     return [];
   }
-}, ["weekly-popular-editions-v2"], { revalidate: 900, tags: ["catalog", "live-activity"] });
+}, ["popular-editions-14-days-v3"], { revalidate: 900, tags: ["catalog", "live-activity"] });

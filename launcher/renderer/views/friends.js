@@ -228,7 +228,7 @@ const PRIVACY_TOGGLES = [
   { key: "appearOffline", label: "Appear offline", description: "Friends see you as offline", fallback: false },
   { key: "hideActivityFromFriends", label: "Hide what I'm playing", description: "Stay online without sharing game activity", fallback: false },
   { key: "allowPlayInvites", label: "Allow play invites", description: "Friends can invite you to play", fallback: true },
-  { key: "notifyFriendActivity", label: "Friend activity notifications", description: "Get notified when friends start playing or LFG", fallback: true },
+  { key: "notifyFriendActivity", label: "Play activity notifications", description: "Friendsâ€™ activity and Play Together matches", fallback: true },
 ];
 
 function wireActivityPrivacy() {

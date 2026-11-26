@@ -1,3 +1,5 @@
+import { withAdtractionGameReference } from "@/lib/commerce/adtraction/attribution";
+
 /** Parse storefront product URLs. No fetches — safe for the admin client. */
 
 const LIVE_PRICE_RETAILERS = [
@@ -92,9 +94,11 @@ export function withStoreAffiliate(
     id?: string | null;
     param?: string | null;
     template?: string | null;
+    gameSlug?: string | null;
   }
 ): string {
   if (opts.affiliate === false) return url;
+  const referenced = (value: string) => withAdtractionGameReference(value, opts.gameSlug);
   const raw = String(url || "").trim();
   if (!raw) return raw;
 
@@ -110,22 +114,22 @@ export function withStoreAffiliate(
   if (template) {
     try {
       const templateHost = new URL(template.replace(/\{url\}|\{dest\}/g, "https://example.com")).hostname.toLowerCase();
-      if (u.hostname.toLowerCase() === templateHost) return raw;
+      if (u.hostname.toLowerCase() === templateHost) return referenced(raw);
     } catch {
       // Continue if template parsing fails
     }
     if (template.includes("{url}")) {
-      return template.replace(/\{url\}/g, encodeURIComponent(raw));
+      return referenced(template.replace(/\{url\}/g, encodeURIComponent(raw)));
     }
     if (template.includes("{dest}")) {
-      return template.replace(/\{dest\}/g, encodeURIComponent(raw));
+      return referenced(template.replace(/\{dest\}/g, encodeURIComponent(raw)));
     }
     if (template.endsWith("url=")) {
-      return template + encodeURIComponent(raw);
+      return referenced(template + encodeURIComponent(raw));
     }
-    return template.includes("?")
+    return referenced(template.includes("?")
       ? `${template}&url=${encodeURIComponent(raw)}`
-      : `${template}?url=${encodeURIComponent(raw)}`;
+      : `${template}?url=${encodeURIComponent(raw)}`);
   }
 
   const id = typeof opts.id === "string" ? opts.id.trim() : "";

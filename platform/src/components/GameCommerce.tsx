@@ -28,6 +28,7 @@ function purchaseHref(offer: RetailOffer, slug: string, affiliates: StoreAffilia
     id: stamp?.id,
     param: stamp?.param,
     template: stamp?.template,
+    gameSlug: slug,
   });
 }
 

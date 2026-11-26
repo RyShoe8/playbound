@@ -16,6 +16,7 @@ import { getLookingToPartyCounts, listLookingToParty } from "@/lib/playTogether/
 import { POST as stopLooking } from "@/app/api/presence/lfg/route";
 import { sweepStalePresence } from "@/lib/presence/server";
 vi.mock("@/lib/db", () => ({ default: async () => undefined }));
+vi.mock("next/server", async (original) => ({ ...await original<typeof import("next/server")>(), after: vi.fn() }));
 vi.mock("@/lib/playTogether/sharedGames", () => ({ listSharedLibraryByFriend: async () => ({}) }));
 vi.mock("@/lib/catalog", () => ({ getGame: async () => ({ slug: "openra", features: ["Multiplayer"] }), listGames: async () => [{ slug: "openra", title: "OpenRA" }] }));
 vi.mock("@/lib/friendsAuth", () => ({ getFriendsUserId: async () => owner }));

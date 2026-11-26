@@ -185,6 +185,11 @@ const PartySchema = new Schema(
     },
 
     name: { type: String, default: null, maxlength: 60 },
+    // Recover notification delivery after a worker restart without opening another party.
+    availabilityMatch: {
+      type: new Schema({ key: String, userIds: [String], expiresAt: Date }, { _id: false }),
+      default: null,
+    },
 
     /**
      * The leader's OS at creation, for attributing party telemetry.
@@ -342,6 +347,9 @@ const PartySchema = new Schema(
 
 // "Which parties is this user in?" — the most common query.
 PartySchema.index({ "members.userId": 1, status: 1 });
+PartySchema.index({ "availabilityMatch.expiresAt": 1 }, {
+  partialFilterExpression: { "availabilityMatch.expiresAt": { $type: "date" } },
+});
 
 // Sweep: find stale non-ended parties.
 PartySchema.index({ status: 1, lastActivity: 1 });

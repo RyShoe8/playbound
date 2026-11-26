@@ -67,6 +67,7 @@ function purchaseHref(
     id: stamp?.id,
     param: stamp?.param,
     template: stamp?.template,
+    gameSlug: slug,
   });
 }
 

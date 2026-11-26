@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/adtraction",
+      "schedule": "25 * * * *"
+    },
+    {
       "path": "/api/cron/catalog-versions",
       "schedule": "0 12 * * *"
     },

@@ -93,6 +93,7 @@ export function PartyView({
     setEdition,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [worldBusy, setWorldBusy] = useState(false);
   const [worldError, setWorldError] = useState<string | null>(null);
@@ -423,9 +424,9 @@ export function PartyView({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="party-lobby rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="bg-muted border-b border-border">
+      <div className="party-lobby-header bg-muted border-b border-border">
         {/* Identity and the two party-wide settings */}
         <div className="flex flex-col gap-4 p-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0 flex-1 space-y-2">
@@ -445,7 +446,7 @@ export function PartyView({
             ) : (
               <h3 className="text-lg font-bold">{partyDisplayName(party)}</h3>
             )}
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
               <span className="capitalize">{party.status.replace("_", " ")}</span>
               <span>·</span>
               {/*
@@ -466,6 +467,10 @@ export function PartyView({
               ) : null}
             </p>
             <PartyCapacityNote party={party} />
+            <nav className="party-mobile-shortcuts" aria-label="Party shortcuts">
+              <a href={`#party-actions-${party.id}`}>Ready & play</a>
+              <a href={`#party-chat-${party.id}`}>Party chat</a>
+            </nav>
             <button
               type="button"
               onClick={async () => {
@@ -483,7 +488,10 @@ export function PartyView({
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-3 md:justify-end">
+          {isLeader && party.status !== "ended" && <button type="button" className="party-settings-toggle"
+            aria-expanded={settingsOpen} aria-controls={`party-settings-${party.id}`}
+            onClick={() => setSettingsOpen(value => !value)}>{settingsOpen ? "Hide party settings" : "Game & party settings"}<span aria-hidden="true">{settingsOpen ? "−" : "+"}</span></button>}
+          <div id={`party-settings-${party.id}`} data-expanded={settingsOpen} className="party-settings flex flex-wrap gap-3 md:justify-end">
             {isLeader &&
               party.status !== "ended" &&
               party.hostModes &&
@@ -581,6 +589,10 @@ export function PartyView({
           */}
         <div className="grid gap-4 border-t border-border p-4 md:grid-cols-2">
           <div className="min-w-0">
+            {isLeader && party.status !== "ended" && !settingsOpen && <div className="party-mobile-game-summary">
+              <small>Playing together</small><strong>{party.gameTitle || "Choose a game in party settings"}</strong>
+              {party.editionSlug && <span>{party.gameSlug === "openra" ? openRaEditionName : party.configSync?.editionName || "Selected edition"}</span>}
+            </div>}
             {/*
               * Available for as long as the party is alive, including while it
               * is playing: finishing one game and picking another is how a
@@ -588,7 +600,7 @@ export function PartyView({
               * forming server-side.
               */}
             {isLeader && party.status !== "ended" ? (
-              <div className="max-w-[240px] space-y-2">
+              <div data-expanded={settingsOpen} className="party-game-choice w-full md:max-w-[240px] space-y-2">
                 <PartyGamePicker
                   games={partyGames}
                   selectedSlug={party.gameSlug || ""}
@@ -776,46 +788,9 @@ export function PartyView({
         ) : null}
       </div>
 
-      {/* Members */}
-      <div className="p-4 space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Members</h4>
-        <ul className="space-y-1">
-          {party.members.map((m) => (
-            <li key={m.userId} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/40">
-              <div className="flex items-center gap-3">
-                <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${m.ready ? 'bg-green-500/20 text-green-600' : 'bg-muted'}`}>
-                  {m.username.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold text-sm flex items-center gap-1.5">
-                    {m.username}
-                    {m.role === "leader" && <Crown className="size-3.5 text-primary" />}
-                    {m.userId === userId && <span className="text-xs text-muted-foreground font-normal">(You)</span>}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.ready ? "Ready" : "Not ready"}
-                  </p>
-                </div>
-              </div>
-
-              {isLeader && m.userId !== userId && (
-                <div className="flex gap-2">
-                  <button onClick={() => void transferLeadership(party.id, m.userId)} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground" title="Make Leader">
-                    <Crown className="size-4" />
-                  </button>
-                  <button onClick={() => void removeMember(party.id, m.userId)} className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive" title="Kick">
-                    <X className="size-4" />
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
       {/* Actions */}
-      <div className="p-4 bg-muted/50 border-t border-border flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex gap-3">
+      <div id={`party-actions-${party.id}`} className="party-action-bar p-4 bg-muted/50 border-t border-border flex flex-wrap items-center gap-3 justify-between">
+        <div className="party-primary-actions flex flex-wrap gap-3 min-w-0">
           {actions.ready.visible && (
             <button
               disabled={!actions.ready.enabled}
@@ -1038,7 +1013,7 @@ export function PartyView({
 
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <div className="party-secondary-actions ml-auto flex flex-wrap items-center justify-end gap-3">
           {party.voiceEnabled || party.discord.inviteUrl || party.discord.voiceChannelId ? (
             <button
               type="button"
@@ -1065,6 +1040,43 @@ export function PartyView({
           <p className="w-full text-xs text-destructive">{voiceError}</p>
         ) : null}
       </div>
+      {/* Members */}
+      <div className="party-members p-4 space-y-2">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Members</h4>
+        <ul className="space-y-1">
+          {party.members.map((m) => (
+            <li key={m.userId} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/40">
+              <div className="flex items-center gap-3">
+                <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${m.ready ? 'bg-green-500/20 text-green-600' : 'bg-muted'}`}>
+                  {m.username.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm flex items-center gap-1.5">
+                    <span className="truncate" title={m.username}>{m.username}</span>
+                    {m.role === "leader" && <Crown className="size-3.5 text-primary" />}
+                    {m.userId === userId && <span className="text-xs text-muted-foreground font-normal">(You)</span>}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {m.ready ? "Ready" : "Not ready"}
+                  </p>
+                </div>
+              </div>
+
+              {isLeader && m.userId !== userId && (
+                <div className="flex gap-2">
+                  <button onClick={() => void transferLeadership(party.id, m.userId)} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground" title="Make Leader" aria-label={`Make ${m.username} party leader`}>
+                    <Crown className="size-4" />
+                  </button>
+                  <button onClick={() => void removeMember(party.id, m.userId)} className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive" title="Kick" aria-label={`Remove ${m.username} from party`}>
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <PartyChat
         partyId={party.id}
         inviteUrl={party.discord?.inviteUrl}

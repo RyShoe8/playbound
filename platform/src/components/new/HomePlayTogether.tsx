@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { type Availability } from "@/lib/friends/availability";
 import { type FriendActivity } from "@/lib/friends/friendActivity";
 import { acceptsGame, nextPlayTime, defaultPlayPreferences, type MatchGame, type PlayPreferences } from "@/lib/friends/playPreferences";
+import { PlayTogetherPanel } from "./PlayTogetherPanel";
 
 type Friend = FriendActivity & { id: string; username: string; online: boolean; availability: Availability; preferences?: PlayPreferences; recentGames?: string[]; sharedGames: {slug: string; editionSlug?: string}[] };
 type Snapshot = { recentGames?: string[]; availability: Availability; preferences?: PlayPreferences; friends: Friend[]; matchCandidates?: Friend[] };
@@ -116,14 +117,13 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
   const at = chosen?.at || when || now;
   const alreadySent = sent.includes(selected+":"+(at > now ? at : 0));
   const style = "new-button";
-  return <section className="new-panel new-pad home-play-panel">
-    <h2>Play together</h2>
+  return <PlayTogetherPanel>
     <label>When <select value={when} onChange={e=>setWhen(Number(e.target.value))}><option value={0}>Now</option>{slots.map(t=><option key={t} value={t}>{new Date(t).getDate() !== new Date(now).getDate() ? "Tomorrow · " : ""}{clock(t)}</option>)}</select></label>
     <div className="home-play-actions">{when ? <button disabled={busy} className={style} onClick={()=>{setPlanningAt(when);setNotice("");planner.current?.showModal();}}>{plans[when] ? "View party plan" : "Plan a party"}</button> : <Link className={style} href={partyId ? `/party/${partyId}` : "/multiplayer?startParty=1"}>{partyId ? "Open your party" : "Start a Party"}</Link>}
     <button disabled={busy || !snapshot} className="new-button primary" onClick={()=>void run(async()=>{
       const start = when || Date.now();
       const result = await request("/api/friends/availability","PATCH",{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone, window:{startsAt:new Date(start).toISOString(),endsAt:new Date(start+7200000).toISOString()}});
-      setSnapshot(old=>old && {...old,availability:{...old.availability,window:result.window}});return "Availability shared with PlayBound for two hours.";
+      setSnapshot(old=>old && {...old,availability:{...old.availability,window:result.window}});return "You're available for two hours. We'll notify you when a player matches your preferences.";
     })}>{when ? `Free at ${clock(when)}` : "Free to Play Now"}</button></div>
     <dialog ref={planner} className="home-play-dialog party-plan" aria-labelledby="party-plan-title" onClose={()=>setPlanningAt(0)}>
       <h2 id="party-plan-title">{plans[planningAt] ? "Your party is planned" : "Plan a party"}</h2>
@@ -159,5 +159,5 @@ export function HomePlayTogether({ games }: { games: MatchGame[] }) {
     <label>Message <input maxLength={500} value={message} onChange={e=>setMessage(e.target.value)} /></label><button disabled={busy || !message.trim()} onClick={()=>void run(async()=>{await request("/api/friends/message","POST",{friendId:selected,message});setMessage("");return "Message sent.";})}>Send message</button></div>}
     {!edit && !planningAt && notice && <p role="status">{notice}</p>}
     <div><Link href="/friends">Friends & schedule →</Link></div>
-  </section>;
+  </PlayTogetherPanel>;
 }
