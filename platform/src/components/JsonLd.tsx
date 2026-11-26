@@ -113,7 +113,9 @@ export function organizationSchema(): Json {
     founder: { "@id": EDITOR_ID },
     logo: {
       "@type": "ImageObject",
-      url: absoluteUrl("/icon"),
+      url: absoluteUrl("/brand/playbound-arcade-avatar-1024.png"),
+      width: 1024,
+      height: 1024,
     },
     ...(SITE_SAME_AS.length ? { sameAs: SITE_SAME_AS } : {}),
     parentOrganization: {

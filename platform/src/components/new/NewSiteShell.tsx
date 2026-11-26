@@ -31,6 +31,7 @@ export function NewSiteShell() {
  <details key={pathname} className="new-mobile-menu">
  <summary aria-label="Open navigation menu"><Menu size={22}/></summary>
  <div className="new-mobile-menu-panel">
+ <NewWordmark />
  <nav aria-label="Mobile navigation">{links.map(([href,label,Icon])=>nav(href,label,Icon))}{nav("/hosting/servers","My servers",Server)}{nav("/developer","Developer tools",Code)}{canViewAdmin(session?.user?.role)&&nav("/admin","Administration",Shield)}</nav>
  {session?.user?<><Link href="/profile">Account settings</Link><SignOutButton/></>:<><Link href="/login?callbackUrl=/">Sign in</Link><Link href="/signup">Create a free account</Link></>}
  </div>

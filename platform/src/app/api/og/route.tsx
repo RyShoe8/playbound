@@ -1,3 +1,4 @@
+import { BrandLogoSvg } from "@/components/brand/BrandLogoSvg";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_PUBLIC_HOST, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 
@@ -68,28 +69,7 @@ export async function GET(request: Request) {
               zIndex: 10,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 50,
-                  height: 50,
-                  borderRadius: 14,
-                  background: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
-                  boxShadow: "0 6px 20px -2px rgba(168, 85, 247, 0.5)",
-                }}
-              >
-                <svg width={24} height={24} viewBox="0 0 24 24" fill="#ffffff">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <div style={{ display: "flex", fontSize: 34, fontWeight: 800, letterSpacing: -0.5 }}>
-                {SITE_NAME.slice(0, 4)}
-                <span style={{ color: "#c084fc" }}>{SITE_NAME.slice(4)}</span>
-              </div>
-            </div>
+            <BrandLogoSvg width={300} />
 
             <div
               style={{

@@ -5,7 +5,8 @@ const sharp = require('sharp');
 async function main() {
   const assets = path.resolve(__dirname, '../../launcher/assets');
   const source = fs.readFileSync(path.join(assets, 'icon.svg'));
-  const png = size => sharp(source).resize(size, size).png().toBuffer();
+  const smallSource = fs.readFileSync(path.join(assets, 'icon-small.svg'));
+  const png = size => sharp(size <= 64 ? smallSource : source).resize(size, size).png().toBuffer();
   fs.writeFileSync(path.join(assets, 'icon.png'), await png(1024));
   fs.writeFileSync(path.join(assets, 'tray-icon.png'), await png(64));
   const sizes = [16, 24, 32, 48, 64, 128, 256];
@@ -24,6 +25,7 @@ async function main() {
     offset += image.length;
   });
   fs.writeFileSync(path.join(assets, 'icon.ico'), Buffer.concat([header, ...images]));
-  console.log('Generated sky-blue launcher, tray, and multi-resolution Windows icons.');
+  fs.writeFileSync(path.resolve(__dirname, '../src/app/favicon.ico'), Buffer.concat([header, ...images]));
+  console.log('Generated arcade launcher, tray, browser, and multi-resolution Windows icons.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

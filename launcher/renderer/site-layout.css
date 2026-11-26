@@ -20,11 +20,9 @@
   --border-focus: #38bdf866;
 }
 #sidebar { width:206px; padding:24px 14px 14px; }
-.site-wordmark { display:flex; flex-direction:column; align-items:center; gap:0; padding:0; margin:0 0 28px; border:0; background:none; color:var(--text-main); cursor:pointer; }
-.site-wordmark>span { font-size:26px; letter-spacing:-1.3px; white-space:nowrap; }
-.site-wordmark i { font-style:normal; color:var(--accent); font-size:18px; margin-right:5px; }
-.site-wordmark b { color:var(--accent); }
-.site-wordmark small { font-size:11px; letter-spacing:.1px; margin-top:4px; }
+.site-wordmark { display:flex; flex-direction:column; align-items:center; gap:0; padding:0; margin:0 0 28px; width:178px; max-width:100%; border:0; background:none; color:#fff; cursor:pointer; }
+.site-wordmark>img { display:block; width:100%; height:auto; }
+.site-wordmark small { font-size:10px; line-height:1.4; letter-spacing:.05px; margin-top:5px; white-space:nowrap; }
 .sidebar-scroll { overflow-y:auto; gap:16px; }
 .sidebar-nav { gap:3px; }
 .nav-btn { font-size:12px; border-radius:5px; padding:10px 12px; gap:11px; font-weight:500; color:var(--text-muted); }

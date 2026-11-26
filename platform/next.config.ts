@@ -213,10 +213,11 @@ const nextConfig: NextConfig = {
       // links to the old anchor targets.
       { source: "/discover/collections", destination: "/collections", permanent: true },
       { source: "/discover/developers", destination: "/developers", permanent: true },
-      // App Router serves the icon at /icon (app/icon.tsx); browsers and bots
-      // still request the legacy favicon paths.
-      { source: "/favicon.ico", destination: "/icon", permanent: false },
-      { source: "/favicon.png", destination: "/icon", permanent: false },
+      // /favicon.ico is a real multi-resolution asset now. Keep the previous
+      // generated-icon URLs working without redirecting that file away.
+      { source: "/icon", destination: "/icon.svg", permanent: false },
+      { source: "/apple-icon", destination: "/apple-icon.png", permanent: false },
+      { source: "/favicon.png", destination: "/brand/playbound-arcade-avatar-1024.png", permanent: false },
       { source: "/parties", destination: "/events", permanent: true },
       /*
        * /download was linked from the homepage hero and never existed, so it

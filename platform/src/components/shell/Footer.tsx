@@ -76,11 +76,8 @@ export function Footer() {
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-xs shrink-0">
             <NewWordmark className="new-footer-wordmark" />
-            <p className="preview-brand-old text-base font-extrabold tracking-tight">
-              Play<span className="text-primary">Bound</span>
-            </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              <span className="preview-brand-old">Discover. Play. Connect. </span>Every title clears{" "}
+              Every title clears{" "}
               <Link href="/standards" className="font-semibold text-foreground/80 hover:text-primary">
                 the PlayBound Bar
               </Link>{" "}

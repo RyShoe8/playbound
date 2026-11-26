@@ -1,3 +1,4 @@
+import { BrandLogoSvg } from "@/components/brand/BrandLogoSvg";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_PUBLIC_HOST } from "@/lib/site";
 
@@ -58,28 +59,7 @@ export default function GearOpenGraphImage() {
             zIndex: 10,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 54,
-                height: 54,
-                borderRadius: 14,
-                background: "linear-gradient(135deg, #eab308 0%, #a855f7 100%)",
-                boxShadow: "0 8px 24px -4px rgba(234, 179, 8, 0.4)",
-              }}
-            >
-              <svg width={26} height={26} viewBox="0 0 24 24" fill="#ffffff">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <div style={{ display: "flex", fontSize: 36, fontWeight: 800, letterSpacing: -0.5 }}>
-              {SITE_NAME.slice(0, 4)}
-              <span style={{ color: "#facc15" }}>{SITE_NAME.slice(4)}</span>
-            </div>
-          </div>
+          <BrandLogoSvg width={300} />
 
           <div
             style={{

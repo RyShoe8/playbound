@@ -93,7 +93,7 @@ test('Friend Size switches on drag, opens friends, and restores a full launcher'
     await companion.getByRole('button', { name: 'Invite', exact: true }).click();
     await expect(companion.getByRole('status')).toHaveText('Invitation sent to Public Player.');
     await companion.getByRole('button', { name: 'Free to Play Now' }).click();
-    await expect(companion.getByRole('status')).toHaveText('Availability shared for two hours.');
+    await expect(companion.getByRole('status')).toContainText("You're available for two hours.");
     await companion.getByRole('button', { name: 'Edit' }).click();
     await companion.getByRole('button', { name: 'Save preferences' }).click();
     await expect(companion.getByRole('status')).toHaveText('Preferences saved.');

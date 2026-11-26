@@ -8,6 +8,7 @@
 const { app, nativeImage } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { createHash } = require("node:crypto");
 const { parseDeepLink } = require("./core");
 const LAUNCHER_ROOT = path.join(__dirname, "..", "..");
 
@@ -35,14 +36,15 @@ function getTrayIcon() {
   if (process.platform === "linux") {
     try {
       const iconDir = app.getPath("userData");
-      const diskIconPath = path.join(iconDir, "tray-icon.png");
-      if (!fs.existsSync(diskIconPath)) {
-        if (fs.existsSync(assetPath)) {
-          const buf = fs.readFileSync(assetPath);
+      if (fs.existsSync(assetPath)) {
+        const buf = fs.readFileSync(assetPath);
+        // Desktop shells cache icons by path. A content-specific name refreshes
+        // existing Linux installs when a release changes the brand artwork.
+        const hash = createHash("sha256").update(buf).digest("hex").slice(0, 12);
+        const diskIconPath = path.join(iconDir, `tray-icon-${hash}.png`);
+        if (!fs.existsSync(diskIconPath)) {
           fs.writeFileSync(diskIconPath, buf);
         }
-      }
-      if (fs.existsSync(diskIconPath)) {
         return diskIconPath;
       }
     } catch (err) {
@@ -81,9 +83,9 @@ function getTrayIcon() {
   // A built-in bitmap keeps the launcher reachable even if its assets are damaged.
   const pixels = Buffer.alloc(16 * 16 * 4);
   for (let i = 0; i < pixels.length; i += 4) {
-    pixels[i] = 7;
-    pixels[i + 1] = 1;
-    pixels[i + 2] = 239;
+    pixels[i] = 248; // Native bitmap uses BGRA; brand blue is #38BDF8.
+    pixels[i + 1] = 189;
+    pixels[i + 2] = 56;
     pixels[i + 3] = 255;
   }
   return nativeImage.createFromBitmap(pixels, { width: 16, height: 16 });

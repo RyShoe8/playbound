@@ -18,7 +18,7 @@ import { HomePlayTogether } from "./HomePlayTogether";
 import { PlayTogetherPanel } from "./PlayTogetherPanel";
 import Image from "next/image";
 
-const FRIEND_VIEW_IMAGE = { width: 808, height: 1082 };
+const FRIEND_VIEW_IMAGE = { width: 808, height: 1180 };
 import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { EventCard } from "@/components/events/EventCard";

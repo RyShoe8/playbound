@@ -96,7 +96,7 @@ function gamePageUrl(slug: string, siteUrl = SITE_URL): string {
 }
 
 function logoUrl(siteUrl = SITE_URL): string {
-  return `${siteOrigin(siteUrl)}/brand/playbound-logo-120.png`;
+  return `${siteOrigin(siteUrl)}/brand/playbound-arcade-on-dark-1200.png`;
 }
 
 export function emptyNewsletterDraft(opts?: {
@@ -343,8 +343,8 @@ export function buildNewsletterHtml(
     td { padding: 0; }
     img { border: 0; max-width: 100%; height: auto; display: block; }
     img.new-game-cover { height: 140px !important; object-fit: cover; object-position: center; }
-    a { color: #8B5CF6; text-decoration: none; }
-    .btn { background-color: #8B5CF6; color: #FFFFFF !important; font-weight: 600; padding: 12px 24px; border-radius: 8px; display: inline-block; text-decoration: none; text-align: center; }
+    a { color: #38BDF8; text-decoration: none; }
+    .btn { background-color: #38BDF8; color: #0B141D !important; font-weight: 600; padding: 12px 24px; border-radius: 8px; display: inline-block; text-decoration: none; text-align: center; }
     .btn-secondary { background-color: #1E293B; color: #F8FAFC !important; border: 1px solid #334155; font-weight: 600; padding: 10px 20px; border-radius: 8px; display: inline-block; text-decoration: none; }
     @media only screen and (max-width: 600px) {
       .container { width: 100% !important; }
@@ -363,11 +363,8 @@ export function buildNewsletterHtml(
           <td align="center">
             <table cellpadding="0" cellspacing="0">
               <tr>
-                <td style="vertical-align: middle; padding-right: 12px;">
-                  <img src="${attr(logo)}" width="40" height="40" alt="Playbound Logo" style="border-radius: 10px;">
-                </td>
                 <td style="vertical-align: middle;">
-                  <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF; font-family: sans-serif;">playbound<span style="color: #8B5CF6;">.club</span></span>
+                  <a href="${attr(siteOrigin(siteUrl))}"><img src="${attr(logo)}" width="280" height="87" alt="PlayBound — Discover. Play. Connect." style="display: block; width: 280px; max-width: 100%; height: auto; border: 0;"></a>
                 </td>
               </tr>
             </table>
@@ -388,7 +385,7 @@ export function buildNewsletterHtml(
         </tr>
         <tr>
           <td style="padding: 24px;">
-            <span style="background-color: #8B5CF6; color: #FFFFFF; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;">${text(draft.featured.badge || "FEATURED PICK")}</span>
+            <span style="background-color: #38BDF8; color: #0B141D; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;">${text(draft.featured.badge || "FEATURED PICK")}</span>
             <h1 style="font-size: 24px; font-weight: 700; margin: 12px 0 8px 0; color: #FFFFFF;">${text(draft.featured.title || "Featured game")}</h1>
             <p style="font-size: 14px; line-height: 1.6; color: #94A3B8; margin: 0 0 20px 0;">
               ${nl2br(draft.featured.description)}

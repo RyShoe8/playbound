@@ -1,3 +1,4 @@
+import { BrandLogoSvg } from "@/components/brand/BrandLogoSvg";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_PUBLIC_HOST } from "@/lib/site";
 
@@ -58,28 +59,7 @@ export default function MultiplayerOpenGraphImage() {
             zIndex: 10,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 54,
-                height: 54,
-                borderRadius: 14,
-                background: "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)",
-                boxShadow: "0 8px 24px -4px rgba(59, 130, 246, 0.5)",
-              }}
-            >
-              <svg width={26} height={26} viewBox="0 0 24 24" fill="#ffffff">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <div style={{ display: "flex", fontSize: 36, fontWeight: 800, letterSpacing: -0.5 }}>
-              {SITE_NAME.slice(0, 4)}
-              <span style={{ color: "#38bdf8" }}>{SITE_NAME.slice(4)}</span>
-            </div>
-          </div>
+          <BrandLogoSvg width={300} />
 
           <div
             style={{

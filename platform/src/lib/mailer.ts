@@ -1,3 +1,7 @@
+import { SITE_URL } from "@/lib/site";
+
+const EMAIL_BRAND_HEADER = `<img src="${SITE_URL}/brand/playbound-arcade-on-light-1200.png" width="240" height="75" alt="PlayBound — Discover. Play. Connect." style="display:block;max-width:100%;height:auto;margin:24px 0;">`;
+
 const FROM_EMAIL_DEFAULT = "playboundclub@gmail.com";
 const FROM_NAME_DEFAULT = "PlayBound";
 
@@ -46,10 +50,11 @@ export async function sendMail(
 export function verificationEmailHtml(username: string, verifyUrl: string) {
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${EMAIL_BRAND_HEADER}
       <h2>Welcome to PlayBound, ${username}!</h2>
       <p>Confirm your email address to activate your account.</p>
       <p>
-        <a href="${verifyUrl}" style="display:inline-block;background:#7c5cf0;color:#fff;
+        <a href="${verifyUrl}" style="display:inline-block;background:#38BDF8;color:#0B141D;
           padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">
           Verify Email
         </a>
@@ -63,10 +68,11 @@ export function verificationEmailHtml(username: string, verifyUrl: string) {
 export function passwordResetEmailHtml(resetUrl: string) {
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${EMAIL_BRAND_HEADER}
       <h2>Reset your PlayBound password</h2>
       <p>We received a request to reset the password for your account.</p>
       <p>
-        <a href="${resetUrl}" style="display:inline-block;background:#7c5cf0;color:#fff;
+        <a href="${resetUrl}" style="display:inline-block;background:#38BDF8;color:#0B141D;
           padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">
           Reset Password
         </a>
@@ -91,9 +97,10 @@ export function gameAssignmentEmailHtml(username: string, gameTitle: string, man
   const url = escapeHtml(manageUrl);
   return `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+      ${EMAIL_BRAND_HEADER}
       <h2>${title} is now in your developer dashboard</h2>
       <p>Hi ${name}, you can now manage this ${kind}'s details on PlayBound.</p>
-      <p><a href="${url}" style="display:inline-block;background:#7c5cf0;color:#fff;
+      <p><a href="${url}" style="display:inline-block;background:#38BDF8;color:#0B141D;
         padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">Manage ${title}</a></p>
       <p>Or open this link: ${url}</p>
       <p style="color:#888;font-size:12px;">PlayBound's editorial review and publication settings remain with our team.</p>
@@ -105,10 +112,11 @@ export function friendInviteEmailHtml(inviterUsername: string, signupUrl: string
   const name = escapeHtml(inviterUsername || "Someone");
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${EMAIL_BRAND_HEADER}
       <h2>${name} invited you to PlayBound</h2>
       <p>PlayBound is a home for high-quality free games — and a place to see what friends are playing.</p>
       <p>
-        <a href="${signupUrl}" style="display:inline-block;background:#7c5cf0;color:#fff;
+        <a href="${signupUrl}" style="display:inline-block;background:#38BDF8;color:#0B141D;
           padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">
           Join PlayBound
         </a>
@@ -123,10 +131,11 @@ export function friendRequestInviteEmailHtml(inviterUsername: string, friendsUrl
   const name = escapeHtml(inviterUsername || "Someone");
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${EMAIL_BRAND_HEADER}
       <h2>${name} wants to be friends on PlayBound</h2>
       <p>Open Friends to accept or decline their request.</p>
       <p>
-        <a href="${friendsUrl}" style="display:inline-block;background:#7c5cf0;color:#fff;
+        <a href="${friendsUrl}" style="display:inline-block;background:#38BDF8;color:#0B141D;
           padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">
           Open Friends
         </a>

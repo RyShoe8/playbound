@@ -1,3 +1,4 @@
+import { BrandLogoSvg } from "@/components/brand/BrandLogoSvg";
 import { ImageResponse } from "next/og";
 import { newestGame } from "@/lib/catalog";
 import {
@@ -30,37 +31,7 @@ export const contentType = "image/png";
  * and the cover fetch below would have to reach a site that is not up yet.
  */
 
-function PlayMark({ box }: { box: number }) {
-  const icon = Math.round(box * 0.44);
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: box,
-        height: box,
-        borderRadius: Math.round(box * 0.25),
-        background: "#8b5cf6",
-      }}
-    >
-      <svg width={icon} height={icon} viewBox="0 0 24 24" fill="#faf8ff">
-        <path d="M8 5v14l11-7z" />
-      </svg>
-    </div>
-  );
-}
-
-function Wordmark({ size: fontSize }: { size: number }) {
-  return (
-    <div style={{ display: "flex", fontSize, fontWeight: 800, letterSpacing: -1 }}>
-      {SITE_NAME.slice(0, 4)}
-      <span style={{ color: "#a78bfa" }}>{SITE_NAME.slice(4)}</span>
-    </div>
-  );
-}
-
-const BACKDROP = "linear-gradient(145deg, #14121c 0%, #1c1830 45%, #2a1f4a 100%)";
+const BACKDROP = "linear-gradient(145deg, #0B141D 0%, #111f2d 45%, #123449 100%)";
 
 const shell = {
   width: "100%",
@@ -83,8 +54,7 @@ function brandedCard() {
   return (
     <div style={{ ...shell, background: BACKDROP }}>
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <PlayMark box={72} />
-        <Wordmark size={48} />
+        <BrandLogoSvg width={340} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div
@@ -103,7 +73,7 @@ function brandedCard() {
           style={{
             display: "flex",
             fontSize: 28,
-            color: "#c4b5fd",
+            color: "#bae6fd",
             maxWidth: 820,
             lineHeight: 1.35,
           }}
@@ -215,8 +185,7 @@ function heroCard(game: {
       />
       <div style={{ ...shell, position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <PlayMark box={64} />
-          <Wordmark size={40} />
+          <BrandLogoSvg width={340} />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 780 }}>
@@ -229,7 +198,7 @@ function heroCard(game: {
               letterSpacing: 2,
               textTransform: "uppercase",
               color: "#0b0713",
-              background: "#a78bfa",
+              background: "#38bdf8",
               padding: "6px 14px",
               borderRadius: 999,
             }}
@@ -253,7 +222,7 @@ function heroCard(game: {
             </div>
           ) : null}
           {meta ? (
-            <div style={{ display: "flex", fontSize: 24, color: "#c4b5fd" }}>{meta}</div>
+            <div style={{ display: "flex", fontSize: 24, color: "#bae6fd" }}>{meta}</div>
           ) : null}
         </div>
 
